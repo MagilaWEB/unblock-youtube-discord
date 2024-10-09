@@ -3,13 +3,14 @@
 Сегодня, 8 октября 2024 года, Discord был официально заблокирован РКН, о чем сообщил ТАСС.
 ## Примечание
 
+- **Оригинальный репозиторий**: [https://github.com/bol-van/zapret/tree/master/binaries/win64/zapret-winws](https://github.com/bol-van/zapret/tree/master/binaries/win64/zapret-winws)
+- **Подойдёт ли для Турции?**: ДА.
+
 ## Способ для обхода блокировки Discord и YouTube
 
 unblock — он же winws.exe это инструмент, который помогает обходить блокировки интернет-ресурсов, включая Discord и YouTube.
 
-- **Оригинальный репозиторий**: [https://github.com/bol-van/zapret/tree/master/binaries/win64/zapret-winws](https://github.com/bol-van/zapret/tree/master/binaries/win64/zapret-winws)
-
-### Инструкции:
+### Инструкция:
 
 1. **Скачайте последний [релиз](https://github.com/MagilaWEB/unblock-youtube-discord/releases)** и разархивируйте его в отдельную папку (Советуем использовать 7z).
 
