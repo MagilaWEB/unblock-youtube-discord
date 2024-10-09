@@ -1,6 +1,7 @@
 # Обход блокировки Discord | Или как вернуть Дискорд
 
-Сегодня, 8 октября 2024 года, Discord был официально заблокирован РКН, о чем сообщил ТАСС.
+8 октября 2024 года, Discord был официально заблокирован РКН, о чем сообщил ТАСС.
+
 ## Примечание
 
 - **Оригинальный репозиторий**: [https://github.com/bol-van/zapret/tree/master/binaries/win64/zapret-winws](https://github.com/bol-van/zapret/tree/master/binaries/win64/zapret-winws)
