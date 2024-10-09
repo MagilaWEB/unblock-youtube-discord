@@ -1,2 +1,24 @@
-# unblock-youtube-discord
-Allows you to bypass the limitations of youtube and discord, used winws.exe .
+# Обход блокировки Discord | Или как вернуть Дискорд
+
+Сегодня, 8 октября 2024 года, Discord был официально заблокирован РКН, о чем сообщил ТАСС.
+## Примечание
+
+## Способ для обхода блокировки Discord и YouTube
+
+unblock — он же winws.exe это инструмент, который помогает обходить блокировки интернет-ресурсов, включая Discord и YouTube.
+
+- **Оригинальный репозиторий**: [https://github.com/bol-van/zapret/tree/master/binaries/win64/zapret-winws](https://github.com/bol-van/zapret/tree/master/binaries/win64/zapret-winws)
+
+### Инструкции:
+
+1. **Скачайте последний [релиз](https://github.com/MagilaWEB/unblock-youtube-discord/releases)** и разархивируйте его в отдельную папку (Советуем использовать 7z).
+
+2. **Запустите от имени администратора** нужный вам файл:
+   - `RUN.cmd` — запустить службу обхода блокировки Discord - YouTube.
+   - `STOP.cmd` — отключить и удалить службу обхода блокировки Discord - YouTube.
+
+### Если не работает:
+
+- **Проверьте**, запускаете ли вы файлы от имени администратора.
+- **Убедитесь**, что в пути к файлам нет пробелов и русских символов.
+- **Убедитесь**, что у вас не включён брандмауэр, он мешает работать софту.
