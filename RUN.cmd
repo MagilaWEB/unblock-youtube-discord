@@ -12,6 +12,8 @@ goto check_Permissions
 :check_Permissions
     net session >nul 2>&1
     if %errorLevel% == 0 (
+        net stop "GoodbyeDPI"
+        sc delete "GoodbyeDPI"
         net stop "%SRVCNAME%"
         sc delete "%SRVCNAME%"
         sc create "%SRVCNAME%" binPath= "\"%~dp0bin\winws.exe\" %ARGS%" DisplayName= "DPI обход блокировки : %SRVCNAME%" start= auto
@@ -20,6 +22,9 @@ goto check_Permissions
 
         schtasks /Create /F /TN winws1 /NP /RU "" /SC onstart /TR "\"%~dp0RUN.cmd\""
         @REM start %~dp0bin\winws.exe %ARGS% DisplayName= "DPI обход блокировки : %SRVCNAME%"
+
+        schtasks /End /TN winws2
+        schtasks /Delete /TN winws2 /F
         pause
     ) else (
         ECHO !ОШИБКА: Запустите с правами администратора!

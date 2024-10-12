@@ -10,9 +10,13 @@ goto check_Permissions
         :srvdel
         net stop %1
         sc delete %1
+        net stop "GoodbyeDPI"
+        sc delete "GoodbyeDPI"
 
-        schtasks /End /TN winws1
-        schtasks /Delete /TN winws1 /F
+        schtasks /End /TN %1
+        schtasks /Delete /TN %1 /F
+        schtasks /End /TN winws2
+        schtasks /Delete /TN winws2 /F
         pause
         goto :eof
     ) else (
