@@ -1,32 +1,35 @@
+:start
 ECHO off
 chcp 1251
-set ARGS=--wf-tcp=80,443 --wf-udp=443,50000-65535 ^
---filter-udp=443 --hostlist="%~dp0russia-blacklist.txt" --dpi-desync=fake --dpi-desync-udplen-increment=5 --dpi-desync-repeats=6 --dpi-desync-udplen-pattern=0xDEADBEEF --dpi-desync-fake-quic="%~dp0bin\quic_initial_www_google_com.bin" --new ^
---filter-udp=50000-65535 --dpi-desync=fake,tamper --dpi-desync-any-protocol desync-fooling=md5sig --dpi-desync-fake-quic="%~dp0bin\quic_initial_www_google_com.bin" --new ^
---filter-tcp=80 --dpi-desync=fake,split2 --dpi-desync-autottl=2 --dpi-desync-fooling=md5sig --new ^
---filter-tcp=443 --hostlist="%~dp0russia-blacklist.txt" --dpi-desync=fake,split --dpi-desync-autottl=5 --dpi-desync-repeats=6 --dpi-desync-fooling=badseq --dpi-desync-fake-tls="%~dp0bin\tls_clienthello_www_google_com.bin"
-
-set SRVCNAME=winws1
-
 goto check_Permissions
 :check_Permissions
     net session >nul 2>&1
-    if %errorLevel% == 0 (
-        net stop "GoodbyeDPI"
-        sc delete "GoodbyeDPI"
-        net stop "%SRVCNAME%"
-        sc delete "%SRVCNAME%"
-        sc create "%SRVCNAME%" binPath= "\"%~dp0bin\winws.exe\" %ARGS%" DisplayName= "DPI обход блокировки : %SRVCNAME%" start= auto
-        sc description "%SRVCNAME%" "DPI программное обеспечение для обхода блокировки."
-        sc start "%SRVCNAME%"
-
-        schtasks /Create /F /TN winws1 /NP /RU "" /SC onstart /TR "\"%~dp0RUN.cmd\""
-        @REM start %~dp0bin\winws.exe %ARGS% DisplayName= "DPI обход блокировки : %SRVCNAME%"
-
-        schtasks /End /TN winws2
-        schtasks /Delete /TN winws2 /F
-        pause
-    ) else (
+    if not %errorLevel% == 0 (
         ECHO !ОШИБКА: Запустите с правами администратора!
         pause
+        exit
     )
+
+ECHO Выберите профиль обхода блокировки:
+ECHO:
+ECHO Нажмите 1 для запуска базового профиля, он подходит для большинства регионов и провайдеров.
+ECHO Нажмите 2 для запуска альтернативного профиля, используйте его если не работает 1.
+ECHO Нажмите 3 для запуска альтернативного профиля, используйте его если не работает 1 и 2.
+ECHO Нажмите 4 для запуска профиля для провайдеров (Билайн, Ростелеком, Инфолинк).
+ECHO Нажмите 5 для запуска профиля для провайдера МГТС.
+ECHO Нажмите 6 для запуска профиля с использованием службы GoodbyeDPI и winws.
+ECHO Нажмите 7 для запуска профиля с использованием службы GoodbyeDPI и winws для МГТС.
+ECHO:
+
+set mt=5
+
+CHOICE /C 1234567 /T 100 /D 1 /M "Если вы не выберите не один из профилей через 100 секунд будет выбран 1 как по умолчанию"
+
+set mt2=%errorLevel%
+set /a var1=(%mt2% - %mt%)
+
+if %mt2% LEQ 5 (
+    %~dp0"configs\RUN_%mt2%.cmd"
+) else (
+    %~dp0"configs\RUN_ALT_%var1%.cmd"
+)
