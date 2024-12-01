@@ -46,10 +46,11 @@ images-ext-1.discordapp.net
 www.discord.com
 www.discord.app
 discord.app
+discordcdn.com
 *.discord.com
 *.discord.gg
 *.discordapp.com
 *.discordapp.net
 *.discord.media
-discordcdn.com
-discord.dev
+*.discordcdn.com
+*.discord.app
