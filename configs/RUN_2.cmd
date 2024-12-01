@@ -20,11 +20,11 @@ goto check_Permissions
         sc description "%SRVCNAME%" "DPI программное обеспечение для обхода блокировки."
         sc start "%SRVCNAME%"
 
-        schtasks /Create /F /TN winws1 /NP /RU "" /SC onstart /TR "\"%~dp0RUN_2.cmd\""
+        schtasks /End /TN %SRVCNAME%
+        schtasks /Delete /TN %SRVCNAME% /F
+        schtasks /Create /F /TN %SRVCNAME% /NP /RU "" /SC onstart /TR "\"%~dp0RUN_2.cmd\""
         @REM start %~dp0bin\winws.exe %ARGS% DisplayName= "DPI обход блокировки : %SRVCNAME%"
 
-        schtasks /End /TN winws2
-        schtasks /Delete /TN winws2 /F
         %~dp0"RUN_RESET.cmd"
     ) else (
         ECHO !ОШИБКА: Запустите с правами администратора!

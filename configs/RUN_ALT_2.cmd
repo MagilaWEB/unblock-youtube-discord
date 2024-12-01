@@ -13,9 +13,6 @@ goto check_Permissions
 :check_Permissions
     net session >nul 2>&1
     if %errorLevel% == 0 (
-        schtasks /End /TN %SRVCNAME%
-        schtasks /Delete /TN %SRVCNAME% /F
-
         net stop "%SRVCNAME%"
         sc delete "%SRVCNAME%"
         sc create "%SRVCNAME%" binPath= "\"%~dp0..\bin\winws.exe\" %ARGS%" DisplayName= "DPI обход блокировки tcp-udp : %SRVCNAME%" start= auto
@@ -28,7 +25,9 @@ goto check_Permissions
         sc description "%SRVCNAME2%" "Passive Deep Packet Inspection blocker and Active DPI circumvention utility"
         sc start "%SRVCNAME2%"
 
-        schtasks /Create /F /TN winws2 /NP /RU "" /SC onstart /TR "\"%~dp0RUN_ALT_2.cmd\""
+        schtasks /End /TN %SRVCNAME%
+        schtasks /Delete /TN %SRVCNAME% /F
+        schtasks /Create /F /TN %SRVCNAME% /NP /RU "" /SC onstart /TR "\"%~dp0RUN_ALT_2.cmd\""
         @REM start %~dp0bin\winws.exe %ARGS% DisplayName= "DPI обход блокировки : %SRVCNAME%"
         %~dp0"RUN_RESET.cmd"
     ) else (

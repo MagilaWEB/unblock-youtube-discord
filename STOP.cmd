@@ -15,8 +15,6 @@ goto check_Permissions
 
         schtasks /End /TN %1
         schtasks /Delete /TN %1 /F
-        schtasks /End /TN winws2
-        schtasks /Delete /TN winws2 /F
         pause
         goto :eof
     ) else (
