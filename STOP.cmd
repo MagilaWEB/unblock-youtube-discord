@@ -12,6 +12,7 @@ goto check_Permissions
         sc delete %1
         net stop "GoodbyeDPI"
         sc delete "GoodbyeDPI"
+        net stop "WinDivert"
 
         schtasks /End /TN %1
         schtasks /Delete /TN %1 /F

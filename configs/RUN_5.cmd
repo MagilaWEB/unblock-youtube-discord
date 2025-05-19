@@ -14,6 +14,7 @@ goto check_Permissions
     if %errorLevel% == 0 (
         net stop "GoodbyeDPI"
         sc delete "GoodbyeDPI"
+        net stop "WinDivert"
         net stop "winws2"
         sc delete "winws2"
         net stop "%SRVCNAME%"

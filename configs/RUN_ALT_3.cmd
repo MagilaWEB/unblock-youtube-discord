@@ -1,10 +1,10 @@
 ECHO off
 @REM Задействовать разблокировку на весь сетевой трафик.
 set ARGS=--wf-tcp=80,443 --wf-udp=443,50000-65535 ^
---filter-udp=443 --dpi-desync=fake --dpi-desync-udplen-increment=10 --dpi-desync-repeats=6 --dpi-desync-udplen-pattern=0xDEADBEEF --dpi-desync-fake-quic="%~dp0..\bin\quic_initial_www_google_com.bin" --new ^
---filter-udp=50000-65535 --dpi-desync=fake,tamper --dpi-desync-any-protocol desync-fooling=md5sig --dpi-desync-fake-quic="%~dp0..\bin\quic_initial_www_google_com.bin" --new ^
---filter-tcp=80 --dpi-desync=fake,split2 --dpi-desync-autottl=2 --dpi-desync-fooling=md5sig --new ^
---filter-tcp=443 --dpi-desync=fake,split2 --dpi-desync-autottl=5 --dpi-desync-repeats=6 --dpi-desync-fooling=md5sig --dpi-desync-fake-tls="%~dp0..\bin\tls_clienthello_www_google_com.bin"
+--filter-udp=443 --dpi-desync=fake --dpi-desync-repeats=6 --dpi-desync-fake-quic="%~dp0..\bin\quic_initial_www_google_com.bin" --new ^
+--filter-udp=50000-65535 --dpi-desync=fake --dpi-desync-any-protocol --dpi-desync-cutoff=d3 --dpi-desync-repeats=6 --new ^
+--filter-tcp=80 --dpi-desync=fake,split2 --dpi-desync-autottl --dpi-desync-fooling=md5sig --new ^
+--filter-tcp=443 --dpi-desync=fake --dpi-desync-autottl --dpi-desync-repeats=6 --dpi-desync-fooling=badseq --dpi-desync-fake-tls="%~dp0..\bin\tls_clienthello_www_google_com.bin"
 
 set SRVCNAME=winws1
 
@@ -14,6 +14,7 @@ goto check_Permissions
     if %errorLevel% == 0 (
         net stop "GoodbyeDPI"
         sc delete "GoodbyeDPI"
+        @REM net stop "WinDivert"
         net stop "%SRVCNAME%"
         sc delete "%SRVCNAME%"
         sc create "%SRVCNAME%" binPath= "\"%~dp0..\bin\winws.exe\" %ARGS%" DisplayName= "DPI обход блокировки : %SRVCNAME%" start= auto
