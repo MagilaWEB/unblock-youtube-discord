@@ -19,6 +19,6 @@ goto check_Permissions
         pause
         goto :eof
     ) else (
-        ECHO "!ОШИБКА: Запустите с правами администратора!"
-        pause
+        ECHO Подтвердите запуск от имени администратора:
+        powershell start -verb runas '%0' am_admin & exit /b
     )

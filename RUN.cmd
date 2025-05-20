@@ -5,8 +5,8 @@ goto check_Permissions
 :check_Permissions
     net session >nul 2>&1
     if not %errorLevel% == 0 (
-        ECHO !ОШИБКА: Запустите с правами администратора!
-        pause
+        ECHO Подтвердите запуск от имени администратора:
+        powershell start -verb runas '%0' am_admin & exit /b
         exit
     )
 
