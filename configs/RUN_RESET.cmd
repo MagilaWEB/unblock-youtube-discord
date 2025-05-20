@@ -1,5 +1,4 @@
 ECHO off
-chcp 1251
 :start
 
 ECHO:

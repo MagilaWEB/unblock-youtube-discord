@@ -4,19 +4,18 @@ goto check_Permissions
 :check_Permissions
     net session >nul 2>&1
     if %errorLevel% == 0 (
-       call :srvdel winws1
+       call :srvdel unblock
         goto :eof
 
         :srvdel
-        net stop %1
-        sc delete %1
+        net stop unblock1
+        sc delete unblock1
+        net stop unblock2
+        sc delete unblock2
         net stop "GoodbyeDPI"
         sc delete "GoodbyeDPI"
         net stop "WinDivert"
 
-        schtasks /End /TN %1
-        schtasks /Delete /TN %1 /F
-        pause
         goto :eof
     ) else (
         ECHO Подтвердите запуск от имени администратора:
