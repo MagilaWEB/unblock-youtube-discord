@@ -8,7 +8,7 @@ set ARGS=--wf-tcp=80,443 --wf-udp=443,50000-65535 ^
 --filter-tcp=443 --dpi-desync=fake --dpi-desync-autottl=0  --dpi-desync-skip-nosni=0 --dpi-desync-fooling=badseq --dpi-desync-repeats=3 --dpi-desync-fake-quic="%~dp0..\bin\quic_initial_www_google_com.bin" --dpi-desync-fake-tls="%~dp0..\bin\tls_clienthello_www_google_com.bin"
 
 set ARGS2=--wf-tcp=443 ^
---filter-tcp=443 --dpi-desync=fake --dpi-desync-fooling=md5sig --dpi-desync-repeats=6 --dpi-desync-fake-quic="%~dp0..\bin\quic_initial_www_google_com.bin"
+-filter-tcp=443 --dpi-desync=fake --dpi-desync-autottl=1 --dpi-desync-fooling=md5sig --dpi-desync-repeats=3 --dpi-desync-fake-tls="%~dp0..\bin\tls_clienthello_www_google_com.bin"
 
 set SRVCNAME=unblock1
 set SRVCNAME2=unblock2
