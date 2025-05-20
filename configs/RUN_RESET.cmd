@@ -1,4 +1,5 @@
 ECHO off
+chcp 1251
 :start
 
 ECHO:
@@ -14,12 +15,7 @@ ECHO Выбрать другой профиль?
 ECHO Нажмите Y чтобы выбрать и выбрать другой профиль.
 CHOICE /C YNнт /T 100 /D N /M "Нажмите N чтобы завершить."
 
-if %errorLevel% == 1 GOTO invert_to_ran
-if %errorLevel% == 3 GOTO invert_to_ran
+if %errorLevel% == 1 start %~dp0"../RUN.cmd"
+if %errorLevel% == 3 start %~dp0"../RUN.cmd"
 
-GOTO end
-
-:invert_to_ran
-%~dp0"../RUN.cmd"
-
-:end
+exit

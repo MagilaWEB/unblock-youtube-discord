@@ -30,7 +30,9 @@ set mt2=%errorLevel%
 set /a var1=(%mt2% - %mt%)
 
 if %mt2% LEQ 5 (
-    %~dp0"configs\RUN_%mt2%.cmd"
+   start %~dp0"configs\RUN_%mt2%.cmd"
 ) else (
-    %~dp0"configs\RUN_ALT_%var1%.cmd"
+   start %~dp0"configs\RUN_ALT_%var1%.cmd"
 )
+
+exit

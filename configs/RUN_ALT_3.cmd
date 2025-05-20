@@ -14,7 +14,7 @@ goto check_Permissions
     if %errorLevel% == 0 (
         net stop "GoodbyeDPI"
         sc delete "GoodbyeDPI"
-        @REM net stop "WinDivert"
+        net stop "WinDivert"
         net stop "%SRVCNAME%"
         sc delete "%SRVCNAME%"
         sc create "%SRVCNAME%" binPath= "\"%~dp0..\bin\winws.exe\" %ARGS%" DisplayName= "DPI обход блокировки : %SRVCNAME%" start= auto

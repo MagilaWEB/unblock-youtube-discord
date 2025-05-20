@@ -22,3 +22,5 @@ goto check_Permissions
         ECHO Подтвердите запуск от имени администратора:
         powershell start -verb runas '%0' am_admin & exit /b
     )
+
+    exit
