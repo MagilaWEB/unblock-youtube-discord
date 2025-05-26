@@ -5,7 +5,7 @@ set ARGS=--wf-tcp=80,443 --wf-udp=443,50000-65535 ^
 --filter-udp=443 --hostlist="%~dp0russia-blacklist.txt" --dpi-desync=fake --dpi-desync-udplen-increment=10 --dpi-desync-repeats=6 --dpi-desync-udplen-pattern=0xDEADBEEF --dpi-desync-fake-quic="%~dp0..\bin\quic_initial_www_google_com.bin" --new ^
 --filter-udp=50000-65535 --dpi-desync=fake,tamper --dpi-desync-any-protocol=1 desync-fooling=md5sig --dpi-desync-fake-quic="%~dp0..\bin\quic_initial_www_google_com.bin" --new ^
 --filter-tcp=80 --dpi-desync=fake,split2 --dpi-desync-autottl=1 --dpi-desync-fooling=md5sig --new ^
---filter-tcp=443 --hostlist="%~dp0russia-blacklist.txt" --dpi-desync=fake,split --dpi-desync-autottl=1 --dpi-desync-repeats=6 --dpi-desync-fooling=md5sig --dpi-desync-fake-tls="%~dp0..\bin\tls_clienthello_www_google_com.bin"
+--filter-tcp=443 --hostlist="%~dp0russia-blacklist.txt" --dpi-desync=fake --dpi-desync-autottl=1 --dpi-desync-repeats=6 --dpi-desync-fooling=md5sig --dpi-desync-fake-tls="%~dp0..\bin\tls_clienthello_www_google_com.bin"
 
 set SRVCNAME=unblock1
 

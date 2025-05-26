@@ -61,3 +61,5 @@ twimg.com
 video.twimg.com
 abs.twimg.com
 *.twimg.com
+t.co
+*.t.co
