@@ -11,7 +11,7 @@
 - **Если не работает**:
 Если у вас не получается получить доступ к интересующему ресурсу, задавайте вопрос [здесь](https://github.com/MagilaWEB/unblock-youtube-discord/issues) не забывая сообщить какой у вас провайдер и в каком регионе находитесь.
 
-- **Оригинальный репозиторий zapret-winws**: [https://github.com/bol-van/zapret/tree/master/binaries/win64/zapret-winws](https://github.com/bol-van/zapret/tree/master/binaries/win64/zapret-winws)
+- **Оригинальный репозиторий zapret-winws**: [https://github.com/bol-van/zapret/tree/master](https://github.com/bol-van/zapret/tree/master)
 - **Оригинальный репозиторий GoodBayDPI**: [https://github.com/ValdikSS/GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI)
 - **Подойдёт ли для Турции?**: ДА (возможно профили не подойдут и нужно создавать другие).
 
