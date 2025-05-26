@@ -6,7 +6,7 @@ set ARGS=--wf-tcp=80 --wf-udp=50000-65535 ^
 --filter-tcp=80 --dpi-desync=fake,split2 --dpi-desync-autottl=2 --dpi-desync-fooling=md5sig
 set ARGS2=-5 --auto-ttl=2 --blacklist %~dp0russia-blacklist.txt
 
-set SRVCNAME=winws1
+set SRVCNAME=unblock1
 set SRVCNAME2=GoodbyeDPI
 
 goto check_Permissions

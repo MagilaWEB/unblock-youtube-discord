@@ -8,7 +8,6 @@ set ARGS=--wf-tcp=80,443 --wf-udp=443,50000-65535 ^
 --filter-tcp=443 --dpi-desync=fake --dpi-desync-autottl=0  --dpi-desync-skip-nosni=0 --dpi-desync-fooling=badseq --dpi-desync-repeats=3 --dpi-desync-fake-quic="%~dp0..\bin\quic_initial_www_google_com.bin" --dpi-desync-fake-tls="%~dp0..\bin\tls_clienthello_www_google_com.bin"
 
 set SRVCNAME=unblock1
-set SRVCNAME2=unblock2
 
 goto check_Permissions
 :check_Permissions
