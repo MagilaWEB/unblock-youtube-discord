@@ -5,7 +5,7 @@
 - **Оригинальный репозиторий zapret-winws**: [https://github.com/bol-van/zapret/tree/master](https://github.com/bol-van/zapret/tree/master)
 - **Оригинальный репозиторий GoodBayDPI**: [https://github.com/ValdikSS/GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI)
 
-> [!ОСТОРОЖНО]
+> [!CAUTION]
 > **Важно:** unblock-youtube-discord не предназначен для использования в целях обхода законных ограничений или нарушений условий обслуживания интернет-провайдеров. Проект создан исключительно в образовательных и исследовательских целях, в том числе для изучения работы сетевых протоколов и механизмов фильтрации. Ответственность за любое использование программного обеспечения лежит исключительно на конечном пользователе.
 >
 > ### АНТИВИРУСЫ
@@ -20,7 +20,7 @@
 >
 > **Выдержка из [`readme.md`](https://github.com/bol-van/zapret-win-bundle/blob/master/readme.md#%D0%B0%D0%BD%D1%82%D0%B8%D0%B2%D0%B8%D1%80%D1%83%D1%81%D1%8B) репозитория [bol-van/zapret-win-bundle](https://github.com/bol-van/zapret-win-bundle)*
 
-> [!ВАЖНО]
+> [!IMPORTANT]
 > Все файлы в папке [`bin`](./bin) взяты из [zapret-win-bundle/zapret-winws](https://github.com/bol-van/zapret-win-bundle/tree/master/zapret-winws) и [ValdikSS/GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI?ysclid=mbb3gxj462759739136). Вы можете это проверить с помощью хэшей/контрольных сумм.
 
 ## ✨ Возможности
