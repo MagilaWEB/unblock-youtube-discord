@@ -60,4 +60,4 @@
 
 ## ⚖️Лицензирование
 
-Проект распространяется на условиях лицензии [MIT](https://github.com/MagilaWEB/unblock-youtube-discord/LICENSE.txt)
+Проект распространяется на условиях лицензии [MIT](https://github.com/MagilaWEB/unblock-youtube-discord?tab=License-1-ov-file)
