@@ -24,6 +24,7 @@ void DomainTesting::loadFile(std::filesystem::path file)
 
 void DomainTesting::test()
 {
+	_is_testing	  = false;
 	_domain_error = _domain_ok = 0;
 	_list_domain.clear();
 
@@ -46,14 +47,12 @@ void DomainTesting::test()
 			else
 				_domain_error++;
 
-			InputConsole::clear();
 			InputConsole::textInfo(
 				"Успех [%d], ошибки [%d], всего на тестировании [%d]",
 				_domain_ok.load(),
 				_domain_error.load(),
 				_list_domain.size()
 			);
-			
 		}
 	);
 
