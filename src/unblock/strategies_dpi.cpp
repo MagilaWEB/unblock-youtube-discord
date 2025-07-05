@@ -33,7 +33,10 @@ StrategiesDPI::StrategiesDPI()
 
 void StrategiesDPI::changeStrategy(u32 index)
 {
-	_file_strategy_dpi->open(Core::get().configsPath() / _strategy_files_list[index], "", true);
+	const auto & strategy_file = _strategy_files_list[index];
+	InputConsole::textInfo("Выбрана конфигурация [%s].", strategy_file.c_str());
+
+	_file_strategy_dpi->open(Core::get().configsPath() / strategy_file, "", true);
 
 	for (auto& v : _strategy_dpi)
 		v.clear();
@@ -86,6 +89,11 @@ void StrategiesDPI::changeFakeKey(std::string key)
 		Debug::warning("для feke_bin_quic отсуствует тип %s", key.c_str());
 
 	_fake_bind_key = key;
+}
+
+void StrategiesDPI::changeIgnoringHostlist(bool state)
+{
+	_ignoring_hostlist = state;
 }
 
 void StrategiesDPI::_uploadStrategies()
@@ -177,9 +185,13 @@ std::optional<std::string> StrategiesDPI::_getPath(std::string str, std::string 
 
 std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 {
+	auto path_file = Core::get().configsPath() / "blacklist.list";
+
 	if (str.contains("%BLOCKLIST%"))
 	{
-		auto path_file = Core::get().configsPath() / "blacklist.list";
+		if (_ignoring_hostlist)
+			return "";
+
 		if (std::filesystem::exists(path_file))
 			return "--hostlist=" + (path_file.string());
 		else
@@ -188,16 +200,22 @@ std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 
 	if (str.contains("%BLOCKLIST-GD-DPI%"))
 	{
-		auto path_file = Core::get().configsPath() / "blacklist.list";
+		if (_ignoring_hostlist)
+			return "";
+
 		if (std::filesystem::exists(path_file))
 			return "--blacklist " + (path_file.string());
 		else
 			Debug::error("Файл [%s] не существует!", path_file.string().c_str());
 	}
 
+	path_file = Core::get().configsPath() / "ip-blacklist.list";
+
 	if (str.contains("%IP-SETLIST%"))
 	{
-		auto path_file = Core::get().configsPath() / "ip-blacklist.list";
+		if (_ignoring_hostlist)
+			return "";
+
 		if (std::filesystem::exists(path_file))
 			return "--ipset=" + (path_file.string());
 		else
@@ -206,7 +224,9 @@ std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 
 	if (str.contains("%IP-BLOCKLIST%"))
 	{
-		auto path_file = Core::get().configsPath() / "ip-blacklist.list";
+		if (_ignoring_hostlist)
+			return "";
+
 		if (std::filesystem::exists(path_file))
 			return "--hostlist=" + (path_file.string());
 		else

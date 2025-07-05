@@ -21,9 +21,13 @@ void Unblock::changeDpiApplicationType(DpiApplicationType type)
 
 void Unblock::start()
 {
+	_strategies_dpi->changeIgnoringHostlist(_dpi_application_type == DpiApplicationType::ALL);
+
 	while (true)
 	{
 		allRemoveService();
+
+		_chooseStrategy();
 
 		if (_type_strategy > (_strategies_dpi->getStrategySize() - 1))
 		{
@@ -58,7 +62,6 @@ void Unblock::start()
 			break;
 		}
 
-		_chooseStrategy();
 		_strategies_dpi->changeStrategy(_type_strategy);
 
 		_startService();
