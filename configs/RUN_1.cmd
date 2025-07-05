@@ -1,7 +1,0 @@
-@SET ARGS=--wf-tcp=80,443 --wf-udp=443,50000-65535 ^
---filter-udp=443 %BLOCKLIST% --dpi-desync=fake --dpi-desync-udplen-increment=10 --dpi-desync-repeats=6 --dpi-desync-udplen-pattern=0xDEADBEEF %FAKE_QUIC% --new ^
---filter-udp=50000-65535 --dpi-desync=fake,tamper --dpi-desync-any-protocol=1 desync-fooling=md5sig %FAKE_QUIC% --new ^
---filter-tcp=80 --dpi-desync=fake,split2 --dpi-desync-autottl=1 --dpi-desync-fooling=md5sig --new ^
---filter-tcp=443 %BLOCKLIST% --dpi-desync=fake --dpi-desync-autottl=1 --dpi-desync-repeats=6 --dpi-desync-fooling=md5sig %FAKE_TLS%
-
-@SET SRVCNAMESTART=true

@@ -1,8 +1,0 @@
-@SET ARGS=--wf-tcp=80 --wf-udp=50000-65535 ^
---filter-udp=50000-65535 --dpi-desync=fake,tamper --dpi-desync-any-protocol=1 desync-fooling=md5sig %FAKE_QUIC% --new ^
---filter-tcp=80 --dpi-desync=fake,split2 --dpi-desync-autottl=2 --dpi-desync-fooling=md5sig
-@SET ARGSDPI=-e 1 --fake-from-hex 1603030135010001310303424143facf5c983ac8ff20b819cfd634cbf5143c0005b2b8b142a6cd335012c220008969b6b387683dedb4114d466ca90be3212b2bde0c4f56261a9801 ^
--q --native-frag --SET-ttl 3 --fake-gen 15 --blacklist %CONFIGS%russia-blacklist.txt
-
-@SET SRVCNAMESTART=true
-@SET SRVCNAMESTARTDPI=true

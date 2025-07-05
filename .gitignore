@@ -1,0 +1,6 @@
+_build
+bin
+out
+assets
+.vs
+.idea

@@ -1,0 +1,51 @@
+#pragma once
+#include "unblock_api.hpp"
+#include "domain_testing.h"
+#include "strategies_dpi.h"
+
+#include "../core/service.h"
+
+class UNBLOCK_API Unblock final : public IUnblockAPI
+{
+	Ptr<DomainTesting> _domain_testing;
+	Ptr<StrategiesDPI> _strategies_dpi;
+
+	Service _unblock{ "unblock1", "winws.exe" };
+	Service _unblock2{ "unblock2", "winws.exe" };
+	Service _goodbay_dpi{ "GoodbyeDPI", "goodbyedpi.exe" };
+	Service _win_divert{ "WinDivert" };
+
+	DpiApplicationType _dpi_application_type{ DpiApplicationType::BASE };
+	u32				   _dpi_feke_bin{ 0 };
+	u32				   _type_strategy{ 0 };
+	u32				   _base_success_rate{};
+
+	struct SuccessfulStrategy
+	{
+		u32 success{ 0 };
+		u32 index_strategy{ 0 };
+		u32 dpi_feke_bin{ 0 };
+	};
+
+	std::vector<SuccessfulStrategy> _successful_strategies;
+
+public:
+	Unblock();
+	Unblock(Unblock&& Unblock) = delete;
+
+	void changeDpiApplicationType(DpiApplicationType type) override;
+
+	void start() override;
+
+	void baseTestDomain() override;
+
+	void testDomains() const override;
+
+	void allOpenService() override;
+
+	void allRemoveService() override;
+
+private:
+	void _startService();
+	void _chooseStrategy();
+};
