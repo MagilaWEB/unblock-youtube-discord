@@ -19,7 +19,7 @@ void Unblock::changeDpiApplicationType(DpiApplicationType type)
 	_dpi_application_type = type;
 }
 
-void Unblock::start()
+void Unblock::startAuto()
 {
 	_strategies_dpi->changeIgnoringHostlist(_dpi_application_type == DpiApplicationType::ALL);
 
@@ -85,7 +85,6 @@ void Unblock::start()
 			InputConsole::pause();
 
 			InputConsole::textPlease("проверьте работоспособность, если не работает можно продолжить подбор конфигурации", true, true);
-			InputConsole::textInfo("Если подобранная конфигурация не работает, подтвердите для дальнейшего подбора.");
 			InputConsole::textAsk("Продолжить подбор конфигурации");
 			if (!InputConsole::getBool())
 				break;

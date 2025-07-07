@@ -35,7 +35,7 @@ public:
 
 	void changeDpiApplicationType(DpiApplicationType type) override;
 
-	void start() override;
+	void startAuto() override;
 
 	void baseTestDomain() override;
 

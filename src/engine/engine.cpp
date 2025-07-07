@@ -50,7 +50,7 @@ void Engine::run()
 
 		_unblock->baseTestDomain();
 
-		_unblock->start();
+		_unblock->startAuto();
 
 		_finish();
 	}
@@ -58,12 +58,13 @@ void Engine::run()
 
 void Engine::_sendDpiApplicationType()
 {
+	_input_console.textInfo("Нажмите 1, для применения обхода блокировки на весь сетевой трафик ОС.");
+	_input_console.textInfo("Нажмите 2, для применения обхода только для Discord.com, YouTube.com, x.com.");
 	_input_console.textInfo(
 		"Обход блокировки на весь сетевой трафик ОС может негативно повлиять на доступ к сайтам которые не находятся в блокировке!"
 	);
-	_input_console.textAsk("Применить обход блокировки на весь сетевой трафик ОС");
 
-	if (_input_console.getBool())
+	if (_input_console.sendNum({ 1, 2 }) == 1)
 		_unblock->changeDpiApplicationType(DpiApplicationType::ALL);
 	else
 		_unblock->changeDpiApplicationType(DpiApplicationType::BASE);
