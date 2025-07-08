@@ -9,6 +9,7 @@ class CORE_API Core final
 	std::filesystem::path _bin_path{};
 	std::filesystem::path _binaries_path{};
 	std::filesystem::path _configs_path{};
+	std::filesystem::path _user_path{};
 
 public:
 	Core(Core&&) = delete;
@@ -21,4 +22,5 @@ public:
 	std::filesystem::path binPath() const;
 	std::filesystem::path binariesPath() const;
 	std::filesystem::path configsPath() const;
+	std::filesystem::path userPath() const;
 };

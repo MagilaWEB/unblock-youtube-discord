@@ -44,6 +44,24 @@ void StrategiesDPI::changeStrategy(u32 index)
 	_uploadStrategies();
 }
 
+void StrategiesDPI::changeStrategy(pcstr file)
+{
+	std::string strategy_file{};
+
+	for (const auto& _file : _strategy_files_list)
+		if (_file.contains(file))
+			strategy_file = _file;
+
+	InputConsole::textInfo("Выбрана конфигурация [%s].", strategy_file.c_str());
+
+	_file_strategy_dpi->open(Core::get().configsPath() / strategy_file, "", true);
+
+	for (auto& v : _strategy_dpi)
+		v.clear();
+
+	_uploadStrategies();
+}
+
 std::string StrategiesDPI::getStrategyFileName() const
 {
 	return _file_strategy_dpi->name();
@@ -67,6 +85,11 @@ std::vector<std::string> StrategiesDPI::getStrategy(u32 service) const
 	}
 
 	return _strategy_dpi[service];
+}
+
+std::string StrategiesDPI::getKeyFakeBin() const
+{
+	return _fake_bind_key;
 }
 
 std::vector<std::string> StrategiesDPI::getFekeBinList() const

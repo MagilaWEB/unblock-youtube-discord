@@ -9,6 +9,7 @@ class UNBLOCK_API Unblock final : public IUnblockAPI
 {
 	Ptr<DomainTesting> _domain_testing;
 	Ptr<StrategiesDPI> _strategies_dpi;
+	Ptr<FileSystem>	   _file_user_setting;
 
 	Service _unblock{ "unblock1", "winws.exe" };
 	Service _unblock2{ "unblock2", "winws.exe" };
@@ -34,6 +35,8 @@ public:
 	Unblock(Unblock&& Unblock) = delete;
 
 	void changeDpiApplicationType(DpiApplicationType type) override;
+
+	bool checkSavedConfiguration() override;
 
 	void startAuto() override;
 

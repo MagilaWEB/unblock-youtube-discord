@@ -27,12 +27,14 @@ public:
 	~StrategiesDPI() = default;
 
 	void changeStrategy(u32 index = 1);
+	void changeStrategy(pcstr file);
 	void changeFakeKey(std::string key = "");
 	void changeIgnoringHostlist(bool state);
 
 	std::string				 getStrategyFileName() const;
 	u32						 getStrategySize() const;
 	std::vector<std::string> getStrategy(u32 service = 0) const;
+	std::string				 getKeyFakeBin() const;	
 	std::vector<std::string> getFekeBinList() const;
 
 private:

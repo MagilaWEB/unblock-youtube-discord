@@ -3,6 +3,7 @@
 
 Unblock::Unblock()
 {
+	_file_user_setting->open((Core::get().userPath() / "setting"), ".config", true);
 	allOpenService();
 }
 
@@ -19,10 +20,59 @@ void Unblock::changeDpiApplicationType(DpiApplicationType type)
 	_dpi_application_type = type;
 }
 
-void Unblock::startAuto()
+bool Unblock::checkSavedConfiguration()
 {
 	_strategies_dpi->changeIgnoringHostlist(_dpi_application_type == DpiApplicationType::ALL);
 
+	const auto config = _file_user_setting->parametrSection("remember_configuration", "config");
+	if (config)
+	{
+		InputConsole::textInfo("Обнаружена ранее используемая конфигурация!");
+		InputConsole::textAsk("Применить сохранённую конфигурацию");
+		if (InputConsole::getBool())
+		{
+			allRemoveService();
+
+			const auto config_fake_bin = _file_user_setting->parametrSection("remember_configuration", "feke_bin");
+			if (config_fake_bin)
+				_strategies_dpi->changeFakeKey(config_fake_bin.value().c_str());
+
+			_strategies_dpi->changeStrategy(config.value().c_str());
+
+			_startService();
+
+			InputConsole::textAsk("Протестировать работоспособность");
+			if (InputConsole::getBool())
+			{
+				testDomains();
+
+				_domain_testing->printTestInfo();
+
+				const auto success_rate = _domain_testing->successRate();
+				if (success_rate <= 90)
+				{
+					InputConsole::textWarning("С конфигурацией [%s] замещена проблема, успех ниже 90%%!", config.value().c_str());
+					InputConsole::textInfo("Рекомендуется запустить подбор новой конфигурации!");
+					InputConsole::textAsk("Перейти к подбору новой конфигурации");
+
+					if (!InputConsole::getBool())
+						return false;
+				}
+				else
+				{
+					InputConsole::textOk("Работоспособность свыше 90%%!");
+					InputConsole::pause();
+					return false;
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+void Unblock::startAuto()
+{
 	while (true)
 	{
 		allRemoveService();
@@ -53,6 +103,9 @@ void Unblock::startAuto()
 				_strategies_dpi->changeFakeKey(feke_bin_list[strategy->dpi_feke_bin]);
 				_strategies_dpi->changeStrategy(strategy->index_strategy);
 
+				_file_user_setting->writeSectionParametr("remember_configuration", "config", _strategies_dpi->getStrategyFileName().c_str());
+				_file_user_setting->writeSectionParametr("remember_configuration", "feke_bin", _strategies_dpi->getKeyFakeBin().c_str());
+
 				_startService();
 			}
 
@@ -78,6 +131,8 @@ void Unblock::startAuto()
 		else
 		{
 			_successful_strategies.emplace_back(SuccessfulStrategy{ success_rate, _type_strategy, _dpi_feke_bin });
+			_file_user_setting->writeSectionParametr("remember_configuration", "config", _strategies_dpi->getStrategyFileName().c_str());
+			_file_user_setting->writeSectionParametr("remember_configuration", "feke_bin", _strategies_dpi->getKeyFakeBin().c_str());
 
 			_domain_testing->printTestInfo();
 			InputConsole::textOk("Удалось подобрать конфигурацию [%s], результат теста выше 90%%.", _strategies_dpi->getStrategyFileName().c_str());

@@ -15,6 +15,7 @@ public:
 	virtual ~IUnblockAPI() = default;
 
 	virtual void changeDpiApplicationType(DpiApplicationType type) = 0;
+	virtual bool checkSavedConfiguration()						   = 0;
 	virtual void startAuto()									   = 0;
 	virtual void baseTestDomain()								   = 0;
 	virtual void testDomains() const							   = 0;
