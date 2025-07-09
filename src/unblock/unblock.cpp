@@ -98,9 +98,9 @@ void Unblock::startAuto()
 
 			if (strategy)
 			{
-				const auto feke_bin_list = _strategies_dpi->getFekeBinList();
+				const auto& fake_bin_list = _strategies_dpi->getFakeBinList();
 
-				_strategies_dpi->changeFakeKey(feke_bin_list[strategy->dpi_feke_bin]);
+				_strategies_dpi->changeFakeKey(fake_bin_list[strategy->dpi_fake_bin].key);
 				_strategies_dpi->changeStrategy(strategy->index_strategy);
 
 				_file_user_setting->writeSectionParametr("remember_configuration", "config", _strategies_dpi->getStrategyFileName().c_str());
@@ -109,7 +109,7 @@ void Unblock::startAuto()
 				_startService();
 			}
 
-			_dpi_feke_bin  = 0;
+			_dpi_fake_bin  = 0;
 			_type_strategy = 0;
 
 			break;
@@ -126,11 +126,11 @@ void Unblock::startAuto()
 		if (success_rate <= 90)
 		{
 			if (_base_success_rate < success_rate)
-				_successful_strategies.emplace_back(SuccessfulStrategy{ success_rate, _type_strategy, _dpi_feke_bin });
+				_successful_strategies.emplace_back(SuccessfulStrategy{ success_rate, _type_strategy, _dpi_fake_bin });
 		}
 		else
 		{
-			_successful_strategies.emplace_back(SuccessfulStrategy{ success_rate, _type_strategy, _dpi_feke_bin });
+			_successful_strategies.emplace_back(SuccessfulStrategy{ success_rate, _type_strategy, _dpi_fake_bin });
 			_file_user_setting->writeSectionParametr("remember_configuration", "config", _strategies_dpi->getStrategyFileName().c_str());
 			_file_user_setting->writeSectionParametr("remember_configuration", "feke_bin", _strategies_dpi->getKeyFakeBin().c_str());
 
@@ -145,7 +145,7 @@ void Unblock::startAuto()
 				break;
 		}
 
-		_dpi_feke_bin++;
+		_dpi_fake_bin++;
 	}
 }
 
@@ -194,15 +194,15 @@ void Unblock::allRemoveService()
 
 void Unblock::_chooseStrategy()
 {
-	const auto feke_bin_list = _strategies_dpi->getFekeBinList();
+	const auto& fake_bin_list = _strategies_dpi->getFakeBinList();
 
-	if (_dpi_feke_bin >= feke_bin_list.size())
+	if (_dpi_fake_bin >= fake_bin_list.size())
 	{
-		_dpi_feke_bin = 0;
+		_dpi_fake_bin = 0;
 		_type_strategy++;
 	}
 
-	_strategies_dpi->changeFakeKey(feke_bin_list[_dpi_feke_bin]);
+	_strategies_dpi->changeFakeKey(fake_bin_list[_dpi_fake_bin].key);
 }
 
 void Unblock::_startService()

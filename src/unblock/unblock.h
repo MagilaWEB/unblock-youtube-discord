@@ -17,7 +17,7 @@ class UNBLOCK_API Unblock final : public IUnblockAPI
 	Service _win_divert{ "WinDivert" };
 
 	DpiApplicationType _dpi_application_type{ DpiApplicationType::BASE };
-	u32				   _dpi_feke_bin{ 0 };
+	u32				   _dpi_fake_bin{ 0 };
 	u32				   _type_strategy{ 0 };
 	u32				   _base_success_rate{};
 
@@ -25,7 +25,7 @@ class UNBLOCK_API Unblock final : public IUnblockAPI
 	{
 		u32 success{ 0 };
 		u32 index_strategy{ 0 };
-		u32 dpi_feke_bin{ 0 };
+		u32 dpi_fake_bin{ 0 };
 	};
 
 	std::vector<SuccessfulStrategy> _successful_strategies;
