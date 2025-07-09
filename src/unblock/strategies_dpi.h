@@ -14,13 +14,20 @@ class StrategiesDPI
 	Ptr<FileSystem> _file_strategy_dpi;
 	Ptr<FileSystem> _file_feke_bin_config;
 
-	std::string									 _fake_bind_key;
-	std::vector<std::string>					 _feke_key_list{};
-	std::unordered_map<std::string, std::string> _feke_bin_params_tls;
-	std::unordered_map<std::string, std::string> _feke_bin_params_quic;
-	std::vector<std::string>					 _strategy_files_list;
-	std::vector<std::string>					 _strategy_dpi[_STRATEGY_DPI_MAX];
-	bool										 _ignoring_hostlist{ false };
+public:
+	struct FakeBinParam
+	{
+		std::string key{};
+		std::string value_tls{};
+		std::string value_quic{};
+	};
+
+private:
+	std::string				  _fake_bind_key{};
+	std::vector<FakeBinParam> _fake_bin_params{};
+	std::vector<std::string>  _strategy_files_list{};
+	std::vector<std::string>  _strategy_dpi[_STRATEGY_DPI_MAX]{};
+	bool					  _ignoring_hostlist{ false };
 
 public:
 	StrategiesDPI();
@@ -31,21 +38,17 @@ public:
 	void changeFakeKey(std::string key = "");
 	void changeIgnoringHostlist(bool state);
 
-	std::string				 getStrategyFileName() const;
-	u32						 getStrategySize() const;
-	std::vector<std::string> getStrategy(u32 service = 0) const;
-	std::string				 getKeyFakeBin() const;	
-	std::vector<std::string> getFekeBinList() const;
+	std::string						 getStrategyFileName() const;
+	u32								 getStrategySize() const;
+	std::vector<std::string>		 getStrategy(u32 service = 0) const;
+	std::string						 getKeyFakeBin() const;
+	const std::vector<FakeBinParam>& getFakeBinList() const;
 
 private:
-	void _uploadFakeParams();
 	void _uploadStrategies();
 	void _saveStrategies(std::vector<std::string>& strategy_dpi, std::string str);
 
 	std::optional<std::string> _getPath(std::string str, std::string prefix, std::filesystem::path path) const;
 	std::optional<std::string> _getBlockList(std::string str) const;
-	std::optional<std::string> _getFakeTls(std::string str) const;
-	std::optional<std::string> _getFakeQuic(std::string str) const;
-	std::optional<std::string>
-		_getFake(pcstr key, const std::unordered_map<std::string, std::string>& feke_bin_params, std::string str, pcstr argument) const;
+	std::optional<std::string> _getFake(std::string key, std::string str) const;
 };
