@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "file_system.h"
 
-const static std::regex regex_section_name{ "(?:.*|\\n)\\[.*\\](?:.*|\\n)" };
-
 FileSystem::FileSystem()
 {
 	_stream.exceptions(std::ios::badbit);
@@ -23,29 +21,43 @@ void FileSystem::forLine(std::function<bool(std::string)>&& fn)
 			break;
 }
 
+FileSystem::OptionsVaildParamerts FileSystem::_validParametr(pcstr section, const std::string& is_sec)
+{
+	static bool entered_section{ false };
+
+	if (is_sec.empty())
+		return { entered_section, false, false };
+
+	const static std::regex regex_section_name{ "\\[.*\\](?:.*|\\n)" };
+	const bool presunably_section = std::regex_match(is_sec, regex_section_name);
+
+	if (entered_section == false && presunably_section && is_sec.contains(section))
+		entered_section = true;
+	else if (entered_section && !presunably_section)
+		return { true, false, true };
+	else if (presunably_section)
+	{
+		entered_section = false;
+		return { false, true, false };
+	}
+
+	return { entered_section, false, false };
+}
+
 void FileSystem::forLineSection(pcstr section, std::function<bool(std::string str)>&& fn)
 {
-	bool is_section{ false };
+	for (auto& str : _line_string)
+	{
+		const auto result = _validParametr(section, str);
 
-	forLine(
-		[=, &is_section](std::string str)
+		if (result.ran_paramert)
 		{
-			if (str.empty())
-				return false;
-
-			const bool r_regex = std::regex_match(str, regex_section_name);
-			if (is_section == false && r_regex && str.contains(section))
-				is_section = true;
-			else if (!is_section)
-				return false;
-			else if (!r_regex)
-				return fn(str);
-			else if (r_regex)
-				return true;
-
-			return false;
+			if (fn(str))
+				break;
 		}
-	);
+		else if (result.section_end)
+			break;
+	}
 }
 
 void FileSystem::forLineParametrsSection(pcstr section, std::function<bool(std::string key, std::string value)>&& fn)
@@ -101,86 +113,57 @@ std::expected<std::string, std::string> FileSystem::parametrSection(pcstr sectio
 
 void FileSystem::writeSectionParametr(pcstr section, pcstr paramert, pcstr value)
 {
-	bool is_section{ false };
-
-	for (auto& str : _line_string)
+	auto insert = [=](auto&& it)
 	{
-		if (!str.empty())
+		std::string str{ paramert };
+		str += "=";
+		str += value;
+		_line_string.insert(it, str);
+	};
+
+	for (auto it = _line_string.begin(); it != _line_string.end(); it++)
+	{
+		auto& str = *it;
+
+		const auto result = _validParametr(section, str);
+
+		if (result.ran_paramert)
 		{
-			const bool r_regex = std::regex_match(str, regex_section_name);
-			if (is_section == false && r_regex && str.contains(section))
-				is_section = true;
-			else if (is_section && !r_regex)
+			size_t pos = str.find_first_of("=");
+			if (pos != std::string::npos)
 			{
-				size_t pos = str.find_first_of("=");
-				if (pos != std::string::npos)
+				const auto& key	  = str.substr(0, pos);
+				const auto& value = str.substr(++pos, str.size());
+				if (key.contains(paramert))
 				{
-					const auto& key	  = str.substr(0, pos);
-					const auto& value = str.substr(++pos, str.size());
-					if (key.contains(paramert))
-					{
-						str = std::regex_replace(str, std::regex(value), value);
-						return;
-					}
+					str = std::regex_replace(str, std::regex{ value }, value);
+					return;
 				}
 			}
-			else if (r_regex)
-				return;
+		}
+		else if (result.section_end)
+		{
+			insert(--it);
+			return;
+		}
+		else if (result.entered_section && !result.section_end)
+		{
+			insert(++it);
+			return;
 		}
 	}
 
-	if (is_section)
-	{
-		is_section = false;
-
-		auto it = _line_string.begin();
-
-		auto insert = [&]
-		{
-			std::stringstream s_stream{};
-			s_stream << paramert << "=" << value;
-			it++;
-			_line_string.insert(it, s_stream.str());
-		};
-
-		for (; it != _line_string.end(); it++)
-		{
-			const auto& str = *it;
-
-			if (!str.empty())
-			{
-				const bool r_regex = std::regex_match(str, regex_section_name);
-				if (is_section == false && r_regex && str.contains(section))
-					is_section = true;
-				else if (is_section && !r_regex)
-				{
-					insert();
-					return;
-				}
-				else if (r_regex)
-					return;
-			}
-		}
-
-		insert();
-
-		return;
-	}
-
-	std::stringstream s_stream{};
 	if (!_line_string.empty())
-	{
-		s_stream << std::endl;
-		_line_string.push_back(s_stream.str());
-		s_stream.str("");
-	}
+		_line_string.push_back("\\n");
 
-	s_stream << "[" << section << "]";
-	_line_string.push_back(s_stream.str());
+	std::string str{ "[]" };
+	_line_string.push_back(str.insert(1, section));
+	str.clear();
 
-	s_stream.str("");
-	s_stream << paramert << "=" << value;
-	_line_string.push_back(s_stream.str());
+	str	 = paramert;
+	str += "=";
+	str += value;
+	_line_string.push_back(str);
 }
 
 std::string FileSystem::name() const
