@@ -65,6 +65,8 @@ bool Unblock::checkSavedConfiguration()
 					return false;
 				}
 			}
+			else
+				return false;
 		}
 	}
 
