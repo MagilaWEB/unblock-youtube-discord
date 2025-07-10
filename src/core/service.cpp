@@ -164,7 +164,6 @@ void Service::stop()
 			auto service_stop = [this, &stoped]
 			{
 				stoped					= true;
-				_dw_start_time			= GetTickCount64();
 				const bool send_control = ControlService(sc, SERVICE_CONTROL_STOP, reinterpret_cast<LPSERVICE_STATUS>(&sc_status));
 				if (!send_control)
 					Debug::error("Не удалость отправить запрост на остановку службы [%s]!", name);
@@ -217,6 +216,8 @@ void Service::close()
 
 void Service ::_waitStatusService(DWORD check_state, DWORD check_stat_end, std::function<void()>&& send_timeout_check)
 {
+	_dw_start_time = GetTickCount64();
+
 	while (sc_status.dwCurrentState == check_state)
 	{
 		_dw_wait_time = std::clamp<DWORD>(sc_status.dwWaitHint / 10, 1'000, 10'000);
