@@ -1,16 +1,20 @@
 #pragma once
 class CORE_API FileSystem final
 {
+	using v_line_string = std::vector<std::string>;
+
 	std::filesystem::path	 _path_file{};
 	std::fstream			 _stream;
-	std::vector<std::string> _line_string;
+	v_line_string			 _line_string;
 	bool					 _open_state{ false };
 
-	struct OptionsVaildParamerts
+	struct ItOptionsParamerts
 	{
 		bool entered_section{ false };
 		bool section_end{ false };
 		bool ran_paramert{ false };
+
+		v_line_string::iterator iterator;
 	};
 
 public:
@@ -29,8 +33,8 @@ public:
 
 	std::expected<std::string, std::string> parametrSection(pcstr section, pcstr paramert);
 
-	void writeSectionParametr(pcstr section, pcstr paramert, pcstr value);
+	void writeSectionParametr(pcstr section, pcstr paramert, pcstr value_argument);
 
 private:
-	OptionsVaildParamerts _validParametr(pcstr section, const std::string& is_sec);
+	void _forLineSection(pcstr section, std::function<bool(ItOptionsParamerts& it_opt)>&& fn);
 };

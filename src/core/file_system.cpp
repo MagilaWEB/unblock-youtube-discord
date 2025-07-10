@@ -21,43 +21,92 @@ void FileSystem::forLine(std::function<bool(std::string)>&& fn)
 			break;
 }
 
-FileSystem::OptionsVaildParamerts FileSystem::_validParametr(pcstr section, const std::string& is_sec)
+void FileSystem::_forLineSection(pcstr section, std::function<bool(ItOptionsParamerts&)>&& fn)
 {
-	static bool entered_section{ false };
+	const static std::regex r_section_name{ "\\[.*\\](?:.*|\\n)" };
+	ItOptionsParamerts		option_it{};
 
-	if (is_sec.empty())
-		return { entered_section, false, false };
-
-	const static std::regex regex_section_name{ "\\[.*\\](?:.*|\\n)" };
-	const bool presunably_section = std::regex_match(is_sec, regex_section_name);
-
-	if (entered_section == false && presunably_section && is_sec.contains(section))
-		entered_section = true;
-	else if (entered_section && !presunably_section)
-		return { true, false, true };
-	else if (presunably_section)
+	for (option_it.iterator = _line_string.begin(); option_it.iterator < _line_string.end();)
 	{
-		entered_section = false;
-		return { false, true, false };
-	}
+		const auto& str = *option_it.iterator;
 
-	return { entered_section, false, false };
+		if (str.empty())
+		{
+			option_it.ran_paramert = false;
+			option_it.section_end  = false;
+			++option_it.iterator;
+			continue;
+		}
+
+		auto iterator = [&]
+		{
+			if (++option_it.iterator == _line_string.end())
+			{
+				option_it.entered_section = false;
+				option_it.ran_paramert	  = false;
+				option_it.section_end	  = true;
+				fn(option_it);
+				return true;
+			}
+
+			return false;
+		};
+
+		const bool presunably_section = std::regex_match(str, r_section_name);
+
+		if (option_it.entered_section == false && presunably_section && str.contains(section))
+			option_it.entered_section = true;
+		else if (option_it.entered_section && !presunably_section)
+		{
+			option_it.ran_paramert = true;
+			option_it.section_end  = false;
+
+			if (fn(option_it))
+				break;
+
+			if (iterator())
+				break;
+
+			continue;
+		}
+		else if (option_it.entered_section && presunably_section)
+		{
+			option_it.entered_section = false;
+			option_it.ran_paramert	  = false;
+			option_it.section_end	  = true;
+
+			if (fn(option_it))
+				break;
+
+			if (iterator())
+				break;
+
+			continue;
+		}
+
+		option_it.ran_paramert = false;
+		option_it.section_end  = false;
+
+		if (fn(option_it))
+			break;
+
+		iterator();
+	}
 }
 
 void FileSystem::forLineSection(pcstr section, std::function<bool(std::string str)>&& fn)
 {
-	for (auto& str : _line_string)
-	{
-		const auto result = _validParametr(section, str);
-
-		if (result.ran_paramert)
+	_forLineSection(
+		section,
+		[&](const ItOptionsParamerts& it)
 		{
-			if (fn(str))
-				break;
+			if (it.ran_paramert)
+				if (fn(*it.iterator))
+					return true;
+
+			return it.section_end;
 		}
-		else if (result.section_end)
-			break;
-	}
+	);
 }
 
 void FileSystem::forLineParametrsSection(pcstr section, std::function<bool(std::string key, std::string value)>&& fn)
@@ -111,47 +160,52 @@ std::expected<std::string, std::string> FileSystem::parametrSection(pcstr sectio
 	return Debug::str_unexpected("Не удалось найти параметр [%s] в секции [%s]!", paramert, section);
 }
 
-void FileSystem::writeSectionParametr(pcstr section, pcstr paramert, pcstr value)
+void FileSystem::writeSectionParametr(pcstr section, pcstr paramert, pcstr value_argument)
 {
-	auto insert = [=](auto&& it)
+	u32	 save_iterator{ 0 };
+	auto insert = [this, paramert, value_argument](auto && it)
 	{
 		std::string str{ paramert };
 		str += "=";
-		str += value;
+		str += value_argument;
 		_line_string.insert(it, str);
 	};
 
-	for (auto it = _line_string.begin(); it != _line_string.end(); it++)
-	{
-		auto& str = *it;
+	bool stoped{ false };
 
-		const auto result = _validParametr(section, str);
-
-		if (result.ran_paramert)
+	_forLineSection(
+		section,
+		[&](ItOptionsParamerts& it)
 		{
-			size_t pos = str.find_first_of("=");
-			if (pos != std::string::npos)
+			if (it.ran_paramert)
 			{
-				const auto& key	  = str.substr(0, pos);
-				const auto& value = str.substr(++pos, str.size());
-				if (key.contains(paramert))
+				auto&  str = *it.iterator;
+				size_t pos = str.find_first_of("=");
+				if (pos != std::string::npos)
 				{
-					str = std::regex_replace(str, std::regex{ value }, value);
-					return;
+					const auto& key	  = str.substr(0, pos);
+					const auto& value = str.substr(++pos, str.size());
+					if (key.contains(paramert))
+					{
+						str	   = std::regex_replace(str, std::regex{ value }, value_argument);
+						stoped = true;
+						return true;
+					}
 				}
 			}
+			else if (it.section_end)
+			{
+				insert(it.iterator);
+				stoped = true;
+				return true;
+			}
+
+			return false;
 		}
-		else if (result.section_end)
-		{
-			insert(--it);
-			return;
-		}
-		else if (result.entered_section && !result.section_end)
-		{
-			insert(++it);
-			return;
-		}
-	}
+	);
+
+	if (stoped)
+		return;
 
 	if (!_line_string.empty())
 		_line_string.push_back("\\n");
@@ -162,7 +216,7 @@ void FileSystem::writeSectionParametr(pcstr section, pcstr paramert, pcstr value
 
 	str	 = paramert;
 	str += "=";
-	str += value;
+	str += value_argument;
 	_line_string.push_back(str);
 }
 
