@@ -97,7 +97,7 @@ std::string StrategiesDPI::getKeyFakeBin() const
 	return _fake_bind_key;
 }
 
-const std::vector<StrategiesDPI::FakeBinParam> & StrategiesDPI::getFakeBinList() const
+const std::vector<StrategiesDPI::FakeBinParam>& StrategiesDPI::getFakeBinList() const
 {
 	return _fake_bin_params;
 }
@@ -267,37 +267,38 @@ std::optional<std::string> StrategiesDPI::_getFake(std::string key, std::string 
 {
 	if (str.contains(key))
 	{
-		if (!_fake_bind_key.empty())
+		if (_fake_bind_key.empty())
+			return "";
+
+		auto it = std::find_if(
+			_fake_bin_params.begin(),
+			_fake_bin_params.end(),
+			[this](const FakeBinParam& it) { return it.key.contains(_fake_bind_key); }
+		);
+
+		if (it != _fake_bin_params.end())
 		{
-			auto it =
-				std::find_if(_fake_bin_params.begin(), _fake_bin_params.end(), [this](const FakeBinParam& it) { return it.key.contains(_fake_bind_key); });
+			const bool is_tls = key.contains("TLS");
 
-			if (it != _fake_bin_params.end())
-			{
-				const bool is_tls = key.contains("TLS");
+			const std::string& file		 = is_tls ? (*it).value_tls : (*it).value_quic;
+			auto			   path_file = Core::get().binariesPath() / file;
 
-				const std::string& file		 = is_tls ? (*it).value_tls : (*it).value_quic;
-				auto			   path_file = Core::get().binariesPath() / file;
-
-				if (std::filesystem::exists(path_file))
-					return is_tls? "--dpi-desync-fake-tls=" : "--dpi-desync-fake-quic=" + path_file.string();
-				else
-					Debug::error("Файл [%s] не существует!", path_file.string().c_str());
-			}
+			if (std::filesystem::exists(path_file))
+				return (is_tls ? "--dpi-desync-fake-tls=" : "--dpi-desync-fake-quic=") + path_file.string();
 			else
-			{
-				std::string list_key{};
-				for (auto& fake : _fake_bin_params)
-					if (list_key.empty())
-						list_key = fake.key;
-					else
-						list_key.append("," + fake.key);
-
-				Debug::error("fake ключь [%s] не найден! Доступные ключи [%s].", _fake_bind_key.c_str(), list_key.c_str());
-			}
+				Debug::error("Файл [%s] не существует!", path_file.string().c_str());
 		}
 		else
-			return "";
+		{
+			std::string list_key{};
+			for (auto& fake : _fake_bin_params)
+				if (list_key.empty())
+					list_key = fake.key;
+				else
+					list_key.append("," + fake.key);
+
+			Debug::error("fake ключь [%s] не найден! Доступные ключи [%s].", _fake_bind_key.c_str(), list_key.c_str());
+		}
 	}
 
 	return std::nullopt;
