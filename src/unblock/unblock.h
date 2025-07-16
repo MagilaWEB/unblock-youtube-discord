@@ -19,7 +19,6 @@ class UNBLOCK_API Unblock final : public IUnblockAPI
 	DpiApplicationType _dpi_application_type{ DpiApplicationType::BASE };
 	u32				   _dpi_fake_bin{ 0 };
 	u32				   _type_strategy{ 0 };
-	u32				   _base_success_rate{};
 
 	struct SuccessfulStrategy
 	{
@@ -39,8 +38,6 @@ public:
 	bool checkSavedConfiguration() override;
 
 	void startAuto() override;
-
-	void baseTestDomain() override;
 
 	void testDomains() const override;
 

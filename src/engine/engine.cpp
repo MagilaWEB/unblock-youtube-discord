@@ -69,10 +69,7 @@ void Engine::run()
 		_sendDpiApplicationType();
 
 		if (_unblock->checkSavedConfiguration())
-		{
-			_unblock->baseTestDomain();
 			_unblock->startAuto();
-		}
 
 		_finish();
 	}

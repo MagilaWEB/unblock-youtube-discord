@@ -126,10 +126,7 @@ void Unblock::startAuto()
 		const auto success_rate = _domain_testing->successRate();
 
 		if (success_rate <= 90)
-		{
-			if (_base_success_rate < success_rate)
-				_successful_strategies.emplace_back(SuccessfulStrategy{ success_rate, _type_strategy, _dpi_fake_bin });
-		}
+			_successful_strategies.emplace_back(SuccessfulStrategy{ success_rate, _type_strategy, _dpi_fake_bin });
 		else
 		{
 			_successful_strategies.emplace_back(SuccessfulStrategy{ success_rate, _type_strategy, _dpi_fake_bin });
@@ -148,29 +145,6 @@ void Unblock::startAuto()
 		}
 
 		_dpi_fake_bin++;
-	}
-}
-
-void Unblock::baseTestDomain()
-{
-	allRemoveService();
-
-	InputConsole::textInfo(
-		"Рекомендуется запустить тестирование доменов без обхода блокировок. Это поможет подобрать для вас наиболее эффективную конфигурацию."
-	);
-	InputConsole::textAsk("Запустить тестирование");
-
-	if (InputConsole::getBool())
-	{
-		testDomains();
-
-		_base_success_rate = _domain_testing->successRate();
-		_domain_testing->printTestInfo();
-
-		if (_base_success_rate < 80)
-			InputConsole::textWarning("Результат [%d%%] ниже 80%%, ваш провайдер сильно ограничивает доступ к ресурсам.", _base_success_rate);
-
-		InputConsole::pause();
 	}
 }
 
