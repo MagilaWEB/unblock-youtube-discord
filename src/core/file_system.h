@@ -29,11 +29,11 @@ public:
 
 	void forLine(std::function<bool(std::string str)>&& fn);
 	void forLineSection(pcstr section, std::function<bool(std::string str)>&& fn);
-	void forLineParametrsSection(pcstr section, std::function<bool(std::string key, std::string value)>&& fn);
+	void forLineParametersSection(pcstr section, std::function<bool(std::string key, std::string value)>&& fn);
 
-	std::expected<std::string, std::string> parametrSection(pcstr section, pcstr paramert);
+	std::expected<std::string, std::string> parameterSection(pcstr section, pcstr paramert);
 
-	void writeSectionParametr(pcstr section, pcstr paramert, pcstr value_argument);
+	void writeSectionParameter(pcstr section, pcstr paramert, pcstr value_argument);
 
 private:
 	void _forLineSection(pcstr section, std::function<bool(ItParameters& it_opt)>&& fn);

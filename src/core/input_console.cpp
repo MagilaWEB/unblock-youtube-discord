@@ -17,7 +17,7 @@ u32 InputConsole::getU32()
 	std::string text_input{ "" };
 	u32			count{ 0 };
 
-	textPlease("введите число и нажмите Enter (Только целочисленны значения)", true, false);
+	textPlease("введите число и нажмите Enter (Только целочисленные значения)", true, false);
 	std::cin.clear();
 	std::cin >> text_input;
 
@@ -36,13 +36,13 @@ u32 InputConsole::getU32()
 	}
 	catch (std::out_of_range)
 	{
-		textError("Введёное значение слишком большое!", true);
+		textError("Введённое значение слишком большое!", true);
 		std::cin.clear();
 		return getU32();
 	}
 	catch (...)
 	{
-		textError("Неизвестаня ошибка, введите число!", true);
+		textError("Неизвестная ошибка, введите число!", true);
 		std::cin.clear();
 		return getU32();
 	}

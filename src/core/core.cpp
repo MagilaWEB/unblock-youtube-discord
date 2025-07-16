@@ -16,18 +16,18 @@ Core::Core()
 		if (std::filesystem::exists(current_path))
 			_bin_path = current_path;
 		else
-			Debug::fatal("bin derectory not found!");
+			Debug::fatal("bin directory not found!");
 	}
 
 	_binaries_path = (_current_path / "binaries");
 
 	if (!std::filesystem::exists(_binaries_path))
-		Debug::fatal("binaries derectory not found!");
+		Debug::fatal("binaries directory not found!");
 
 	_configs_path = (_current_path / "configs");
 
 	if (!std::filesystem::exists(_configs_path))
-		Debug::fatal("confings derectory not found!");
+		Debug::fatal("configs directory not found!");
 
 	_user_path = (_current_path / "user");
 

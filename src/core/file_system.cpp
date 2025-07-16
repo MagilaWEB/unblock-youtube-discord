@@ -52,11 +52,11 @@ void FileSystem::_forLineSection(pcstr section, std::function<bool(ItParameters&
 			return false;
 		};
 
-		const bool presunably_section = std::regex_match(str, r_section_name);
+		const bool presumably_section = std::regex_match(str, r_section_name);
 
-		if (option_it.entered_section == false && presunably_section && str.contains(section))
+		if (option_it.entered_section == false && presumably_section && str.contains(section))
 			option_it.entered_section = true;
-		else if (option_it.entered_section && !presunably_section)
+		else if (option_it.entered_section && !presumably_section)
 		{
 			option_it.ran_parameter = true;
 			option_it.section_end  = false;
@@ -69,7 +69,7 @@ void FileSystem::_forLineSection(pcstr section, std::function<bool(ItParameters&
 
 			continue;
 		}
-		else if (option_it.entered_section && presunably_section)
+		else if (option_it.entered_section && presumably_section)
 		{
 			option_it.entered_section = false;
 			option_it.ran_parameter	  = false;
@@ -109,7 +109,7 @@ void FileSystem::forLineSection(pcstr section, std::function<bool(std::string st
 	);
 }
 
-void FileSystem::forLineParametrsSection(pcstr section, std::function<bool(std::string key, std::string value)>&& fn)
+void FileSystem::forLineParametersSection(pcstr section, std::function<bool(std::string key, std::string value)>&& fn)
 {
 	forLineSection(
 		section,
@@ -138,14 +138,14 @@ void FileSystem::forLineParametrsSection(pcstr section, std::function<bool(std::
 	);
 }
 
-std::expected<std::string, std::string> FileSystem::parametrSection(pcstr section, pcstr paramert)
+std::expected<std::string, std::string> FileSystem::parameterSection(pcstr section, pcstr parameter)
 {
 	std::optional<std::string> kay_value{ std::nullopt };
-	forLineParametrsSection(
+	forLineParametersSection(
 		section,
-		[&kay_value, paramert](std::string key, std::string value)
+		[&kay_value, parameter](std::string key, std::string value)
 		{
-			if (key.contains(paramert))
+			if (key.contains(parameter))
 			{
 				kay_value = value;
 				return true;
@@ -158,15 +158,15 @@ std::expected<std::string, std::string> FileSystem::parametrSection(pcstr sectio
 	if (kay_value)
 		return kay_value.value();
 
-	return Debug::str_unexpected("Не удалось найти параметр [%s] в секции [%s]!", paramert, section);
+	return Debug::str_unexpected("Не удалось найти параметр [%s] в секции [%s]!", parameter, section);
 }
 
-void FileSystem::writeSectionParametr(pcstr section, pcstr paramert, pcstr value_argument)
+void FileSystem::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_argument)
 {
 	u32	 save_iterator{ 0 };
-	auto insert = [this, paramert, value_argument](auto&& it)
+	auto insert = [this, parameter, value_argument](auto&& it)
 	{
-		std::string str{ paramert };
+		std::string str{ parameter };
 		str += "=";
 		str += value_argument;
 		_line_string.insert(it, str);
@@ -186,7 +186,7 @@ void FileSystem::writeSectionParametr(pcstr section, pcstr paramert, pcstr value
 				{
 					const auto& key	  = str.substr(0, pos);
 					const auto& value = str.substr(++pos, str.size());
-					if (key.contains(paramert))
+					if (key.contains(parameter))
 					{
 						str	   = std::regex_replace(str, std::regex{ value }, value_argument);
 						stoped = true;
@@ -217,7 +217,7 @@ void FileSystem::writeSectionParametr(pcstr section, pcstr paramert, pcstr value
 	_line_string.push_back(str.insert(1, section));
 	str.clear();
 
-	str	 = paramert;
+	str	 = parameter;
 	str += "=";
 	str += value_argument;
 	_line_string.push_back(str);

@@ -16,6 +16,7 @@ std::string DomainTesting::fileName() const
 {
 	return _file_test_domain->name();
 }
+
 void DomainTesting::loadFile(std::filesystem::path file)
 {
 	auto file_dir = Core::get().configsPath() / file;
@@ -42,7 +43,11 @@ void DomainTesting::test()
 		_list_domain.end(),
 		[this](std::string domain)
 		{
-			if (isConectionUrl(domain.c_str()))
+			const float percent_errors = static_cast<float>(_domain_error.load()) / static_cast<float>(_list_domain.size());
+			if (percent_errors > .1f)
+				return;
+
+			if (isConnectionUrl(domain.c_str()))
 				_domain_ok++;
 			else
 				_domain_error++;
@@ -87,7 +92,7 @@ static size_t write_data(void* /*buffer*/, size_t size, size_t nmemb, void* /*us
 	return size * nmemb;
 }
 
-bool DomainTesting::isConectionUrl(pcstr url) const
+bool DomainTesting::isConnectionUrl(pcstr url) const
 {
 	bool ok = false;
 

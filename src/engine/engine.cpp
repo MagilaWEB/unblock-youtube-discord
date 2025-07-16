@@ -12,7 +12,7 @@ void Engine::initialize()
 {
 	if (HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE))
 	{
-		CONSOLE_FONT_INFOEX fontInfo;
+		CONSOLE_FONT_INFOEX fontInfo{};
 		fontInfo.cbSize = sizeof(fontInfo);
 
 		GetCurrentConsoleFontEx(hConsole, TRUE, &fontInfo);

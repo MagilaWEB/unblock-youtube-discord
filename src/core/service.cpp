@@ -84,7 +84,7 @@ void Service::start()
 		SERVICE_RUNNING,
 		[this]
 		{
-			InputConsole::textError("истекло время ожидания запуска службы [%s], процес будет остановден!", name);
+			InputConsole::textError("истекло время ожидания запуска службы [%s], процесс будет остановлен!", name);
 			stop();
 		}
 	);
@@ -94,7 +94,7 @@ void Service::start()
 		SERVICE_RUNNING,
 		[this]
 		{
-			InputConsole::textError("истекло время ожидания запуска службы [%s], процес будет остановден!", name);
+			InputConsole::textError("истекло время ожидания запуска службы [%s], процесс будет остановлен!", name);
 			stop();
 		}
 	);
@@ -120,7 +120,7 @@ void Service::update()
 	}
 }
 
-void Service::waitRanning()
+void Service::waitRunning()
 {
 	if (sc_status.dwCurrentState != SERVICE_RUNNING)
 	{
@@ -155,18 +155,18 @@ void Service::stop()
 	{
 		update();
 
-		bool stoped = false;
+		bool stopped = false;
 
 		if (sc_status.dwCurrentState != SERVICE_STOPPED)
 		{
 			InputConsole::textPlease("подождите окончания остановки службы [%s]", true, false, name);
 
-			auto service_stop = [this, &stoped]
+			auto service_stop = [this, &stopped]
 			{
-				stoped					= true;
+				stopped					= true;
 				const bool send_control = ControlService(sc, SERVICE_CONTROL_STOP, reinterpret_cast<LPSERVICE_STATUS>(&sc_status));
 				if (!send_control)
-					Debug::error("Не удалость отправить запрост на остановку службы [%s]!", name);
+					Debug::error("Не удалость отправить запрос на остановку службы [%s]!", name);
 			};
 
 			service_stop();
@@ -184,7 +184,7 @@ void Service::stop()
 
 		update();
 
-		if (stoped && sc_status.dwCurrentState == SERVICE_STOPPED)
+		if (stopped && sc_status.dwCurrentState == SERVICE_STOPPED)
 			InputConsole::textOk("служба [%s] остановлена.", name);
 	}
 }

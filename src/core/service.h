@@ -26,7 +26,7 @@ public:
 	void start();
 	void update();
 
-	void waitRanning();
+	void waitRunning();
 
 	void open();
 

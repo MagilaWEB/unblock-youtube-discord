@@ -12,7 +12,7 @@ class StrategiesDPI
 	constexpr static u8 _STRATEGY_DPI_MAX{ 3 };
 
 	Ptr<FileSystem> _file_strategy_dpi;
-	Ptr<FileSystem> _file_feke_bin_config;
+	Ptr<FileSystem> _file_fake_bin_config;
 
 public:
 	struct FakeBinParam

@@ -9,9 +9,9 @@ StrategiesDPI::StrategiesDPI()
 			_strategy_files_list.push_back(name);
 	}
 
-	_file_feke_bin_config->open(Core::get().configsPath() / "feke_bin", ".config", true);
+	_file_fake_bin_config->open(Core::get().configsPath() / "fake_bin", ".config", true);
 
-	_file_feke_bin_config->forLineParametrsSection(
+	_file_fake_bin_config->forLineParametersSection(
 		"FAKE_TLS",
 		[this](std::string key, std::string value)
 		{
@@ -20,7 +20,7 @@ StrategiesDPI::StrategiesDPI()
 		}
 	);
 
-	_file_feke_bin_config->forLineParametrsSection(
+	_file_fake_bin_config->forLineParametersSection(
 		"FAKE_QUIC",
 		[this](std::string key, std::string value)
 		{
@@ -113,7 +113,7 @@ void StrategiesDPI::changeFakeKey(std::string key)
 	auto it = std::find_if(_fake_bin_params.begin(), _fake_bin_params.end(), [&key](const FakeBinParam& it) { return it.key.contains(key); });
 
 	if (it == _fake_bin_params.end())
-		Debug::warning("для feke_bin отсуствует ключ %s", key.c_str());
+		Debug::warning("для fake_bin отсутствует ключ %s", key.c_str());
 
 	_fake_bind_key = key;
 }
@@ -297,7 +297,7 @@ std::optional<std::string> StrategiesDPI::_getFake(std::string key, std::string 
 				else
 					list_key.append("," + fake.key);
 
-			Debug::error("fake ключь [%s] не найден! Доступные ключи [%s].", _fake_bind_key.c_str(), list_key.c_str());
+			Debug::error("fake ключ [%s] не найден! Доступные ключи [%s].", _fake_bind_key.c_str(), list_key.c_str());
 		}
 	}
 

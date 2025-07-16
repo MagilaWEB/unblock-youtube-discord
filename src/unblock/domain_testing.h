@@ -20,5 +20,5 @@ public:
 	u32	 successRate() const;
 	void printTestInfo() const;
 
-	bool isConectionUrl(pcstr url) const;
+	bool isConnectionUrl(pcstr url) const;
 };
