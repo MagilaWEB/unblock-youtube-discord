@@ -22,16 +22,12 @@ int main(int argc, char** argv)
 	SetConsoleCP(65'001);
 	SetConsoleOutputCP(65'001);
 
-	size_t size = 1;
+	std::string lp_cmd_line{};
 	for (int i = 1; i < argc; ++i)
-		size += strlen(argv[i]);
-	std::string lpCmdLine{};
-	lpCmdLine.reserve(size);
-	for (int i = 1; i < argc; ++i)
-		lpCmdLine.append(argv[i]);
+		lp_cmd_line.append(argv[i]);
 
-	Debug::initialize(lpCmdLine);
-	auto res = Debug::try_wrap(run, lpCmdLine);
+	Debug::initialize(lp_cmd_line);
+	auto res = Debug::try_wrap(run, lp_cmd_line);
 
 	return res;
 }
