@@ -268,8 +268,6 @@ void FileSystem::open(std::filesystem::path file, pcstr expansion, bool no_defau
 
 void FileSystem::close()
 {
-	_writeToFile();
-
 	_open_state = false;
 }
 
