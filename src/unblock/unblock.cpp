@@ -148,6 +148,120 @@ void Unblock::startAuto()
 	}
 }
 
+void Unblock::startManual()
+{
+	bool ran{ true };
+	while (ran)
+	{
+		InputConsole::textPlease("выберете под что подделывать ваш трафик", true, true);
+
+		u32				 it{ 1 };
+		std::vector<u32> list_it{};
+		std::list<u8>	 list_kay_it{};
+
+		bool finish{ false };
+
+		const auto& fake_bin_list	= _strategies_dpi->getFakeBinList();
+		auto		send_input_fake = [&]()
+		{
+			const u8 num = InputConsole::sendNum(list_kay_it);
+			_strategies_dpi->changeFakeKey(fake_bin_list[list_it[num - 1]].key);
+			it = 1;
+			list_it.clear();
+			list_kay_it.clear();
+		};
+
+		for (u32 i = 0; i < fake_bin_list.size(); i++, it++)
+		{
+			list_it.push_back(i);
+			list_kay_it.push_back(it);
+
+			InputConsole::textInfo("%d : %s", it, fake_bin_list[i].key.c_str());
+
+			if (it == 9)
+			{
+				InputConsole::textInfo("0 : далее");
+				list_kay_it.push_back(0);
+				send_input_fake();
+				if (finish)
+					break;
+			}
+		}
+
+		if (!finish)
+			send_input_fake();
+		else
+			finish = false;
+
+		InputConsole::textPlease("выберете одну из конфигураций", true, true);
+
+		const auto& config_list = _strategies_dpi->getStrategyList();
+
+		auto send_input_strategy = [&]()
+		{
+			list_kay_it.push_back(0);
+
+			const u8 num = InputConsole::sendNum(list_kay_it);
+			if (num > 0)
+			{
+				allRemoveService();
+				_strategies_dpi->changeStrategy(list_it[num - 1]);
+
+				_startService();
+
+				InputConsole::textAsk("Протестировать работоспособность");
+				if (InputConsole::getBool())
+				{
+					testDomains();
+
+					_domain_testing->printTestInfo();
+
+					const auto success_rate = _domain_testing->successRate();
+
+					if (success_rate > 90)
+						InputConsole::textOk("Конфигурация успешно работает, результат теста %d%%.", success_rate);
+					else
+					{
+						InputConsole::textWarning("Конфигурация работает плохо, результат теста %d%%.", success_rate);
+						InputConsole::textInfo("Выберите другую конфигурацию, или попробуйте автоматический режим.");
+					}
+				}
+
+				InputConsole::textAsk("Выбрать другую конфигурацию");
+				ran = InputConsole::getBool();
+
+				finish = true;
+			}
+
+			it = 0;
+			list_it.clear();
+			list_kay_it.clear();
+		};
+
+		for (u32 i = 0; i < config_list.size(); i++, it++)
+		{
+			list_it.push_back(i);
+			list_kay_it.push_back(it);
+
+			InputConsole::textInfo("%d : %s", it, config_list[i].c_str());
+
+			if (it == 9)
+			{
+				InputConsole::textInfo("0 : далее");
+				send_input_strategy();
+				if (finish)
+					break;
+			}
+		}
+
+		if (!finish)
+		{
+			InputConsole::textInfo("0 : выход");
+			send_input_strategy();
+		}
+	}
+}
+
 void Unblock::testDomains() const
 {
 	if (_dpi_application_type == DpiApplicationType::ALL)
@@ -188,21 +302,23 @@ void Unblock::_startService()
 		const auto list = _strategies_dpi->getStrategy(index);
 		if (!list.empty())
 		{
-			if (service.contains("unblock1"))
+			std::string str_service{ service };
+
+			if (str_service.contains("unblock1"))
 			{
 				_unblock.setArgs(list);
 				_unblock.create("DPI программное обеспечение для обхода блокировки.");
 				_unblock.start();
 			}
 
-			if (service.contains("unblock2"))
+			if (str_service.contains("unblock2"))
 			{
 				_unblock2.setArgs(list);
 				_unblock2.create("DPI программное обеспечение для обхода блокировки.");
 				_unblock2.start();
 			}
 
-			if (service.contains("GoodbyeDPI"))
+			if (str_service.contains("GoodbyeDPI"))
 			{
 				_goodbay_dpi.setArgs(list);
 				_goodbay_dpi.create("GoodbyeDPI программное обеспечение для обхода блокировки.");

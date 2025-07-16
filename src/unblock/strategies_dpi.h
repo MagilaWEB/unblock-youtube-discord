@@ -1,7 +1,7 @@
 #pragma once
 #include "../core/file_system.h"
 
-const static std::unordered_map<u32, std::string> indexStrategies{
+inline constexpr std::pair<u32, pcstr> indexStrategies[]{
 	{ 0,	 "unblock1" },
 	{ 1,	 "unblock2" },
 	{ 2, "GoodbyeDPI" }
@@ -39,6 +39,7 @@ public:
 	void changeIgnoringHostlist(bool state);
 
 	std::string						 getStrategyFileName() const;
+	const std::vector<std::string>&	 getStrategyList() const;
 	u32								 getStrategySize() const;
 	std::vector<std::string>		 getStrategy(u32 service = 0) const;
 	std::string						 getKeyFakeBin() const;

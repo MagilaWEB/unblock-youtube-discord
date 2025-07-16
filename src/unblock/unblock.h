@@ -39,6 +39,8 @@ public:
 
 	void startAuto() override;
 
+	void startManual() override;
+
 	void testDomains() const override;
 
 	void allOpenService() override;

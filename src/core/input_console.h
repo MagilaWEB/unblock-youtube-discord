@@ -30,7 +30,7 @@ public:
 
 	static void pause(pcstr info = "");
 	static u32	getU32();
-	static u8	sendNum(std::initializer_list<u8> nums);
+	static u8	sendNum(std::list<u8> nums);
 	static bool getBool();
 
 	template<typename... Args>

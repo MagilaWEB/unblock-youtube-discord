@@ -69,7 +69,13 @@ void Engine::run()
 		_sendDpiApplicationType();
 
 		if (_unblock->checkSavedConfiguration())
-			_unblock->startAuto();
+		{
+			_input_console.textInfo("Вы можете выполнить подбор автоматически, или нажмите ESC для перехода в ручной режим.");
+			if (InputConsole::getBool())
+				_unblock->startAuto();
+			else
+				_unblock->startManual();
+		}
 
 		_finish();
 	}

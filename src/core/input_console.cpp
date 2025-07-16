@@ -52,7 +52,7 @@ u32 InputConsole::getU32()
 	return count;
 }
 
-u8 InputConsole::sendNum(std::initializer_list<u8> nums)
+u8 InputConsole::sendNum(std::list<u8> nums)
 {
 	constexpr std::pair<VK, u8> key_nums[]{
 		{	  VK::NUM0, 0 },

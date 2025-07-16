@@ -72,6 +72,11 @@ std::string StrategiesDPI::getStrategyFileName() const
 	return _file_strategy_dpi->name();
 }
 
+const std::vector<std::string>& StrategiesDPI::getStrategyList() const
+{
+	return _strategy_files_list;
+}
+
 u32 StrategiesDPI::getStrategySize() const
 {
 	return _strategy_files_list.size();
@@ -136,7 +141,7 @@ void StrategiesDPI::_uploadStrategies()
 					if (str.contains(service_name))
 					{
 						_file_strategy_dpi->forLineSection(
-							service_name.c_str(),
+							service_name,
 							[this, &index](std::string str)
 							{
 								_saveStrategies(_strategy_dpi[index], str);
