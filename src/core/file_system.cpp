@@ -21,10 +21,10 @@ void FileSystem::forLine(std::function<bool(std::string)>&& fn)
 			break;
 }
 
-void FileSystem::_forLineSection(pcstr section, std::function<bool(ItOptionsParamerts&)>&& fn)
+void FileSystem::_forLineSection(pcstr section, std::function<bool(ItParameters&)>&& fn)
 {
 	const static std::regex r_section_name{ "\\[.*\\](?:.*|\\n)" };
-	ItOptionsParamerts		option_it{};
+	ItParameters			option_it{};
 
 	for (option_it.iterator = _line_string.begin(); option_it.iterator < _line_string.end();)
 	{
@@ -32,7 +32,7 @@ void FileSystem::_forLineSection(pcstr section, std::function<bool(ItOptionsPara
 
 		if (str.empty())
 		{
-			option_it.ran_paramert = false;
+			option_it.ran_parameter = false;
 			option_it.section_end  = false;
 			++option_it.iterator;
 			continue;
@@ -43,7 +43,7 @@ void FileSystem::_forLineSection(pcstr section, std::function<bool(ItOptionsPara
 			if (++option_it.iterator == _line_string.end())
 			{
 				option_it.entered_section = false;
-				option_it.ran_paramert	  = false;
+				option_it.ran_parameter	  = false;
 				option_it.section_end	  = true;
 				fn(option_it);
 				return true;
@@ -58,7 +58,7 @@ void FileSystem::_forLineSection(pcstr section, std::function<bool(ItOptionsPara
 			option_it.entered_section = true;
 		else if (option_it.entered_section && !presunably_section)
 		{
-			option_it.ran_paramert = true;
+			option_it.ran_parameter = true;
 			option_it.section_end  = false;
 
 			if (fn(option_it))
@@ -72,7 +72,7 @@ void FileSystem::_forLineSection(pcstr section, std::function<bool(ItOptionsPara
 		else if (option_it.entered_section && presunably_section)
 		{
 			option_it.entered_section = false;
-			option_it.ran_paramert	  = false;
+			option_it.ran_parameter	  = false;
 			option_it.section_end	  = true;
 
 			if (fn(option_it))
@@ -84,7 +84,7 @@ void FileSystem::_forLineSection(pcstr section, std::function<bool(ItOptionsPara
 			continue;
 		}
 
-		option_it.ran_paramert = false;
+		option_it.ran_parameter = false;
 		option_it.section_end  = false;
 
 		if (fn(option_it))
@@ -98,9 +98,9 @@ void FileSystem::forLineSection(pcstr section, std::function<bool(std::string st
 {
 	_forLineSection(
 		section,
-		[&](const ItOptionsParamerts& it)
+		[&](const ItParameters& it)
 		{
-			if (it.ran_paramert)
+			if (it.ran_parameter)
 				if (fn(*it.iterator))
 					return true;
 
@@ -176,9 +176,9 @@ void FileSystem::writeSectionParametr(pcstr section, pcstr paramert, pcstr value
 
 	_forLineSection(
 		section,
-		[&](ItOptionsParamerts& it)
+		[&](ItParameters& it)
 		{
-			if (it.ran_paramert)
+			if (it.ran_parameter)
 			{
 				auto&  str = *it.iterator;
 				size_t pos = str.find_first_of("=");

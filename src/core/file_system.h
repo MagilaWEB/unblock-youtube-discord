@@ -8,11 +8,11 @@ class CORE_API FileSystem final
 	v_line_string			 _line_string;
 	bool					 _open_state{ false };
 
-	struct ItOptionsParamerts
+	struct ItParameters
 	{
 		bool entered_section{ false };
 		bool section_end{ false };
-		bool ran_paramert{ false };
+		bool ran_parameter{ false };
 
 		v_line_string::iterator iterator;
 	};
@@ -36,6 +36,6 @@ public:
 	void writeSectionParametr(pcstr section, pcstr paramert, pcstr value_argument);
 
 private:
-	void _forLineSection(pcstr section, std::function<bool(ItOptionsParamerts& it_opt)>&& fn);
+	void _forLineSection(pcstr section, std::function<bool(ItParameters& it_opt)>&& fn);
 	void _writeToFile();
 };
