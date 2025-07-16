@@ -125,7 +125,8 @@ void FileSystem::forLineParametrsSection(pcstr section, std::function<bool(std::
 			else
 			{
 				Debug::error(
-					"при попытке получить ключи и значения в файле[%s] в секции [%s] отсусвует разменователь [=]! Строка следующего вида [%s].",
+					"при попытке получить ключи и значения в файле[%s] в секции [%s] отсутствует "
+					"разминователь [=]! Строка следующего вида [%s].",
 					name().c_str(),
 					section,
 					str.c_str()
@@ -163,7 +164,7 @@ std::expected<std::string, std::string> FileSystem::parametrSection(pcstr sectio
 void FileSystem::writeSectionParametr(pcstr section, pcstr paramert, pcstr value_argument)
 {
 	u32	 save_iterator{ 0 };
-	auto insert = [this, paramert, value_argument](auto && it)
+	auto insert = [this, paramert, value_argument](auto&& it)
 	{
 		std::string str{ paramert };
 		str += "=";
@@ -189,6 +190,7 @@ void FileSystem::writeSectionParametr(pcstr section, pcstr paramert, pcstr value
 					{
 						str	   = std::regex_replace(str, std::regex{ value }, value_argument);
 						stoped = true;
+						_writeToFile();
 						return true;
 					}
 				}
@@ -197,6 +199,7 @@ void FileSystem::writeSectionParametr(pcstr section, pcstr paramert, pcstr value
 			{
 				insert(it.iterator);
 				stoped = true;
+				_writeToFile();
 				return true;
 			}
 
@@ -218,6 +221,7 @@ void FileSystem::writeSectionParametr(pcstr section, pcstr paramert, pcstr value
 	str += "=";
 	str += value_argument;
 	_line_string.push_back(str);
+	_writeToFile();
 }
 
 std::string FileSystem::name() const
@@ -254,7 +258,7 @@ void FileSystem::open(std::filesystem::path file, pcstr expansion, bool no_defau
 	}
 	catch (const std::ios::failure& error)
 	{
-		Debug::error("Faile open fail [%s] error [%s]!", _path_file.string().c_str(), error.what());
+		Debug::error("File open fail [%s] error [%s]!", _path_file.string().c_str(), error.what());
 		_open_state = false;
 		return;
 	}
@@ -264,9 +268,15 @@ void FileSystem::open(std::filesystem::path file, pcstr expansion, bool no_defau
 
 void FileSystem::close()
 {
+	_writeToFile();
+
+	_open_state = false;
+}
+
+void FileSystem::_writeToFile()
+{
 	_stream.open(_path_file, std::ios::out | std::ios::binary);
 	for (auto& _string : _line_string)
 		_stream << _string << std::endl;
 	_stream.close();
-	_open_state = false;
 }

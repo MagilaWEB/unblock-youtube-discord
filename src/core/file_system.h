@@ -37,4 +37,5 @@ public:
 
 private:
 	void _forLineSection(pcstr section, std::function<bool(ItOptionsParamerts& it_opt)>&& fn);
+	void _writeToFile();
 };
