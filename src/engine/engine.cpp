@@ -22,6 +22,14 @@ void Engine::initialize()
 		fontInfo.dwFontSize.X = 38;
 
 		SetCurrentConsoleFontEx(hConsole, TRUE, &fontInfo);
+
+		HWND  hwnd	= GetConsoleWindow();
+		HMENU hmenu = GetSystemMenu(hwnd, TRUE);
+		EnableMenuItem(hmenu, SC_CLOSE, MF_GRAYED);
+
+		char consoleTitle[256];
+		wsprintf(consoleTitle, "Unblock Console");
+		SetConsoleTitle(static_cast<LPCTSTR>(consoleTitle));
 	}
 
 	_unblock = std::make_unique<Unblock>();
@@ -36,13 +44,25 @@ void Engine::run()
 
 	while (!quit)
 	{
+		_input_console.textInfo("Нажмите 0, для выхода из приложения.");
 		_input_console.textInfo("Нажмите 1, для остановки служб обхода блокировок.");
 		_input_console.textInfo("Нажмите 2, для запуска подбора конфигурации.");
 
-		if (_input_console.sendNum({ 1, 2 }) == 1)
+		const auto result = _input_console.sendNum({
+			0,
+			1,
+			2,
+		});
+
+		if (result == 1)
 		{
 			_unblock->allRemoveService();
 			_finish();
+			continue;
+		}
+		else if (result == 0)
+		{
+			quit = true;
 			continue;
 		}
 
