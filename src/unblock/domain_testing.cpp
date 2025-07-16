@@ -43,10 +43,6 @@ void DomainTesting::test()
 		_list_domain.end(),
 		[this](std::string domain)
 		{
-			const float percent_errors = static_cast<float>(_domain_error.load()) / static_cast<float>(_list_domain.size());
-			if (percent_errors > .1f)
-				return;
-
 			if (isConnectionUrl(domain.c_str()))
 				_domain_ok++;
 			else
