@@ -230,6 +230,9 @@ void Unblock::startManual()
 				InputConsole::textAsk("Выбрать другую конфигурацию");
 				ran = InputConsole::getBool();
 
+				_file_user_setting->writeSectionParameter("remember_configuration", "config", _strategies_dpi->getStrategyFileName().c_str());
+				_file_user_setting->writeSectionParameter("remember_configuration", "fake_bin", _strategies_dpi->getKeyFakeBin().c_str());
+
 				finish = true;
 			}
 
