@@ -120,21 +120,6 @@ void Service::update()
 	}
 }
 
-void Service::waitRunning()
-{
-	if (sc_status.dwCurrentState != SERVICE_RUNNING)
-	{
-		_waitStatusService(
-			SERVICE_START_PENDING,
-			SERVICE_RUNNING,
-			[]
-			{
-				
-			}
-		);
-	}
-}
-
 void Service::open()
 {
 	_initScManager();

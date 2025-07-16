@@ -26,8 +26,6 @@ public:
 	void start();
 	void update();
 
-	void waitRunning();
-
 	void open();
 
 	void stop();
