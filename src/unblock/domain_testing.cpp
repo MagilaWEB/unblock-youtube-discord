@@ -3,10 +3,6 @@
 #include "domain_testing.h"
 #include "curl/curl.h"
 
-DomainTesting::DomainTesting()
-{
-}
-
 DomainTesting::~DomainTesting()
 {
 	_is_testing = false;
@@ -46,7 +42,12 @@ void DomainTesting::test()
 			if (isConnectionUrl(domain.c_str()))
 				_domain_ok++;
 			else
+			{
+#ifdef DEBUG
+				InputConsole::textError("нет доступа: %s", domain.c_str());
+#endif
 				_domain_error++;
+			}
 
 			InputConsole::textInfo(
 				"Успех [%d], ошибки [%d], всего на тестировании [%d]",
@@ -56,6 +57,11 @@ void DomainTesting::test()
 			);
 		}
 	);
+
+#ifdef DEBUG
+	if (_domain_error)
+		InputConsole::pause();
+#endif
 
 	_is_testing = true;
 
@@ -95,9 +101,8 @@ bool DomainTesting::isConnectionUrl(pcstr url) const
 	httplib::Client cli{ std::string{ "http://" }.append(url).c_str() };
 	cli.set_url_encode(true);
 	cli.set_tcp_nodelay(true);
-	cli.set_write_timeout(5);
-	cli.set_connection_timeout(5);
-	cli.set_read_timeout(5);
+	cli.set_write_timeout(15);
+	cli.set_connection_timeout(10);
 
 	auto check_http_code = [&ok, &url](u32 code, auto&& curl_start)
 	{
@@ -183,7 +188,7 @@ bool DomainTesting::isConnectionUrl(pcstr url) const
 			curl_easy_setopt(curl, CURLOPT_URL, std::string{ "https://" }.append(url).c_str());
 			curl_easy_setopt(curl, CURLOPT_HEADER, 1L);
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 12);
+			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15);
 
 			curl_easy_perform(curl);
 

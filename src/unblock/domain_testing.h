@@ -10,7 +10,7 @@ class UNBLOCK_API DomainTesting final
 	std::atomic_bool	   _is_testing{ false };
 
 public:
-	DomainTesting();
+	DomainTesting() = default;
 	~DomainTesting();
 
 	void		test();
