@@ -183,7 +183,7 @@ bool DomainTesting::isConnectionUrl(pcstr url) const
 			curl_easy_setopt(curl, CURLOPT_URL, std::string{ "https://" }.append(url).c_str());
 			curl_easy_setopt(curl, CURLOPT_HEADER, 1L);
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
+			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 12);
 
 			curl_easy_perform(curl);
 
