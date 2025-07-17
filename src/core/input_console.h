@@ -62,7 +62,7 @@ public:
 	static void textWarning(pcstr text, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
-		msg(text, "Предуприждение: %s", ColorType::ORANGE, true, std::forward<Args>(args)...);
+		msg(text, "Предупреждение: %s", ColorType::ORANGE, true, std::forward<Args>(args)...);
 		std::cout << std::endl;
 	}
 
