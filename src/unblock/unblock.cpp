@@ -49,7 +49,7 @@ bool Unblock::checkSavedConfiguration()
 				_domain_testing->printTestInfo();
 
 				const auto success_rate = _domain_testing->successRate();
-				if (success_rate <= 90)
+				if (success_rate < 90)
 				{
 					InputConsole::textWarning("С конфигурацией [%s] обнаружена проблема, успех ниже 90%%!", config.value().c_str());
 					InputConsole::textInfo("Рекомендуется запустить подбор новой конфигурации!");
