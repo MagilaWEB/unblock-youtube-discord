@@ -16,7 +16,8 @@ void Service::create(pcstr description)
 
 	_initScManager();
 
-	auto sc_path = utils::format("\"%s\"", (Core::get().binariesPath() / file_name).string().c_str());
+	std::string sc_path{ "\"\"" };
+	sc_path.insert(1, (Core::get().binariesPath() / file_name).string());
 
 	std::string args{ " " };
 
@@ -27,8 +28,8 @@ void Service::create(pcstr description)
 
 	sc = CreateService(
 		_sc_manager,
-		name,
-		description,
+		utils::UTF8_to_CP1251(name).c_str(),
+		utils::UTF8_to_CP1251(description).c_str(),
 		SC_MANAGER_ALL_ACCESS,
 		SERVICE_WIN32_OWN_PROCESS,
 		SERVICE_AUTO_START,

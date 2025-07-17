@@ -15,4 +15,7 @@ namespace utils
 	}
 
 	CORE_API void str_replace(std::string& str, const std::string& old, const std::string& new_str);
+
+	CORE_API bool IsUTF8(pcstr string);
+	CORE_API std::string UTF8_to_CP1251(pcstr str);
 }
