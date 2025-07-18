@@ -204,7 +204,7 @@ bool InputConsole::_forbiddenCharacters(const std::string& text, pcstr info)
 
 	for (auto& _char : forbidden_characters)
 	{
-		if (text.find(_char) != std::string::npos)
+		if (text.contains(_char))
 		{
 			textError("Ввести можно только 0 или 1!", true);
 			std::cin.clear();
