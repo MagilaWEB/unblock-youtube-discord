@@ -50,11 +50,11 @@ include(${CMAKE_SOURCE_DIR}/CMakeFunctions.cmake)
 #)
 
 # Load GitHub cpp-httplib
-FetchContent_Declare(
-  httplib
-  URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.21.0.tar.gz
-  OVERRIDE_FIND_PACKAGE
-)
+#FetchContent_Declare(
+#  httplib
+#  URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.21.0.tar.gz
+#  OVERRIDE_FIND_PACKAGE
+#)
 
 # oneTBB disable tests
 # option(TBB_TEST OFF)
@@ -85,10 +85,10 @@ set(CURL_INCLUDE_DIR ${CMAKE_VCPKG_INCLUDE})
 set(ZLIB_INCLUDE_DIR ${CMAKE_VCPKG_INCLUDE})
 
 # Build
-FetchContent_MakeAvailable(
-    #oneTBB
-    httplib
-)
+#FetchContent_MakeAvailable(
+#    oneTBB
+#    httplib
+#)
 
 find_package(CURL REQUIRED)
 

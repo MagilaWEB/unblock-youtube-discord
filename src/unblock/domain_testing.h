@@ -13,7 +13,7 @@ public:
 	DomainTesting() = default;
 	~DomainTesting();
 
-	void		test();
+	void		test(bool test_video = false);
 	std::string fileName() const;
 	void		loadFile(std::filesystem::path file);
 
@@ -21,4 +21,5 @@ public:
 	void printTestInfo() const;
 
 	bool isConnectionUrl(pcstr url) const;
+	bool isConnectionUrlVideo(pcstr url) const;
 };

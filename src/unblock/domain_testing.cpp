@@ -15,11 +15,10 @@ std::string DomainTesting::fileName() const
 
 void DomainTesting::loadFile(std::filesystem::path file)
 {
-	auto file_dir = Core::get().configsPath() / file;
-	_file_test_domain->open(file_dir, ".list", true);
+	_file_test_domain->open((Core::get().configsPath() / file), ".list", true);
 }
 
-void DomainTesting::test()
+void DomainTesting::test(bool test_video)
 {
 	_is_testing	  = false;
 	_domain_error = _domain_ok = 0;
@@ -37,15 +36,13 @@ void DomainTesting::test()
 		std::execution::par,
 		_list_domain.begin(),
 		_list_domain.end(),
-		[this](std::string domain)
+		[&test_video, this](std::string domain)
 		{
-			if (isConnectionUrl(domain.c_str()))
+			if (test_video ? isConnectionUrlVideo(domain.c_str()) : isConnectionUrl(domain.c_str()))
 				_domain_ok++;
 			else
 			{
-#ifdef DEBUG
-				InputConsole::textError("нет доступа: %s", domain.c_str());
-#endif
+				InputConsole::textWarning("проблема доступа: %s", domain.c_str());
 				_domain_error++;
 			}
 
@@ -59,8 +56,7 @@ void DomainTesting::test()
 	);
 
 #ifdef DEBUG
-	if (_domain_error)
-		InputConsole::pause();
+	InputConsole::pause();
 #endif
 
 	_is_testing = true;
@@ -94,118 +90,139 @@ static size_t write_data(void* /*buffer*/, size_t size, size_t nmemb, void* /*us
 	return size * nmemb;
 }
 
-bool DomainTesting::isConnectionUrl(pcstr url) const
+bool DomainTesting::isConnectionUrlVideo(pcstr url) const
 {
-	bool ok = false;
-
-	httplib::Client cli{ std::string{ "http://" }.append(url).c_str() };
-	cli.set_url_encode(true);
-	cli.set_tcp_nodelay(true);
-	cli.set_write_timeout(15);
-	cli.set_connection_timeout(10);
-
-	auto check_http_code = [&ok, &url](u32 code, auto&& curl_start)
+	if (CURL* curl = curl_easy_init())
 	{
-		switch (code)
-		{
-		case httplib::StatusCode::OK_200:
-		{
-			ok = true;
-			break;
-		}
-		case httplib::StatusCode::MovedPermanently_301:
-		{
-			ok = true;
-			break;
-		}
-		case httplib::StatusCode::Found_302:
-		{
-			ok = true;
-			break;
-		}
-		case httplib::StatusCode::SeeOther_303:
-		{
-			ok = true;
-			break;
-		}
-		case httplib::StatusCode::TemporaryRedirect_307:
-		{
-			curl_start();
-			break;
-		}
-		case httplib::StatusCode::PermanentRedirect_308:
-		{
-			curl_start();
-			break;
-		}
-		case httplib::StatusCode::BadRequest_400:
-		{
-			ok = true;
-			break;
-		}
-		case httplib::StatusCode::Unauthorized_401:
-		{
-			ok = true;
-			break;
-		}
-		case httplib::StatusCode::NotFound_404:
-		{
-			ok = true;
-			break;
-		}
-		case httplib::StatusCode::Forbidden_403:
-		{
-			constexpr pcstr list_sort[]{ "cdn.discord", "videoplayback?", "youtubei." };
-			for (auto l_sort : list_sort)
-			{
-				if (std::string{ url }.find(l_sort) != std::string::npos)
-				{
-					ok = true;
-					break;
-				}
-			}
-			break;
-		}
-		/*case httplib::StatusCode::MethodNotAllowed_405:
-		{
-			ok = true;
-			break;
-		}*/
-		default:
-			ok = false;
-			curl_start();
-			break;
-		}
-	};
+		u32 count_connection{ 0U };
+		curl_easy_setopt(curl, CURLOPT_URL, url);
+		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, 0L);
+		curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
+		curl_easy_setopt(
+			curl,
+			CURLOPT_USERAGENT,
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0"
+		);
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3L);
 
-	auto curl_test = [&url, &check_http_code]
-	{
-		CURL* curl = curl_easy_init();
-		if (curl)
+		while (count_connection++ < 8)
 		{
-			u32 http_code = 0;
-
-			curl_easy_setopt(curl, CURLOPT_URL, std::string{ "https://" }.append(url).c_str());
-			curl_easy_setopt(curl, CURLOPT_HEADER, 1L);
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15);
+			u32 http_code{ 0U };
 
 			curl_easy_perform(curl);
-
 			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
 
 			if (http_code != 0)
-				check_http_code(http_code, [] {});
-
-			curl_easy_cleanup(curl);
+				return http_code == 403;
 		}
-	};
 
-	if (auto res = cli.Options("/"))
-		check_http_code(static_cast<u32>(res->status), curl_test);
+		curl_easy_cleanup(curl);
+	}
 
-	if (!ok)
-		curl_test();
+	return false;
+}
 
-	return ok;
+bool DomainTesting::isConnectionUrl(pcstr url) const
+{
+	if (CURL* curl = curl_easy_init())
+	{
+		u32 count_connection{ 0U };
+		curl_easy_setopt(curl, CURLOPT_URL, url);
+		curl_easy_setopt(
+			curl,
+			CURLOPT_USERAGENT,
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0"
+		);
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 6L);
+
+		while (count_connection++ < 2)
+		{
+			if (count_connection == 2)
+			{
+				curl_easy_setopt(curl, CURLOPT_HTTPHEADER, 0L);
+				curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
+			}
+
+			u32 http_code{ 0U };
+
+			curl_easy_perform(curl);
+			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+			switch (http_code)
+			{
+			case 200U:
+			{
+				return true;
+			}
+			case 201U:
+			{
+				return true;
+			}
+			case 202U:
+			{
+				return true;
+			}
+			case 203U:
+			{
+				return true;
+			}
+			case 204U:
+			{
+				return true;
+			}
+			case 301U:
+			{
+				return true;
+			}
+			case 302U:
+			{
+				return true;
+			}
+			case 303U:
+			{
+				return true;
+			}
+			case 304U:
+			{
+				return true;
+			}
+			case 400U:
+			{
+				return true;
+			}
+			case 401U:
+			{
+				return true;
+			}
+			case 403U:
+			{
+				return true;
+			}
+			case 404U:
+			{
+				return true;
+			}
+			case 405U:
+			{
+				return true;
+			}
+			case 520U:
+			{
+				return true;
+			}
+			case 530U:
+			{
+				return true;
+			}
+			default:
+				break;
+			}
+		}
+
+		curl_easy_cleanup(curl);
+	}
+
+	return false;
 }

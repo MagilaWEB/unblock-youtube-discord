@@ -41,13 +41,14 @@ public:
 
 	void startManual() override;
 
-	void testDomains() const override;
-
 	void allOpenService() override;
 
 	void allRemoveService() override;
 
+	void testDomains(bool video = false) const;
+
 private:
 	void _startService();
 	void _chooseStrategy();
+	void _testVideo();
 };

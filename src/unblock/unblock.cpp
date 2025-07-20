@@ -24,8 +24,7 @@ bool Unblock::checkSavedConfiguration()
 {
 	_strategies_dpi->changeIgnoringHostlist(_dpi_application_type == DpiApplicationType::ALL);
 
-	const auto config = _file_user_setting->parameterSection("remember_configuration", "config");
-	if (config)
+	if (const auto config = _file_user_setting->parameterSection("remember_configuration", "config"))
 	{
 		InputConsole::textInfo("Обнаружена ранее используемая конфигурация!");
 		InputConsole::textAsk("Применить сохранённую конфигурацию");
@@ -33,8 +32,7 @@ bool Unblock::checkSavedConfiguration()
 		{
 			allRemoveService();
 
-			const auto config_fake_bin = _file_user_setting->parameterSection("remember_configuration", "fake_bin");
-			if (config_fake_bin)
+			if (const auto config_fake_bin = _file_user_setting->parameterSection("remember_configuration", "fake_bin"))
 				_strategies_dpi->changeFakeKey(config_fake_bin.value().c_str());
 
 			_strategies_dpi->changeStrategy(config.value().c_str());
@@ -61,7 +59,7 @@ bool Unblock::checkSavedConfiguration()
 				else
 				{
 					InputConsole::textOk("Работоспособность свыше 90%%!");
-					InputConsole::pause();
+					_testVideo();
 					return false;
 				}
 			}
@@ -109,6 +107,8 @@ void Unblock::startAuto()
 				_file_user_setting->writeSectionParameter("remember_configuration", "fake_bin", _strategies_dpi->getKeyFakeBin().c_str());
 
 				_startService();
+
+				_testVideo();
 			}
 
 			_dpi_fake_bin  = 0;
@@ -137,6 +137,8 @@ void Unblock::startAuto()
 			InputConsole::textOk("Удалось подобрать конфигурацию [%s], результат теста выше 90%%.", _strategies_dpi->getStrategyFileName().c_str());
 			InputConsole::textInfo("Служба уже настроена и заново открывать приложение не нужно даже после перезапуска ПК, пользуйтесь на здоровье!");
 			InputConsole::pause();
+
+			_testVideo();
 
 			InputConsole::textPlease("проверьте работоспособность, если не работает можно продолжить подбор конфигурации", true, true);
 			InputConsole::textAsk("Продолжить подбор конфигурации");
@@ -219,7 +221,10 @@ void Unblock::startManual()
 					const auto success_rate = _domain_testing->successRate();
 
 					if (success_rate > 90)
+					{
 						InputConsole::textOk("Конфигурация успешно работает, результат теста %d%%.", success_rate);
+						_testVideo();
+					}
 					else
 					{
 						InputConsole::textWarning("Конфигурация работает плохо, результат теста %d%%.", success_rate);
@@ -265,24 +270,29 @@ void Unblock::startManual()
 	}
 }
 
-void Unblock::testDomains() const
-{
-	if (_dpi_application_type == DpiApplicationType::ALL)
-		_domain_testing->loadFile("domain_test_all");
-	else
-		_domain_testing->loadFile("domain_test_base");
-
-	InputConsole::textInfo("Тестирование списка доменов из файла [%s].", _domain_testing->fileName().c_str());
-
-	_domain_testing->test();
-}
-
 void Unblock::allRemoveService()
 {
 	_unblock.remove();
 	_unblock2.remove();
 	_goodbay_dpi.remove();
 	_win_divert.remove();
+}
+
+void Unblock::testDomains(bool video) const
+{
+	if (!video)
+	{
+		if (_dpi_application_type == DpiApplicationType::ALL)
+			_domain_testing->loadFile("domain_test_all");
+		else
+			_domain_testing->loadFile("domain_test_base");
+	}
+	else
+		_domain_testing->loadFile("domain_video");
+
+	InputConsole::textInfo("Тестирование списка доменов из файла [%s].", _domain_testing->fileName().c_str());
+
+	_domain_testing->test(video);
 }
 
 void Unblock::_chooseStrategy()
@@ -328,5 +338,26 @@ void Unblock::_startService()
 				_goodbay_dpi.start();
 			}
 		}
+	}
+}
+
+void Unblock::_testVideo()
+{
+	InputConsole::textInfo("Вы можете протестировать доступность видеороликов на YouTube, отрицательный результат не гарантирует что доступа нет.");
+	InputConsole::textAsk("Протестировать доступность видеороликов YouTube");
+	if (InputConsole::getBool())
+	{
+		testDomains(true);
+
+		const auto success_rate_video = _domain_testing->successRate();
+		_domain_testing->printTestInfo();
+
+		if (success_rate_video > 10)
+			InputConsole::textOk("Видеоролики YouTube доступны с вероятностью [%d%%]", success_rate_video);
+		else
+			InputConsole::textWarning("Не удалось определить доступны ли видеоролики YouTube, это не означает что доступа совсем нет, это означает "
+									  "что возможны перебои с загрузкой.");
+
+		InputConsole::pause();
 	}
 }

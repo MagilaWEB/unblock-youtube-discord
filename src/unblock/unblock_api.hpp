@@ -18,7 +18,6 @@ public:
 	virtual bool checkSavedConfiguration()						   = 0;
 	virtual void startAuto()									   = 0;
 	virtual void startManual()									   = 0;
-	virtual void testDomains() const							   = 0;
 	virtual void allOpenService()								   = 0;
 	virtual void allRemoveService()								   = 0;
 };
