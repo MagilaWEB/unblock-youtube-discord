@@ -15,6 +15,12 @@ void Unblock::allOpenService()
 	_goodbay_dpi.open();
 }
 
+void Unblock::changeAccurateTest(bool state)
+{
+	_accurate_test = state;
+	_domain_testing->changeAccurateTest(state);
+}
+
 void Unblock::changeDpiApplicationType(DpiApplicationType type)
 {
 	_dpi_application_type = type;
@@ -47,9 +53,13 @@ bool Unblock::checkSavedConfiguration()
 				_domain_testing->printTestInfo();
 
 				const auto success_rate = _domain_testing->successRate();
-				if (success_rate < 90)
+				if (success_rate < MAX_SUCCESS_CONECTION)
 				{
-					InputConsole::textWarning("С конфигурацией [%s] обнаружена проблема, успех ниже 90%%!", config.value().c_str());
+					InputConsole::textWarning(
+						"С конфигурацией [%s] обнаружена проблема, успех ниже %d%%!",
+						config.value().c_str(),
+						MAX_SUCCESS_CONECTION
+					);
 					InputConsole::textInfo("Рекомендуется запустить подбор новой конфигурации!");
 					InputConsole::textAsk("Перейти к подбору новой конфигурации");
 
@@ -73,6 +83,8 @@ bool Unblock::checkSavedConfiguration()
 
 void Unblock::startAuto()
 {
+	changeAccurateTest(false);
+
 	while (true)
 	{
 		allRemoveService();
@@ -81,6 +93,35 @@ void Unblock::startAuto()
 
 		if (_type_strategy > (_strategies_dpi->getStrategySize() - 1))
 		{
+			if (!_accurate_test)
+			{
+				InputConsole::textWarning("Не удалось подобрать для вас подходящую конфигурацию!");
+				InputConsole::textAsk("Почему не удалось подобрать конфигурацию");
+				InputConsole::textInfo("Причины могут быть разные.");
+				InputConsole::textInfo("Возможно у вас медленное интернет соединение, в таком случае вам поможет подбор в режиме точного тестирование.");
+				InputConsole::textInfo("Возможно для обхода блокировок мешает брандмауэр.");
+				InputConsole::textInfo("Включен VPN сервис.");
+				InputConsole::textInfo("Или просто для вас нет подходящей конфигурации.");
+				InputConsole::pause();
+
+				InputConsole::textInfo("По умолчанию тестирование производится в режиме быстрого тестирования.");
+				InputConsole::textInfo("Вы можете автоматически подобрать конфигурацию в режиме точного тестирования, или выбрать конфигурацию в ручную.");
+
+				InputConsole::textAsk("Повторить подбор конфигурации в режиме точного тестирования");
+				changeAccurateTest(InputConsole::getBool());
+
+				if (_accurate_test)
+					continue;
+				else
+				{
+					InputConsole::textInfo("Вы выбрали вариант без повторного подбора конфигурации в режиме точного тестирования.");
+					InputConsole::textPlease("выберите конфигурацию в ручную", true, true);
+					InputConsole::pause();
+					startManual();
+					break;
+				}
+			}
+
 			InputConsole::textWarning("Не удалось для вас подобрать подходящую конфигурацию, запуск самого успешного варианта.");
 
 			u32					success_max{ 0 };
@@ -125,8 +166,11 @@ void Unblock::startAuto()
 
 		const auto success_rate = _domain_testing->successRate();
 
-		if (success_rate <= 90)
-			_successful_strategies.emplace_back(SuccessfulStrategy{ success_rate, _type_strategy, _dpi_fake_bin });
+		if (success_rate <= MAX_SUCCESS_CONECTION)
+		{
+			if (_accurate_test)
+				_successful_strategies.emplace_back(SuccessfulStrategy{ success_rate, _type_strategy, _dpi_fake_bin });
+		}
 		else
 		{
 			_successful_strategies.emplace_back(SuccessfulStrategy{ success_rate, _type_strategy, _dpi_fake_bin });
@@ -134,7 +178,11 @@ void Unblock::startAuto()
 			_file_user_setting->writeSectionParameter("remember_configuration", "fake_bin", _strategies_dpi->getKeyFakeBin().c_str());
 
 			_domain_testing->printTestInfo();
-			InputConsole::textOk("Удалось подобрать конфигурацию [%s], результат теста выше 90%%.", _strategies_dpi->getStrategyFileName().c_str());
+			InputConsole::textOk(
+				"Удалось подобрать конфигурацию [%s], результат теста выше %d%%.",
+				_strategies_dpi->getStrategyFileName().c_str(),
+				MAX_SUCCESS_CONECTION
+			);
 			InputConsole::textInfo("Служба уже настроена и заново открывать приложение не нужно даже после перезапуска ПК, пользуйтесь на здоровье!");
 			InputConsole::pause();
 
@@ -214,13 +262,14 @@ void Unblock::startManual()
 				InputConsole::textAsk("Протестировать работоспособность");
 				if (InputConsole::getBool())
 				{
+					changeAccurateTest(true);
 					testDomains();
 
 					_domain_testing->printTestInfo();
 
 					const auto success_rate = _domain_testing->successRate();
 
-					if (success_rate > 90)
+					if (success_rate > MAX_SUCCESS_CONECTION)
 					{
 						InputConsole::textOk("Конфигурация успешно работает, результат теста %d%%.", success_rate);
 						_testVideo();
@@ -268,6 +317,8 @@ void Unblock::startManual()
 			send_input_strategy();
 		}
 	}
+
+	changeAccurateTest(false);
 }
 
 void Unblock::allRemoveService()

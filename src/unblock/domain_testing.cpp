@@ -1,11 +1,16 @@
 #include "pch.h"
-#include "unblock_api.hpp"
 #include "domain_testing.h"
 #include "curl/curl.h"
 
 DomainTesting::~DomainTesting()
 {
 	_is_testing = false;
+
+	for (auto& curl_domain : _list_domain)
+		if (curl_domain.curl)
+			curl_easy_cleanup(curl_domain.curl);
+
+	_list_domain.clear();
 }
 
 std::string DomainTesting::fileName() const
@@ -22,12 +27,17 @@ void DomainTesting::test(bool test_video)
 {
 	_is_testing	  = false;
 	_domain_error = _domain_ok = 0;
+
+	for (auto& curl_domain : _list_domain)
+		if (curl_domain.curl)
+			curl_easy_cleanup(curl_domain.curl);
+
 	_list_domain.clear();
 
 	_file_test_domain->forLine(
 		[this](std::string str)
 		{
-			_list_domain.push_back(str);
+			_list_domain.push_back(CurlDomain{ curl_easy_init(), str });
 			return false;
 		}
 	);
@@ -36,14 +46,41 @@ void DomainTesting::test(bool test_video)
 		std::execution::par,
 		_list_domain.begin(),
 		_list_domain.end(),
-		[&test_video, this](std::string domain)
+		[&test_video, this](const CurlDomain& domain)
 		{
-			if (test_video ? isConnectionUrlVideo(domain.c_str()) : isConnectionUrl(domain.c_str()))
+			if ((!_accurate_test) && errorRate() >= MAX_ERROR_CONECTION)
+			{
+				_domain_error++;
+				return;
+			}
+
+			if (test_video ? isConnectionUrlVideo(domain) : isConnectionUrl(domain))
 				_domain_ok++;
 			else
 			{
-				InputConsole::textWarning("проблема доступа: %s", domain.c_str());
+				InputConsole::textWarning("проблема доступа: %s", domain.url.c_str());
 				_domain_error++;
+			}
+
+			if (!_accurate_test)
+			{
+				std::jthread{
+					[&domain, this]()
+					{
+						while (!_is_testing)
+						{
+							const u32 error_rate = errorRate();
+							if (error_rate >= MAX_ERROR_CONECTION)
+							{
+								InputConsole::textInfo("Количество ошибок достигло [%d%%]", error_rate);
+								curl_easy_reset(domain.curl);
+								break;
+							}
+
+							std::this_thread::yield();
+						}
+					}
+				}.detach();
 			}
 
 			InputConsole::textInfo(
@@ -64,15 +101,19 @@ void DomainTesting::test(bool test_video)
 	InputConsole::clear();
 }
 
+void DomainTesting::changeAccurateTest(bool state)
+{
+	_accurate_test = state;
+}
+
 u32 DomainTesting::successRate() const
 {
-	if (!_is_testing)
-	{
-		InputConsole::textWarning("Показатель успеха неизвестен, тестирование не проводилось!");
-		return 0;
-	}
-
 	return static_cast<u32>((static_cast<float>(_domain_ok.load()) / static_cast<float>(_list_domain.size())) * 100.f);
+}
+
+u32 DomainTesting::errorRate() const
+{
+	return static_cast<u32>((static_cast<float>(_domain_error.load()) / static_cast<float>(_list_domain.size())) * 100.f);
 }
 
 void DomainTesting::printTestInfo() const
@@ -90,65 +131,63 @@ static size_t write_data(void* /*buffer*/, size_t size, size_t nmemb, void* /*us
 	return size * nmemb;
 }
 
-bool DomainTesting::isConnectionUrlVideo(pcstr url) const
+bool DomainTesting::isConnectionUrlVideo(const CurlDomain& domain) const
 {
-	if (CURL* curl = curl_easy_init())
+	if (domain.curl)
 	{
 		u32 count_connection{ 0U };
-		curl_easy_setopt(curl, CURLOPT_URL, url);
-		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, 0L);
-		curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
+		curl_easy_setopt(domain.curl, CURLOPT_URL, domain.url.c_str());
+		curl_easy_setopt(domain.curl, CURLOPT_HTTPHEADER, 0L);
+		curl_easy_setopt(domain.curl, CURLOPT_HTTPGET, 1L);
 		curl_easy_setopt(
-			curl,
+			domain.curl,
 			CURLOPT_USERAGENT,
 			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0"
 		);
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3L);
+		curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
+		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _accurate_test ? 10L : 3L);
 
 		while (count_connection++ < 8)
 		{
 			u32 http_code{ 0U };
 
-			curl_easy_perform(curl);
-			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+			curl_easy_perform(domain.curl);
+			curl_easy_getinfo(domain.curl, CURLINFO_RESPONSE_CODE, &http_code);
 
 			if (http_code != 0)
 				return http_code == 403;
 		}
-
-		curl_easy_cleanup(curl);
 	}
 
 	return false;
 }
 
-bool DomainTesting::isConnectionUrl(pcstr url) const
+bool DomainTesting::isConnectionUrl(const CurlDomain& domain) const
 {
-	if (CURL* curl = curl_easy_init())
+	if (domain.curl)
 	{
 		u32 count_connection{ 0U };
-		curl_easy_setopt(curl, CURLOPT_URL, url);
+		curl_easy_setopt(domain.curl, CURLOPT_URL, domain.url.c_str());
 		curl_easy_setopt(
-			curl,
+			domain.curl,
 			CURLOPT_USERAGENT,
 			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0"
 		);
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 6L);
+		curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
+		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _accurate_test ? 10L : 3L);
 
 		while (count_connection++ < 2)
 		{
 			if (count_connection == 2)
 			{
-				curl_easy_setopt(curl, CURLOPT_HTTPHEADER, 0L);
-				curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
+				curl_easy_setopt(domain.curl, CURLOPT_HTTPHEADER, 0L);
+				curl_easy_setopt(domain.curl, CURLOPT_HTTPGET, 1L);
 			}
 
 			u32 http_code{ 0U };
 
-			curl_easy_perform(curl);
-			curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+			curl_easy_perform(domain.curl);
+			curl_easy_getinfo(domain.curl, CURLINFO_RESPONSE_CODE, &http_code);
 
 			switch (http_code)
 			{
@@ -220,8 +259,6 @@ bool DomainTesting::isConnectionUrl(pcstr url) const
 				break;
 			}
 		}
-
-		curl_easy_cleanup(curl);
 	}
 
 	return false;
