@@ -3,6 +3,7 @@ youtu.be
 yt.be
 studio.youtube.com
 googlevideo.com
+*.googlevideo.com
 ytimg.com
 i.ytimg.com
 ggpht.com
@@ -56,7 +57,7 @@ discordcdn.com
 *.discord.app
 x.com
 api.x.com
-*x.com
+*.x.com
 twimg.com
 video.twimg.com
 abs.twimg.com
