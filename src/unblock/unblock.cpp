@@ -405,7 +405,9 @@ void Unblock::_testVideo()
 	InputConsole::textAsk("Протестировать доступность видеороликов YouTube");
 	if (InputConsole::getBool())
 	{
+		changeAccurateTest(true);
 		testDomains(true);
+		changeAccurateTest(false);
 
 		const auto success_rate_video = _domain_testing->successRate();
 		_domain_testing->printTestInfo();
