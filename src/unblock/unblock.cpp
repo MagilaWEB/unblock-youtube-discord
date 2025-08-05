@@ -98,20 +98,29 @@ void Unblock::startAuto()
 				InputConsole::textWarning("Не удалось подобрать для вас подходящую конфигурацию!");
 				InputConsole::textAsk("Почему не удалось подобрать конфигурацию");
 				InputConsole::textInfo("Причины могут быть разные.");
-				InputConsole::textInfo("Возможно у вас медленное интернет соединение, в таком случае вам поможет подбор в режиме точного тестирование.");
+				InputConsole::textInfo(
+					"Возможно у вас медленное интернет соединение, в таком случае вам поможет подбор в режиме точного тестирование."
+				);
 				InputConsole::textInfo("Возможно для обхода блокировок мешает брандмауэр.");
 				InputConsole::textInfo("Включен VPN сервис.");
 				InputConsole::textInfo("Или просто для вас нет подходящей конфигурации.");
 				InputConsole::pause();
 
 				InputConsole::textInfo("По умолчанию тестирование производится в режиме быстрого тестирования.");
-				InputConsole::textInfo("Вы можете автоматически подобрать конфигурацию в режиме точного тестирования, или выбрать конфигурацию в ручную.");
+				InputConsole::textInfo(
+					"Вы можете автоматически подобрать конфигурацию в режиме точного тестирования, или выбрать конфигурацию в ручную."
+				);
 
 				InputConsole::textAsk("Повторить подбор конфигурации в режиме точного тестирования");
 				changeAccurateTest(InputConsole::getBool());
 
 				if (_accurate_test)
+				{
+					_dpi_fake_bin  = 0;
+					_type_strategy = 0;
 					continue;
+				}
+
 				else
 				{
 					InputConsole::textInfo("Вы выбрали вариант без повторного подбора конфигурации в режиме точного тестирования.");
@@ -332,12 +341,10 @@ void Unblock::allRemoveService()
 void Unblock::testDomains(bool video) const
 {
 	if (!video)
-	{
 		if (_dpi_application_type == DpiApplicationType::ALL)
 			_domain_testing->loadFile("domain_test_all");
 		else
 			_domain_testing->loadFile("domain_test_base");
-	}
 	else
 		_domain_testing->loadFile("domain_video");
 
