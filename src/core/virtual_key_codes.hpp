@@ -205,18 +205,24 @@ inline static TResult KEY(VK key_num, bool wait_key_click)
 	const u32 num = static_cast<u32>(key_num);
 	do
 	{
-		if (GetKeyState(num) & 0x80'00)
+		if (GetForegroundWindow() == GetConsoleWindow())
 		{
-			// We are waiting for them to stop holding key.
-			while (true)
+			if (GetKeyState(num) & 0x80'00)
 			{
-				if (!(GetKeyState(num) & 0x80'00))
-					if constexpr (std::is_same_v<TResult, bool>)
-						return true;
-					else
-						return;
+				// We are waiting for them to stop holding key.
+				while (true)
+				{
+					if (GetForegroundWindow() == GetConsoleWindow())
+					{
+						if (!(GetKeyState(num) & 0x80'00))
+							if constexpr (std::is_same_v<TResult, bool>)
+								return true;
+							else
+								return;
+					}
 
-				std::this_thread::yield();
+					std::this_thread::yield();
+				}
 			}
 		}
 
