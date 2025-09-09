@@ -44,23 +44,15 @@ void Engine::run()
 
 	while (!quit)
 	{
-		_input_console.textInfo("Нажмите 0, для выхода из приложения.");
-		_input_console.textInfo("Нажмите 1, для остановки служб обхода блокировок.");
-		_input_console.textInfo("Нажмите 2, для запуска подбора конфигурации.");
+		const u32 select = _input_console.selectFromList({ "Перейти к подбору конфигурации.", "Остановить службы Unblock.", "Закрыть приложение." });
 
-		const auto result = _input_console.sendNum({
-			0,
-			1,
-			2,
-		});
-
-		if (result == 1)
+		if (select == 1)
 		{
 			_unblock->allRemoveService();
 			_finish();
 			continue;
 		}
-		else if (result == 0)
+		else if (select == 2)
 		{
 			quit = true;
 			continue;
@@ -70,8 +62,9 @@ void Engine::run()
 
 		if (_unblock->checkSavedConfiguration())
 		{
-			_input_console.textInfo("Вы можете выполнить подбор автоматически, или нажмите ESC для перехода в ручной режим.");
-			if (InputConsole::getBool())
+			const u32 select = _input_console.selectFromList({ "Автоматический подбор конфигурации.", "Выбрать в ручную." });
+
+			if (select == 0)
 				_unblock->startAuto();
 			else
 				_unblock->startManual();
@@ -83,13 +76,16 @@ void Engine::run()
 
 void Engine::_sendDpiApplicationType()
 {
-	_input_console.textInfo("Нажмите 1, для применения обхода блокировки на весь сетевой трафик ОС.");
-	_input_console.textInfo("Нажмите 2, для применения обхода только для Discord.com, YouTube.com, x.com.");
-	_input_console.textInfo(
-		"Обход блокировки на весь сетевой трафик ОС может негативно повлиять на доступ к сайтам которые не находятся в блокировке!"
+	const u32 select = _input_console.selectFromList(
+		{ "Применить обход только для Discord.com, YouTube.com, x.com.", "Применить обход на весь сетевой трафик ОС." },
+		[this](u32)
+		{
+			_input_console.textInfo(
+				"Обход блокировки на весь сетевой трафик ОС может негативно повлиять на доступ к сайтам которые не находятся в блокировке!"
+			);
+		}
 	);
-
-	if (_input_console.sendNum({ 1, 2 }) == 1)
+	if (select == 1)
 		_unblock->changeDpiApplicationType(DpiApplicationType::ALL);
 	else
 		_unblock->changeDpiApplicationType(DpiApplicationType::BASE);
@@ -97,7 +93,7 @@ void Engine::_sendDpiApplicationType()
 
 void Engine::_finish()
 {
-	_input_console.textAsk("Закрыть приложение");
+	const u32 select = _input_console.selectFromList({ "Продолжить.", "Закрыть приложение." });
 
-	quit = _input_console.getBool();
+	quit = select == 1;
 }

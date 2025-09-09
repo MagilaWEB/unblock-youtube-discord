@@ -95,24 +95,29 @@ void Unblock::startAuto()
 		{
 			if (!_accurate_test)
 			{
-				InputConsole::textWarning("Не удалось подобрать для вас подходящую конфигурацию!");
-				InputConsole::textAsk("Почему не удалось подобрать конфигурацию");
-				InputConsole::textInfo("Причины могут быть разные.");
-				InputConsole::textInfo(
-					"Возможно у вас медленное интернет соединение, в таком случае вам поможет подбор в режиме точного тестирование."
-				);
-				InputConsole::textInfo("Возможно для обхода блокировок мешает брандмауэр.");
-				InputConsole::textInfo("Включен VPN сервис.");
-				InputConsole::textInfo("Или просто для вас нет подходящей конфигурации.");
-				InputConsole::pause();
+				const u32 select = InputConsole::selectFromList(
+					{ "Повторить подбор конфигурации в режиме точного тестирования.", "Выбрать конфигурацию в ручную." },
+					[](u32)
+					{
+						InputConsole::textWarning("Не удалось подобрать для вас подходящую конфигурацию!");
+						InputConsole::textAsk("Почему не удалось подобрать конфигурацию");
+						InputConsole::textInfo("Причины могут быть разные.");
+						InputConsole::textInfo(
+							"Возможно у вас медленное интернет соединение, в таком случае вам поможет подбор в режиме точного тестирование."
+						);
+						InputConsole::textInfo("Возможно для обхода блокировок мешает брандмауэр.");
+						InputConsole::textInfo("Включен VPN сервис.");
+						InputConsole::textInfo("Или просто для вас нет подходящей конфигурации.");
+						InputConsole::pause();
 
-				InputConsole::textInfo("По умолчанию тестирование производится в режиме быстрого тестирования.");
-				InputConsole::textInfo(
-					"Вы можете автоматически подобрать конфигурацию в режиме точного тестирования, или выбрать конфигурацию в ручную."
+						InputConsole::textInfo("По умолчанию тестирование производится в режиме быстрого тестирования.");
+						InputConsole::textInfo(
+							"Вы можете автоматически подобрать конфигурацию в режиме точного тестирования, или выбрать конфигурацию в ручную."
+						);
+					}
 				);
 
-				InputConsole::textAsk("Повторить подбор конфигурации в режиме точного тестирования");
-				changeAccurateTest(InputConsole::getBool());
+				changeAccurateTest(select == 0);
 
 				if (_accurate_test)
 				{
@@ -120,10 +125,8 @@ void Unblock::startAuto()
 					_type_strategy = 0;
 					continue;
 				}
-
 				else
 				{
-					InputConsole::textInfo("Вы выбрали вариант без повторного подбора конфигурации в режиме точного тестирования.");
 					InputConsole::textPlease("выберите конфигурацию в ручную", true, true);
 					InputConsole::pause();
 					startManual();
@@ -197,9 +200,12 @@ void Unblock::startAuto()
 
 			_testVideo();
 
-			InputConsole::textPlease("проверьте работоспособность, если не работает можно продолжить подбор конфигурации", true, true);
-			InputConsole::textAsk("Продолжить подбор конфигурации");
-			if (!InputConsole::getBool())
+			const u32 select = InputConsole::selectFromList(
+				{ "Продолжить подбор конфигурации.", "Выход." },
+				[](u32)
+				{ InputConsole::textPlease("проверьте работоспособность, если не работает можно продолжить подбор конфигурации", true, true); }
+			);
+			if (select == 1)
 				break;
 		}
 
@@ -209,122 +215,72 @@ void Unblock::startAuto()
 
 void Unblock::startManual()
 {
-	bool ran{ true };
-	while (ran)
+	while (true)
 	{
-		InputConsole::textPlease("выберете под что подделывать ваш трафик", true, true);
+		const auto&			   fake_bin_list = _strategies_dpi->getFakeBinList();
+		std::list<std::string> list_fake_bin;
+		for (const auto& fake_bin : fake_bin_list)
+			list_fake_bin.push_back(fake_bin.key);
 
-		u32				 it{ 1 };
-		std::vector<u32> list_it{};
-		std::list<u8>	 list_kay_it{};
-
-		bool finish{ false };
-
-		const auto& fake_bin_list	= _strategies_dpi->getFakeBinList();
-		auto		send_input_fake = [&]()
-		{
-			const u8 num = InputConsole::sendNum(list_kay_it);
-			_strategies_dpi->changeFakeKey(fake_bin_list[list_it[num - 1]].key);
-			it = 1;
-			list_it.clear();
-			list_kay_it.clear();
-		};
-
-		for (u32 i = 0; i < fake_bin_list.size(); i++, it++)
-		{
-			list_it.push_back(i);
-			list_kay_it.push_back(it);
-
-			InputConsole::textInfo("%d : %s", it, fake_bin_list[i].key.c_str());
-
-			if (it == 9)
+		InputConsole::selectFromList(
+			list_fake_bin,
+			[&](u32 select)
 			{
-				InputConsole::textInfo("0 : далее");
-				list_kay_it.push_back(0);
-				send_input_fake();
-				if (finish)
-					break;
+				InputConsole::textPlease("выберете под что подделывать ваш трафик", true, true);
+
+				_strategies_dpi->changeFakeKey(fake_bin_list[select].key);
+			}
+		);
+
+		const auto&			   config_list = _strategies_dpi->getStrategyList();
+		std::list<std::string> config_list_name;
+		for (const auto& name : config_list)
+			config_list_name.push_back(name);
+
+		InputConsole::selectFromList(
+			config_list_name,
+			[&](u32 select)
+			{
+				InputConsole::textPlease("выберете одну из конфигураций", true, true);
+
+				_strategies_dpi->changeStrategy(select);
+			}
+		);
+
+		allRemoveService();
+
+		_startService();
+		const u32 select = InputConsole::selectFromList(
+			{ "Быстрый тест работоспособности.", "Точный тест работоспособности (Займет больше времени).", "Пропустить." }
+		);
+		if (select == 0 || select == 1)
+		{
+			changeAccurateTest(select == 1);
+			testDomains();
+
+			_domain_testing->printTestInfo();
+
+			const auto success_rate = _domain_testing->successRate();
+
+			if (success_rate > MAX_SUCCESS_CONECTION)
+			{
+				InputConsole::textOk("Конфигурация успешно работает, результат теста %d%%.", success_rate);
+				_testVideo();
+			}
+			else
+			{
+				InputConsole::textWarning("Конфигурация работает плохо, результат теста %d%%.", success_rate);
+				InputConsole::textInfo("Выберите другую конфигурацию, или попробуйте автоматический режим.");
 			}
 		}
 
-		if (!finish)
-			send_input_fake();
-		else
-			finish = false;
+		if (InputConsole::selectFromList({ "Выбрать другую конфигурацию.", "Продолжить." }) == 0)
+			continue;
 
-		InputConsole::textPlease("выберете одну из конфигураций", true, true);
+		_file_user_setting->writeSectionParameter("remember_configuration", "config", _strategies_dpi->getStrategyFileName().c_str());
+		_file_user_setting->writeSectionParameter("remember_configuration", "fake_bin", _strategies_dpi->getKeyFakeBin().c_str());
 
-		const auto& config_list = _strategies_dpi->getStrategyList();
-
-		auto send_input_strategy = [&]()
-		{
-			list_kay_it.push_back(0);
-
-			const u8 num = InputConsole::sendNum(list_kay_it);
-			if (num > 0)
-			{
-				allRemoveService();
-				_strategies_dpi->changeStrategy(list_it[num - 1]);
-
-				_startService();
-
-				InputConsole::textAsk("Протестировать работоспособность");
-				if (InputConsole::getBool())
-				{
-					changeAccurateTest(true);
-					testDomains();
-
-					_domain_testing->printTestInfo();
-
-					const auto success_rate = _domain_testing->successRate();
-
-					if (success_rate > MAX_SUCCESS_CONECTION)
-					{
-						InputConsole::textOk("Конфигурация успешно работает, результат теста %d%%.", success_rate);
-						_testVideo();
-					}
-					else
-					{
-						InputConsole::textWarning("Конфигурация работает плохо, результат теста %d%%.", success_rate);
-						InputConsole::textInfo("Выберите другую конфигурацию, или попробуйте автоматический режим.");
-					}
-				}
-
-				InputConsole::textAsk("Выбрать другую конфигурацию");
-				ran = InputConsole::getBool();
-
-				_file_user_setting->writeSectionParameter("remember_configuration", "config", _strategies_dpi->getStrategyFileName().c_str());
-				_file_user_setting->writeSectionParameter("remember_configuration", "fake_bin", _strategies_dpi->getKeyFakeBin().c_str());
-
-				finish = true;
-			}
-
-			it = 0;
-			list_it.clear();
-			list_kay_it.clear();
-		};
-
-		for (u32 i = 0; i < config_list.size(); i++, it++)
-		{
-			list_it.push_back(i);
-			list_kay_it.push_back(it);
-
-			InputConsole::textInfo("%d : %s", it, config_list[i].c_str());
-
-			if (it == 9)
-			{
-				InputConsole::textInfo("0 : далее");
-				send_input_strategy();
-				if (finish)
-					break;
-			}
-		}
-
-		if (!finish)
-		{
-			InputConsole::textInfo("0 : выход");
-			send_input_strategy();
-		}
+		break;
 	}
 
 	changeAccurateTest(false);
@@ -401,13 +357,20 @@ void Unblock::_startService()
 
 void Unblock::_testVideo()
 {
-	InputConsole::textInfo("Вы можете протестировать доступность видеороликов на YouTube, отрицательный результат не гарантирует что доступа нет.");
-	InputConsole::textAsk("Протестировать доступность видеороликов YouTube");
-	if (InputConsole::getBool())
+	const u32 select = InputConsole::selectFromList(
+		{ "Быстрый тест доступности видеороликов YouTube.", "Точный тест доступности видеороликов YouTube (Займет больше времени).", "Пропустить." },
+		[](u32)
+		{
+			InputConsole::textInfo(
+				"Вы можете протестировать доступность видеороликов на YouTube, отрицательный результат не гарантирует что доступа нет."
+			);
+		}
+	);
+
+	if (select == 0 || select == 1)
 	{
-		changeAccurateTest(true);
+		changeAccurateTest(select == 1);
 		testDomains(true);
-		changeAccurateTest(false);
 
 		const auto success_rate_video = _domain_testing->successRate();
 		_domain_testing->printTestInfo();
@@ -417,6 +380,8 @@ void Unblock::_testVideo()
 		else
 			InputConsole::textWarning("Не удалось определить доступны ли видеоролики YouTube, это не означает что доступа совсем нет, это означает "
 									  "что возможны перебои с загрузкой.");
+
+		changeAccurateTest(false);
 
 		InputConsole::pause();
 	}
