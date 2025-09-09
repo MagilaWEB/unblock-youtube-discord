@@ -137,6 +137,82 @@ bool InputConsole::getBool()
 	return false;
 }
 
+u32 InputConsole::selectFromList(const std::list<std::string>& list, std::function<void(u32)>&& callback)
+{
+	const auto size = list.size();
+	u32		   select{ 0 };
+	bool	   print{ true };
+
+	callback(select);
+
+	while (true)
+	{
+		if (KEY<bool>(VK::UP, false) || KEY<bool>(VK::NUMPAD8, false))
+		{
+			if (select == 0)
+				select = size - 1;
+			else
+				select--;
+
+			clear();
+
+			callback(select);
+			print = true;
+		}
+
+		if (KEY<bool>(VK::DOWN, false) || KEY<bool>(VK::NUMPAD2, false))
+		{
+			select++;
+
+			if (select == size)
+				select = 0;
+
+			clear();
+
+			callback(select);
+			print = true;
+		}
+
+		if (print)
+		{
+			print = false;
+
+			textInfo("символ '>>' указывает текущие положение.");
+			textInfo("стрелка ↓ или numpad 2 на клавиатуре для выбора по списку ниже.");
+			textInfo("стрелка ↑ или numpad 8 на клавиатуре для выбора по списку выше.");
+			textInfo("клавиша Enter для подтверждения.");
+			std::string str_all{};
+
+			u32 it{ 0 };
+			for (const std::string& element : list)
+			{
+				std::string str{ };
+				if (select == it)
+					str = ">> ";
+				else
+					str = "   ";
+
+				str_all.append(str).append(std::to_string(it)).append(": ").append(element).append("\n");
+
+				it++;
+			}
+
+			textPlease("выберите один из вариантов", true, true);
+
+			text(str_all.c_str());
+		}
+
+		if (KEY<bool>(VK::ENTER, false))
+			break;
+
+		std::this_thread::yield();
+	}
+
+	clear();
+
+	return select;
+}
+
 std::string InputConsole::textColor(pcstr text, ColorType type, bool reset_color)
 {
 	auto color = [&type]
