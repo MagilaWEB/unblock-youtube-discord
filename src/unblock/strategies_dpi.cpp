@@ -2,12 +2,9 @@
 
 StrategiesDPI::StrategiesDPI()
 {
-	for (auto& entry : std::filesystem::directory_iterator(Core::get().configsPath()))
-	{
-		const auto& name = entry.path().filename().string();
-		if (name.contains("strategy_"))
-			_strategy_files_list.push_back(name);
-	}
+	patch_file = Core::get().configsPath() / "strategy";
+	for (auto& entry : std::filesystem::directory_iterator(patch_file))
+	_strategy_files_list.push_back(entry.path().filename().string());
 
 	_file_fake_bin_config->open(Core::get().configsPath() / "fake_bin", ".config", true);
 
@@ -34,52 +31,6 @@ StrategiesDPI::StrategiesDPI()
 			return false;
 		}
 	);
-}
-
-void StrategiesDPI::changeStrategy(u32 index)
-{
-	const auto& strategy_file = _strategy_files_list[index];
-	InputConsole::textInfo("Выбрана конфигурация [%s].", strategy_file.c_str());
-
-	_file_strategy_dpi->open(Core::get().configsPath() / strategy_file, "", true);
-
-	for (auto& v : _strategy_dpi)
-		v.clear();
-
-	_uploadStrategies();
-}
-
-void StrategiesDPI::changeStrategy(pcstr file)
-{
-	std::string strategy_file{};
-
-	for (const auto& _file : _strategy_files_list)
-		if (_file.contains(file))
-			strategy_file = _file;
-
-	InputConsole::textInfo("Выбрана конфигурация [%s].", strategy_file.c_str());
-
-	_file_strategy_dpi->open(Core::get().configsPath() / strategy_file, "", true);
-
-	for (auto& v : _strategy_dpi)
-		v.clear();
-
-	_uploadStrategies();
-}
-
-std::string StrategiesDPI::getStrategyFileName() const
-{
-	return _file_strategy_dpi->name();
-}
-
-const std::vector<std::string>& StrategiesDPI::getStrategyList() const
-{
-	return _strategy_files_list;
-}
-
-u32 StrategiesDPI::getStrategySize() const
-{
-	return _strategy_files_list.size();
 }
 
 std::vector<std::string> StrategiesDPI::getStrategy(u32 service) const
@@ -132,6 +83,9 @@ void StrategiesDPI::_uploadStrategies()
 {
 	if (_file_strategy_dpi->isOpen())
 	{
+		for (auto& service : _strategy_dpi)
+			service.clear();
+
 		_file_strategy_dpi->forLineSection(
 			"START_SERVICE",
 			[this](std::string str)
@@ -159,30 +113,6 @@ void StrategiesDPI::_uploadStrategies()
 
 void StrategiesDPI::_saveStrategies(std::vector<std::string>& strategy_dpi, std::string str)
 {
-	if (auto new_str = _getPath(str, "%ROOT%", Core::get().currentPath()))
-	{
-		strategy_dpi.push_back(new_str.value());
-		return;
-	}
-
-	if (auto new_str = _getPath(str, "%CONFIGS%", Core::get().configsPath()))
-	{
-		strategy_dpi.push_back(new_str.value());
-		return;
-	}
-
-	if (auto new_str = _getPath(str, "%BIN%", Core::get().binPath()))
-	{
-		strategy_dpi.push_back(new_str.value());
-		return;
-	}
-
-	if (auto new_str = _getPath(str, "%BINARIES%", Core::get().binariesPath()))
-	{
-		strategy_dpi.push_back(new_str.value());
-		return;
-	}
-
 	if (auto new_str = _getBlockList(str))
 	{
 		strategy_dpi.push_back(new_str.value());
@@ -201,18 +131,7 @@ void StrategiesDPI::_saveStrategies(std::vector<std::string>& strategy_dpi, std:
 		return;
 	}
 
-	strategy_dpi.push_back(str);
-}
-
-std::optional<std::string> StrategiesDPI::_getPath(std::string str, std::string prefix, std::filesystem::path path) const
-{
-	if (str.contains(prefix))
-	{
-		utils::str_replace(str, prefix, path.string() + "\\");
-		return str;
-	}
-
-	return std::nullopt;
+	__super::_saveStrategies(strategy_dpi, str);
 }
 
 std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const

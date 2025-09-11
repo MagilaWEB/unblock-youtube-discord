@@ -17,6 +17,10 @@ class UNBLOCK_API DomainTesting final
 	std::atomic_uint	  _domain_error{ 0 };
 	std::atomic_bool	  _is_testing{ false };
 	std::atomic_bool	  _accurate_test{ false };
+	std::atomic_bool	  _proxy{ false };
+
+	std::string _proxyIP{ "127.0.0.1" };
+	u32			_proxyPORT{ 1'080 };
 
 public:
 	DomainTesting() = default;
@@ -26,6 +30,8 @@ public:
 	std::string fileName() const;
 	void		loadFile(std::filesystem::path file);
 
+	void proxyEnable(bool state);
+	void changeProxy(std::string ip, u32 port);
 	void changeAccurateTest(bool state);
 	u32	 successRate() const;
 	u32	 errorRate() const;

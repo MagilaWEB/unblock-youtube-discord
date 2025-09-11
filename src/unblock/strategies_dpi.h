@@ -1,5 +1,5 @@
 #pragma once
-#include "../core/file_system.h"
+#include "strategies_dpi_base.h"
 
 inline constexpr std::pair<u32, pcstr> indexStrategies[]{
 	{ 0,	 "unblock1" },
@@ -7,11 +7,8 @@ inline constexpr std::pair<u32, pcstr> indexStrategies[]{
 	{ 2, "GoodbyeDPI" }
 };
 
-class StrategiesDPI
+class StrategiesDPI final : public StrategiesDPIBase
 {
-	constexpr static u8 _STRATEGY_DPI_MAX{ 3 };
-
-	Ptr<FileSystem> _file_strategy_dpi;
 	Ptr<FileSystem> _file_fake_bin_config;
 
 public:
@@ -25,31 +22,23 @@ public:
 private:
 	std::string				  _fake_bind_key{};
 	std::vector<FakeBinParam> _fake_bin_params{};
-	std::vector<std::string>  _strategy_files_list{};
-	std::vector<std::string>  _strategy_dpi[_STRATEGY_DPI_MAX]{};
 	bool					  _ignoring_hostlist{ false };
 
 public:
 	StrategiesDPI();
 	~StrategiesDPI() = default;
 
-	void changeStrategy(u32 index = 1);
-	void changeStrategy(pcstr file);
 	void changeFakeKey(std::string key = "");
 	void changeIgnoringHostlist(bool state);
 
-	std::string						 getStrategyFileName() const;
-	const std::vector<std::string>&	 getStrategyList() const;
-	u32								 getStrategySize() const;
 	std::vector<std::string>		 getStrategy(u32 service = 0) const;
 	std::string						 getKeyFakeBin() const;
 	const std::vector<FakeBinParam>& getFakeBinList() const;
 
 private:
-	void _uploadStrategies();
-	void _saveStrategies(std::vector<std::string>& strategy_dpi, std::string str);
+	void _uploadStrategies() override;
+	void _saveStrategies(std::vector<std::string>& strategy_dpi, std::string str) override;
 
-	std::optional<std::string> _getPath(std::string str, std::string prefix, std::filesystem::path path) const;
 	std::optional<std::string> _getBlockList(std::string str) const;
 	std::optional<std::string> _getFake(std::string key, std::string str) const;
 };

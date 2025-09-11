@@ -23,6 +23,17 @@ void DomainTesting::loadFile(std::filesystem::path file)
 	_file_test_domain->open((Core::get().configsPath() / file), ".list", true);
 }
 
+void DomainTesting ::proxyEnable(bool state)
+{
+	_proxy = state;
+}
+
+void DomainTesting::changeProxy(std::string ip, u32 port)
+{
+	_proxyIP   = ip;
+	_proxyPORT = port;
+}
+
 void DomainTesting::test(bool test_video)
 {
 	_is_testing	  = false;
@@ -136,7 +147,15 @@ bool DomainTesting::isConnectionUrlVideo(const CurlDomain& domain) const
 	if (domain.curl)
 	{
 		u32 count_connection{ 0U };
+
 		curl_easy_setopt(domain.curl, CURLOPT_URL, domain.url.c_str());
+		if (_proxy)
+		{
+			curl_easy_setopt(domain.curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
+			curl_easy_setopt(domain.curl, CURLOPT_PROXY, _proxyIP.c_str());
+			curl_easy_setopt(domain.curl, CURLOPT_PORT, std::to_string(_proxyPORT).c_str());
+		}
+
 		curl_easy_setopt(domain.curl, CURLOPT_HTTPHEADER, 0L);
 		curl_easy_setopt(domain.curl, CURLOPT_HTTPGET, 1L);
 		curl_easy_setopt(
@@ -167,7 +186,16 @@ bool DomainTesting::isConnectionUrl(const CurlDomain& domain) const
 	if (domain.curl)
 	{
 		u32 count_connection{ 0U };
+
 		curl_easy_setopt(domain.curl, CURLOPT_URL, domain.url.c_str());
+
+		if (_proxy)
+		{
+			curl_easy_setopt(domain.curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
+			curl_easy_setopt(domain.curl, CURLOPT_PROXY, _proxyIP.c_str());
+			curl_easy_setopt(domain.curl, CURLOPT_PORT, std::to_string(_proxyPORT).c_str());
+		}
+
 		curl_easy_setopt(
 			domain.curl,
 			CURLOPT_USERAGENT,

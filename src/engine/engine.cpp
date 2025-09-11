@@ -44,30 +44,56 @@ void Engine::run()
 
 	while (!quit)
 	{
-		const u32 select = _input_console.selectFromList({ "Перейти к подбору конфигурации.", "Остановить службы Unblock.", "Закрыть приложение." });
+		const u32 select = _input_console.selectFromList({ "Запустить unblock.",
+														   "Запустить proxy Unblock.",
+														   "Остановить службы Unblock.",
+														   "Остановить службу proxy Unblock.",
+														   "Остановить все службы Unblock.",
+														   "Закрыть приложение." });
 
-		if (select == 1)
+		switch (select)
+		{
+		case 0:
+		{
+			_sendDpiApplicationType();
+
+			if (_unblock->checkSavedConfiguration())
+			{
+				const u32 select = _input_console.selectFromList({ "Автоматический подбор конфигурации.", "Выбрать в ручную." });
+
+				if (select == 0)
+					_unblock->startAuto();
+				else
+					_unblock->startManual();
+			}
+			break;
+		}
+		case 1:
+		{
+			_unblock->startProxyManual();
+			break;
+		}
+		case 2:
 		{
 			_unblock->allRemoveService();
-			_finish();
-			continue;
+			break;
 		}
-		else if (select == 2)
+		case 3:
+		{
+			_unblock->proxyRemoveService();
+			break;
+		}
+		case 4:
+		{
+			_unblock->allRemoveService();
+			_unblock->proxyRemoveService();
+			break;
+		}
+		default:
 		{
 			quit = true;
-			continue;
+			return;
 		}
-
-		_sendDpiApplicationType();
-
-		if (_unblock->checkSavedConfiguration())
-		{
-			const u32 select = _input_console.selectFromList({ "Автоматический подбор конфигурации.", "Выбрать в ручную." });
-
-			if (select == 0)
-				_unblock->startAuto();
-			else
-				_unblock->startManual();
 		}
 
 		_finish();
@@ -93,7 +119,7 @@ void Engine::_sendDpiApplicationType()
 
 void Engine::_finish()
 {
-	const u32 select = _input_console.selectFromList({ "Продолжить.", "Закрыть приложение." });
+	const u32 select = _input_console.selectFromList({ "Далее.", "Закрыть приложение." });
 
 	quit = select == 1;
 }

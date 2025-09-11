@@ -28,10 +28,11 @@ public:
 	InputConsole()	= default;
 	~InputConsole() = default;
 
-	static void pause(pcstr info = "");
-	static u32	getU32();
-	static u8	sendNum(std::list<u8> nums);
-	static bool getBool();
+	static void		   pause(pcstr info = "");
+	static std::string getString();
+	static u32		   getU32();
+	static u8		   sendNum(std::list<u8> nums);
+	static bool		   getBool();
 
 	static u32 selectFromList(const std::list<std::string>& list, std::function<void(u32 select)>&& callback = [](u32) {});
 

@@ -24,7 +24,7 @@ void FileSystem::forLine(std::function<bool(std::string)>&& fn)
 void FileSystem::_forLineSection(pcstr section, std::function<bool(ItParameters&)>&& fn)
 {
 	const static std::regex r_section_name{ "\\[.*\\](?:.*|\\n)" };
-	ItParameters			option_it{};
+	ItParameters		option_it{};
 
 	for (option_it.iterator = _line_string.begin(); option_it.iterator < _line_string.end();)
 	{
@@ -32,8 +32,6 @@ void FileSystem::_forLineSection(pcstr section, std::function<bool(ItParameters&
 
 		if (str.empty())
 		{
-			option_it.ran_parameter = false;
-			option_it.section_end  = false;
 			++option_it.iterator;
 			continue;
 		}
@@ -42,9 +40,8 @@ void FileSystem::_forLineSection(pcstr section, std::function<bool(ItParameters&
 		{
 			if (++option_it.iterator == _line_string.end())
 			{
-				option_it.entered_section = false;
-				option_it.ran_parameter	  = false;
-				option_it.section_end	  = true;
+				option_it.iterator--;
+				option_it.section_end = true;
 				fn(option_it);
 				return true;
 			}
@@ -55,11 +52,16 @@ void FileSystem::_forLineSection(pcstr section, std::function<bool(ItParameters&
 		const bool presumably_section = std::regex_match(str, r_section_name);
 
 		if (option_it.entered_section == false && presumably_section && str.contains(section))
+		{
 			option_it.entered_section = true;
-		else if (option_it.entered_section && !presumably_section)
+			if (iterator())
+				break;
+			continue;
+		}
+
+		if (option_it.entered_section && !presumably_section)
 		{
 			option_it.ran_parameter = true;
-			option_it.section_end  = false;
 
 			if (fn(option_it))
 				break;
@@ -69,28 +71,35 @@ void FileSystem::_forLineSection(pcstr section, std::function<bool(ItParameters&
 
 			continue;
 		}
-		else if (option_it.entered_section && presumably_section)
+
+		if (option_it.entered_section && presumably_section && !str.contains(section))
 		{
-			option_it.entered_section = false;
-			option_it.ran_parameter	  = false;
-			option_it.section_end	  = true;
+			option_it.ran_parameter = false;
+			option_it.section_end	= true;
 
 			if (fn(option_it))
+			{
+				option_it.entered_section = false;
 				break;
+			}
 
-			if (iterator())
-				break;
+			option_it.entered_section = false;
 
 			continue;
+		}
+
+		if (fn(option_it))
+		{
+			option_it.ran_parameter = false;
+			option_it.section_end	= false;
+			break;
 		}
 
 		option_it.ran_parameter = false;
-		option_it.section_end  = false;
+		option_it.section_end	= false;
 
-		if (fn(option_it))
+		if (iterator())
 			break;
-
-		iterator();
 	}
 }
 
@@ -163,14 +172,7 @@ std::expected<std::string, std::string> FileSystem::parameterSection(pcstr secti
 
 void FileSystem::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_argument)
 {
-	u32	 save_iterator{ 0 };
-	auto insert = [this, parameter, value_argument](auto&& it)
-	{
-		std::string str{ parameter };
-		str += "=";
-		str += value_argument;
-		_line_string.insert(it, str);
-	};
+	u32 save_iterator{ 0 };
 
 	bool stoped{ false };
 
@@ -178,7 +180,7 @@ void FileSystem::writeSectionParameter(pcstr section, pcstr parameter, pcstr val
 		section,
 		[&](ItParameters& it)
 		{
-			if (it.ran_parameter)
+			if (it.ran_parameter && !it.section_end)
 			{
 				auto&  str = *it.iterator;
 				size_t pos = str.find_first_of("=");
@@ -197,7 +199,23 @@ void FileSystem::writeSectionParameter(pcstr section, pcstr parameter, pcstr val
 			}
 			else if (it.section_end)
 			{
-				insert(it.iterator);
+				if (!it.entered_section)
+				{
+					if (!_line_string.empty())
+						_line_string.push_back("\n");
+
+					std::string str{ "[]" };
+					_line_string.push_back(str.insert(1, section));
+				}
+
+				std::string str{ parameter };
+				str += "=";
+				str += value_argument;
+				if (!it.entered_section)
+					_line_string.insert(_line_string.end(), str);
+				else
+					_line_string.insert(it.iterator, str);
+
 				stoped = true;
 				_writeToFile();
 				return true;
@@ -211,7 +229,7 @@ void FileSystem::writeSectionParameter(pcstr section, pcstr parameter, pcstr val
 		return;
 
 	if (!_line_string.empty())
-		_line_string.push_back("\\n");
+		_line_string.push_back("\n");
 
 	std::string str{ "[]" };
 	_line_string.push_back(str.insert(1, section));

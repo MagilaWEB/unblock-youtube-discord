@@ -12,6 +12,18 @@ void InputConsole::pause(pcstr info)
 	clear();
 }
 
+std::string InputConsole::getString()
+{
+	std::string text_input{ "" };
+
+	textPlease("введите текст и нажмите Enter", true, false);
+	std::cin.clear();
+
+	std::cin >> text_input;
+
+	return text_input;
+}
+
 u32 InputConsole::getU32()
 {
 	std::string text_input{ "" };
