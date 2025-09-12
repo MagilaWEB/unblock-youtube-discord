@@ -103,11 +103,11 @@ void DomainTesting::test(bool test_video)
 		}
 	);
 
+	_is_testing = true;
+
 #ifdef DEBUG
 	InputConsole::pause();
 #endif
-
-	_is_testing = true;
 
 	InputConsole::clear();
 }
