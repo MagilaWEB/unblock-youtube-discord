@@ -161,7 +161,7 @@ bool DomainTesting::isConnectionUrlVideo(const CurlDomain& domain) const
 		curl_easy_setopt(
 			domain.curl,
 			CURLOPT_USERAGENT,
-			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0"
+			"Mozilla/5.0 ( Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 YaBrowser/138.0.9197.153"
 		);
 		curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
 		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _accurate_test ? 10L : 3L);
@@ -199,7 +199,7 @@ bool DomainTesting::isConnectionUrl(const CurlDomain& domain) const
 		curl_easy_setopt(
 			domain.curl,
 			CURLOPT_USERAGENT,
-			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0"
+			"Mozilla/5.0 ( Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 YaBrowser/138.0.9197.153"
 		);
 		curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
 		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _accurate_test ? 10L : 3L);
