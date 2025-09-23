@@ -5,15 +5,15 @@ class StrategiesDPIBase
 {
 protected:
 	constexpr static u8 _STRATEGY_DPI_MAX{ 3 };
-	Ptr<FileSystem> _file_strategy_dpi;
+	Ptr<FileSystem>		_file_strategy_dpi;
 
 	std::filesystem::path	 patch_file;
 	std::vector<std::string> _strategy_files_list{};
 	std::vector<std::string> _strategy_dpi[_STRATEGY_DPI_MAX]{};
 
 public:
-	StrategiesDPIBase()	 = default;
-	virtual  ~StrategiesDPIBase() = default;
+	StrategiesDPIBase()			 = default;
+	virtual ~StrategiesDPIBase() = default;
 
 	virtual void changeStrategy(u32 index = 1);
 	virtual void changeStrategy(pcstr file);

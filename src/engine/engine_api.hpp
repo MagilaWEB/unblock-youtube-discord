@@ -1,4 +1,5 @@
 #pragma once
+typedef void App;
 
 class IEngineAPI
 {

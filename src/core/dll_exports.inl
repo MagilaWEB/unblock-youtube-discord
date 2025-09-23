@@ -15,3 +15,9 @@
 #else
 	#define UNBLOCK_API IMPORT
 #endif
+
+#ifdef UI_EXPORTS
+	#define UI_API EXPORT
+#else
+	#define UI_API IMPORT
+#endif

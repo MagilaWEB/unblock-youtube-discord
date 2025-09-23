@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "engine.h"
+
+#include "../ui/ui.h"
 #include "../unblock/unblock.h"
 
 Engine& Engine::get()
@@ -32,7 +34,10 @@ void Engine::initialize()
 		SetConsoleTitle(static_cast<LPCTSTR>(consoleTitle));
 	}
 
+	_ui		 = std::make_unique<Ui>();
 	_unblock = std::make_unique<Unblock>();
+
+	_ui->Run();
 }
 
 void Engine::run()
@@ -42,7 +47,7 @@ void Engine::run()
 	// Without this crutch, changing the color of the text in the console after launching the application does not work.
 	_input_console.clear();
 
-	while (!quit)
+	while (!_quit)
 	{
 		const u32 select = _input_console.selectFromList({ "Запустить unblock.",
 														   "Запустить proxy Unblock.",
@@ -91,7 +96,7 @@ void Engine::run()
 		}
 		default:
 		{
-			quit = true;
+			_quit = true;
 			return;
 		}
 		}
@@ -121,5 +126,5 @@ void Engine::_finish()
 {
 	const u32 select = _input_console.selectFromList({ "Далее.", "Закрыть приложение." });
 
-	quit = select == 1;
+	_quit = select == 1;
 }

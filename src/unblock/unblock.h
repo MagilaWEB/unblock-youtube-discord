@@ -36,7 +36,6 @@ class UNBLOCK_API Unblock final : public IUnblockAPI
 
 public:
 	Unblock();
-	Unblock(Unblock&& Unblock) = delete;
 
 	void changeAccurateTest(bool state);
 

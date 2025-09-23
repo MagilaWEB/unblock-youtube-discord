@@ -1,0 +1,78 @@
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="text/javascript" src="scripts/script.js" defer></script>
+  </head>
+
+  <body>
+    <div id="background"></div>
+    <nav class="nav">
+      <ul>
+        <li><a id="active" href="#home">Главная</a></li>
+        <li><a href="#seting">Настройки</a></li>
+      </ul>
+    </nav>
+
+    <main role="main">
+      <article id="home">
+        <header>
+          <h1 class="header_title">Главная</h1>
+        </header>
+        <section>
+          <div class="button_style"><a href="#">Запустить тестирование</a></div>
+          <div class="button_style"><a href="#">Запустить службы</a></div>
+
+          <div class="block">
+            <h2>Активные сервисы Unblock:</h2>
+            <ul>
+              <li><p>Unblock YouTube</p></li>
+              <li><p>Unblock Discord</p></li>
+              <li class="not_active"><p>Unblock x.com</p></li>
+              <li class="not_active"><p>Unblock Proxy BayDPI</p></li>
+            </ul>
+          </div>
+
+          <div class="block resource_availability">
+            <h2>Текущая доступность ресурсов:</h2>
+            <ul>
+              <li><p>YouTube</p></li>
+              <li><p>Discord</p></li>
+              <li class="not_active"><p>x.com</p></li>
+              <li class="not_active"><p>Proxy BayDPI</p></li>
+              <li><p>YouTube</p></li>
+              <li><p>Discord</p></li>
+              <li class="not_active"><p>x.com</p></li>
+              <li class="not_active"><p>Proxy BayDPI</p></li>
+              <li><p>YouTube</p></li>
+              <li><p>Discord</p></li>
+              <li class="not_active"><p>x.com</p></li>
+              <li class="not_active"><p>Proxy BayDPI</p></li>
+            </ul>
+          </div>
+        </section>
+      </article>
+
+      <article id="seting">
+        <header>
+          <h1 class="header_title">Настройки</h1>
+        </header>
+        <section>
+          <div class="check_box">
+            <div class="check">
+              <input
+                type="checkbox"
+                value="true"
+                id="check"
+                name="check"
+                checked
+              />
+              <label for="check"></label>
+            </div>
+            <p class="title">Proxy DPI</p>
+          </div>
+        </section>
+      </article>
+    </main>
+  </body>
+</html>
