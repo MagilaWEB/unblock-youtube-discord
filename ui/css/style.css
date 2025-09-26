@@ -235,8 +235,6 @@ main article .block ul .not_active::after {
     transition: .4s;
 }
 
-
-
 .check_box .check input[type="checkbox"] {
     visibility: hidden;
 }

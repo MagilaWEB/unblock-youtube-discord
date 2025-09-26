@@ -29,8 +29,10 @@ list_nav.forEach((element) => {
     })
 });
 
-// Checkboxes, description pop-up window
-document.querySelectorAll(".check_box").forEach((element) => {
+// Checkboxes
+
+// Description pop-up window
+function checkboxesDescriptionWindow(element) {
     const description = element.querySelector(".description");
 
     const IsValidElement = (event) => {
@@ -71,4 +73,8 @@ document.querySelectorAll(".check_box").forEach((element) => {
             description.classList.remove("description_active");
         }
     }
+}
+
+document.querySelectorAll(".check_box").forEach((element) => {
+    checkboxesDescriptionWindow(element);
 });
