@@ -1,22 +1,13 @@
 #include "pch.h"
 #include "ui.h"
 
-Ui::Ui()
+Ui::Ui(std::shared_ptr<IEngineAPI> engine) : _engine(engine)
 {
-	Platform::instance().set_file_system(GetPlatformFileSystem("./../ui/"));
-
-	_app = App::Create();
-
-	_window = Window::Create(_app->main_monitor(), 900, 600, false, kWindowFlags_Titled);
-	_window->SetTitle("Unblock");
-
-	_overlay = Overlay::Create(_window, _window->width(), _window->height(), 0, 0);
+	_overlay = Overlay::Create(_engine->window(), _engine->window()->width(), _engine->window()->height(), 0, 0);
 	_overlay->view()->LoadURL("file:///main.html");
 
-	_window->set_listener(this);
+	_engine->window()->set_listener(this);
 	_overlay->view()->set_view_listener(this);
-
-	 _app->Run();
 }
 
 Ui::~Ui()
@@ -25,10 +16,10 @@ Ui::~Ui()
 
 void Ui::Run()
 {
-	_app->Run();
+
 }
 
 void Ui::OnClose(ultralight::Window* window)
 {
-	_app->Quit();
+	_engine->app()->Quit();
 }

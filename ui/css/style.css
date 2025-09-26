@@ -28,6 +28,7 @@ body {
     background-repeat: no-repeat;
     background-size: cover;
     filter: blur(30px);
+    box-shadow: 0 0 150px 150px black;
 }
 
 main {
@@ -93,6 +94,11 @@ main article {
     left: 0px;
     padding: 0px;
     width: 100%;
+    display: none;
+}
+
+main .active {
+    display: block;
 }
 
 main article .header_title {
@@ -177,6 +183,8 @@ main article .block ul .not_active::after {
 
 .check_box {
     position: relative;
+    width: 80%;
+    margin: auto;
     background-color: rgba(82, 82, 82, .5);
     box-shadow: 0px 0px 3px 3px rgba(82, 82, 82, .5);
 }
@@ -187,18 +195,31 @@ main article .block ul .not_active::after {
     left: 0;
     width: 2em;
     height: .6em;
-    background: #333;
+    background: currentColor;
     border-radius: 50px;
     box-shadow: 0 0 5px 0px rgba(0, 0, 0, 0.3);
 }
 
-
-.check_box .title
-{
+.check_box .title {
     position: relative;
     top: 0;
     left: 2.5em;
-    width: auto;
+    width: fit-content;
+}
+
+.check_box .description {
+    z-index: 2;
+    position: fixed;
+    opacity: 0;
+    width: 30em;
+    margin-left: 1em;
+    background-color: rgba(82, 82, 82, .5);
+    box-shadow: 0px 0px 3px 3px rgba(82, 82, 82, .5);
+    transition: opacity 700ms;
+}
+
+.check_box .description_active {
+     opacity: 1;
 }
 
 .check_box .check label {
@@ -220,7 +241,7 @@ main article .block ul .not_active::after {
     visibility: hidden;
 }
 
-.check_box .check input[type="checkbox"]:checked + label {
+.check_box .check input[type="checkbox"]:checked+label {
     left: 1em;
     background-color: #60ff26;
 

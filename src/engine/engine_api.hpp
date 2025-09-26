@@ -1,6 +1,9 @@
 #pragma once
-typedef void App;
-
+namespace ultralight
+{
+	class App;
+	class Window;
+}
 class IEngineAPI
 {
 protected:
@@ -9,4 +12,7 @@ protected:
 public:
 	IEngineAPI(IEngineAPI&&) = default;
 	virtual ~IEngineAPI()	 = default;
+
+	virtual ultralight::App*	app()	 = 0;
+	virtual ultralight::Window* window() = 0;
 };

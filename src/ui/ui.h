@@ -1,5 +1,6 @@
 #pragma once
 #include "ui_api.hpp"
+#include "../engine/engine_api.hpp"
 
 #include <AppCore/AppCore.h>
 #include <AppCore/Window.h>
@@ -12,21 +13,21 @@ class UI_API Ui : public IUiAPI,
 				  WindowListener,
 				  ViewListener
 {
-	RefPtr<ultralight::App> _app;
-	RefPtr<Window>			_window;
-	RefPtr<Overlay>			_overlay;
+	std::shared_ptr<IEngineAPI> _engine;
+	RefPtr<Overlay>				_overlay;
 
 public:
-	Ui();
+	Ui() = delete;
+	Ui(std::shared_ptr<IEngineAPI> engine);
 	~Ui();
 
 	void Run() override;
 
-	virtual void OnClose(ultralight::Window* window) override;
+	virtual void OnClose(Window* window) override;
 
-	virtual void OnResize(ultralight::Window* window, uint32_t width, uint32_t height) override {}
+	virtual void OnResize(Window* window, uint32_t width, uint32_t height) override {}
 
-	virtual void OnChangeCursor(ultralight::View* caller, ultralight::Cursor cursor) override { _window->SetCursor(cursor); }
+	virtual void OnChangeCursor(View* caller, Cursor cursor) override { _engine->window()->SetCursor(cursor); }
 
 private:
 };

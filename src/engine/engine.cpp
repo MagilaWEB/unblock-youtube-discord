@@ -12,6 +12,9 @@ Engine& Engine::get()
 
 void Engine::initialize()
 {
+	// assign a base ui folder to ultralight.
+	Platform::instance().set_file_system(GetPlatformFileSystem("./../ui/"));
+
 	if (HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE))
 	{
 		CONSOLE_FONT_INFOEX fontInfo{};
@@ -34,14 +37,19 @@ void Engine::initialize()
 		SetConsoleTitle(static_cast<LPCTSTR>(consoleTitle));
 	}
 
-	_ui		 = std::make_unique<Ui>();
-	_unblock = std::make_unique<Unblock>();
+	_app = App::Create();
 
-	_ui->Run();
+	_window = Window::Create(_app->main_monitor(), 900, 600, false, kWindowFlags_Titled);
+	_window->SetTitle("Unblock");
+
+	_ui		 = std::make_unique<Ui>(std::shared_ptr<IEngineAPI>(this));
+	_unblock = std::make_unique<Unblock>();
 }
 
 void Engine::run()
 {
+	_app->Run();
+
 	ASSERT(_unblock.get());
 
 	// Without this crutch, changing the color of the text in the console after launching the application does not work.
@@ -103,6 +111,16 @@ void Engine::run()
 
 		_finish();
 	}
+}
+
+App* Engine::app()
+{
+	return _app.get();
+}
+
+Window* Engine::window()
+{
+	return _window.get();
 }
 
 void Engine::_sendDpiApplicationType()
