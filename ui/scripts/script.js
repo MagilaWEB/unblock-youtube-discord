@@ -1,80 +1,51 @@
+try {
+	!RUN_APP
+} catch (error) {
+	createBotton("#home section", "start_test", "Запустить тестирование");
+	// bottonEventClick("start_test", () =>{
+	// 	console.dir("start_test");
+	// })
+	createBotton("#home section", "start_service", "Запустить службы", true);
+	createBotton("#home section", "stop_service", "Остановить службы", true);
 
-// menu
-const list_nav = document.querySelectorAll(".nav li a");
-list_nav.forEach((element) => {
-    if (element.hash == "#home") {
-        let hom = document.querySelector(element.hash);
-        if (hom)
-            hom.classList.add("active");
-    }
+	createListUl(".success_domain", "success_domain");
+	createListUlLiAddSuccess("success_domain", "YouTube текст", true);
+	createListUlLiAddSuccess("success_domain", "Discord текст", false);
+	createListUlLiAddSuccess("success_domain", "x.com текст", true);
+	createListUlLiAddSuccess("success_domain", "Proxy BayDPI текст", false);
+	createListUlLiAddSuccess("success_domain", "Discord текст", false);
+	createListUlLiAddSuccess("success_domain", "x.com текст", true);
+	createListUlLiAddSuccess("success_domain", "Proxy BayDPI текст", false);
+	createListUlLiAddSuccess("success_domain", "Discord текст", false);
+	createListUlLiAddSuccess("success_domain", "x.com текст", true);
+	createListUlLiAddSuccess("success_domain", "Proxy BayDPI текст", false);
+	createListUlLiAddSuccess("success_domain", "Discord текст", false);
+	createListUlLiAddSuccess("success_domain", "x.com текст", true);
+	createListUlLiAddSuccess("success_domain", "Proxy BayDPI текст", false);
 
-    element.addEventListener("click", () => {
-        const hash = document.querySelector(element.hash);
-        if (hash) {
-            list_nav.forEach((element) => {
-                let hash_element = document.querySelector(element.hash);
-                if (hash_element)
-                    hash_element.classList.remove("active");
-            });
+	createListUl(".success_service", "success_service");
+	createListUlLiAddSuccess("success_service", "Unblock YouTube", true);
+	createListUlLiAddSuccess("success_service", "Unblock Discord", false);
+	createListUlLiAddSuccess("success_service", "Unblock x.com", true);
+	createListUlLiAddSuccess("success_service", "Unblock Proxy BayDPI", false);
 
-            hash.classList.add("active");
+	createListUl("#seting", "seting");
+	createListUlLiAdd("seting", "Список Какойто текст 1");
+	createListUlLiAdd("seting", "Список Какойто текст 2");
+	createListUlLiAdd("seting", "Список Какойто текст 3");
+	createListUlLiAdd("seting", "Список Какойто текст 4");
 
-            let active_teg_a = document.querySelector("#active");
-            if (active_teg_a)
-                active_teg_a.removeAttribute("id");
+	// clearListUl("seting");
 
-            element.id = "active";
-        }
+	createInput("#seting section", "testInput1", "number", "1080","Proxy DPI PORT",  "Какоето описание импута 1");
+	createInput("#seting section", "testInput2", "text", "127.0.0.1", "Proxy DPI IP",  "Какоето описание импута 2");
+	createInput("#seting section", "testInput3", "text", "text", "text",  "Какоето описание импута 3");
 
-    })
-});
+	addInputEventSumbit("testInput1", false,  new_value => {
+		console.log(new_value);
+	});
 
-// Checkboxes
-
-// Description pop-up window
-function checkboxesDescriptionWindow(element) {
-    const description = element.querySelector(".description");
-
-    const IsValidElement = (event) => {
-        if ((!event.srcElement) || (!event.srcElement.parentElement))
-            return false;
-
-        if (event.srcElement === element)
-            return true;
-
-        return event.srcElement.parentElement === element;
-    }
-
-    element.onmousemove = (event) => {
-        if (IsValidElement(event)) {
-            const descriptionStyle = description.currentStyle || window.getComputedStyle(description);
-            const marginLeft = parseInt(descriptionStyle.marginLeft);
-            let left_block_difference = document.body.clientWidth - description.clientWidth - marginLeft;
-            left_block_difference -= event.clientX;
-
-            if (left_block_difference > 0)
-                description.style.left = event.clientX;
-            else
-                description.style.left = document.body.clientWidth - description.clientWidth - marginLeft;
-
-            description.style.top = event.clientY;
-        }
-    };
-
-    element.onmouseover = (event) => {
-        if (IsValidElement(event)) {
-            description.style.left = event.clientX;
-            description.classList.add("description_active");
-        }
-    };
-
-    element.onmouseout = (event) => {
-        if (IsValidElement(event)) {
-            description.classList.remove("description_active");
-        }
-    }
+	createCheckBox("#seting section", "test1", "Proxy DPI", "Какоето описание 1");
+	createCheckBox("#seting section", "test2", "Discord", "Какоето описание 2");
+	createCheckBox("#seting section", "test3", "YouTube", "Какоето описание 3");
 }
-
-document.querySelectorAll(".check_box").forEach((element) => {
-    checkboxesDescriptionWindow(element);
-});
