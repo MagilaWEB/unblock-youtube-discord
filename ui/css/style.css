@@ -27,8 +27,8 @@ body {
 	background-position: center;
 	background-repeat  : no-repeat;
 	background-size    : cover;
-	filter             : blur(30px);
-	box-shadow         : 0 0 150px 150px black;
+	filter             : blur(1em);
+	box-shadow         : 0 0 5em 5em black;
 }
 
 main {
@@ -121,35 +121,35 @@ main article .resource_availability {
 	height: 20em;
 }
 
-main article .block ul {
+.block ul {
 	margin: 0;
 }
 
-main article .block ul li {
+.block ul li {
 	position: relative;
 }
 
-main article .block ul li::after {
+.block ul li::after {
 	position: absolute;
 	top     : 0;
 }
 
-main article .block ul .li_success {
+.block ul .li_success {
 	list-style-type: none;
 }
 
-main article .block ul .li_success::after {
+.block ul .li_success::after {
 	list-style-type: none;
 	color          : #08a105;
 	left           : -1em;
 	content        : '\2713';
 }
 
-main article .block .li_fail {
+.block .li_fail {
 	list-style-type: none;
 }
 
-main article .block ul .li_fail::after {
+.block ul .li_fail::after {
 	left   : -1em;
 	color  : #d00000;
 	content: '\2717';
@@ -188,7 +188,8 @@ main article .block ul .li_fail::after {
 	box-shadow      : 0px 0px 4px 4px rgba(233, 233, 233, .9);
 }
 
-.input {
+.input,
+.select_list {
 	position: relative;
 	left    : 0;
 	top     : 0;
@@ -197,13 +198,15 @@ main article .block ul .li_fail::after {
 	height  : 2em;
 }
 
-.input input {
+.input input,
+.select_list select {
 	position        : absolute;
-	border: #08a105;
+	z-index: 2;
+	width           : 14em;
 	border-radius   : 5px;
 	color           : white;
 	font-size       : 1em;
-	padding         : .3em;
+	padding         : .2em;
 	transition      : .3s;
 	background-color: rgba(82, 82, 82, .5);
 	border          : solid 3px rgb(114, 114, 114);
@@ -215,6 +218,20 @@ main article .block ul .li_fail::after {
 	box-shadow      : 0px 0px 3px 3px rgba(82, 82, 82, .9);
 }
 
+.select_list {
+	background-color: rgba(82, 82, 82, .5);
+	box-shadow      : 0px 0px 3px 3px rgba(82, 82, 82, .5);
+}
+
+.select_list select option {
+	background-color: #2d2d2d;
+	box-shadow      : 0px 0px 3px 3px #2e2e2e;
+}
+
+.select_list select:hover {
+	background-color: #2d2d2d;
+	box-shadow      : 0px 0px 3px 3px rgba(46, 46, 46, 0.9);
+}
 
 .check_box {
 	position        : relative;
@@ -235,25 +252,38 @@ main article .block ul .li_fail::after {
 	box-shadow   : 0 0 5px 0px rgba(0, 0, 0, 0.3);
 }
 
-.check_box .title {
-	position: relative;
-	top     : 0;
-	left    : 2.5em;
-	width   : fit-content;
+.check_box .title,
+.select_list .title {
+	position  : relative;
+	text-align: center;
+	bottom    : 0;
+	left      : 2.5em;
+	width     : max-content;
+	height    : 1.5em;
 }
 
-.check_box .description, .input .description {
+.select_list .title {
+	top : .2em;
+	left: 15em;
+}
+
+.check_box .description,
+.input .description,
+.select_list .description {
 	z-index         : 2;
 	position        : fixed;
 	opacity         : 0;
 	width           : 30em;
 	margin-left     : 1em;
-	background-color: rgba(82, 82, 82, .5);
-	box-shadow      : 0px 0px 3px 3px rgba(82, 82, 82, .5);
+	background-color: rgba(82, 82, 82, .8);
+	box-shadow      : 0px 0px 3px 3px rgba(82, 82, 82, .8);
 	transition      : opacity 700ms;
 }
 
-.check_box .description_active, .input .description_active {
+.check_box .description_active,
+.input .description_active,
+.select_list .description_active  {
+	z-index: 3;
 	opacity: 1;
 }
 

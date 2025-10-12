@@ -1,9 +1,11 @@
 let array_list_ul = []; //  array objects ul text.
 
 class UL {
-	constructor(_name, _object_ul) {
+	constructor(_name, _object_div) {
 		this.name = _name;
-		this.object_ul = _object_ul;
+		this.object_div = _object_div;
+		console.dir(_object_div);
+		this.object_ul = _object_div.childNodes[1];
 		this.array_list_li = [];
 		this.li_size = 0;
 	}
@@ -46,6 +48,16 @@ class UL {
 		return li;
 	}
 
+	addClass(_name_class)
+	{
+		this.object_div.classList.add(_name_class);
+	}
+
+	removeClass(_name_class)
+	{
+		this.object_div.classList.remove(_name_class);
+	}
+
 	clear() {
 		this.array_list_li.forEach(element => {
 			element.remove();
@@ -56,6 +68,7 @@ class UL {
 
 	delete() {
 		this.clear();
+		object_ul.remove();
 		object_ul = null;
 	}
 }
@@ -63,18 +76,37 @@ class UL {
 /**
  * 
  * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
- * @param {*} _function_name_dbg 
  * @returns Returns the ul object for managing the ul element and its child elements of the list li from the DOM tree, in case of an "undefined" error.
  */
-function verifyExistenceUl(_name, _function_name_dbg) {
+function getClassListUl(_name) {
 	const ul_class = array_list_ul[_name];
 
 	if (ul_class === undefined) {
-		console.error(_function_name_dbg, "the element with the name:", _name, "does not exist, it is not possible to create a li tag.");
+		console.error("The element with the name:", _name, "does not exist, it is not possible to create a li tag.");
 		return undefined;
 	}
 
 	return ul_class;
+}
+
+function addClassListUl(_name, _name_class)
+{
+	const ul_class = getClassListUl(_name);
+	if(ul_class === undefined)
+		return false;
+
+	ul_class.addClass(_name_class);
+	return true;
+}
+
+function removeClassListUl(_name, _name_class)
+{
+	const ul_class = getClassListUl(_name);
+	if(ul_class === undefined)
+		return false;
+
+	ul_class.removeClass(_name_class);
+	return true;
 }
 
 /**
@@ -84,7 +116,7 @@ function verifyExistenceUl(_name, _function_name_dbg) {
  * @returns Returns false if an error occurs, and true if successful.
  */
 function createListUlLiAdd(_name, _text) {
-	const ul_class = verifyExistenceUl(_name, "createListUlLiAdd");
+	const ul_class = getClassListUl(_name);
 
 	if (ul_class === undefined)
 		return false;
@@ -101,7 +133,7 @@ function createListUlLiAdd(_name, _text) {
  * @returns Returns false if an error occurs, and true if successful.
  */
 function createListUlLiAddSuccess(_name, _text, state) {
-	const ul_class = verifyExistenceUl(_name, "createListUlLiAddSuccess");
+	const ul_class = getClassListUl(_name);
 
 	if (ul_class === undefined)
 		return false;
@@ -117,23 +149,35 @@ function createListUlLiAddSuccess(_name, _text, state) {
  * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
  * @returns Returns false if an error occurs, and true if successful.
  */
-function createListUl(_selector, _name) {
+function createListUl(_selector, _name, _title, _first) {
 	const element = document.querySelector(_selector);
 
 	if (!element) {
-		console.error("createListUl Couldn't find the selector:", _selector, "to add a checkbox inside it.");
+		console.error("Couldn't find the selector:", _selector, "to add a list ul inside it.");
 		return false;
 	}
 
 	if (array_list_ul[_name] !== undefined) {
-		console.error("createListUl the element with the name:", _name, "already exists.");
+		console.error("The element with the name:", _name, "already exists.");
 		return false;
 	}
 
-	const ul = document.createElement("ul");
-	element.appendChild(ul);
+	const div = document.createElement("div");
+	div.classList.add("block");
 
-	array_list_ul[_name] = new UL(_name, ul);
+	if(_first)
+		element.insertBefore(div, element.firstChild);
+	else
+		element.appendChild(div);
+
+	const h2 = document.createElement("h2");
+	h2.append(_title);
+	div.appendChild(h2);
+
+	const ul = document.createElement("ul");
+	div.appendChild(ul);
+
+	array_list_ul[_name] = new UL(_name, div);
 
 	return true;
 }
@@ -144,12 +188,29 @@ function createListUl(_selector, _name) {
  * @returns Returns false if an error occurs, and true if successful.
  */
 function clearListUl(_name) {
-	const ul_class = verifyExistenceUl(_name, "clearListUl");
+	const ul_class = getClassListUl(_name);
 
 	if (ul_class === undefined)
 		return false;
 
 	ul_class.clear();
 
+	return true;
+}
+
+/**
+ * Completely removes the ul element with child elements.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
+function removeListUl(_name) {
+	const ul_class = getClassListUl(_name);
+
+	if (ul_class === undefined)
+		return false;
+
+	ul_class.delete();
+	array_list_ul[_name] = undefined;
+	
 	return true;
 }

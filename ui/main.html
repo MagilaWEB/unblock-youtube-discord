@@ -2,13 +2,14 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="css/style.css" />
-    <script type="text/javascript" src="scripts/menu.js" defer></script>
-    <script type="text/javascript" src="scripts/script.js" defer></script>
     <script type="text/javascript" src="scripts/description_window.js"></script>
     <script type="text/javascript" src="scripts/botton.js"></script>
     <script type="text/javascript" src="scripts/list_ul.js"></script>
+    <script type="text/javascript" src="scripts/list_select.js"></script>
     <script type="text/javascript" src="scripts/input.js"></script>
     <script type="text/javascript" src="scripts/check_box.js"></script>
+    <script type="text/javascript" src="scripts/menu.js" defer></script>
+    <script type="text/javascript" src="scripts/script.js" defer></script>
   </head>
 
   <body>
@@ -16,7 +17,7 @@
     <nav class="nav">
       <ul>
         <li><a id="active" href="#home">Главная</a></li>
-        <li><a href="#seting">Настройки</a></li>
+        <li><a href="#setting">Настройки</a></li>
       </ul>
     </nav>
 
@@ -26,17 +27,13 @@
           <h1 class="header_title">Главная</h1>
         </header>
         <section>
-          <div class="success_service block">
-            <h2>Активные сервисы Unblock:</h2>
-          </div>
-
-          <div class="success_domain block resource_availability">
-            <h2>Текущая доступность ресурсов:</h2>
+          <div class="success_service"></div>
+          <div class="success_domain">
           </div>
         </section>
       </article>
 
-      <article id="seting">
+      <article id="setting">
         <header>
           <h1 class="header_title">Настройки</h1>
         </header>

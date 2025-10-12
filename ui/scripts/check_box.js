@@ -1,20 +1,29 @@
 let array_check_box = []; //  array objects check box.
 
 /**
+ * Get check_box element.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns returns the div check_box element. In case of an error, it returns undefined.
+ */
+function getCheckBox(_name) {
+	const check_box = array_check_box[_name];
+	if (check_box === undefined) {
+		console.error("Couldn't find an element with that name:", _name, "Make sure that the element exists.");
+		return undefined;
+	}
+
+	return check_box;
+}
+
+/**
  * Extracts the checkbox input element from the DOM tree.
  * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
- * @param {*} _name_function_dbg The message in which function the error occurred is necessary for c++.
- * @returns Returns null in case of an error, otherwise an element from the DOM tree.
+ * @returns Returns undefined in case of an error, otherwise an element from the DOM tree.
  */
-function getCheckBoxInput(_name, _name_function_dbg) {
-	if(_name_function_dbg === undefined)
-		_name_function_dbg = "getCheckBoxInput";
-
-	let check_box = array_check_box[_name];
-	if (check_box === undefined) {
-		console.error(_name_function_dbg, "Couldn't find an element with that name:", _name, "Make sure that the element exists.");
-		return null;
-	}
+function getCheckBoxInput(_name) {
+	const check_box = getCheckBox(_name);
+	if (check_box === undefined)
+		return undefined;
 
 	const check = check_box.firstChild;
 	if (check) {
@@ -23,7 +32,7 @@ function getCheckBoxInput(_name, _name_function_dbg) {
 			return input;
 	}
 
-	return null;
+	return undefined;
 }
 
 // Check the status of the checkbox
@@ -33,8 +42,8 @@ function getCheckBoxInput(_name, _name_function_dbg) {
  * @returns Even in case of an error, it returns false.
  */
 function getCheckBoxState(_name) {
-	let input = getCheckBoxInput(_name, "getCheckBoxState");
-	if (input)
+	let input = getCheckBoxInput(_name);
+	if (input !== undefined)
 		return !!input.checked;
 
 	return false;
@@ -46,8 +55,8 @@ function getCheckBoxState(_name) {
  * @param {*} _state Set the status of the checkbox forcibly (true or false).
  */
 function setCheckBoxState(_name, _state) {
-	let input = getCheckBoxInput(_name, "setCheckBoxState");
-	if (input)
+	let input = getCheckBoxInput(_name);
+	if (input !== undefined)
 		input.checked = _state;
 }
 
@@ -58,16 +67,33 @@ function setCheckBoxState(_name, _state) {
  * @param {*} _function A callback function, a check box status change event.
  */
 function addCheckBoxEventCheck(_name, _function) {
-	if (typeof _function !== "function") {
-		console.error("addCheckBoxEventCheck The _function parameter is not a function || name:", _name);
-		return;
+
+	if(_function !== undefined)
+	{
+		if (typeof _function !== "function") {
+			console.error("The _function parameter is not a function || name:", _name);
+			return;
+		}
 	}
 
-	let input = getCheckBoxInput(_name, "checkBoxEvent");
-	if (input) {
-		input.addEventListener("change", () => {
-			_function(!!input.checked)
-		});
+	let input = getCheckBoxInput(_name);
+	if (input !== undefined) {
+		if(_function !== undefined)
+		{
+			input.addEventListener("change", () => {
+				_function(!!input.checked)
+			});
+		}
+		else
+		{
+			const JsCheckBoxEventClick = () =>
+			{
+				if(CPPCheckBoxEventClick(_name, !!input.checked))
+					a.removeEventListener("click", JsCheckBoxEventClick)
+			};
+
+			input.addEventListener("change", JsCheckBoxEventClick);
+		}
 	}
 }
 
@@ -79,22 +105,26 @@ function addCheckBoxEventCheck(_name, _function) {
  * @param {*} _description Description text.
  * @returns Returns false if an error occurs, and true if successful.
  */
-function createCheckBox(_selector, _name, _title, _description) {
+function createCheckBox(_selector, _name, _title, _description, _first) {
 	const element = document.querySelector(_selector);
 
 	if (!element) {
-		console.error("createCheckBox Couldn't find the selector:", _selector, "to add a checkbox inside it.");
+		console.error("Couldn't find the selector:", _selector, "to add a checkbox inside it.");
 		return false;
 	}
 
 	if (array_check_box[_name] !== undefined) {
-		console.error("createCheckBox Element:", _name, "it already exists, create a checkbox with a different name.");
+		console.error("Element:", _name, "it already exists, create a checkbox with a different name.");
 		return false;
 	}
 
 	const div = document.createElement("div");
 	div.classList.add("check_box");
-	element.appendChild(div);
+	
+	if(_first)
+		element.insertBefore(div, element.firstChild);
+	else
+		element.appendChild(div);
 
 	const div_check = document.createElement("div");
 	div_check.classList.add("check");
@@ -125,4 +155,19 @@ function createCheckBox(_selector, _name, _title, _description) {
 	array_check_box[_name] = div;
 
 	return true;
+}
+
+/**
+ * Deletes the ñheckBox permanently.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
+function removeCheckBox(_name) {
+	const check_box = getCheckBox(_name);
+	if (check_box === undefined)
+		return false;
+
+	check_box.remove();
+	array_check_box[_name] = undefined;
+	return true
 }
