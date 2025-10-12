@@ -6,6 +6,8 @@
 #include <string>
 #include <regex>
 #include <vector>
+#include <deque>
+#include <map>
 #include <array>
 #include <list>
 #include <chrono>

@@ -19,8 +19,7 @@ static void run(const std::string& command_line)
 int main(int argc, char** argv)
 {
 	// Set UTF-8
-	SetConsoleCP(65'001);
-	SetConsoleOutputCP(65'001);
+
 
 	std::string lp_cmd_line{};
 	for (int i = 1; i < argc; ++i)
@@ -28,6 +27,5 @@ int main(int argc, char** argv)
 
 	Debug::initialize(lp_cmd_line);
 	auto res = Debug::try_wrap(run, lp_cmd_line);
-
 	return res;
 }

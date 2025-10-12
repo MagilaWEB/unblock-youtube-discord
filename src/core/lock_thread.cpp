@@ -76,13 +76,19 @@ void* FastLock::GetHandle()
 	return reinterpret_cast<void*>(&srw);
 }
 
-FastLock::raii::raii(FastLock& other) : fast_lock(&std::forward<FastLock&>(other))
+FastLock::raii::raii(FastLock& other, bool shared) : fast_lock(&std::forward<FastLock&>(other)), _shared(shared)
 {
 	VERIFY(fast_lock);
-	fast_lock->Enter();
+	if (_shared)
+		fast_lock->EnterShared();
+	else
+		fast_lock->Enter();
 }
 
 FastLock::raii::~raii()
 {
-	fast_lock->Leave();
+	if (_shared)
+		fast_lock->LeaveShared();
+	else
+		fast_lock->Leave();
 }

@@ -22,10 +22,11 @@ target_link_libraries(${NAME} PRIVATE
 
 # Define EXPORTS when building the libraries
 target_compile_definitions(${NAME} PRIVATE CONSOLE ENGINE_EXPORTS ${ALL_MACRO_CPP})
-set_target_properties(${NAME} PROPERTIES LINK_FLAGS "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\"")
+# Tell MSVC to use main instead of WinMain for Windows subsystem executables
+set_target_properties(${NAME} PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup /MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\"")
 
 # To hide console on startup
-target_link_options(${NAME} PRIVATE /SUBSYSTEM:CONSOLE)
+target_link_options(${NAME} PRIVATE /SUBSYSTEM:WINDOWS)
 
 # Copy library binaries to the folder of the compiled project
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")

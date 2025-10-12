@@ -69,3 +69,46 @@ std::filesystem::path Core::userPath() const
 {
 	return _user_path;
 }
+
+void Core::addTask(std::function<void()>&& fn)
+{
+	FAST_LOCK(_task_lock);
+	_task.push(fn);
+}
+
+void Core::addTaskJS(const std::function<void()>& fn)
+{
+	CRITICAL_SECTION_RAII(_task_lock_js);
+	_task_js.push(fn);
+}
+
+std::queue<std::function<void()>>& Core::getTask()
+{
+	return _task;
+}
+
+std::queue<std::function<void()>>& Core::getTaskJS()
+{
+	CRITICAL_SECTION_RAII(_task_lock_js);
+	return _task_js;
+}
+
+FastLock& Core::getTaskLock()
+{
+	return _task_lock;
+}
+
+CriticalSection& Core::getTaskLockJS()
+{
+	return _task_lock_js;
+}
+
+void Core::setThreadJsID(DWORD id)
+{
+	_thread_js_id = id;
+}
+
+DWORD Core::getThreadJsID()
+{
+	return _thread_js_id;
+}

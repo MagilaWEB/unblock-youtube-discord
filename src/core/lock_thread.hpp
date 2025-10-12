@@ -32,22 +32,17 @@ class CORE_API FastLock
 public:
 	struct CORE_API raii
 	{
-		explicit raii(FastLock&);
+		raii(FastLock&, bool shared = false);
 		~raii();
 
 	private:
 		FastLock* fast_lock;
-	};
-
-	enum EFastLockType : ULONG
-	{
-		Exclusive = 0,
-		Shared	  = CONDITION_VARIABLE_LOCKMODE_SHARED
+		bool	  _shared{ false };
 	};
 
 public:
 	FastLock();
-	~FastLock() = default;
+	~FastLock() {}
 
 	void Enter();
 	bool TryEnter();
@@ -59,3 +54,20 @@ public:
 
 	void* GetHandle();
 };
+
+#define CRITICAL_SECTION_RAII(_lock, ...)  \
+	CriticalSection::raii mt_##__VA_ARGS__ \
+	{                                      \
+		_lock                              \
+	}
+
+#define FAST_LOCK(_lock, ...)       \
+	FastLock::raii mt_##__VA_ARGS__ \
+	{                               \
+		_lock                       \
+	}
+#define FAST_LOCK_SHARED(_lock, ...) \
+	FastLock::raii mt_##__VA_ARGS__  \
+	{                                \
+		_lock, true                  \
+	}

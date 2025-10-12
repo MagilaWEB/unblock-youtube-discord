@@ -145,7 +145,18 @@ public:
 };
 
 #define VERIFY(expr)                                                                                                                           \
-	Debug::verify(!!(expr), "VERIFICATION FAILED!\nExpression: %s\nFile: %s\nLine: %d\nFunction: %s", #expr, __FILE__, __LINE__, __FUNCTION__)
+	Debug::verify(!!(expr), "VERIFICATION FAILED!\n\tExpression: \t%s\n\tFile: \t%s\n\tLine: %d\n\tFunction: \t%s", #expr, __FILE__, __LINE__, __FUNCTION__)
 
 #define ASSERT(expr)                                                                                                                         \
-	Debug::_assert(!!(expr), "ASSERTION FAILED!\nExpression: %s\nFile: %s\nLine: %d\nFunction: %s", #expr, __FILE__, __LINE__, __FUNCTION__)
+	Debug::_assert(!!(expr), "ASSERTION FAILED!\n\tExpression: \t%s\n\tFile: \t%s\n\tLine: \t%d\n\tFunction: \t%s", #expr, __FILE__, __LINE__, __FUNCTION__)
+
+#define ASSERT_ARGS(expr, msg, ...)                                                                                  \
+	Debug::_assert(                                                                                                  \
+		!!(expr),                                                                                                    \
+		std::string{ "ASSERTION FAILED!\n\tExpression: \t%s\n\tFile: \t%s\n\tLine: \t%d\n\tFunction: \t%s\n\n\t" }.append(msg).c_str(), \
+		#expr,                                                                                                       \
+		__FILE__,                                                                                                    \
+		__LINE__,                                                                                                    \
+		__FUNCTION__,                                                                                                \
+		__VA_ARGS__                                                                                                  \
+	)
