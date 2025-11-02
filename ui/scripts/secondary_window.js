@@ -117,11 +117,9 @@ class SecondaryWindow {
 
     show() {
         if (size_show_secondary_window === 0) {
-            const nav = document.querySelector(".nav");
-            nav.classList.add("blur");
-
-            const main = document.querySelector("main");
-            main.classList.add("blur");
+            document.querySelector(".nav").classList.add("blur");
+            document.querySelector("main").classList.add("blur");
+            document.querySelector("footer").classList.add("blur");
         }
 
         this.base_div.classList.add("secondary_window_show");
@@ -134,11 +132,9 @@ class SecondaryWindow {
             size_show_secondary_window--;
 
         if (size_show_secondary_window === 0) {
-            const nav = document.querySelector(".nav");
-            nav.classList.remove("blur");
-
-            const main = document.querySelector("main");
-            main.classList.remove("blur");
+            document.querySelector(".nav").classList.remove("blur");
+            document.querySelector("main").classList.remove("blur");
+            document.querySelector("footer").classList.remove("blur");
         }
 
         this.base_div.classList.remove("secondary_window_show");
