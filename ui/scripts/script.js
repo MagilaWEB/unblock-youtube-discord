@@ -6,6 +6,12 @@ try {
 
 if (!RUN_CPP) {
 
+	createButton("footer", "link_to_github", "Follow on GitHub");
+
+	addButtonEventClick("link_to_github", () => {
+		 window.open("https://github.com/MagilaWEB/unblock-youtube-discord", '_blank');
+	});
+
 	createSecondaryWindow("start_test_window", "Какое-то окно", "Описание окна");
 
 	setDescriptionSecondaryWindow("start_test_window", "sdasdasdadasdasdasdad");

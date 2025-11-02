@@ -39,6 +39,17 @@ main {
 	transition: filter .5s;
 }
 
+footer {
+	position: fixed;
+	bottom  : 0;
+	left    : 0;
+	padding : .3em;
+}
+
+footer .button {
+	width: 11em;
+}
+
 h1,
 h2 {
 	margin-bottom: .1em;
@@ -385,6 +396,7 @@ main article .header_title {
 
 .button button {
 	position        : absolute;
+	width           : 100%;
 	left            : 50%;
 	text-align      : center;
 	border-radius   : 5px;

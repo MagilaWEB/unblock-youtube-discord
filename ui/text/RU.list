@@ -2,6 +2,9 @@
 str_h2_home=Главная
 str_h2_setting=Настройки
 
+// Footer BUTTON
+str_link_to_github=Перейти в GitHub
+
 // BUTTON HOME
 str_b_start_service=Запустить Unblock
 str_b_stop_service=Остановить службы
