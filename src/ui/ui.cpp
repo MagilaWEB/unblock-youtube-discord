@@ -111,8 +111,9 @@ void Ui::OnDOMReady(View* caller, uint64_t frame_id, bool is_main_frame, const S
 	BaseElement::initializeAll(caller);
 
 	_link_to_github->create("footer", "str_link_to_github");
-	_link_to_github->addEventClick([](JSArgs args) {
-			system("start https://github.com/MagilaWEB/unblock-youtube-discord");
+	_link_to_github->addEventClick([](JSArgs args)
+		{
+			Core::addTask([] { system("start https://github.com/MagilaWEB/unblock-youtube-discord"); });
 			return false;
 		}
 	);

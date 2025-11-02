@@ -41,12 +41,14 @@ main {
 
 footer {
 	position: fixed;
+	z-index: 0;
 	bottom  : 0;
 	left    : 0;
 	padding : .3em;
 }
 
 footer .button {
+	z-index: 0;
 	width: 11em;
 }
 
@@ -543,7 +545,6 @@ main article .header_title {
 .check_box .description,
 .input .description,
 .select_list .description {
-	z-index         : 2;
 	position        : fixed;
 	opacity         : 0;
 	visibility      : hidden;
