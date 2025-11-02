@@ -240,10 +240,7 @@ void File::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_arg
 	CRITICAL_SECTION_RAII(lock);
 
 	if (!isOpen())
-	{
-		Debug::warning("File [%s] not open!", _path_file.string().c_str());
-		return;
-	}
+		_open_state = true;
 
 	_is_write = true;
 
