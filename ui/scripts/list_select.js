@@ -1,51 +1,97 @@
 let array_select = [];
 
 class SELECT {
-    constructor(_name, _div, _select) {
+    constructor(_name, _div, _label, _select) {
         this.name = _name;
         this.div = _div;
+        this.label = _label;
         this.select = _select;
         this.option_selected = null;
+        this.option_index = 1;
         this.array_option = [];
         this.option_size = 0;
+
+        this.select_active = false;
+        this.label.addEventListener("click", () => {
+            this.label.focus();
+
+            if (!this.select_active) {
+                this.select.classList.add("select_active");
+                this.select_active = true;
+            }
+        });
+
+        this.label.addEventListener("blur", () => {
+            this.select.classList.remove("select_active");
+            this.select_active = false;
+        });
+
+        if (!RUN_CPP) {
+            this.array_callbacks = [];
+            this.callback_size = 0;
+        }
     }
 
     addOption(_value, _title, _selected) {
-        const option = document.createElement("option");
+        const option = document.createElement("div");
+        option.classList.add("option");
         option.append(_title);
-        option.setAttribute("value", _value);
+        option.value = _value;
+
+        option.addEventListener("click", () => {
+            this.select.classList.remove("select_active");
+
+            this.label.removeChild(this.label.firstChild);
+            this.label.append(option.innerHTML);
+
+            this.option_index = option.value;
+            this.option_selected = option;
+
+            this.eventChange();
+
+            this.select_active = false;
+        });
+
+        if (this.option_size === 0) {
+            this.option_selected = option;
+
+            if (this.label.firstChild)
+                this.label.removeChild(this.label.firstChild);
+
+            this.label.append(_title);
+        }
 
         if (_selected) {
-            if (this.option_selected) {
-                console.warn(this.name, "Please note that option has already been selected as the default!");
-                this.option_selected.removeAttribute("selected");
-            }
-            option.setAttribute("selected", "true");
+            this.label.removeChild(this.label.firstChild);
+            this.label.append(_title);
+
             this.option_selected = option;
+            this.select.appendChild(option);
+            this.array_option[this.option_index = ++this.option_size] = option;
+            return
         }
 
         this.select.appendChild(option);
-
         this.array_option[++this.option_size] = option;
     }
 
-    addEventChange(_function) {
-        if (RUN_CPP) {
-            const JSSelectEventChange = () => {
-                this.option_selected = this.array_option[this.select.selectedIndex];
-                if (CPPSelectEventChange(this.name, this.select.value))
-                    this.select.removeEventListener("change", JSSelectEventChange)
-            };
-
-            this.select.addEventListener("change", JSSelectEventChange);
-        }
+    eventChange() {
+        if (RUN_CPP)
+            CPPSelectEventChange(this.name, this.option_index, this.option_selected.innerHTML);
         else {
-            this.select.addEventListener("change", () => {
-                this.option_selected = this.array_option[this.select.selectedIndex];
-                _function(this.select.value);
-            });
+            this.array_callbacks = this.array_callbacks.filter(fn => {
+                if (fn(this.option_index, this.option_selected.innerHTML)) {
+                    this.callback_size--;
+                    return false;
+                }
+                return true;
+            })
         }
+    }
 
+    addEventChange(_function) {
+        if (!RUN_CPP)
+            this.array_callbacks[++this.callback_size] = _function;
     }
 
     setValue(_value) {
@@ -55,20 +101,24 @@ class SELECT {
         }
 
         if (typeof _value === "number") {
-            this.select.selectedIndex = _value;
-            this.select.value = _value;
             this.option_selected = this.array_option[_value];
+            this.option_index = this.option_selected.value;
+
+            if (this.label.firstChild)
+                this.label.removeChild(this.label.firstChild);
+            this.label.append(this.option_selected.innerHTML);
+
             return true;
         }
 
         this.array_option.forEach((option, index) => {
-            option.removeAttribute("selected");
-
-            if (option.value == _value) {
-                option.setAttribute("selected", "true");
-                this.select.selectedIndex = index;
-                this.select.value = _value;
+            if (option.innerHTML == _value) {
                 this.option_selected = option;
+                this.option_index = index;
+
+                if (this.label.firstChild)
+                    this.label.removeChild(this.label.firstChild);
+                this.label.append(this.option_selected.innerHTML);
             }
         });
 
@@ -82,9 +132,9 @@ class SELECT {
         }
 
         if (!this.option_selected)
-            return this.array_option[1].value;
+            return this.array_option[1].innerHTML;
 
-        return this.option_selected.value;
+        return this.option_selected.innerHTML;
     }
 
     clear() {
@@ -166,9 +216,14 @@ function createListSelect(_selector, _name, _title, _description, _first) {
     else
         element.appendChild(div);
 
-    const select = document.createElement("select");
+    const label = document.createElement("div");
+    label.setAttribute("tabindex", "0");
+    label.classList.add("label");
+    div.appendChild(label);
+
+    const select = document.createElement("div");
     select.setAttribute("id", _name);
-    select.setAttribute("name", _name);
+    select.classList.add("select");
     div.appendChild(select);
 
     const p_title = document.createElement("p");
@@ -183,7 +238,7 @@ function createListSelect(_selector, _name, _title, _description, _first) {
 
     showDescriptionWindow(div, p_description);
 
-    array_select[_name] = new SELECT(_name, div, select);
+    array_select[_name] = new SELECT(_name, div, label, select);
 
     return true;
 }

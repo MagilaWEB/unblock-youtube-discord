@@ -15,15 +15,24 @@ function showDescriptionWindow(element, description) {
 			const description_style = description.currentStyle || window.getComputedStyle(description);
 			const margin_left = parseInt(description_style.marginLeft);
 
-			let left_block_difference = document.body.clientWidth - description.clientWidth - margin_left;
-			left_block_difference -= event.clientX;
+			const margin_bottom = parseInt(description_style.marginBottom);
+			const indent_px = 5;
+
+			const width_difference = document.body.clientWidth - description.clientWidth - margin_left - indent_px;
+			const left_block_difference = width_difference - event.clientX;
 
 			if (left_block_difference > 0)
 				description.style.left = event.clientX;
 			else
-				description.style.left = document.body.clientWidth - description.clientWidth - margin_left;
+				description.style.left = width_difference;
 
-			description.style.top = event.clientY;
+			const height_difference =  document.body.clientHeight - description.clientHeight - margin_bottom - indent_px;
+			const bottom_block_difference = event.clientY - height_difference;
+
+			if(bottom_block_difference >= 0)
+				description.style.top = height_difference;
+			else
+				description.style.top = event.clientY;
 		}
 	};
 

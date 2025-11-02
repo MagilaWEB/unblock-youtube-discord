@@ -1,0 +1,112 @@
+// NAV
+str_h2_home=Главная
+str_h2_setting=Настройки
+
+// BUTTON HOME
+str_b_start_service=Запустить Unblock
+str_b_stop_service=Остановить службы
+str_b_start_testing=Запустить тестирование
+str_b_start_service_proxy=Запустить ProxyDPI
+
+// Common
+str_please_wait=Пожалуйста подождите!
+
+// BLOCK HOME
+str_h2_verified_domains=Доступны домены Unblock:
+str_h2_verified_domains_video=Доступность Google Video Unblock:
+
+str_h2_verified_proxy_domains=Доступны домены ProxyDPI:
+str_h2_verified_proxy_domains_video=Доступность Google Video ProxyDPI:
+
+// Secondary Window
+str_b_secondary_window_ok=Хорошо
+str_b_secondary_window_yes=Да
+str_b_secondary_window_no=Нет
+str_b_secondary_window_cancel=Отмена
+
+// Secondary Window start\stop service
+str_window_service_start_wait_description=Производится запуск служб.
+str_window_service_stop_wait_description=Останавливаются все созданные службы.
+
+// Secondary Window Wait testing domain
+str_secondary_window_description_wait_domain=Производится тестирование доступности доменов.
+
+// Secondary Window auto start wait
+str_window_auto_start_wait_description=Производится подбор конфигурации под ваш провайдер.
+Тетсирование может производится с погрешностью, от успеха зависит качество вашего интернет соеденения, текущая работоспособность ресурсов, высоким уровнем блокировок от вашего провайдера.
+str_window_auto_start_wait_name_strategy_description=Тестирование конфигурации %s.
+
+// Secondary Window config not found
+str_window_config_not_found_title=Похоже конфигурация не выбрана
+str_window_config_not_found_description=Это ваш первый запуск или сохранённая конфигурация была удалена.
+Будет запущен автоматический подбор конфигурации, это займет некоторое время.
+
+// Secondary Window config not found
+str_window_config_found_title=Обнаружена ранее используемая конфигурация
+str_window_config_found_description=Ранее была уже подобрана конфигурация.
+Вы можете её применить или запустить автоматический подбор конфигурации.
+Перейти к подобору конфигурации?
+
+// Secondary Window continue select strategy
+str_window_continue_select_strategy_title=Удалось подобрать конфигурацию
+str_window_continue_select_strategy_description=Выбран файл конфигурации [%s], фейковый ClientHello [%s].
+Вы можете продолжить подбор конфигурации если текущая не устраивает.
+Продолжить подбор?
+str_window_continue_select_strategy_proxy_description=Выбран файл конфигурации [%s].
+Вы можете продолжить подбор конфигурации если текущая не устраивает.
+Продолжить подбор?
+
+// Setting titles blocks
+str_setting_common_title=Общие
+str_setting_unblock_title=Unblock (winws/GoodBayDPI)
+str_setting_proxy_title=Proxy сервер
+
+// Setting show console
+str_checkbox_show_console_title=Открывать окно концоли после запуска приложения.
+str_checkbox_show_console_description=Функция открывает окно концоли для отслеживания системных сообщений приложения.
+(Параметр применяется только после перезапуска приложения).
+
+// Setting testing on startup
+str_checkbox_testing_startup_title=Запускать тестирование доменов при запуске.
+str_checkbox_testing_startup_description=Если данный параметр включен, тогда при запуске приложения будет запущено тестирование доменов автоматически.
+
+// Setting Accurate testing
+str_checkbox_accurate_testing_title=Запускать тестирование с повышенной точностью.
+str_checkbox_accurate_testing_description=Если данный параметр включен,
+тогда тетирование доменов производится с повишенной точностью, это подойдет для тех у кого нестабильное интернет соеденение
+(Данный режим многократно увеличивает длительность тетсирования).
+
+// Setting checkbox unblock (winws/GoodBayDPI) enable
+str_unblock_enable_title=Использовать unblock сервисы (winws/GoodBayDPI)
+str_unblock_enable_description=Параметр отвещающий за использование основный unblock сервисов. 
+(Это основной режим и его не возможно отключить если выключен proxy режим, можно использовать совместно или одно из unblock или proxy).
+
+// Setting checkbox unblock enable top_level_domains
+str_unblock_filtering_top_level_domains_title=Фильтровать трафик по доменам высшего уровня
+str_unblock_filtering_top_level_domains_description=Параметр отвещающий за фильтрования трафика по доменнам высшего уровня (Например .com, .ru, .net и тд).
+Конфиг со списком таких домеенов в файле top_level_domains.list.
+
+// Setting checkbox manual enable
+str_manual_title=Ручной выбор конфигурации
+str_manual_description=Данный параметр позволяет включить ручной выбор конфигурации (Внимание! Отключает автоматический выбор конфигурации).
+
+// Setting manual config
+str_select_config_title=Выбор конфигурации.
+str_select_config_description=Установленная конфигурация будет сохранена в настройки.
+str_unblock_select_fake_bin_title=Выбор маскировки ClientHello.
+str_unblock_select_fake_bin_description=Данная настройка позволяет выбрать тип маскировки ClientHello, конфигурации имеет более широкий спектр возможностей благодоря данному параметру.
+
+
+// Setting checkbox proxy enable
+str_checkbox_proxy_enable_title=Сервис локального proxy сервера.
+str_checkbox_proxy_enable_description=Когда включен данный сервис, при запуске служб создаётся локальный proxy сервер со своим списком конфигураций для обхода блокировок посредством DPI.
+Данный режим позволяет подключать различные приложения по протоколу SOCKS4 и SOCKS5 (IP и PORT для подключение укажите в настройках).
+
+// Setting input proxy port
+str_input_proxy_port_title=PORT
+str_input_proxy_port_description=Порт для подключения через стороннюю программу (максимальное значение 65535).
+
+// Setting input proxy IP
+str_input_proxy_ip_title=IP
+str_input_proxy_ip_description=IP адрес для подключения через стороннюю программу.
+

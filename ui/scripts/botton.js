@@ -111,3 +111,16 @@ function removeButton(_name)
 	button.remove();
 	return true;
 }
+
+
+function setTitleButton(_name, _title)
+{
+	const button = getButton(_name);
+
+	if(button === undefined)
+		return false;
+
+	button.firstChild.removeChild(button.firstChild.firstChild);
+	button.firstChild.append(_title);
+	return true;
+}

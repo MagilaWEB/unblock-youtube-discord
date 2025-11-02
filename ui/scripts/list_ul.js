@@ -4,8 +4,7 @@ class UL {
 	constructor(_name, _object_div) {
 		this.name = _name;
 		this.object_div = _object_div;
-		console.dir(_object_div);
-		this.object_ul = _object_div.childNodes[1];
+		this.object_ul = _object_div.querySelector("ul");
 		this.array_list_li = [];
 		this.li_size = 0;
 	}
@@ -48,13 +47,11 @@ class UL {
 		return li;
 	}
 
-	addClass(_name_class)
-	{
+	addClass(_name_class) {
 		this.object_div.classList.add(_name_class);
 	}
 
-	removeClass(_name_class)
-	{
+	removeClass(_name_class) {
 		this.object_div.classList.remove(_name_class);
 	}
 
@@ -68,8 +65,7 @@ class UL {
 
 	delete() {
 		this.clear();
-		object_ul.remove();
-		object_ul = null;
+		this.object_div.remove();
 	}
 }
 
@@ -78,7 +74,7 @@ class UL {
  * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
  * @returns Returns the ul object for managing the ul element and its child elements of the list li from the DOM tree, in case of an "undefined" error.
  */
-function getClassListUl(_name) {
+function getListUl(_name) {
 	const ul_class = array_list_ul[_name];
 
 	if (ul_class === undefined) {
@@ -89,20 +85,18 @@ function getClassListUl(_name) {
 	return ul_class;
 }
 
-function addClassListUl(_name, _name_class)
-{
-	const ul_class = getClassListUl(_name);
-	if(ul_class === undefined)
+function addClassListUl(_name, _name_class) {
+	const ul_class = getListUl(_name);
+	if (ul_class === undefined)
 		return false;
 
 	ul_class.addClass(_name_class);
 	return true;
 }
 
-function removeClassListUl(_name, _name_class)
-{
-	const ul_class = getClassListUl(_name);
-	if(ul_class === undefined)
+function removeClassListUl(_name, _name_class) {
+	const ul_class = getListUl(_name);
+	if (ul_class === undefined)
 		return false;
 
 	ul_class.removeClass(_name_class);
@@ -116,7 +110,7 @@ function removeClassListUl(_name, _name_class)
  * @returns Returns false if an error occurs, and true if successful.
  */
 function createListUlLiAdd(_name, _text) {
-	const ul_class = getClassListUl(_name);
+	const ul_class = getListUl(_name);
 
 	if (ul_class === undefined)
 		return false;
@@ -133,7 +127,7 @@ function createListUlLiAdd(_name, _text) {
  * @returns Returns false if an error occurs, and true if successful.
  */
 function createListUlLiAddSuccess(_name, _text, state) {
-	const ul_class = getClassListUl(_name);
+	const ul_class = getListUl(_name);
 
 	if (ul_class === undefined)
 		return false;
@@ -165,7 +159,7 @@ function createListUl(_selector, _name, _title, _first) {
 	const div = document.createElement("div");
 	div.classList.add("block");
 
-	if(_first)
+	if (_first)
 		element.insertBefore(div, element.firstChild);
 	else
 		element.appendChild(div);
@@ -176,6 +170,7 @@ function createListUl(_selector, _name, _title, _first) {
 
 	const ul = document.createElement("ul");
 	div.appendChild(ul);
+
 
 	array_list_ul[_name] = new UL(_name, div);
 
@@ -188,7 +183,7 @@ function createListUl(_selector, _name, _title, _first) {
  * @returns Returns false if an error occurs, and true if successful.
  */
 function clearListUl(_name) {
-	const ul_class = getClassListUl(_name);
+	const ul_class = getListUl(_name);
 
 	if (ul_class === undefined)
 		return false;
@@ -204,13 +199,12 @@ function clearListUl(_name) {
  * @returns Returns false if an error occurs, and true if successful.
  */
 function removeListUl(_name) {
-	const ul_class = getClassListUl(_name);
+	const ul_class = getListUl(_name);
 
 	if (ul_class === undefined)
 		return false;
 
 	ul_class.delete();
 	array_list_ul[_name] = undefined;
-	
 	return true;
 }

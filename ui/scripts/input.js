@@ -1,13 +1,18 @@
 let array_input = [];
 class INPUT {
-    constructor(_name, _object_input, _value, _title) {
+    constructor(_name, _object_input, _type, _value, _title) {
         this.name = _name;
         this.object_input_div = _object_input;
         this.object_input = _object_input.firstChild;
+        this.type = _type;
         this.value = _value;
         this.title = _title;
-        if(!RUN_CPP)
-        {
+
+        if (this.type == "ip") {
+            this.ipRE = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        }
+
+        if (!RUN_CPP) {
             this.array_callback_submit = [];
             this.size_callback = 0;
         }
@@ -33,37 +38,42 @@ class INPUT {
             event.preventDefault();
             if (event.keyCode === 13) // enter
             {
+                if (this.type == "ip") {
+                    if (!this.ipRE.test(this.object_input.value)) {
+                        this.object_input.value = this.value;
+                        return;
+                    }
+                }
+
                 this.value = this.object_input.value;
                 this.object_input.blur();
 
-                if(RUN_CPP)
+                if (RUN_CPP)
                     CPPInputEventSubmit(this.name, this.value);
-                else
-                {
+                else {
                     this.array_callback_submit = this.array_callback_submit.filter(json_data => {
-                    if (json_data.func(this.value) === true)
-                        json_data.remove = true;
+                        if (json_data.func(this.value) === true)
+                            json_data.remove = true;
 
-                    if (json_data.remove) {
-                        this.size_callback--;
-                        return false;
-                    }
-                    return true;
-                })
+                        if (json_data.remove) {
+                            this.size_callback--;
+                            return false;
+                        }
+                        return true;
+                    })
                 }
             }
         });
     }
 
     addCallbackSubmit(_function, _remove) {
-        if(RUN_CPP)
+        if (RUN_CPP)
             return;
 
-        if(typeof _function !== "function")
-		{
-			console.error("The _function parameter is not a function || name:", this.name);
-			return;
-		}
+        if (typeof _function !== "function") {
+            console.error("The _function parameter is not a function || name:", this.name);
+            return;
+        }
 
         this.array_callback_submit[++this.size_callback] = {
             func: _function,
@@ -72,14 +82,13 @@ class INPUT {
     }
 
     removeCallbackSubmit(_function) {
-         if(RUN_CPP)
+        if (RUN_CPP)
             return;
 
-        if(typeof _function !== "function")
-		{
-			console.error("The _function parameter is not a function || name:", this.name);
-			return;
-		}
+        if (typeof _function !== "function") {
+            console.error("The _function parameter is not a function || name:", this.name);
+            return;
+        }
 
         this.array_callback_submit = this.array_callback_submit.filter(json_data => {
             if (json_data.func === _function) {
@@ -135,7 +144,7 @@ function getInputValue(_name) {
  * @returns Returns false if an error occurs, and true if successful.
  */
 function addInputEventSubmit(_name, _remove, _function) {
-    if(RUN_CPP)
+    if (RUN_CPP)
         return;
 
     const input = getInput(_name);
@@ -155,7 +164,7 @@ function addInputEventSubmit(_name, _remove, _function) {
  * @returns Returns false if an error occurs, and true if successful.
  */
 function removeInputEventSubmit(_name, _function) {
-    if(RUN_CPP)
+    if (RUN_CPP)
         return;
 
     const input = getInput(_name);
@@ -194,15 +203,25 @@ function createInput(_selector, _name, _type, _value, _title, _description, _fir
     const div = document.createElement("div");
     div.classList.add("input");
 
-    if(_first)
-		element.insertBefore(div, element.firstChild);
-	else
-		element.appendChild(div);
+    if (_first)
+        element.insertBefore(div, element.firstChild);
+    else
+        element.appendChild(div);
 
     const input = document.createElement("input");
     input.classList.add("check");
-    input.setAttribute("name", _type);
-    input.setAttribute("type", _type);
+    if (_type === "ip") {
+        input.setAttribute("name", "ip");
+        input.setAttribute("type", "text");
+        input.setAttribute("minlength", "7");
+        input.setAttribute("maxlength", "15");
+        input.setAttribute("size", "15");
+    }
+    else {
+        input.setAttribute("name", _type);
+        input.setAttribute("type", _type);
+    }
+
     input.setAttribute("id", _name);
     input.setAttribute("placeholder", _title + ": " + _value);
     div.appendChild(input);
@@ -214,7 +233,7 @@ function createInput(_selector, _name, _type, _value, _title, _description, _fir
 
     showDescriptionWindow(div, p_description);
 
-    let obj_input = array_input[_name] = new INPUT(_name, div, _value, _title);
+    let obj_input = array_input[_name] = new INPUT(_name, div, _type, _value, _title);
 
     input.addEventListener("focus", () => {
         obj_input._focus();
@@ -225,12 +244,13 @@ function createInput(_selector, _name, _type, _value, _title, _description, _fir
     return true;
 }
 
-function removeInput(_name)
-{
+function removeInput(_name) {
     const input = getInput(_name);
     if (input === undefined)
         return false;
 
     input.object_input_div.remove();
+
+    array_input[_name] = undefined;
     return true;
 }
