@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-Core::Core()
+﻿Core::Core()
 {
 	auto current_path = std::filesystem::current_path();
 
@@ -68,4 +66,46 @@ std::filesystem::path Core::configsPath() const
 std::filesystem::path Core::userPath() const
 {
 	return _user_path;
+}
+
+void Core::addTask(std::function<void()>&& callback)
+{
+	FAST_LOCK(_task_lock);
+	_task.emplace_back(callback);
+}
+
+void Core::addTaskJS(std::function<void()> callback)
+{
+	FAST_LOCK(_task_lock_js);
+	_task_js.emplace_back(callback);
+}
+
+std::deque<std::function<void()>>& Core::getTask()
+{
+	return _task;
+}
+
+std::deque<std::function<void()>>& Core::getTaskJS()
+{
+	return _task_js;
+}
+
+FastLock& Core::getTaskLock()
+{
+	return _task_lock;
+}
+
+FastLock& Core::getTaskLockJS()
+{
+	return _task_lock_js;
+}
+
+void Core::setThreadJsID(DWORD id)
+{
+	_thread_js_id = id;
+}
+
+DWORD Core::getThreadJsID()
+{
+	return _thread_js_id;
 }

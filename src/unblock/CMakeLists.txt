@@ -10,9 +10,7 @@ add_library(${NAME} SHARED ${src_h} ${src_hpp} ${src_cpp})
 target_precompile_headers(${NAME} PRIVATE pch.h)
 
 # Include files
-target_include_directories(${NAME} PRIVATE
-    ${EXPORTED_LIBRARIES_DIRECTORY}/httplib-src
-)
+target_include_directories(${NAME} PRIVATE)
 
 # Link
 target_link_libraries(${NAME} PRIVATE
@@ -22,4 +20,4 @@ target_link_libraries(${NAME} PRIVATE
 )
 
 # Define EXPORTS when building the libraries
-target_compile_definitions(${NAME} PRIVATE UNBLOCK_ROOT UNBLOCK_EXPORTS ${ALL_MACRO_CPP})
+target_compile_definitions(${NAME} PRIVATE UNBLOCK_EXPORTS ${ALL_MACRO_CPP})

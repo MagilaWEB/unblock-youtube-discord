@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "service.h"
 
 Service::~Service()
@@ -6,13 +5,39 @@ Service::~Service()
 	close();
 }
 
-void Service::create(pcstr description)
+void Service::setName(std::string new_name)
 {
-	if (sc)
-	{
-		Debug::error("Служба [%s] уже найдена или создана, повторно создать невозможно!", name);
-		return;
-	}
+	CRITICAL_SECTION_RAII(lock);
+
+	_name = new_name;
+}
+
+void Service::setDescription(pcstr description)
+{
+	CRITICAL_SECTION_RAII(lock);
+
+	_description = description;
+}
+
+std::string Service::getName() const
+{
+	return _name;
+}
+
+bool Service::isRun()
+{
+	CRITICAL_SECTION_RAII(lock);
+
+	update();
+
+	return sc_status.dwCurrentState == SERVICE_START_PENDING || sc_status.dwCurrentState == SERVICE_RUNNING;
+}
+
+void Service::create()
+{
+	CRITICAL_SECTION_RAII(lock);
+
+	ASSERT_ARGS(!sc, "The service [%s] has already been found or created, it cannot be recreated!", _name.c_str());
 
 	_initScManager();
 
@@ -28,8 +53,8 @@ void Service::create(pcstr description)
 
 	sc = CreateService(
 		_sc_manager,
-		utils::UTF8_to_CP1251(name).c_str(),
-		utils::UTF8_to_CP1251(description).c_str(),
+		utils::UTF8_to_CP1251(_name.c_str()).c_str(),
+		utils::UTF8_to_CP1251(_description.c_str()).c_str(),
 		SC_MANAGER_ALL_ACCESS,
 		SERVICE_WIN32_OWN_PROCESS,
 		SERVICE_AUTO_START,
@@ -42,22 +67,24 @@ void Service::create(pcstr description)
 		nullptr
 	);
 
-	if (!sc)
-	{
-		Debug::error("Не удалось создать службу [%s]!", name);
-		return;
-	}
+	open();
+
+	ASSERT_ARGS(sc, "Service could not be created [%s]!", _name.c_str());
 
 	update();
 }
 
 void Service::setArgs(std::vector<std::string> args)
 {
+	CRITICAL_SECTION_RAII(lock);
+
 	_args = args;
 }
 
 void Service::start()
 {
+	CRITICAL_SECTION_RAII(lock);
+
 	update();
 
 	if (sc_status.dwCurrentState != SERVICE_STOPPED && sc_status.dwCurrentState != SERVICE_STOP_PENDING)
@@ -69,14 +96,15 @@ void Service::start()
 	for (auto& arg : _args)
 		args.push_back(arg.c_str());
 
-	InputConsole::textPlease("подождите окончания запуска службы [%s]", true, false, name);
+	InputConsole::textPlease("подождите окончания запуска службы [%s]", true, false, _name.c_str());
 
-	const bool send_start = StartService(sc, args.size(), args.data());
-	if (!send_start)
+	bool send_start = false;
+	u32	 i_start	= 0;
+	do
 	{
-		Debug::error("Не удалось отправить запрос на запуск службы [%s]!", name);
-		return;
-	}
+		send_start = StartService(sc, args.size(), args.data());
+		ASSERT_ARGS(i_start++ <= 5, "Failed to send a request to start the service [%s]!", _name.c_str());
+	} while (!send_start);
 
 	update();
 
@@ -85,7 +113,7 @@ void Service::start()
 		SERVICE_RUNNING,
 		[this]
 		{
-			InputConsole::textError("истекло время ожидания запуска службы [%s], процесс будет остановлен!", name);
+			InputConsole::textError("истекло время ожидания запуска службы [%s], процесс будет остановлен!", _name.c_str());
 			stop();
 		}
 	);
@@ -95,41 +123,43 @@ void Service::start()
 		SERVICE_RUNNING,
 		[this]
 		{
-			InputConsole::textError("истекло время ожидания запуска службы [%s], процесс будет остановлен!", name);
+			InputConsole::textError("истекло время ожидания запуска службы [%s], процесс будет остановлен!", _name.c_str());
 			stop();
 		}
 	);
 
 	if (sc_status.dwCurrentState == SERVICE_RUNNING)
-		InputConsole::textOk("служба [%s] запущена.", name);
+		InputConsole::textOk("служба [%s] запущена.", _name.c_str());
 }
 
 void Service::update()
 {
-	if (sc)
-	{
-		bool q_service =
-			QueryServiceStatusEx(sc, SC_STATUS_PROCESS_INFO, reinterpret_cast<LPBYTE>(&sc_status), sizeof(SERVICE_STATUS_PROCESS), &_dw_bytes_needed);
+	if (!sc)
+		return;
 
-		if (!q_service)
-		{
-			CloseServiceHandle(sc);
-			sc				 = nullptr;
-			sc_status		 = {};
-			_dw_bytes_needed = 0;
-		}
+	bool q_service =
+		QueryServiceStatusEx(sc, SC_STATUS_PROCESS_INFO, reinterpret_cast<LPBYTE>(&sc_status), sizeof(SERVICE_STATUS_PROCESS), &_dw_bytes_needed);
+
+	if (!q_service)
+	{
+		CloseServiceHandle(sc);
+		sc				 = nullptr;
+		sc_status		 = {};
+		_dw_bytes_needed = 0;
 	}
 }
 
 void Service::open()
 {
+	CRITICAL_SECTION_RAII(lock);
+
 	_initScManager();
 
 	if (_sc_manager)
 	{
 		if (!sc)
 		{
-			sc = OpenService(_sc_manager, name, SC_MANAGER_ALL_ACCESS);
+			sc = OpenService(_sc_manager, _name.c_str(), SC_MANAGER_ALL_ACCESS);
 			update();
 		}
 	}
@@ -137,46 +167,49 @@ void Service::open()
 
 void Service::stop()
 {
-	if (sc)
+	CRITICAL_SECTION_RAII(lock);
+
+	if (!sc)
+		return;
+
+	update();
+
+	bool stopped = false;
+
+	if (sc_status.dwCurrentState != SERVICE_STOPPED)
 	{
-		update();
+		InputConsole::textPlease("подождите окончания остановки службы [%s]", true, false, _name.c_str());
 
-		bool stopped = false;
-
-		if (sc_status.dwCurrentState != SERVICE_STOPPED)
+		auto service_stop = [this, &stopped]
 		{
-			InputConsole::textPlease("подождите окончания остановки службы [%s]", true, false, name);
+			stopped					= true;
+			const bool send_control = ControlService(sc, SERVICE_CONTROL_STOP, reinterpret_cast<LPSERVICE_STATUS>(&sc_status));
+			ASSERT_ARGS(send_control, "Failed to send a request to stop the service [%s]!", _name.c_str());
+		};
 
-			auto service_stop = [this, &stopped]
+		service_stop();
+
+		_waitStatusService(
+			SERVICE_STOP_PENDING,
+			SERVICE_STOPPED,
+			[&]
 			{
-				stopped					= true;
-				const bool send_control = ControlService(sc, SERVICE_CONTROL_STOP, reinterpret_cast<LPSERVICE_STATUS>(&sc_status));
-				if (!send_control)
-					Debug::error("Не удалость отправить запрос на остановку службы [%s]!", name);
-			};
-
-			service_stop();
-
-			_waitStatusService(
-				SERVICE_STOP_PENDING,
-				SERVICE_STOPPED,
-				[&]
-				{
-					service_stop();
-					_waitStatusService(SERVICE_STOP_PENDING, SERVICE_STOPPED, service_stop);
-				}
-			);
-		}
-
-		update();
-
-		if (stopped && sc_status.dwCurrentState == SERVICE_STOPPED)
-			InputConsole::textOk("служба [%s] остановлена.", name);
+				service_stop();
+				_waitStatusService(SERVICE_STOP_PENDING, SERVICE_STOPPED, service_stop);
+			}
+		);
 	}
+
+	update();
+
+	if (stopped && sc_status.dwCurrentState == SERVICE_STOPPED)
+		InputConsole::textOk("служба [%s] остановлена.", _name.c_str());
 }
 
 void Service::remove()
 {
+	CRITICAL_SECTION_RAII(lock);
+
 	if (sc)
 	{
 		stop();
@@ -188,6 +221,8 @@ void Service::remove()
 
 void Service::close()
 {
+	CRITICAL_SECTION_RAII(lock);
+
 	if (_sc_manager)
 	{
 		CloseServiceHandle(_sc_manager);
@@ -225,9 +260,10 @@ void Service ::_waitStatusService(DWORD check_state, DWORD check_stat_end, std::
 
 void Service::_initScManager()
 {
+	CRITICAL_SECTION_RAII(lock);
+
 	if (!_sc_manager)
 		_sc_manager = OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS);
 
-	if (!_sc_manager)
-		InputConsole::textError("Не удалось открыть SCManager для взаимодействия с службами системы!");
+	ASSERT_ARGS(_sc_manager, "Couldn't open SCManager to interact with system services!", _name.c_str());
 }

@@ -4,7 +4,7 @@ StrategiesDPI::StrategiesDPI()
 {
 	patch_file = Core::get().configsPath() / "strategy";
 	for (auto& entry : std::filesystem::directory_iterator(patch_file))
-	_strategy_files_list.push_back(entry.path().filename().string());
+		_strategy_files_list.push_back(entry.path().filename().string());
 
 	_file_fake_bin_config->open(Core::get().configsPath() / "fake_bin", ".config", true);
 
@@ -12,7 +12,10 @@ StrategiesDPI::StrategiesDPI()
 		"FAKE_TLS",
 		[this](std::string key, std::string value)
 		{
-			_fake_bin_params.push_back({ key, value });
+			const auto path_file = Core::get().binariesPath() / value;
+			ASSERT_ARGS(std::filesystem::exists(path_file), "The [%s] file does not exist!", path_file.string().c_str());
+
+			_fake_bin_params.push_back({ key, path_file.string() });
 			return false;
 		}
 	);
@@ -21,12 +24,14 @@ StrategiesDPI::StrategiesDPI()
 		"FAKE_QUIC",
 		[this](std::string key, std::string value)
 		{
-			auto it = std::find_if(_fake_bin_params.begin(), _fake_bin_params.end(), [&key](const FakeBinParam& it) { return it.key.contains(key); });
+			const auto path_file = Core::get().binariesPath() / value;
+			ASSERT_ARGS(std::filesystem::exists(path_file), "The [%s] file does not exist!", path_file.string().c_str());
 
+			auto it = std::find_if(_fake_bin_params.begin(), _fake_bin_params.end(), [&key](const FakeBinParam& it) { return it.key.contains(key); });
 			if (it != _fake_bin_params.end())
-				(*it).value_quic = value;
+				(*it).file_initial = path_file.string();
 			else
-				_fake_bin_params.push_back({ key, {}, value });
+				_fake_bin_params.push_back({ key, {}, path_file.string() });
 
 			return false;
 		}
@@ -35,17 +40,14 @@ StrategiesDPI::StrategiesDPI()
 
 std::vector<std::string> StrategiesDPI::getStrategy(u32 service) const
 {
-	if (service >= _STRATEGY_DPI_MAX)
-	{
-		Debug::fatal(
-			"getStrategy is an attempt to get a strategy vector for the service [%s] that does not match STRATEGY_DPI_MAX [%s]!",
-			service,
-			_STRATEGY_DPI_MAX
-		);
-		return {};
-	}
+	ASSERT_ARGS(
+		service < _STRATEGY_DPI_MAX,
+		"getStrategy is an attempt to get a strategy vector for the service [%s] that does not match STRATEGY_DPI_MAX [%s]!",
+		service,
+		_STRATEGY_DPI_MAX
+	);
 
-	return _strategy_dpi[service];
+	return _strategy_dpi.at(service);
 }
 
 std::string StrategiesDPI::getKeyFakeBin() const
@@ -58,6 +60,14 @@ const std::vector<StrategiesDPI::FakeBinParam>& StrategiesDPI::getFakeBinList() 
 	return _fake_bin_params;
 }
 
+void StrategiesDPI::changeFakeKey(u32 index)
+{
+	const auto& strategy_file = _fake_bin_params[index];
+	InputConsole::textInfo("Выбран FakeBin [%s].", strategy_file.key.c_str());
+
+	changeFakeKey(strategy_file.key);
+}
+
 void StrategiesDPI::changeFakeKey(std::string key)
 {
 	if (key.empty())
@@ -68,21 +78,28 @@ void StrategiesDPI::changeFakeKey(std::string key)
 
 	auto it = std::find_if(_fake_bin_params.begin(), _fake_bin_params.end(), [&key](const FakeBinParam& it) { return it.key.contains(key); });
 
-	if (it == _fake_bin_params.end())
-		Debug::warning("для fake_bin отсутствует ключ %s", key.c_str());
+	ASSERT_ARGS(it != _fake_bin_params.end(), "a key is missing for fake_bin %s", key.c_str());
 
 	_fake_bind_key = key;
 }
 
-void StrategiesDPI::changeIgnoringHostlist(bool state)
+void StrategiesDPI::changeFilteringTopLevelDomains(bool state)
 {
-	_ignoring_hostlist = state;
+	_filtering_top_level_domains = state;
+}
+
+bool StrategiesDPI::isFaked() const
+{
+	return _faked;
 }
 
 void StrategiesDPI::_uploadStrategies()
 {
 	if (_file_strategy_dpi->isOpen())
 	{
+		auto faked = _file_strategy_dpi->parameterSection<bool>("SETTING", "faked");
+		_faked	   = faked ? faked.value() : false;
+
 		for (auto& service : _strategy_dpi)
 			service.clear();
 
@@ -131,57 +148,108 @@ void StrategiesDPI::_saveStrategies(std::vector<std::string>& strategy_dpi, std:
 		return;
 	}
 
+	if (auto new_str = _getFake("%FAKE_UNKNOWN%", str))
+	{
+		strategy_dpi.push_back(new_str.value());
+		return;
+	}
+
+	if (auto new_str = _getFake("%SEQOVL_PATTERN%", str))
+	{
+		strategy_dpi.push_back(new_str.value());
+		return;
+	}
+
 	__super::_saveStrategies(strategy_dpi, str);
 }
 
 std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 {
-	auto path_file = Core::get().configsPath() / "blacklist.list";
+	auto path_file					 = Core::get().configsPath() / "blacklist.list";
+	auto path_file_top_level_domains = Core::get().configsPath() / "top_level_domains.list";
 
 	if (str.contains("%BLOCKLIST%"))
 	{
-		if (_ignoring_hostlist)
-			return "";
+		if (_filtering_top_level_domains)
+		{
+			ASSERT_ARGS(
+				std::filesystem::exists(path_file_top_level_domains),
+				"The [%s] file does not exist!",
+				path_file_top_level_domains.string().c_str()
+			);
+			return "--hostlist=" + (path_file_top_level_domains.string());
+		}
 
-		if (std::filesystem::exists(path_file))
-			return "--hostlist=" + (path_file.string());
-		else
-			Debug::error("Файл [%s] не существует!", path_file.string().c_str());
+		ASSERT_ARGS(std::filesystem::exists(path_file), "The [%s] file does not exist!", path_file.string().c_str());
+		return "--hostlist=" + (path_file.string());
+	}
+
+	if (str.contains("%DOMAINS-GOOGLE%"))
+	{
+		auto path_file_blacklist_google = Core::get().configsPath() / "blacklist_google.list";
+		ASSERT_ARGS(
+			std::filesystem::exists(path_file_blacklist_google),
+			"The [%s] file does not exist!",
+			path_file_blacklist_google.string().c_str()
+		);
+		return "--hostlist=" + (path_file_blacklist_google.string());
+	}
+
+	if (str.contains("%DOMAINS-EXCLUDE%"))
+	{
+		auto path_file_domains_exclude = Core::get().configsPath() / "domains_exclude.list";
+		ASSERT_ARGS(std::filesystem::exists(path_file_domains_exclude), "The [%s] file does not exist!", path_file_domains_exclude.string().c_str());
+		return "--hostlist-exclude=" + (path_file_domains_exclude.string());
 	}
 
 	if (str.contains("%BLOCKLIST-GD-DPI%"))
 	{
-		if (_ignoring_hostlist)
-			return "";
+		if (_filtering_top_level_domains)
+		{
+			ASSERT_ARGS(
+				std::filesystem::exists(path_file_top_level_domains),
+				"The [%s] file does not exist!",
+				path_file_top_level_domains.string().c_str()
+			);
+			return "--blacklist " + (path_file_top_level_domains.string());
+		}
 
-		if (std::filesystem::exists(path_file))
-			return "--blacklist " + (path_file.string());
-		else
-			Debug::error("Файл [%s] не существует!", path_file.string().c_str());
+		ASSERT_ARGS(std::filesystem::exists(path_file), "The [%s] file does not exist!", path_file.string().c_str());
+		return "--blacklist " + (path_file.string());
 	}
 
 	path_file = Core::get().configsPath() / "ip-blacklist.list";
 
 	if (str.contains("%IP-SETLIST%"))
 	{
-		if (_ignoring_hostlist)
-			return "";
+		if (_filtering_top_level_domains)
+		{
+			ASSERT_ARGS(
+				std::filesystem::exists(path_file_top_level_domains),
+				"The [%s] file does not exist!",
+				path_file_top_level_domains.string().c_str()
+			);
+			return "--hostlist=" + (path_file_top_level_domains.string());
+		}
 
-		if (std::filesystem::exists(path_file))
-			return "--ipset=" + (path_file.string());
-		else
-			Debug::error("Файл [%s] не существует!", path_file.string().c_str());
+		ASSERT_ARGS(std::filesystem::exists(path_file), "The [%s] file does not exist!", path_file.string().c_str());
+		return "--ipset=" + (path_file.string());
 	}
 
 	if (str.contains("%IP-BLOCKLIST%"))
 	{
-		if (_ignoring_hostlist)
-			return "";
+		if (_filtering_top_level_domains)
+		{
+			ASSERT_ARGS(
+				std::filesystem::exists(path_file_top_level_domains),
+				"The [%s] file does not exist!",
+				path_file_top_level_domains.string().c_str()
+			);
+			return "--hostlist=" + (path_file_top_level_domains.string());
+		}
 
-		if (std::filesystem::exists(path_file))
-			return "--hostlist=" + (path_file.string());
-		else
-			Debug::error("Файл [%s] не существует!", path_file.string().c_str());
+		ASSERT_ARGS(std::filesystem::exists(path_file), "The [%s] file does not exist!", path_file.string().c_str());
+		return "--hostlist=" + (path_file.string());
 	}
 
 	return std::nullopt;
@@ -202,15 +270,18 @@ std::optional<std::string> StrategiesDPI::_getFake(std::string key, std::string 
 
 		if (it != _fake_bin_params.end())
 		{
-			const bool is_tls = key.contains("TLS");
+			std::string argument;
 
-			const std::string& file		 = is_tls ? (*it).value_tls : (*it).value_quic;
-			auto			   path_file = Core::get().binariesPath() / file;
-
-			if (std::filesystem::exists(path_file))
-				return (is_tls ? "--dpi-desync-fake-tls=" : "--dpi-desync-fake-quic=") + path_file.string();
+			if (key.contains("TLS"))
+				argument = "--dpi-desync-fake-tls=" + (*it).file_clienthello;
+			else if (key.contains("SEQOVL"))
+				argument = "--dpi-desync-split-seqovl-pattern=" + (*it).file_clienthello;
+			else if (key.contains("UNKNOWN"))
+				argument = "--dpi-desync-fake-unknown-udp=" + (*it).file_initial;
 			else
-				Debug::error("Файл [%s] не существует!", path_file.string().c_str());
+				argument = "--dpi-desync-fake-quic=" + (*it).file_initial;
+
+			return argument;
 		}
 		else
 		{

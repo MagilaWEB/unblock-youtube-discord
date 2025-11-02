@@ -1,64 +1,65 @@
 #pragma once
-#include "unblock_api.hpp"
-#include "domain_testing.h"
 #include "strategies_dpi.h"
 #include "proxy_strategies_dpi.h"
+#include "domain_testing.h"
 
 #include "../core/service.h"
 
-class UNBLOCK_API Unblock final : public IUnblockAPI
+class UNBLOCK_API Unblock final
 {
-	Ptr<FileSystem>			_file_user_setting;
+	Ptr<Service> _unblock{ "unblock", "winws.exe" };
+	Ptr<Service> _goodbay_dpi{ "GoodByeDpi", "goodbyedpi.exe" };
+	Ptr<Service> _proxy_dpi{ "proxy_dpi", "ciadpi.exe" };
+	Ptr<Service> _win_divert{ "WinDivert" };
+
 	Ptr<DomainTesting>		_domain_testing;
+	Ptr<DomainTesting>		_domain_testing_video;
+	Ptr<DomainTesting>		_domain_testing_proxy{ true };
+	Ptr<DomainTesting>		_domain_testing_proxy_video{ true };
 	Ptr<StrategiesDPI>		_strategies_dpi;
 	Ptr<ProxyStrategiesDPI> _proxy_strategies_dpi;
 
-	Service _unblock{ "unblock1", "winws.exe" };
-	Service _unblock2{ "unblock2", "winws.exe" };
-	Service _goodbay_dpi{ "GoodbyeDPI", "goodbyedpi.exe" };
-	Service _bay_dpi{ "ByeDPI", "ciadpi.exe" };
-	Service _win_divert{ "WinDivert" };
-
-	ProxyData		   _proxy_data;
-	DpiApplicationType _dpi_application_type{ DpiApplicationType::BASE };
-	u32				   _dpi_fake_bin{ 0 };
-	u32				   _type_strategy{ 0 };
-	bool			   _accurate_test{ false };
-
-	struct SuccessfulStrategy
+	struct StrategyType
 	{
-		u32 success{ 0 };
-		u32 index_strategy{ 0 };
-		u32 dpi_fake_bin{ 0 };
+		u32 proxy_type{ 0 };
+		u32 type{ 0 };
+		u32 fake_bin{ 0 };
 	};
 
-	std::vector<SuccessfulStrategy> _successful_strategies;
+	StrategyType _strategy{};
 
 public:
 	Unblock();
-	Unblock(Unblock&& Unblock) = delete;
 
-	void changeAccurateTest(bool state);
+	template<typename Type>
+	bool automaticallyStrategy();
 
-	void changeDpiApplicationType(DpiApplicationType type) override;
+	void changeStrategy(pcstr name_config, pcstr name_fake_bin);
+	void changeProxyStrategy(pcstr name_config);
+	void changeFilteringTopLevelDomains(bool state = false);
 
-	bool checkSavedConfiguration(bool proxy = false) override;
+	template<typename Type>
+	bool runTest(bool video = false);
 
-	void startAuto() override;
+	template<typename Type>
+	std::string getNameStrategies();
+	std::string getNameFakeBin();
 
-	void startManual() override;
+	template<typename Type>
+	const std::vector<std::string>& getStrategiesList();
+	const std::vector<StrategiesDPI::FakeBinParam>& getFakeBinList();
 
-	void startProxyManual() override;
+	void startService(bool proxy = false);
+	void stopService(bool proxy = false);
+	void removeService(bool proxy = false);
+	bool activeService(bool proxy = false);
 
-	void proxyRemoveService() override;
+	template<typename Type>
+	void testingDomain(std::function<void(pcstr url, bool state)>&& callback = [](pcstr, bool) {}, bool video = false);
+	template<typename Type>
+	void testingDomainCancel(bool video = false);
 
-	void allRemoveService() override;
+	void accurateTesting(bool state);
 
-	void allOpenService() override;
-
-	bool testDomains(bool video = false, bool proxy = false);
-
-private:
-	void _startService();
-	void _chooseStrategy();
+	bool validDomain(bool proxy = false);
 };

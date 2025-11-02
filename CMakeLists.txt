@@ -33,6 +33,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)  # .exe/.dll
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)  # .so/.dylib
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)  # .lib/.a
+set(EXPORTED_SDK_DIRECTORY ${CMAKE_SOURCE_DIR}/sdk)  # all
 set(EXPORTED_LIBRARIES_DIRECTORY ${CMAKE_BINARY_DIR}/_deps)
 
 # Macros for all project solutions (except libraries)
@@ -40,7 +41,6 @@ set(ALL_MACRO_CPP )
 
 # Cmake includes
 include(FetchContent)
-include(${CMAKE_SOURCE_DIR}/CMakeFunctions.cmake)
 
 # Load GitHub oneTBB
 #FetchContent_Declare(
@@ -104,4 +104,5 @@ endif()
 # Add submodules
 add_subdirectory(src/engine)
 add_subdirectory(src/core)
+add_subdirectory(src/ui)
 add_subdirectory(src/unblock)

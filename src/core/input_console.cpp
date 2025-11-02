@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "input_console.h"
 
 using namespace std::chrono;

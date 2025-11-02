@@ -3,6 +3,7 @@ bin
 out
 assets
 user
+.vscode
 .vs
 .vscode
 .idea

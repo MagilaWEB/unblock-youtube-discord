@@ -1,6 +1,10 @@
-#include "pch.h"
 #include "domain_testing.h"
 #include "curl/curl.h"
+
+DomainTesting::DomainTesting(bool enable_proxy) : _proxy(enable_proxy)
+{
+	_files_test_domain->open((Core::get().configsPath() / "service"), ".config", true);
+}
 
 DomainTesting::~DomainTesting()
 {
@@ -13,19 +17,54 @@ DomainTesting::~DomainTesting()
 	_list_domain.clear();
 }
 
-std::string DomainTesting::fileName() const
+void DomainTesting::loadDomain(bool video)
 {
-	return _file_test_domain->name();
-}
+	for (auto& curl_domain : _list_domain)
+		if (curl_domain.curl)
+			curl_easy_cleanup(curl_domain.curl);
 
-void DomainTesting::loadFile(std::filesystem::path file)
-{
-	_file_test_domain->open((Core::get().configsPath() / file), ".list", true);
-}
+	_list_domain.clear();
 
-void DomainTesting ::proxyEnable(bool state)
-{
-	_proxy = state;
+	if (video)
+	{
+		_loadFile("domain_video");
+
+		_file_test_domain->forLine(
+			[this](std::string str)
+			{
+				if (str.empty())
+					return false;
+
+				_list_domain.emplace_back(CurlDomain{ curl_easy_init(), str });
+				return false;
+			}
+		);
+	}
+	else
+	{
+		_files_test_domain->forLine(
+			[this](std::string str_line)
+			{
+				if (str_line.empty())
+					return false;
+
+				_loadFile(str_line);
+
+				_file_test_domain->forLine(
+					[this](std::string str)
+					{
+						if (str.empty())
+							return false;
+
+						_list_domain.emplace_back(CurlDomain{ curl_easy_init(), str });
+						return false;
+					}
+				);
+
+				return false;
+			}
+		);
+	}
 }
 
 void DomainTesting::changeProxy(std::string ip, u32 port)
@@ -34,30 +73,21 @@ void DomainTesting::changeProxy(std::string ip, u32 port)
 	_proxyPORT = port;
 }
 
-void DomainTesting::test(bool test_video)
+void DomainTesting::test(bool test_video, std::function<void(pcstr url, bool state)>&& callback)
 {
-	_is_testing	  = false;
+	Debug::info("Start test domain.");
+
+	_is_testing	   = true;
+	_cancel_testing = false;
 	_domain_error = _domain_ok = 0;
 
-	for (auto& curl_domain : _list_domain)
-		if (curl_domain.curl)
-			curl_easy_cleanup(curl_domain.curl);
-
-	_list_domain.clear();
-
-	_file_test_domain->forLine(
-		[this](std::string str)
-		{
-			_list_domain.push_back(CurlDomain{ curl_easy_init(), str });
-			return false;
-		}
-	);
+	loadDomain(test_video);
 
 	std::for_each(
 		std::execution::par,
 		_list_domain.begin(),
 		_list_domain.end(),
-		[&test_video, this](const CurlDomain& domain)
+		[this, test_video, callback](const CurlDomain& domain)
 		{
 			if ((!_accurate_test) && errorRate() >= MAX_ERROR_CONECTION)
 			{
@@ -65,56 +95,35 @@ void DomainTesting::test(bool test_video)
 				return;
 			}
 
+			bool state{ false };
+
 			if (test_video ? isConnectionUrlVideo(domain) : isConnectionUrl(domain))
+			{
+				state = true;
 				_domain_ok++;
+			}
 			else
 			{
 				InputConsole::textWarning("проблема доступа: %s", domain.url.c_str());
 				_domain_error++;
 			}
 
-			if (!_accurate_test)
-			{
-				std::jthread{
-					[&domain, this]()
-					{
-						while (!_is_testing)
-						{
-							const u32 error_rate = errorRate();
-							if (error_rate >= MAX_ERROR_CONECTION)
-							{
-								InputConsole::textInfo("Количество ошибок достигло [%d%%]", error_rate);
-								curl_easy_reset(domain.curl);
-								break;
-							}
-
-							std::this_thread::yield();
-						}
-					}
-				}.detach();
-			}
-
-			InputConsole::textInfo(
-				"Успех [%d], ошибки [%d], всего на тестировании [%d]",
-				_domain_ok.load(),
-				_domain_error.load(),
-				_list_domain.size()
-			);
+			callback(domain.url.c_str(), state);
 		}
 	);
 
-	_is_testing = true;
-
-#ifdef DEBUG
-	InputConsole::pause();
-#endif
-
-	InputConsole::clear();
+	_is_testing = false;
+	Debug::info("Finish test domain.");
 }
 
 void DomainTesting::changeAccurateTest(bool state)
 {
 	_accurate_test = state;
+}
+
+void DomainTesting::cancelTesting()
+{
+	_cancel_testing = true;
 }
 
 u32 DomainTesting::successRate() const
@@ -137,7 +146,26 @@ void DomainTesting::printTestInfo() const
 	);
 }
 
-static size_t write_data(void* /*buffer*/, size_t size, size_t nmemb, void* /*userp*/)
+static size_t progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
+{
+	if (clientp)
+	{
+		const auto domain = static_cast<DomainTesting*>(clientp);
+		if (domain->isCancelTesting())
+			return CURLE_COULDNT_CONNECT;
+
+		if (!domain->isAccurateTest())
+		{
+			const u32 error_rate = domain->errorRate();
+			if (error_rate >= MAX_ERROR_CONECTION)
+				return CURLE_COULDNT_CONNECT;
+		}
+	}
+
+	return CURLE_OK;
+}
+
+static size_t write_data(void* /*buffer*/, size_t size, size_t nmemb, void* userdata)
 {
 	return size * nmemb;
 }
@@ -161,10 +189,17 @@ bool DomainTesting::isConnectionUrlVideo(const CurlDomain& domain) const
 		curl_easy_setopt(
 			domain.curl,
 			CURLOPT_USERAGENT,
-			"Mozilla/5.0 ( Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 YaBrowser/138.0.9197.153"
+			"Mozilla/5.0 ( Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 "
+			"YaBrowser/138.0.9197.153"
 		);
+
+		curl_easy_setopt(domain.curl, CURLOPT_NOPROGRESS, 0L);
+		curl_easy_setopt(domain.curl, CURLOPT_XFERINFODATA, this);
+		curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
+
 		curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _accurate_test ? 10L : 3L);
+		curl_easy_setopt(domain.curl, CURLOPT_CONNECTTIMEOUT, _accurate_test ? 10L : 5L);
+		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _accurate_test ? 10L : 5L);
 
 		while (count_connection++ < 8)
 		{
@@ -199,10 +234,17 @@ bool DomainTesting::isConnectionUrl(const CurlDomain& domain) const
 		curl_easy_setopt(
 			domain.curl,
 			CURLOPT_USERAGENT,
-			"Mozilla/5.0 ( Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 YaBrowser/138.0.9197.153"
+			"Mozilla/5.0 ( Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 "
+			"YaBrowser/138.0.9197.153"
 		);
+
+		curl_easy_setopt(domain.curl, CURLOPT_NOPROGRESS, 0L);
+		curl_easy_setopt(domain.curl, CURLOPT_XFERINFODATA, this);
+		curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
+
 		curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _accurate_test ? 10L : 3L);
+		curl_easy_setopt(domain.curl, CURLOPT_CONNECTTIMEOUT, _accurate_test ? 10L : 5L);
+		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _accurate_test ? 10L : 5L);
 
 		while (count_connection++ < 2)
 		{
@@ -290,4 +332,9 @@ bool DomainTesting::isConnectionUrl(const CurlDomain& domain) const
 	}
 
 	return false;
+}
+
+void DomainTesting::_loadFile(std::filesystem::path file)
+{
+	_file_test_domain->open((Core::get().configsPath() / file), ".list", true);
 }

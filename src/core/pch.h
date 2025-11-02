@@ -1,11 +1,11 @@
 #pragma once
 
-#include "macro.inl"
-
 #include <iostream>
 #include <string>
 #include <regex>
 #include <vector>
+#include <deque>
+#include <map>
 #include <array>
 #include <list>
 #include <chrono>
@@ -15,11 +15,13 @@
 #include <execution>
 #include <expected>
 
+#include "macro.inl"
 #include "types.inl"
 #include "platform.inl"
 #include "dll_exports.inl"
 
 #include "lock_thread.hpp"
+#include "localization.h"
 
 #include "utils.h"
 #include "debug.h"
