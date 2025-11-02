@@ -40,15 +40,20 @@ main {
 }
 
 footer {
-	position: fixed;
-	z-index: 0;
-	bottom  : 0;
-	left    : 0;
-	padding : .3em;
+	z-index   : 1;
+	position  : fixed;
+	bottom    : 0;
+	left      : 0;
+	padding   : .3em;
+	opacity   : .2;
+	transition: opacity 300ms;
+}
+
+footer:hover {
+	opacity: 1;
 }
 
 footer .button {
-	z-index: 0;
 	width: 11em;
 }
 
@@ -478,8 +483,10 @@ main article .header_title {
 	visibility      : hidden;
 	opacity         : 0;
 	text-align      : center;
+	overflow        : auto;
 	top             : 101%;
 	width           : 14em;
+	max-height      : 16em;
 	background-color: rgba(82, 82, 82, .9);
 	border          : solid 2px rgb(91, 91, 91);
 	transition      : visibility 100ms, opacity 100ms;
@@ -545,6 +552,7 @@ main article .header_title {
 .check_box .description,
 .input .description,
 .select_list .description {
+	z-index         : 3;
 	position        : fixed;
 	opacity         : 0;
 	visibility      : hidden;
@@ -559,7 +567,6 @@ main article .header_title {
 .check_box .description_active,
 .input .description_active,
 .select_list .description_active {
-	z-index   : 3;
 	opacity   : 1;
 	visibility: visible;
 }
