@@ -1,16 +1,22 @@
-#include "pch.h"
 #include "ui.h"
+
 #include "../unblock/unblock.h"
 
 Ui::Ui(IEngineAPI* engine) : _engine(engine)
 {
+	_file_user_setting->open((Core::get().userPath() / "setting"), ".config", true);
+
+	#ifndef DEBUG
+		auto result = _file_user_setting->parameterSection<bool>("SUSTEM", "show_console");
+		if (result && result.value())
+			_engine->console();
+	#endif
+
 	_overlay = Overlay::Create(_engine->window(), _engine->window()->width(), _engine->window()->height(), 0, 0);
 	_overlay->view()->LoadURL("file:///main.html");
 
 	_overlay->view()->set_load_listener(this);
 	_overlay->view()->set_view_listener(this);
-	
-	_unblock = std::make_unique<Unblock>();
 }
 
 Ui::~Ui()
@@ -19,7 +25,6 @@ Ui::~Ui()
 	_overlay->view()->set_view_listener(nullptr);
 	_engine = nullptr;
 }
-
 
 #define LOGS(method)                                                                                        \
 	method(                                                                                                 \
@@ -90,18 +95,27 @@ void Ui::OnWindowObjectReady(View* caller, uint64_t frame_id, bool is_main_frame
 	auto locked_context = caller->LockJSContext();
 	SetJSContext(locked_context->ctx());
 
-	JSObject global	  = JSGlobalObject();
-	global["RUN_CPP"] = JSValue(true);
-	global["CPPTaskRun"] = BindJSCallback(&Ui::RunTask);
+	JSObject global		  = JSGlobalObject();
+	global["RUN_CPP"]	  = JSValue(true);
+	global["CPPTaskRun"]  = BindJSCallback(&Ui::runTask);
+	global["CPPLangText"] = BindJSCallbackWithRetval(&Ui::langText);
 }
 
 void Ui::OnDOMReady(View* caller, uint64_t frame_id, bool is_main_frame, const String& url)
 {
 	Core::setThreadJsID(GetCurrentThreadId());
+
 	auto locked_context = caller->LockJSContext();
 	SetJSContext(locked_context->ctx());
-	BaseElement::initialize_all(caller);
 
+	BaseElement::initializeAll(caller);
+
+	_setting();
+
+	// HOME
+	_startService();
+	_startServiceWindow();
+	_stopService();
 	_testing();
 }
 
@@ -111,13 +125,27 @@ void Ui::OnClose(ultralight::Window* window)
 	_engine->app()->Quit();
 }
 
-void Ui::RunTask(const JSObject& obj, const JSArgs& args)
+void Ui::runTask(const JSObject& obj, const JSArgs& args)
 {
-	CRITICAL_SECTION_RAII(Core::getTaskLockJS());
 	auto& task = Core::getTaskJS();
+	FAST_LOCK(Core::getTaskLockJS());
 	while (!task.empty())
 	{
-		task.back()();
-		task.pop();
+		task.front()();
+		task.pop_front();
 	}
+}
+
+JSValue Ui::langText(const JSObject& obj, const JSArgs& args)
+{
+	if (!args[0].IsString())
+	{
+		Debug::warning(
+			"The passed argument in LANG_TEXT is not a string, it is necessary to pass the string value of the text_id of the localization system."
+		);
+		return "";
+	}
+
+	const auto text_id = static_cast<String>(args[0].ToString());
+	return Localization::Str{ text_id.utf8().data() }();
 }

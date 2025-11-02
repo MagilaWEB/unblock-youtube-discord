@@ -22,29 +22,47 @@ void Input::initialize()
 		_get_value = global_js["getInputValue"];
 
 	if (!global_js["CPPInputEventSubmit"])
-		global_js["CPPInputEventSubmit"] = static_cast<JSCallbackWithRetval>(Input::event_click);
+		global_js["CPPInputEventSubmit"] = JS_EVENT(_event_click);
 }
 
-void Input::create(std::string selector, std::string type, std::string value, std::string title, std::string description, bool first)
+void Input::create(pcstr selector, Types type, pcstr value, Localization::Str title, Localization::Str description, bool first)
 {
+	pcstr _title	   = title();
+	pcstr _description = description();
+
 	runCode(
-		[this, selector, type, value, title, description, first]
+		[=]
 		{
-			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(
-				_create({ selector.c_str(), _name, type.c_str(), value.c_str(), title.c_str(), description.c_str(), first }).ToBoolean() == true,
-				"Couldn't create a %s named [%s]",
-				_type,
-				_name
-			);
-			_event_click[_name].clear();
+			for (auto& [id, str] : convert_types)
+			{
+				if (id == type)
+				{
+					RefPtr<JSContext> lock(_view->LockJSContext());
+					ASSERT_ARGS(
+						_create({ selector, _name, str, value, _title, _description, first }).ToBoolean() == true,
+						"Couldn't create a %s named [%s]",
+						_type,
+						_name
+					);
+					_event_click[_name].clear();
+					_created = true;
+					break;
+				}
+			}
 		}
 	);
 }
 
-void Input::addEventSubmit(std::function<bool(JSArgs)>&& fn)
+void Input::addEventSubmit(std::function<bool(JSArgs)>&& callback)
 {
-	runCode([this, fn] { _event_click[_name].push_back(fn); });
+	runCode(
+		[this, callback]
+		{
+			if (!_created)
+				return;
+			_event_click[_name].push_back(callback);
+		}
+	);
 }
 
 JSValue Input::getValue()
@@ -59,6 +77,8 @@ void Input::setValue(JSValue value)
 	runCode(
 		[this, value]
 		{
+			if (!_created)
+				return;
 			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(_set_value({ _name, value }).ToBoolean() == true, "Couldn't setValue a %s named [%s]", _type, _name);
 		}

@@ -11,9 +11,14 @@ public:
 
 	void initialize() override;
 
-	void create(std::string selector, std::string title, bool first = false) = delete;
-	void create(std::string selector, std::string title, std::string description, bool first = false);
+	void create(pcstr selector, Localization::Str title, bool first = false) = delete;
+	void create(pcstr selector, Localization::Str title, Localization::Str description, bool first = false);
 	void setState(bool state);
 	bool getState();
 };
 
+#define CHECK_BOX(name) \
+	Ptr<CheckBox>##name \
+	{                   \
+		#name           \
+	}

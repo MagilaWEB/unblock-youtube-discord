@@ -1,6 +1,5 @@
 #pragma once
 #include "engine_api.hpp"
-
 #include "../ui/ui.h"
 
 using namespace ultralight;
@@ -18,6 +17,7 @@ public:
 	void initialize();
 	void run();
 
+	void	console() override;
 	App*	app() override;
 	Window* window() override;
 

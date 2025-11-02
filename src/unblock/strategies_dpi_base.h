@@ -1,15 +1,20 @@
 #pragma once
 #include "../core/file_system.h"
 
+inline constexpr std::pair<u32, pcstr> indexStrategies[]{
+	{ 0,	 "unblock" },
+	{ 1, "GoodbyeDPI" }
+};
+
 class StrategiesDPIBase
 {
 protected:
-	constexpr static u8 _STRATEGY_DPI_MAX{ 3 };
-	Ptr<FileSystem>		_file_strategy_dpi;
+	constexpr static u32 _STRATEGY_DPI_MAX{ sizeof(indexStrategies) / sizeof(std::pair<u32, pcstr>) };
+	Ptr<File>		_file_strategy_dpi;
 
 	std::filesystem::path	 patch_file;
 	std::vector<std::string> _strategy_files_list{};
-	std::vector<std::string> _strategy_dpi[_STRATEGY_DPI_MAX]{};
+	std::array<std::vector<std::string>, _STRATEGY_DPI_MAX> _strategy_dpi{};
 
 public:
 	StrategiesDPIBase()			 = default;

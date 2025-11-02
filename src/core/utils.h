@@ -14,8 +14,10 @@ namespace utils
 		return { buf.get(), buf.get() + size - 1 };
 	}
 
-	CORE_API void str_replace(std::string& str, const std::string& old, const std::string& new_str);
-
 	CORE_API bool IsUTF8(pcstr string);
 	CORE_API std::string UTF8_to_CP1251(pcstr str);
+
+	CORE_API void ltrim(std::string & str);
+	CORE_API void rtrim(std::string& str);
+	CORE_API void trim(std::string& str);
 }

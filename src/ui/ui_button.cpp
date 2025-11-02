@@ -18,6 +18,9 @@ void Button::initialize()
 	if (!_remove)
 		_remove = global_js["removeButton"];
 
+	if (!_set_title)
+		_set_title = global_js["setTitleButton"];
+
 	if (!global_js["CPPButtonEventClick"])
-		global_js["CPPButtonEventClick"] = static_cast<JSCallbackWithRetval>(Button::event_click);
+		global_js["CPPButtonEventClick"] = JS_EVENT(_event_click);
 }

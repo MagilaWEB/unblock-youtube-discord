@@ -21,9 +21,6 @@ void SelectList::initialize()
 	if (!_get_value)
 		_get_value = global_js["getSelectSelectedOption"];
 
-	if (!_add_event_change)
-		_add_event_change = global_js["addSelectEventChange"];
-
 	if (!_clear)
 		_clear = global_js["clearSelect"];
 
@@ -31,63 +28,63 @@ void SelectList::initialize()
 		_remove = global_js["removeListSelect"];
 
 	if (!global_js["CPPSelectEventChange"])
-		global_js["CPPSelectEventChange"] = static_cast<JSCallbackWithRetval>(SelectList::event_click);
+		global_js["CPPSelectEventChange"] = JS_EVENT(_event_click);
 }
 
-void SelectList::create(std::string selector, std::string title, std::string description, bool first)
+void SelectList::create(pcstr selector, Localization::Str title, Localization::Str description, bool first)
 {
 	runCode(
-		[this, selector, title, description, first]
+		[&]
 		{
 			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(
-				_create({ selector.c_str(), _name, title.c_str(), description.c_str(), first }).ToBoolean() == true,
+				_create({ selector, _name, title(), description(), first }).ToBoolean() == true,
 				"Couldn't create a %s named [%s]",
 				_type,
 				_name
 			);
 			_event_click[_name].clear();
+			_created = true;
 		}
 	);
 }
 
-void SelectList::createOption(JSValue value, std::string text, bool select)
+void SelectList::createOption(JSValue value, Localization::Str text, bool select)
 {
+	pcstr _text = text();
 	runCode(
-		[this, value, text, select]
+		[=]
 		{
+			if (!_created)
+				return;
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(
-				_create_option({ _name, value, text.c_str(), select }).ToBoolean() == true,
-				"Couldn't createOption a %s named [%s]",
-				_type,
-				_name
-			);
+			ASSERT_ARGS(_create_option({ _name, value, _text, select }).ToBoolean() == true, "Couldn't createOption a %s named [%s]", _type, _name);
 		}
 	);
 }
 
-void SelectList::addEventChange(std::function<bool(JSArgs)>&& fn)
+void SelectList::addEventChange(std::function<bool(JSArgs)>&& callback)
 {
 	runCode(
-		[this, fn]
+		[this, callback]
 		{
-			auto& vector_event = _event_click[_name];
-			if (vector_event.empty())
-			{
-				RefPtr<JSContext> lock(_view->LockJSContext());
-				_add_event_change({ _name });
-			}
-
-			vector_event.push_back(fn);
+			if (!_created)
+				return;
+			_event_click[_name].push_back(callback);
 		}
 	);
 }
 
 void SelectList::setSelectedOptionValue(JSValue value)
 {
-	runCode([this, value]
-			{ ASSERT_ARGS(_set_value({ _name, value }).ToBoolean() == true, "Couldn't setSelectedOptionValue a %s named [%s]", _type, _name); });
+	runCode(
+		[this, value]
+		{
+			if (!_created)
+				return;
+			ASSERT_ARGS(_set_value({ _name, value }).ToBoolean() == true, "Couldn't setSelectedOptionValue a %s named [%s]", _type, _name);
+		}
+	);
 }
 
 JSValue SelectList::getSelectedOptionValue()
@@ -101,6 +98,9 @@ void SelectList::clear()
 	runCode(
 		[this]
 		{
+			if (!_created)
+				return;
+
 			_event_click[_name].clear();
 			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(_create({ _name }).ToBoolean() == true, "Couldn't clear a %s named [%s]", _type, _name);

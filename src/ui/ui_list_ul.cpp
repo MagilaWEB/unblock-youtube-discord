@@ -31,25 +31,31 @@ void ListUl::initialize()
 		_clear_li = global_js["clearListUl"];
 }
 
-void ListUl::createLi(std::string text)
+void ListUl::createLi(Localization::Str text)
 {
+	pcstr _text = text();
+
 	runCode(
-		[this, text]
+		[this, _text]
 		{
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_create_li({ _name, text.c_str() }).ToBoolean() == true, "Couldn't create_li a %s named [%s]", _type, _name);
+			ASSERT_ARGS(_create_li({ _name, _text }).ToBoolean() == true, "Couldn't create_li a %s named [%s]", _type, _name);
 		}
 	);
 }
 
-void ListUl::createLiSuccess(std::string text, bool state)
+void ListUl::createLiSuccess(Localization::Str text, bool state)
 {
+	if (!_created)
+		return;
+
+	pcstr _text = text();
+
 	runCode(
-		[this, text, state]
+		[this, _text, state]
 		{
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(
-				_create_li_success({ _name, text.c_str(), state }).ToBoolean() == true,
+			ASSERT_ARGS(_create_li_success({ _name, _text, state }).ToBoolean() == true,
 				"Couldn't create_li_success a %s named [%s]",
 				_type,
 				_name
@@ -58,24 +64,28 @@ void ListUl::createLiSuccess(std::string text, bool state)
 	);
 }
 
-void ListUl::addClass(std::string name_class)
+void ListUl::addClass(pcstr name_class)
 {
 	runCode(
 		[this, name_class]
 		{
+			if (!_created)
+				return;
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_add_class({ _name, name_class.c_str() }).ToBoolean() == true, "Couldn't addClass a %s named [%s]", _type, _name);
+			ASSERT_ARGS(_add_class({ _name, name_class }).ToBoolean() == true, "Couldn't addClass a %s named [%s]", _type, _name);
 		}
 	);
 }
 
-void ListUl::removeClass(std::string name_class)
+void ListUl::removeClass(pcstr name_class)
 {
 	runCode(
 		[this, name_class]
 		{
+			if (!_created)
+				return;
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_remove_class({ _name, name_class.c_str() }).ToBoolean() == true, "Couldn't removeClass a %s named [%s]", _type, _name);
+			ASSERT_ARGS(_remove_class({ _name, name_class }).ToBoolean() == true, "Couldn't removeClass a %s named [%s]", _type, _name);
 		}
 	);
 }
@@ -85,6 +95,8 @@ void ListUl::clear()
 	runCode(
 		[this]
 		{
+			if (!_created)
+				return;
 			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(_clear_li({ _name }).ToBoolean() == true, "Couldn't clear a %s named [%s]", _type, _name);
 		}

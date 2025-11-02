@@ -1,6 +1,4 @@
-﻿#include "pch.h"
-
-#include "engine.h"
+﻿#include "engine.h"
 
 using namespace std;
 
@@ -18,9 +16,6 @@ static void run(const std::string& command_line)
 
 int main(int argc, char** argv)
 {
-	// Set UTF-8
-
-
 	std::string lp_cmd_line{};
 	for (int i = 1; i < argc; ++i)
 		lp_cmd_line.append(argv[i]);

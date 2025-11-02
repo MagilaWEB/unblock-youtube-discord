@@ -25,22 +25,25 @@ void CheckBox::initialize()
 		_get_state = global_js["getCheckBoxState"];
 
 	if (!global_js["CPPCheckBoxEventClick"])
-		global_js["CPPCheckBoxEventClick"] = static_cast<JSCallbackWithRetval>(CheckBox::event_click);
+		global_js["CPPCheckBoxEventClick"] = JS_EVENT(_event_click);
 }
 
-void CheckBox::create(std::string selector, std::string title, std::string description, bool first)
+void CheckBox::create(pcstr selector, Localization::Str title, Localization::Str description, bool first)
 {
+	pcstr _title = title();
+	pcstr _description = description();
 	runCode(
-		[this, selector, title, description, first]
+		[=]
 		{
 			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(
-				_create({ selector.c_str(), _name, title.c_str(), description.c_str(), first }).ToBoolean() == true,
+				_create({ selector, _name, _title, _description, first }).ToBoolean() == true,
 				"Couldn't create a %s named [%s]",
 				_type,
 				_name
 			);
 			_event_click[_name].clear();
+			_created = true;
 		}
 	);
 }
@@ -50,6 +53,8 @@ void CheckBox::setState(bool state)
 	runCode(
 		[this, state]
 		{
+			if (!_created)
+				return;
 			RefPtr<JSContext> lock(_view->LockJSContext());
 			_set_state({ _name, state });
 		}
@@ -58,7 +63,7 @@ void CheckBox::setState(bool state)
 
 bool CheckBox::getState()
 {
-	FAST_LOCK_SHARED(Core::getTaskLock());
+
 	RefPtr<JSContext> lock(_view->LockJSContext());
 	return _get_state({ _name }).ToBoolean();
 }

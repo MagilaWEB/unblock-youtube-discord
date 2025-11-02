@@ -4,9 +4,9 @@ class CORE_API Core final
 {
 	inline static DWORD								_thread_js_id{};
 	inline static FastLock							_task_lock;
-	inline static CriticalSection					_task_lock_js;
-	inline static std::queue<std::function<void()>> _task;
-	inline static std::queue<std::function<void()>> _task_js;
+	inline static FastLock							_task_lock_js;
+	inline static std::deque<std::function<void()>> _task;
+	inline static std::deque<std::function<void()>> _task_js;
 
 	Core();
 	~Core() = default;
@@ -30,13 +30,13 @@ public:
 	std::filesystem::path configsPath() const;
 	std::filesystem::path userPath() const;
 
-	static void addTask(std::function<void()>&& fn);
-	static void addTaskJS(const std::function<void()>& fn);
+	static void addTask(std::function<void()>&& callback);
+	static void addTaskJS(std::function<void()> callback);
 
-	static std::queue<std::function<void()>>& getTask();
-	static std::queue<std::function<void()>>& getTaskJS();
+	static std::deque<std::function<void()>>& getTask();
+	static std::deque<std::function<void()>>& getTaskJS();
 	static FastLock&						  getTaskLock();
-	static CriticalSection&					  getTaskLockJS();
+	static FastLock&						  getTaskLockJS();
 
 	static void	 setThreadJsID(DWORD id);
 	static DWORD getThreadJsID();

@@ -1,16 +1,5 @@
 #include "utils.h"
 
-void utils::str_replace(std::string& str, const std::string& old, const std::string& new_str)
-{
-	size_t start = { str.find_first_of(old) };
-
-	while (start != std::string::npos)
-	{
-		str.replace(start, old.length(), new_str);
-		start = str.find_first_of(old, start + new_str.length());
-	}
-}
-
 bool utils::IsUTF8(pcstr string)
 {
 	if (!string)
@@ -75,4 +64,22 @@ std::string utils::UTF8_to_CP1251(pcstr str)
 	}
 
 	return { str };
+}
+
+void utils::ltrim(std::string& str)
+{
+	auto iterator = std::find_if(str.begin(), str.end(), [](char ch) { return !std::isspace<char>(ch, std::locale::classic()); });
+	str.erase(str.begin(), iterator);
+}
+
+void utils::rtrim(std::string& str)
+{
+	auto iterator = std::find_if(str.rbegin(), str.rend(), [](char ch) { return !std::isspace<char>(ch, std::locale::classic()); });
+	str.erase(iterator.base(), str.end());
+}
+
+void utils::trim(std::string& str)
+{
+	rtrim(str);
+	ltrim(str);
 }

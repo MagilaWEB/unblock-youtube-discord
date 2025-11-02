@@ -7,8 +7,9 @@ void StrategiesDPIBase::changeStrategy(u32 index)
 
 	_file_strategy_dpi->open(patch_file / strategy_file, "", true);
 
-	for (auto& v : _strategy_dpi[0])
-		v.clear();
+	for (auto& v : _strategy_dpi)
+		for (auto& file : v)
+			file.clear();
 
 	_uploadStrategies();
 }
@@ -95,7 +96,7 @@ std::optional<std::string> StrategiesDPIBase::_getPath(std::string str, std::str
 {
 	if (str.contains(prefix))
 	{
-		utils::str_replace(str, prefix, path.string() + "\\");
+		str = std::regex_replace(str, std::regex{ prefix }, path.string() + "\\");
 		return str;
 	}
 

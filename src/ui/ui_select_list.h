@@ -4,7 +4,6 @@
 class SelectList final : public BaseElement
 {
 	JSFunction _create_option;
-	JSFunction _add_event_change;
 	JSFunction _set_value;
 	JSFunction _get_value;
 	JSFunction _clear;
@@ -12,18 +11,24 @@ class SelectList final : public BaseElement
 public:
 	SelectList(pcstr name);
 
-	void addEventClick(std::function<bool(JSArgs)>&& fn) = delete;
-	void create(std::string selector, std::string title, bool first = false) = delete;
+	void addEventClick(std::function<bool(JSArgs)>&& callback)	 = delete;
+	void create(pcstr selector, Localization::Str title, bool first = false) = delete;
 
 	void initialize() override;
 
-	void create(std::string selector, std::string title, std::string description, bool first = false);
-	void createOption(JSValue value, std::string text, bool select = false);
+	void create(pcstr selector, Localization::Str title, Localization::Str description, bool first = false);
+	void createOption(JSValue value, Localization::Str text, bool select = false);
 
-	void addEventChange(std::function<bool(JSArgs)>&& fn);
+	void addEventChange(std::function<bool(JSArgs)>&& callback);
 
-	void				setSelectedOptionValue(JSValue value);
+	void	setSelectedOptionValue(JSValue value);
 	JSValue getSelectedOptionValue();
 
 	void clear();
 };
+
+#define SELECT_LIST(name) \
+	Ptr<SelectList>##name \
+	{                     \
+		#name             \
+	}

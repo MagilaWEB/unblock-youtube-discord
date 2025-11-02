@@ -6,8 +6,10 @@ class CORE_API Service final
 	const static inline ULONGLONG _dw_timeout{ 30'000 };
 	static inline SC_HANDLE		  _sc_manager{ nullptr };
 
-	pcstr					 _name{ "" };
-	pcstr					 _description{ "" };
+	CriticalSection lock;
+
+	std::string				 _name{ "" };
+	std::string				 _description{ "" };
 	std::vector<std::string> _args;
 	DWORD					 _dw_bytes_needed{ 0 };
 	ULONGLONG				 _dw_start_time{ GetTickCount64() };
@@ -23,9 +25,9 @@ public:
 	SC_HANDLE			   sc{ nullptr };
 	SERVICE_STATUS_PROCESS sc_status{};
 
-	void setName(pcstr new_name);
+	void setName(std::string new_name);
 	void setDescription(pcstr description);
-	pcstr getName() const;
+	std::string getName() const;
 
 	bool isRun();
 

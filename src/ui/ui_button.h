@@ -9,5 +9,8 @@ public:
 	void initialize() override;
 };
 
-#define BUTTON(name) \
-Ptr<Button> ##name{ #name }
+#define BUTTON(name)  \
+	Ptr<Button>##name \
+	{                 \
+		#name         \
+	}

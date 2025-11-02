@@ -1,18 +1,19 @@
-#include "pch.h"
 #include "file_system.h"
 
-FileSystem::FileSystem()
-{
-	_stream.exceptions(std::ios::badbit);
-}
-
-FileSystem::~FileSystem()
+File::~File()
 {
 	close();
 }
 
-void FileSystem::forLine(std::function<bool(std::string)>&& fn)
+void File::forLine(std::function<bool(std::string)> fn)
 {
+	CRITICAL_SECTION_RAII(lock);
+	if (!isOpen())
+	{
+		Debug::warning("File [%s] not open!", _path_file.string().c_str());
+		return;
+	}
+
 	if (_line_string.empty())
 		return;
 
@@ -21,10 +22,18 @@ void FileSystem::forLine(std::function<bool(std::string)>&& fn)
 			break;
 }
 
-void FileSystem::_forLineSection(pcstr section, std::function<bool(ItParameters&)>&& fn)
+void File::_forLineSection(pcstr section, std::function<bool(ItParameters&)> fn)
 {
+	CRITICAL_SECTION_RAII(lock);
+
+	if (!isOpen())
+	{
+		Debug::warning("File [%s] not open!", _path_file.string().c_str());
+		return;
+	}
+
 	const static std::regex r_section_name{ "\\[.*\\](?:.*|\\n)" };
-	ItParameters		option_it{};
+	ItParameters			option_it{};
 
 	for (option_it.iterator = _line_string.begin(); option_it.iterator < _line_string.end();)
 	{
@@ -33,11 +42,13 @@ void FileSystem::_forLineSection(pcstr section, std::function<bool(ItParameters&
 		if (str.empty())
 		{
 			++option_it.iterator;
+			++option_it.i;
 			continue;
 		}
 
 		auto iterator = [&]
 		{
+			++option_it.i;
 			if (++option_it.iterator == _line_string.end())
 			{
 				option_it.iterator--;
@@ -103,13 +114,15 @@ void FileSystem::_forLineSection(pcstr section, std::function<bool(ItParameters&
 	}
 }
 
-void FileSystem::forLineSection(pcstr section, std::function<bool(std::string str)>&& fn)
+void File::forLineSection(pcstr section, std::function<bool(std::string str)> fn)
 {
+	CRITICAL_SECTION_RAII(lock);
+
 	_forLineSection(
 		section,
-		[&](const ItParameters& it)
+		[fn](const ItParameters& it)
 		{
-			if (it.ran_parameter)
+			if (it.ran_parameter && !it.section_end)
 				if (fn(*it.iterator))
 					return true;
 
@@ -118,23 +131,27 @@ void FileSystem::forLineSection(pcstr section, std::function<bool(std::string st
 	);
 }
 
-void FileSystem::forLineParametersSection(pcstr section, std::function<bool(std::string key, std::string value)>&& fn)
+void File::forLineParametersSection(pcstr section, std::function<bool(std::string key, std::string value)> fn)
 {
+	CRITICAL_SECTION_RAII(lock);
+
 	forLineSection(
 		section,
-		[&](std::string str)
+		[this, section, fn](std::string str)
 		{
 			size_t pos = str.find_first_of("=");
 			if (pos != std::string::npos)
 			{
-				const auto& key	  = str.substr(0, pos);
-				const auto& value = str.substr(++pos, str.size());
+				auto key = str.substr(0, pos);
+				utils::trim(key);
+				auto value = str.substr(++pos, str.size());
+				utils::trim(value);
 				return fn(key, value);
 			}
 			else
 			{
-				Debug::error(
-					"при попытке получить ключи и значения в файле[%s] в секции [%s] отсутствует "
+				Debug::warning(
+					"при попытке получить ключи и значения в файле [%s] в секции [%s] отсутствует "
 					"разминователь [=]! Строка следующего вида [%s].",
 					name().c_str(),
 					section,
@@ -147,8 +164,17 @@ void FileSystem::forLineParametersSection(pcstr section, std::function<bool(std:
 	);
 }
 
-std::expected<std::string, std::string> FileSystem::parameterSection(pcstr section, pcstr parameter)
+template<typename TypeReturn>
+std::expected<TypeReturn, std::string> File::parameterSection(pcstr section, pcstr parameter)
 {
+	CRITICAL_SECTION_RAII(lock);
+
+	if (!isOpen())
+	{
+		Debug::warning("File [%s] not open!", _path_file.string().c_str());
+		return Debug::str_unexpected("Не удалось найти параметр [%s] в секции [%s] файл не был открыт!", parameter, section);
+	}
+
 	std::optional<std::string> kay_value{ std::nullopt };
 	forLineParametersSection(
 		section,
@@ -165,15 +191,63 @@ std::expected<std::string, std::string> FileSystem::parameterSection(pcstr secti
 	);
 
 	if (kay_value)
-		return kay_value.value();
+	{
+		if constexpr (std::is_same_v<TypeReturn, std::string> || std::is_same_v<TypeReturn, pcstr>)
+		{
+			if constexpr (std::is_same_v<TypeReturn, pcstr>)
+				return kay_value.value().c_str();
+			else
+				return kay_value.value();
+		}
+
+		TypeReturn state{};
+
+		if constexpr (std::is_same_v<TypeReturn, bool>)
+		{
+			std::istringstream{ kay_value.value() } >> std::boolalpha >> state;
+			return state;
+		}
+		else if constexpr (std::is_same_v<TypeReturn, float>)
+			return std::stof(kay_value.value());
+		else if constexpr (std::is_same_v<TypeReturn, u32> || std::is_same_v<TypeReturn, long long>)
+		{
+			std::istringstream{ kay_value.value() } >> state;
+			return state;
+		}
+		else if constexpr (std::is_same_v<TypeReturn, s32> || std::is_same_v<TypeReturn, int>)
+		{
+			std::istringstream{ kay_value.value() } >> state;
+			return state;
+		}
+		else
+			static_assert("Only std data types are supported string || const char* || pcstr, u32 || long long, s32 || int, bool!");
+	}
 
 	return Debug::str_unexpected("Не удалось найти параметр [%s] в секции [%s]!", parameter, section);
 }
 
-void FileSystem::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_argument)
-{
-	u32 save_iterator{ 0 };
+template CORE_API std::expected<std::string, std::string> File::parameterSection<std::string>(pcstr section, pcstr parameter);
+template CORE_API std::expected<pcstr, std::string> File::parameterSection<pcstr>(pcstr section, pcstr parameter);
+template CORE_API std::expected<bool, std::string> File::parameterSection<bool>(pcstr section, pcstr parameter);
+template CORE_API std::expected<float, std::string> File::parameterSection<float>(pcstr section, pcstr parameter);
+template CORE_API std::expected<int, std::string> File::parameterSection<int>(pcstr section, pcstr parameter);
+template CORE_API std::expected<s32, std::string> File::parameterSection<s32>(pcstr section, pcstr parameter);
+template CORE_API std::expected<u32, std::string> File::parameterSection<u32>(pcstr section, pcstr parameter);
+template CORE_API std::expected<long long, std::string> File::parameterSection<long long>(pcstr section, pcstr parameter);
 
+void File::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_argument)
+{
+	CRITICAL_SECTION_RAII(lock);
+
+	if (!isOpen())
+	{
+		Debug::warning("File [%s] not open!", _path_file.string().c_str());
+		return;
+	}
+
+	_is_write = true;
+
+	u32 save_iterator{ 0 };
 	bool stoped{ false };
 
 	_forLineSection(
@@ -186,13 +260,15 @@ void FileSystem::writeSectionParameter(pcstr section, pcstr parameter, pcstr val
 				size_t pos = str.find_first_of("=");
 				if (pos != std::string::npos)
 				{
-					const auto& key	  = str.substr(0, pos);
-					const auto& value = str.substr(++pos, str.size());
+					auto key = str.substr(0, pos);
+					utils::trim(key);
+					auto value = str.substr(++pos, str.size());
+					utils::trim(value);
+
 					if (key.contains(parameter))
 					{
 						str	   = std::regex_replace(str, std::regex{ value }, value_argument);
 						stoped = true;
-						_writeToFile();
 						return true;
 					}
 				}
@@ -202,10 +278,10 @@ void FileSystem::writeSectionParameter(pcstr section, pcstr parameter, pcstr val
 				if (!it.entered_section)
 				{
 					if (!_line_string.empty())
-						_line_string.push_back("\n");
+						_line_string.emplace_back("\n");
 
 					std::string str{ "[]" };
-					_line_string.push_back(str.insert(1, section));
+					_line_string.emplace_back(str.insert(1, section));
 				}
 
 				std::string str{ parameter };
@@ -214,10 +290,9 @@ void FileSystem::writeSectionParameter(pcstr section, pcstr parameter, pcstr val
 				if (!it.entered_section)
 					_line_string.insert(_line_string.end(), str);
 				else
-					_line_string.insert(it.iterator, str);
+					_line_string.insert(_line_string.begin() + (it.i - 1), str);
 
 				stoped = true;
-				_writeToFile();
 				return true;
 			}
 
@@ -229,31 +304,32 @@ void FileSystem::writeSectionParameter(pcstr section, pcstr parameter, pcstr val
 		return;
 
 	if (!_line_string.empty())
-		_line_string.push_back("\n");
+		_line_string.emplace_back("\n");
 
 	std::string str{ "[]" };
-	_line_string.push_back(str.insert(1, section));
+	_line_string.emplace_back(str.insert(1, section));
 	str.clear();
 
 	str	 = parameter;
 	str += "=";
 	str += value_argument;
-	_line_string.push_back(str);
-	_writeToFile();
+	_line_string.emplace_back(str);
 }
 
-std::string FileSystem::name() const
+std::string File::name() const
 {
 	return _path_file.filename().string();
 }
 
-bool FileSystem::isOpen() const
+bool File::isOpen() const
 {
 	return _open_state;
 }
 
-void FileSystem::open(std::filesystem::path file, pcstr expansion, bool no_default_patch)
+void File::open(std::filesystem::path file, pcstr expansion, bool no_default_patch)
 {
+	CRITICAL_SECTION_RAII(lock);
+
 	if (isOpen())
 		close();
 
@@ -262,37 +338,78 @@ void FileSystem::open(std::filesystem::path file, pcstr expansion, bool no_defau
 	else
 		_path_file = file += expansion;
 
-	try
+	_stream.open(_path_file, std::ios::in);
+
+	if (!_stream.is_open())
 	{
-		_stream.open(_path_file, std::ios::in);
-
-		_line_string.clear();
-
-		std::string str;
-		while (getline(_stream, str))
-			_line_string.push_back(str);
-
-		_stream.close();
-	}
-	catch (const std::ios::failure& error)
-	{
-		Debug::error("File open fail [%s] error [%s]!", _path_file.string().c_str(), error.what());
+		Debug::warning("File open fail [%s]!", _path_file.string().c_str());
 		_open_state = false;
+		_stream.close();
 		return;
 	}
+
+	_line_string.clear();
+
+	std::string str;
+	while (getline(_stream, str))
+		_line_string.emplace_back(str);
+
+	_removeEmptyLine();
+
+	_stream.close();
 
 	_open_state = true;
 }
 
-void FileSystem::close()
+void File::close()
 {
+	CRITICAL_SECTION_RAII(lock);
+
+	_writeToFile();
 	_open_state = false;
 }
 
-void FileSystem::_writeToFile()
+void File::_removeEmptyLine()
 {
+	bool front{ true };
+	u32	 empty_line{ 0 };
+	std::erase_if(
+		_line_string,
+		[&front, &empty_line](const std::string& str)
+		{
+			if (front && str.empty() || front && str.contains("\n"))
+				return true;
+			else if (front)
+				front = false;
+
+			if (!front && str.empty())
+				empty_line++;
+			else
+				empty_line = 0;
+
+			if (empty_line > 1)
+				return true;
+
+			return false;
+		}
+	);
+
+	for (auto& str : _line_string)
+		utils::trim(str);
+}
+
+void File::_writeToFile()
+{
+	if (!_is_write)
+		return;
+
 	_stream.open(_path_file, std::ios::out | std::ios::binary);
+
+	_removeEmptyLine();
+
 	for (auto& _string : _line_string)
 		_stream << _string << std::endl;
 	_stream.close();
+
+	_is_write = false;
 }

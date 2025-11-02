@@ -1,27 +1,24 @@
 #pragma once
-#include "ui_api.hpp"
 #include "../engine/engine_api.hpp"
-#include "../unblock/unblock_api.hpp"
 
 #include <AppCore/AppCore.h>
 #include <AppCore/Window.h>
 #include <AppCore/Overlay.h>
 #include <Ultralight/Ultralight.h>
 
-#include "ui_button.h"
+#include "ui_elements.hpp"
 
-class UI_API Ui : public IUiAPI,
-				  public WindowListener,
+class Unblock;
+
+class UI_API Ui : public WindowListener,
 				  public LoadListener,
-				  public ViewListener
+				  public ViewListener,
+				  public UiElements
 {
-	IEngineAPI*			_engine;
-	RefPtr<Overlay>		_overlay;
+	Ptr<Unblock> _unblock;
 
-	std::unique_ptr<IUnblockAPI> _unblock{ nullptr };
-
-	BUTTON(_start_testing);
-	BUTTON(_start_testing_2);
+	IEngineAPI*		_engine;
+	RefPtr<Overlay> _overlay;
 
 public:
 	Ui() = delete;
@@ -40,8 +37,17 @@ public:
 	virtual void OnChangeCursor(View* caller, Cursor cursor) override { _engine->window()->SetCursor(cursor); }
 
 private:
+	void _setting();
+
 	void _testing();
+	void _testingWindow();
+
+	void _startService();
+	void _startServiceWindow();
+
+	void _stopService();
 
 public:
-	void RunTask(const JSObject& obj, const JSArgs& args);
+	void	runTask(const JSObject& obj, const JSArgs& args);
+	JSValue langText(const JSObject& obj, const JSArgs& args);
 };

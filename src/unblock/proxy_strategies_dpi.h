@@ -14,6 +14,8 @@ class ProxyStrategiesDPI final : public StrategiesDPIBase
 public:
 	ProxyStrategiesDPI();
 
+	std::vector<std::string> getStrategy(u32) const = delete;
+
 	std::vector<std::string> getStrategy() const;
 	void					 changeProxyData(const ProxyData& proxy_data);
 

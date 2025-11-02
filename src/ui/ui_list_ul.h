@@ -16,10 +16,16 @@ public:
 
 	void initialize() override;
 
-	void createLi(std::string text);
-	void createLiSuccess(std::string text, bool state = false);
-	void addClass(std::string name_class);
-	void removeClass(std::string name_class);
+	void createLi(Localization::Str text);
+	void createLiSuccess(Localization::Str text, bool state = false);
+	void addClass(pcstr name_class);
+	void removeClass(pcstr name_class);
 
 	void clear();
 };
+
+#define UL_LIST(name) \
+	Ptr<ListUl>##name \
+	{                 \
+		#name         \
+	}

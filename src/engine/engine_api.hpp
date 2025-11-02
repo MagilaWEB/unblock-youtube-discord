@@ -8,6 +8,7 @@ namespace ultralight
 class IEngineAPI
 {
 public:
-	virtual ultralight::App*	app()	 = 0;
-	virtual ultralight::Window* window() = 0;
+	virtual void				console() = 0;
+	virtual ultralight::App*	app()	  = 0;
+	virtual ultralight::Window* window()  = 0;
 };
