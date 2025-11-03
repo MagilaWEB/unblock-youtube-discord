@@ -2,6 +2,7 @@
 
 Unblock::Unblock()
 {
+	_zapret->open();
 	_unblock->open();
 	_goodbay_dpi->open();
 	_proxy_dpi->open();
@@ -266,6 +267,7 @@ void Unblock::startService(bool proxy)
 		return;
 	}
 
+	_zapret->remove();
 	_unblock->remove();
 	_goodbay_dpi->remove();
 
