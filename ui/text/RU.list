@@ -12,6 +12,8 @@ str_b_start_find_config=Подобрать конфигурациию
 str_b_stop_service=Остановить службы
 str_b_start_testing=Запустить тестирование
 str_b_start_service_proxy=Запустить ProxyDPI
+str_b_restart_service_proxy=Перезапустить службу ProxyDPI
+str_b_start_find_config_proxy=Подобрать конфигурациию ProxyDPI
 
 // Common
 str_please_wait=Пожалуйста подождите!

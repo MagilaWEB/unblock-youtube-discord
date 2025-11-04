@@ -31,32 +31,6 @@ body {
 	box-shadow         : 0 0 5em 5em black;
 }
 
-main {
-	position  : relative;
-	padding   : 0;
-	width     : 100%;
-	height    : 100%;
-	transition: filter .5s;
-}
-
-footer {
-	z-index   : 1;
-	position  : fixed;
-	bottom    : 0;
-	left      : 0;
-	padding   : .3em;
-	opacity   : .2;
-	transition: opacity 300ms;
-}
-
-footer:hover {
-	opacity: 1;
-}
-
-footer .button {
-	width: 11em;
-}
-
 h1,
 h2 {
 	margin-bottom: .1em;
@@ -256,9 +230,8 @@ h2 {
 	}
 }
 
-
 .nav {
-	z-index                   : 1;
+	z-index                   : 2;
 	position                  : fixed;
 	top                       : 0px;
 	left                      : 0px;
@@ -293,12 +266,16 @@ h2 {
 	font-weight: bold;
 }
 
+main {
+	transition: filter .5s;
+}
+
 main article {
 	position  : fixed;
 	top       : 0;
 	left      : 0;
 	width     : 100%;
-	height    : 100%;
+	max-height: calc(100% - 1em);
 	overflow  : auto;
 	visibility: hidden;
 	opacity   : 0;
@@ -316,6 +293,38 @@ main article .header_title {
 	font-size : 3em;
 	padding   : .6em;
 	text-align: right;
+}
+
+footer {
+	position        : fixed;
+	align-items     : center;
+	bottom          : -3em;
+	padding-top     : 1.1em;
+	width           : 100%;
+	background-color: #3131316b;
+	height          : 4em;
+	transition      : bottom 200ms;
+}
+
+footer::after {
+	content    : ". . .";
+	position   : absolute;
+	left       : 0;
+	top        : -.6em;
+	text-align : center;
+	font-weight: 700;
+	font-size  : 1.4em;
+	width      : 100%;
+	height     : 2em;
+}
+
+footer:hover {
+	bottom: 0;
+}
+
+footer .button {
+	margin: auto;
+	width : 11em;
 }
 
 .info_unblock {
