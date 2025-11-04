@@ -39,7 +39,7 @@ void Ui::_setting()
 				auto& file_name = strategies_list[i];
 				_unblock_select_config->createOption(i, file_name.c_str());
 			}
-			
+
 			auto set_default_select = [this](Ptr<SelectList>& select, pcstr name)
 			{
 				if (auto config = _file_user_setting->parameterSection<std::string>("REMEMBER_CONFIGURATION", name))
@@ -52,10 +52,7 @@ void Ui::_setting()
 					);
 			};
 
-			if (_unblock->activeService())
-				_start_service->setTitle("str_b_restart_service");
-			else
-				_start_service->setTitle("str_b_start_service");
+			_updateTitleButton();
 
 			auto set_new_value = [this](Ptr<SelectList>& select, pcstr set_val, pcstr check_val, JSArgs args)
 			{
@@ -143,11 +140,6 @@ void Ui::_setting()
 			_unblock_manual->addEventClick(
 				[=](JSArgs args)
 				{
-					if (_unblock->activeService())
-						_start_service->setTitle("str_b_restart_service");
-					else
-						_start_service->setTitle("str_b_restart_service");
-
 					_file_user_setting->writeSectionParameter("UNBLOCK", "manual", static_cast<String>(args[0].ToString()).utf8().data());
 					createSelect();
 					return false;
@@ -246,6 +238,14 @@ void Ui::_setting()
 
 				if (auto config = _file_user_setting->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config_proxy"))
 					_proxy_select_config->setSelectedOptionValue(config.value().c_str());
+				else
+					_file_user_setting->writeSectionParameter(
+						"REMEMBER_CONFIGURATION",
+						"config_proxy",
+						static_cast<String>(_proxy_select_config->getSelectedOptionValue().ToString()).utf8().data()
+					);
+
+				_updateTitleButton(true);
 
 				_proxy_select_config->addEventChange(
 					[this](JSArgs args)

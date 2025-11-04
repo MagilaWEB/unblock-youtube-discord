@@ -13,6 +13,7 @@ void Ui::_startService()
 	if (_proxy_enable->getState())
 	{
 		_start_proxy_service->create("#home section .button_start_stop", "str_b_start_service_proxy", true);
+
 		_start_proxy_service->addEventClick(
 			[this](JSArgs args)
 			{
@@ -28,6 +29,7 @@ void Ui::_startService()
 								_window_wait_start_service->show();
 								_unblock->changeProxyStrategy(config_proxy.value().c_str());
 								_unblock->startService(true);
+								_updateTitleButton(true);
 								_window_wait_start_service->hide();
 							}
 						);
@@ -47,14 +49,6 @@ void Ui::_startService()
 	{
 		_start_service->create("#home section .button_start_stop", "str_b_start_service", true);
 
-		if (auto config = _file_user_setting->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
-		{
-			if (_unblock->activeService())
-				_start_service->setTitle("str_b_restart_service");
-		}
-		else
-			_start_service->setTitle("str_b_start_find_config");
-
 		_start_service->addEventClick(
 			[this](JSArgs args)
 			{
@@ -71,7 +65,7 @@ void Ui::_startService()
 								_window_wait_start_service->show();
 								_unblock->changeStrategy(config.value().c_str(), fake_bin.value().c_str());
 								_unblock->startService();
-								_start_service->setTitle("str_b_restart_service");
+								_updateTitleButton();
 								_window_wait_start_service->hide();
 							}
 						);
@@ -94,6 +88,9 @@ void Ui::_startService()
 			}
 		);
 	}
+
+	_updateTitleButton();
+	_updateTitleButton(true);
 }
 
 void Ui::_startServiceWindow()
@@ -170,14 +167,6 @@ void Ui::_startServiceWindow()
 				break;
 			}
 		}
-
-		if (auto config = _file_user_setting->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
-			if (_unblock->activeService())
-				_start_service->setTitle("str_b_restart_service");
-			else
-				_start_service->setTitle("str_b_start_service");
-		else
-			_start_service->setTitle("str_b_start_find_config");
 	};
 
 	auto autoStrategyRunProxy = [=]
@@ -225,6 +214,8 @@ void Ui::_startServiceWindow()
 			autoStrategyRunProxy();
 		else
 			autoStrategyRun();
+
+		_updateTitleButton(proxy_click_state);
 
 		automatically_strategy_cancel = false;
 
@@ -287,4 +278,28 @@ void Ui::_startServiceWindow()
 			return false;
 		}
 	);
+}
+
+void Ui::_updateTitleButton(bool proxy)
+{
+	if (proxy)
+	{
+		if (auto config = _file_user_setting->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config_proxy"))
+			if (_unblock->activeService(true))
+				_start_proxy_service->setTitle("str_b_restart_service_proxy");
+			else
+				_start_proxy_service->setTitle("str_b_start_service_proxy");
+		else
+			_start_proxy_service->setTitle("str_b_start_find_config_proxy");
+
+		return;
+	}
+
+	if (auto config = _file_user_setting->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
+		if (_unblock->activeService())
+			_start_service->setTitle("str_b_restart_service");
+		else
+			_start_service->setTitle("str_b_start_service");
+	else
+		_start_service->setTitle("str_b_start_find_config");
 }

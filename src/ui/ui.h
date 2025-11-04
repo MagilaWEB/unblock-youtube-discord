@@ -47,6 +47,8 @@ private:
 
 	void _stopService();
 
+	void _updateTitleButton(bool proxy = false);
+
 public:
 	void	runTask(const JSObject& obj, const JSArgs& args);
 	JSValue langText(const JSObject& obj, const JSArgs& args);
