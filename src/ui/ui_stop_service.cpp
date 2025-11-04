@@ -18,6 +18,7 @@ void Ui::_stopService()
 					_window_wait_stop_service->show();
 					_unblock->removeService();
 					_unblock->removeService(true);
+					_start_service->setTitle("str_b_start_service");
 					_window_wait_stop_service->hide();
 				}
 			);

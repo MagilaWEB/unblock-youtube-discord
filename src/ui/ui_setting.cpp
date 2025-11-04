@@ -39,21 +39,41 @@ void Ui::_setting()
 				auto& file_name = strategies_list[i];
 				_unblock_select_config->createOption(i, file_name.c_str());
 			}
-
-			if (auto config = _file_user_setting->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
-				_unblock_select_config->setSelectedOptionValue(config.value().c_str());
-
-			_unblock_select_config->addEventChange(
-				[this](JSArgs args)
-				{
-					_file_user_setting
-						->writeSectionParameter("REMEMBER_CONFIGURATION", "config", static_cast<String>(args[1].ToString()).utf8().data());
-
+			
+			auto set_default_select = [this](Ptr<SelectList>& select, pcstr name)
+			{
+				if (auto config = _file_user_setting->parameterSection<std::string>("REMEMBER_CONFIGURATION", name))
+					select->setSelectedOptionValue(config.value().c_str());
+				else
 					_file_user_setting->writeSectionParameter(
 						"REMEMBER_CONFIGURATION",
-						"fake_bin",
-						static_cast<String>(_unblock_select_fake_bin->getSelectedOptionValue().ToString()).utf8().data()
+						name,
+						static_cast<String>(select->getSelectedOptionValue().ToString()).utf8().data()
 					);
+			};
+
+			if (_unblock->activeService())
+				_start_service->setTitle("str_b_restart_service");
+			else
+				_start_service->setTitle("str_b_start_service");
+
+			auto set_new_value = [this](Ptr<SelectList>& select, pcstr set_val, pcstr check_val, JSArgs args)
+			{
+				_file_user_setting->writeSectionParameter("REMEMBER_CONFIGURATION", set_val, static_cast<String>(args[1].ToString()).utf8().data());
+
+				_file_user_setting->writeSectionParameter(
+					"REMEMBER_CONFIGURATION",
+					check_val,
+					static_cast<String>(select->getSelectedOptionValue().ToString()).utf8().data()
+				);
+			};
+
+			set_default_select(_unblock_select_config, "config");
+
+			_unblock_select_config->addEventChange(
+				[=](JSArgs args)
+				{
+					set_new_value(_unblock_select_fake_bin, "config", "fake_bin", args);
 					return false;
 				}
 			);
@@ -71,20 +91,12 @@ void Ui::_setting()
 				_unblock_select_fake_bin->createOption(i, fake_bin.key.c_str());
 			}
 
-			if (auto fake_bin = _file_user_setting->parameterSection<std::string>("REMEMBER_CONFIGURATION", "fake_bin"))
-				_unblock_select_fake_bin->setSelectedOptionValue(fake_bin.value().c_str());
+			set_default_select(_unblock_select_fake_bin, "fake_bin");
 
 			_unblock_select_fake_bin->addEventChange(
-				[this](JSArgs args)
+				[=](JSArgs args)
 				{
-					_file_user_setting->writeSectionParameter(
-						"REMEMBER_CONFIGURATION",
-						"config",
-						static_cast<String>(_unblock_select_config->getSelectedOptionValue().ToString()).utf8().data()
-					);
-
-					_file_user_setting
-						->writeSectionParameter("REMEMBER_CONFIGURATION", "fake_bin", static_cast<String>(args[1].ToString()).utf8().data());
+					set_new_value(_unblock_select_config, "fake_bin", "config", args);
 					return false;
 				}
 			);
@@ -131,6 +143,11 @@ void Ui::_setting()
 			_unblock_manual->addEventClick(
 				[=](JSArgs args)
 				{
+					if (_unblock->activeService())
+						_start_service->setTitle("str_b_restart_service");
+					else
+						_start_service->setTitle("str_b_restart_service");
+
 					_file_user_setting->writeSectionParameter("UNBLOCK", "manual", static_cast<String>(args[0].ToString()).utf8().data());
 					createSelect();
 					return false;

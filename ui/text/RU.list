@@ -6,7 +6,9 @@ str_h2_setting=Настройки
 str_link_to_github=Перейти в GitHub
 
 // BUTTON HOME
-str_b_start_service=Запустить Unblock
+str_b_start_service=Запустить службу
+str_b_restart_service=Перезапустить службу
+str_b_start_find_config=Подобрать конфигурациию
 str_b_stop_service=Остановить службы
 str_b_start_testing=Запустить тестирование
 str_b_start_service_proxy=Запустить ProxyDPI

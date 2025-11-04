@@ -46,6 +46,15 @@ void Ui::_startService()
 	if (_unblock_enable->getState())
 	{
 		_start_service->create("#home section .button_start_stop", "str_b_start_service", true);
+
+		if (auto config = _file_user_setting->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
+		{
+			if (_unblock->activeService())
+				_start_service->setTitle("str_b_restart_service");
+		}
+		else
+			_start_service->setTitle("str_b_start_find_config");
+
 		_start_service->addEventClick(
 			[this](JSArgs args)
 			{
@@ -62,6 +71,7 @@ void Ui::_startService()
 								_window_wait_start_service->show();
 								_unblock->changeStrategy(config.value().c_str(), fake_bin.value().c_str());
 								_unblock->startService();
+								_start_service->setTitle("str_b_restart_service");
 								_window_wait_start_service->hide();
 							}
 						);
@@ -160,6 +170,14 @@ void Ui::_startServiceWindow()
 				break;
 			}
 		}
+
+		if (auto config = _file_user_setting->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
+			if (_unblock->activeService())
+				_start_service->setTitle("str_b_restart_service");
+			else
+				_start_service->setTitle("str_b_start_service");
+		else
+			_start_service->setTitle("str_b_start_find_config");
 	};
 
 	auto autoStrategyRunProxy = [=]
