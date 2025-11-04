@@ -22,7 +22,7 @@ void Localization::set(std::string lang_id)
 	_lang_file_string->forLine(
 		[&](std::string str)
 		{
-			if (str.empty())
+			if (str.empty() || std::regex_match(str, std::regex{ "\n" }))
 				return false;
 
 			size_t pos = str.find_last_of("//", 2);

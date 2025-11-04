@@ -39,7 +39,7 @@ void File::_forLineSection(pcstr section, std::function<bool(ItParameters&)> fn)
 	{
 		const auto& str = *option_it.iterator;
 
-		if (str.empty())
+		if (str.empty() || std::regex_match(str, std::regex{ "\n" }))
 		{
 			++option_it.iterator;
 			++option_it.i;
