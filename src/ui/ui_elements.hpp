@@ -57,6 +57,8 @@ protected:
 	SECONDARY_WINDOW(_window_auto_start_wait);
 	SECONDARY_WINDOW(_window_continue_select_strategy);
 
+	SECONDARY_WINDOW(_window_configuration_selection_error);
+
 	// footer
 	BUTTON(_link_to_github);
 };

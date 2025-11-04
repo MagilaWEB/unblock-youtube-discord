@@ -17,6 +17,7 @@ str_b_start_find_config_proxy=Подобрать конфигурациию Prox
 
 // Common
 str_please_wait=Пожалуйста подождите!
+str_error=Ошибка!
 
 // BLOCK HOME
 str_h2_verified_domains=Доступны домены Unblock:
@@ -42,6 +43,9 @@ str_secondary_window_description_wait_domain=Производится тести
 str_window_auto_start_wait_description=Производится подбор конфигурации под вашего провайдера.
 Тестирование может производиться с погрешностью, от успеха зависит качество вашего интернет соединения, текущая работоспособность ресурсов, высоким уровнем блокировок от вашего провайдера.
 str_window_auto_start_wait_name_strategy_description=Тестирование конфигурации %s.
+str_window_configuration_selection_error=Не удалось автоматически подобрать для вас конфигурацию.
+Возможно какой-то из ресурсов на данный момент не работает, или ваше интернет соединение не стабильно.
+Попробуйте в настройках приложения включить режим точного тестирования или выберите конфигурацию вручную.
 
 // Secondary Window config not found
 str_window_config_not_found_title=Похоже конфигурация не выбрана

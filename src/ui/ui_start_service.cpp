@@ -110,6 +110,9 @@ void Ui::_startServiceWindow()
 	_window_wait_start_service->create(Localization::Str{ "str_please_wait" }, "str_window_service_start_wait_description");
 	_window_wait_start_service->setType(SecondaryWindow::Type::Wait);
 
+	_window_configuration_selection_error->create(Localization::Str{ "str_error" }, "str_window_configuration_selection_error");
+	_window_configuration_selection_error->setType(SecondaryWindow::Type::OK);
+
 	_window_auto_start_wait->addEventCancel(
 		[this](JSArgs)
 		{
@@ -123,97 +126,82 @@ void Ui::_startServiceWindow()
 		}
 	);
 
-	auto windowAutoStartWaitDescription = [this](std::string _strategy_name)
-	{
-		Localization::Str  desc{ "str_window_auto_start_wait_description" };
-		Localization::Str  desc2{ "str_window_auto_start_wait_name_strategy_description" };
-		static std::string text_desc1;
-		text_desc1 = utils::format(desc2(), _strategy_name.c_str());
-		text_desc1.insert(0, "\n");
-		text_desc1.insert(0, desc());
 
-		_window_auto_start_wait->setDescription(text_desc1.c_str());
-	};
-
-	auto autoStrategyRun = [=]
-	{
-		while (_unblock->automaticallyStrategy<StrategiesDPI>())
-		{
-			if (automatically_strategy_cancel)
-			{
-				_unblock->testingDomainCancel<StrategiesDPI>();
-				_unblock->stopService();
-				break;
-			}
-
-			_unblock->startService();
-
-			std::string _strategy_name = _unblock->getNameStrategies<StrategiesDPI>();
-			windowAutoStartWaitDescription(_strategy_name);
-			_unblock->testingDomain<StrategiesDPI>();
-
-			if (!automatically_strategy_cancel && _unblock->validDomain())
-			{
-				std::string _fake_bin = _unblock->getNameFakeBin();
-				_file_user_setting->writeSectionParameter("REMEMBER_CONFIGURATION", "config", _strategy_name.c_str());
-				_file_user_setting->writeSectionParameter("REMEMBER_CONFIGURATION", "fake_bin", _fake_bin.c_str());
-
-				Localization::Str  desc{ "str_window_continue_select_strategy_description" };
-				static std::string text_desc;
-				text_desc = utils::format(desc(), _strategy_name.c_str(), _fake_bin.c_str());
-				_window_continue_select_strategy->setDescription(text_desc.c_str());
-
-				_window_continue_select_strategy->show();
-				break;
-			}
-		}
-	};
-
-	auto autoStrategyRunProxy = [=]
-	{
-		while (_unblock->automaticallyStrategy<ProxyStrategiesDPI>())
-		{
-			if (automatically_strategy_cancel)
-			{
-				_unblock->testingDomainCancel<ProxyStrategiesDPI>();
-				_unblock->stopService(true);
-				break;
-			}
-
-			_unblock->startService(true);
-
-			std::string _strategy_name = _unblock->getNameStrategies<ProxyStrategiesDPI>();
-			windowAutoStartWaitDescription(_strategy_name);
-			_unblock->testingDomain<ProxyStrategiesDPI>();
-
-			if (!automatically_strategy_cancel && _unblock->validDomain(true))
-			{
-				_file_user_setting->writeSectionParameter("REMEMBER_CONFIGURATION", "config_proxy", _strategy_name.c_str());
-
-				Localization::Str  desc{ "str_window_continue_select_strategy_proxy_description" };
-				static std::string text_desc;
-				text_desc = utils::format(desc(), _strategy_name.c_str());
-				_window_continue_select_strategy->setDescription(text_desc.c_str());
-				_window_continue_select_strategy->show();
-
-				break;
-			}
-
-			_window_auto_start_wait->setDescription("str_window_auto_start_wait_description");
-		}
-	};
-
-	auto auto_config = [this, autoStrategyRun, autoStrategyRunProxy]
+	auto auto_config = [this]
 	{
 		Debug::ok("auto Start");
 
 		_window_auto_start_wait->setDescription("str_window_auto_start_wait_description");
 		_window_auto_start_wait->show();
 
-		if (proxy_click_state)
-			autoStrategyRunProxy();
-		else
-			autoStrategyRun();
+		auto errorAutomalicallyStrategy = [this] {
+
+			const bool state =
+				proxy_click_state ? _unblock->automaticallyStrategy<ProxyStrategiesDPI>() : _unblock->automaticallyStrategy<StrategiesDPI>();
+			if (!state)
+			{
+				_window_configuration_selection_error->show();
+				_window_configuration_selection_error->addEventOk(
+					[this](JSArgs args)
+					{
+						_window_configuration_selection_error->hide();
+						return true;
+					}
+				);
+			}
+
+			return state;
+		};
+
+		while (errorAutomalicallyStrategy())
+		{
+			if (automatically_strategy_cancel)
+			{
+				_unblock->stopService(proxy_click_state);
+				break;
+			}
+
+			_unblock->startService(proxy_click_state);
+
+			std::string _strategy_name =
+				proxy_click_state ? _unblock->getNameStrategies<ProxyStrategiesDPI>() : _unblock->getNameStrategies<StrategiesDPI>();
+
+			Localization::Str  desc{ "str_window_auto_start_wait_description" };
+			Localization::Str  desc2{ "str_window_auto_start_wait_name_strategy_description" };
+			static std::string text_desc1;
+			text_desc1 = utils::format(desc2(), _strategy_name.c_str());
+			text_desc1.insert(0, "\n");
+			text_desc1.insert(0, desc());
+
+			_window_auto_start_wait->setDescription(text_desc1.c_str());
+
+			proxy_click_state ? _unblock->testingDomain<ProxyStrategiesDPI>() : _unblock->testingDomain<StrategiesDPI>();
+
+			if (!automatically_strategy_cancel && _unblock->validDomain(proxy_click_state))
+			{
+				static std::string text_desc;
+
+				if (proxy_click_state)
+				{
+					_file_user_setting->writeSectionParameter("REMEMBER_CONFIGURATION", "config_proxy", _strategy_name.c_str());
+					Localization::Str  desc{ "str_window_continue_select_strategy_proxy_description" };				
+					text_desc = utils::format(desc(), _strategy_name.c_str());
+				}
+				else
+				{
+					std::string _fake_bin = _unblock->getNameFakeBin();
+					_file_user_setting->writeSectionParameter("REMEMBER_CONFIGURATION", "config", _strategy_name.c_str());
+					_file_user_setting->writeSectionParameter("REMEMBER_CONFIGURATION", "fake_bin", _fake_bin.c_str());
+
+					Localization::Str  desc{ "str_window_continue_select_strategy_description" };
+					text_desc = utils::format(desc(), _strategy_name.c_str(), _fake_bin.c_str());
+				}
+
+				_window_continue_select_strategy->setDescription(text_desc.c_str());
+				_window_continue_select_strategy->show();
+				break;
+			}
+		}
 
 		_updateTitleButton(proxy_click_state);
 

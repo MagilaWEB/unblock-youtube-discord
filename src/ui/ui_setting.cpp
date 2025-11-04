@@ -52,8 +52,6 @@ void Ui::_setting()
 					);
 			};
 
-			_updateTitleButton();
-
 			auto set_new_value = [this](Ptr<SelectList>& select, pcstr set_val, pcstr check_val, JSArgs args)
 			{
 				_file_user_setting->writeSectionParameter("REMEMBER_CONFIGURATION", set_val, static_cast<String>(args[1].ToString()).utf8().data());
@@ -66,6 +64,8 @@ void Ui::_setting()
 			};
 
 			set_default_select(_unblock_select_config, "config");
+
+			_updateTitleButton();
 
 			_unblock_select_config->addEventChange(
 				[=](JSArgs args)
