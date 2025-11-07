@@ -72,16 +72,16 @@ set(CURL_DIR_DEBUG ${CURL_DIR}/debug)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(ZLIB_LIBRARY ${CURL_DIR_DEBUG}/lib/zlibd.lib)
+    set(CURL_LIBRARY ${CURL_DIR_DEBUG}/lib/libcurl-d.lib)
 else()
     set(ZLIB_LIBRARY ${CURL_DIR_RELEASE}/lib/zlib.lib)
+    set(CURL_LIBRARY ${CURL_DIR_RELEASE}/lib/libcurl.lib)
 endif()
 
 set(CURL_INCLUDE_DIR ${CURL_DIR}/include)
 set(ZLIB_INCLUDE_DIR ${CURL_INCLUDE_DIR})
 
 # Build
-find_package(CURL REQUIRED)
-
 message(STATUS "COMPILER = ${CMAKE_CXX_COMPILER_ID}")
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

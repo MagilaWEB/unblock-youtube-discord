@@ -10,12 +10,12 @@ add_library(${NAME} SHARED ${src_h} ${src_hpp} ${src_cpp})
 target_precompile_headers(${NAME} PRIVATE pch.h)
 
 # Include files
-target_include_directories(${NAME} PRIVATE)
+target_include_directories(${NAME} PRIVATE ${CURL_INCLUDE_DIR})
 
 # Link
 target_link_libraries(${NAME} PRIVATE
         core
-        CURL::libcurl
+        ${CURL_LIBRARY}
 )
 
 # Define EXPORTS when building the libraries
