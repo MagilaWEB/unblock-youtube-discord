@@ -30,10 +30,6 @@ jobs:
         exclude:
           - os: windows-latest
             c_compiler: gcc
-          - os: windows-latest
-            c_compiler: clang
-          - os: ubuntu-latest
-            c_compiler: cl
 
     steps:
     - uses: actions/checkout@v4
@@ -48,9 +44,11 @@ jobs:
     - name: Build ninja
       shell: bash
       run: >
-         cmake -Bbuild -A ${{ matrix.arch }}
-         cmake --build build --parallel --config Debug
-         cmake --build build --parallel --config Release
+        cmake -S . -B -G Ninja ${{ steps.strings.outputs.build-output-dir }} 
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -S ${{ github.workspace }}
 
     - name: Build
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
