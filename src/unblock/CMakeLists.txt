@@ -15,7 +15,6 @@ target_include_directories(${NAME} PRIVATE)
 # Link
 target_link_libraries(${NAME} PRIVATE
         core
-#        TBB::tbb
         CURL::libcurl
 )
 

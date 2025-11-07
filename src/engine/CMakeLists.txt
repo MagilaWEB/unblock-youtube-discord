@@ -31,18 +31,14 @@ target_link_options(${NAME} PRIVATE /SUBSYSTEM:WINDOWS)
 # Copy library binaries to the folder of the compiled project
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_custom_command(TARGET ${NAME} PRE_BUILD
-#                       COMMAND ${CMAKE_COMMAND} -E copy
-#                           ${CMAKE_BINARY_DIR}/oneTBB_${CMAKE_BUILD_TYPE}/tbb12_${CMAKE_BUILD_TYPE}.dll $<TARGET_FILE_DIR:${NAME}>
-#                       COMMAND ${CMAKE_COMMAND} -E copy
-#                           ${CMAKE_BINARY_DIR}/oneTBB_${CMAKE_BUILD_TYPE}/tbb12_${CMAKE_BUILD_TYPE}.pdb $<TARGET_FILE_DIR:${NAME}>
                        COMMAND ${CMAKE_COMMAND} -E copy
-                           ${CMAKE_VCPKG_BINARY_DEBUG}/libcurl-d.dll $<TARGET_FILE_DIR:${NAME}>
+                           ${CURL_DIR_DEBUG}/bin/libcurl-d.dll $<TARGET_FILE_DIR:${NAME}>
                        COMMAND ${CMAKE_COMMAND} -E copy
-                           ${CMAKE_VCPKG_BINARY_DEBUG}/libcurl-d.pdb $<TARGET_FILE_DIR:${NAME}>
+                           ${CURL_DIR_DEBUG}/bin/libcurl-d.pdb $<TARGET_FILE_DIR:${NAME}>
                        COMMAND ${CMAKE_COMMAND} -E copy
-                           ${CMAKE_VCPKG_BINARY_DEBUG}/zlibd1.dll $<TARGET_FILE_DIR:${NAME}>
+                           ${CURL_DIR_DEBUG}/bin/zlibd1.dll $<TARGET_FILE_DIR:${NAME}>
                        COMMAND ${CMAKE_COMMAND} -E copy
-                           ${CMAKE_VCPKG_BINARY_DEBUG}/zlibd.pdb $<TARGET_FILE_DIR:${NAME}>
+                           ${CURL_DIR_DEBUG}/bin/zlibd.pdb $<TARGET_FILE_DIR:${NAME}>
                        COMMAND ${CMAKE_COMMAND} -E copy
                            ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/AppCore.dll $<TARGET_FILE_DIR:${NAME}>
                        COMMAND ${CMAKE_COMMAND} -E copy
@@ -53,12 +49,10 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
                            ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/WebCore.dll $<TARGET_FILE_DIR:${NAME}>)
 else()
     add_custom_command(TARGET ${NAME} PRE_BUILD
-#                       COMMAND ${CMAKE_COMMAND} -E copy
-#                           ${CMAKE_BINARY_DIR}/oneTBB_${CMAKE_BUILD_TYPE}/tbb12.dll $<TARGET_FILE_DIR:${NAME}>
                        COMMAND ${CMAKE_COMMAND} -E copy
-                           ${CMAKE_VCPKG_BINARY}/libcurl.dll $<TARGET_FILE_DIR:${NAME}>
+                           ${CURL_DIR_RELEASE}/bin/libcurl.dll $<TARGET_FILE_DIR:${NAME}>
                        COMMAND ${CMAKE_COMMAND} -E copy
-                           ${CMAKE_VCPKG_BINARY}/zlib1.dll $<TARGET_FILE_DIR:${NAME}>
+                           ${CURL_DIR_RELEASE}/bin/zlib1.dll $<TARGET_FILE_DIR:${NAME}>
                        COMMAND ${CMAKE_COMMAND} -E copy
                            ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/AppCore.dll $<TARGET_FILE_DIR:${NAME}>
                        COMMAND ${CMAKE_COMMAND} -E copy

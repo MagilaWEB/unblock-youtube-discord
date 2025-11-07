@@ -40,7 +40,7 @@ set(EXPORTED_LIBRARIES_DIRECTORY ${CMAKE_BINARY_DIR}/_deps)
 set(ALL_MACRO_CPP )
 
 # Cmake includes
-include(FetchContent)
+#include(FetchContent)
 
 # Load GitHub oneTBB
 #FetchContent_Declare(
@@ -65,31 +65,21 @@ include(FetchContent)
 # oneTBB Changing the folder name for the build oneTBB
 # set(TBB_OUTPUT_DIR_BASE oneTBB)
 
-# Include vcpkg libcurl
+# Include libcurl
+set(CURL_DIR ${EXPORTED_SDK_DIRECTORY}/curl)
+set(CURL_DIR_RELEASE ${CURL_DIR}/release)
+set(CURL_DIR_DEBUG ${CURL_DIR}/debug)
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    cmake_path(SET CMAKE_VCPKG_LIBRARIES_DEBUG "$ENV{VCPKG_LIBRARIES_DEBUG}")
-    cmake_path(SET CMAKE_VCPKG_BINARY_DEBUG "$ENV{VCPKG_BINARY_DEBUG}")
-
-    set(CURL_LIBRARY ${CMAKE_VCPKG_LIBRARIES_DEBUG}/libcurl.lib)
-    set(ZLIB_LIBRARY ${CMAKE_VCPKG_LIBRARIES_DEBUG}/zlib.lib)
+    set(ZLIB_LIBRARY ${CURL_DIR_DEBUG}/lib/zlibd.lib)
 else()
-    cmake_path(SET CMAKE_VCPKG_LIBRARIES "$ENV{VCPKG_LIBRARIES}")
-    cmake_path(SET CMAKE_VCPKG_BINARY "$ENV{VCPKG_BINARY}")
-
-    set(CURL_LIBRARY ${CMAKE_VCPKG_LIBRARIES}/libcurl.lib)
-    set(ZLIB_LIBRARY ${CMAKE_VCPKG_LIBRARIES}/zlib.lib)
+    set(ZLIB_LIBRARY ${CURL_DIR_RELEASE}/lib/zlib.lib)
 endif()
 
-cmake_path(SET CMAKE_VCPKG_INCLUDE "$ENV{VCPKG_INCLUDE}")
-set(CURL_INCLUDE_DIR ${CMAKE_VCPKG_INCLUDE})
-set(ZLIB_INCLUDE_DIR ${CMAKE_VCPKG_INCLUDE})
+set(CURL_INCLUDE_DIR ${CURL_DIR}/include)
+set(ZLIB_INCLUDE_DIR ${CURL_INCLUDE_DIR})
 
 # Build
-#FetchContent_MakeAvailable(
-#    oneTBB
-#    httplib
-#)
-
 find_package(CURL REQUIRED)
 
 message(STATUS "COMPILER = ${CMAKE_CXX_COMPILER_ID}")

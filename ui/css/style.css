@@ -275,7 +275,7 @@ main article {
 	top       : 0;
 	left      : 0;
 	width     : 100%;
-	max-height: calc(100% - 1em);
+	height    : calc(100% - 1em);
 	overflow  : auto;
 	visibility: hidden;
 	opacity   : 0;
@@ -577,7 +577,7 @@ footer .button {
 .input .description_active,
 .select_list .description_active {
 	opacity   : 1;
-	visibility: visible;
+	visibility:inherit;
 }
 
 .check_box .check label {
