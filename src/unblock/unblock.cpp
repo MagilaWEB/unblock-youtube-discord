@@ -12,8 +12,10 @@ Unblock::Unblock()
 template<typename Type>
 bool Unblock::automaticallyStrategy()
 {
-	if constexpr (!std::is_same_v<Type, StrategiesDPI> || !std::is_same_v<Type, ProxyStrategiesDPI>)
-		static_assert("It can only be StrategiesDPI or ProxyStrategiesDPI!");
+	static_assert(
+		std::is_same_v<Type, StrategiesDPI> || std::is_same_v<Type, ProxyStrategiesDPI>,
+		"It can only be StrategiesDPI or ProxyStrategiesDPI!"
+	);
 
 	constexpr bool proxy = std::is_same_v<Type, ProxyStrategiesDPI>;
 
@@ -96,8 +98,10 @@ void Unblock::changeFilteringTopLevelDomains(bool state)
 template<typename Type>
 std::string Unblock::getNameStrategies()
 {
-	if constexpr (!std::is_same_v<Type, StrategiesDPI> || !std::is_same_v<Type, ProxyStrategiesDPI>)
-		static_assert("It can only be StrategiesDPI or ProxyStrategiesDPI!");
+	static_assert(
+		std::is_same_v<Type, StrategiesDPI> || std::is_same_v<Type, ProxyStrategiesDPI>,
+		"It can only be StrategiesDPI or ProxyStrategiesDPI!"
+	);
 
 	if constexpr (std::is_same_v<Type, StrategiesDPI>)
 		return _strategies_dpi->getStrategyFileName();
@@ -115,8 +119,10 @@ std::string Unblock::getNameFakeBin()
 template<typename Type>
 const std::vector<std::string>& Unblock::getStrategiesList()
 {
-	if constexpr (!std::is_same_v<Type, StrategiesDPI> || !std::is_same_v<Type, ProxyStrategiesDPI>)
-		static_assert("It can only be StrategiesDPI or ProxyStrategiesDPI!");
+	static_assert(
+		std::is_same_v<Type, StrategiesDPI> || std::is_same_v<Type, ProxyStrategiesDPI>,
+		"It can only be StrategiesDPI or ProxyStrategiesDPI!"
+	);
 
 	if constexpr (std::is_same_v<Type, StrategiesDPI>)
 		return _strategies_dpi->getStrategyList();
@@ -148,8 +154,10 @@ const std::vector<StrategiesDPI::FakeBinParam>& Unblock::getFakeBinList()
 template<typename Type>
 bool Unblock::runTest(bool video)
 {
-	if constexpr (!std::is_same_v<Type, StrategiesDPI> || !std::is_same_v<Type, ProxyStrategiesDPI>)
-		static_assert("It can only be StrategiesDPI or ProxyStrategiesDPI!");
+	static_assert(
+		std::is_same_v<Type, StrategiesDPI> || std::is_same_v<Type, ProxyStrategiesDPI>,
+		"It can only be StrategiesDPI or ProxyStrategiesDPI!"
+	);
 
 	CODE_TESTING_DOMAIN()
 
@@ -164,8 +172,10 @@ template UNBLOCK_API bool Unblock::runTest<ProxyStrategiesDPI>(bool);
 template<typename Type>
 void Unblock::testingDomain(std::function<void(pcstr url, bool state)>&& callback, bool video)
 {
-	if constexpr (!std::is_same_v<Type, StrategiesDPI> || !std::is_same_v<Type, ProxyStrategiesDPI>)
-		static_assert("It can only be StrategiesDPI or ProxyStrategiesDPI!");
+	static_assert(
+		std::is_same_v<Type, StrategiesDPI> || std::is_same_v<Type, ProxyStrategiesDPI>,
+		"It can only be StrategiesDPI or ProxyStrategiesDPI!"
+	);
 
 	CODE_TESTING_DOMAIN()
 
@@ -185,8 +195,10 @@ template UNBLOCK_API void Unblock::testingDomain<ProxyStrategiesDPI>(std::functi
 template<typename Type>
 void Unblock::testingDomainCancel(bool video)
 {
-	if constexpr (!std::is_same_v<Type, StrategiesDPI> || !std::is_same_v<Type, ProxyStrategiesDPI>)
-		static_assert("It can only be StrategiesDPI or ProxyStrategiesDPI!");
+	static_assert(
+		std::is_same_v<Type, StrategiesDPI> || std::is_same_v<Type, ProxyStrategiesDPI>,
+		"It can only be StrategiesDPI or ProxyStrategiesDPI!"
+	);
 
 	CODE_TESTING_DOMAIN()
 

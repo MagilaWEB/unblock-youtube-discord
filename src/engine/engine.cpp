@@ -37,7 +37,7 @@ void Engine::initialize()
 void Engine::run()
 {
 	std::atomic_bool quit{ false };
-	std::jthread	 _{ [this, &quit]
+	std::jthread	 _{ [&quit]
 					{
 						while (!quit)
 						{

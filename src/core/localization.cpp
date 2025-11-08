@@ -7,6 +7,9 @@ Localization::~Localization()
 
 Localization& Localization::get()
 {
+#if __clang__
+	[[clang::no_destroy]]
+#endif
 	static Localization lang{};
 	return lang;
 }

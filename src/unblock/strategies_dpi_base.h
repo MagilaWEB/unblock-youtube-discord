@@ -9,12 +9,12 @@ inline constexpr std::pair<u32, pcstr> indexStrategies[]{
 class StrategiesDPIBase
 {
 protected:
-	constexpr static u32 _STRATEGY_DPI_MAX{ sizeof(indexStrategies) / sizeof(std::pair<u32, pcstr>) };
+	constexpr static u32 STRATEGY_DPI_MAX{ sizeof(indexStrategies) / sizeof(std::pair<u32, pcstr>) };
 	Ptr<File>			 _file_strategy_dpi;
 
 	std::filesystem::path									patch_file;
 	std::vector<std::string>								_strategy_files_list{};
-	std::array<std::vector<std::string>, _STRATEGY_DPI_MAX> _strategy_dpi{};
+	std::array<std::vector<std::string>, STRATEGY_DPI_MAX> _strategy_dpi{};
 
 public:
 	StrategiesDPIBase()			 = default;

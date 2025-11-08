@@ -53,7 +53,7 @@ void SelectList::createOption(JSValue value, Localization::Str text, bool select
 {
 	pcstr _text = text();
 	runCode(
-		[=]
+		[&]
 		{
 			if (!_created)
 				return;

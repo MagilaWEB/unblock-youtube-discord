@@ -24,7 +24,7 @@ void Ui::_startService()
 					if (_proxy_manual->getState())
 					{
 						Core::addTask(
-							[=]
+							[this, config_proxy]
 							{
 								_window_wait_start_service->show();
 								_unblock->changeProxyStrategy(config_proxy.value().c_str());
@@ -60,7 +60,7 @@ void Ui::_startService()
 					if (fake_bin && _unblock_manual->getState())
 					{
 						Core::addTask(
-							[=]
+							[this, config, fake_bin]
 							{
 								_window_wait_start_service->show();
 								_unblock->changeStrategy(config.value().c_str(), fake_bin.value().c_str());
@@ -168,6 +168,9 @@ void Ui::_startServiceWindow()
 
 			Localization::Str  desc_base{ "str_window_auto_start_wait_description" };
 			Localization::Str  desc_base2{ "str_window_auto_start_wait_name_strategy_description" };
+#if __clang__
+			[[clang::no_destroy]]
+#endif
 			static std::string text_desc_base;
 			text_desc_base = utils::format(desc_base2(), _strategy_name.c_str());
 			text_desc_base.insert(0, "\n");
@@ -179,6 +182,9 @@ void Ui::_startServiceWindow()
 
 			if (!automatically_strategy_cancel && _unblock->validDomain(proxy_click_state))
 			{
+#if __clang__
+				[[clang::no_destroy]]
+#endif
 				static std::string text_desc;
 
 				if (proxy_click_state)
@@ -211,7 +217,7 @@ void Ui::_startServiceWindow()
 	};
 
 	_window_config_not_found->addEventOk(
-		[=](JSArgs)
+		[this, auto_config](JSArgs)
 		{
 			Core::addTask(auto_config);
 			_window_config_not_found->hide();
@@ -220,7 +226,7 @@ void Ui::_startServiceWindow()
 	);
 
 	_window_config_found->addEventYesNo(
-		[=](JSArgs args)
+		[this, auto_config](JSArgs args)
 		{
 			if (args[0].ToBoolean())
 				Core::addTask(auto_config);
@@ -255,7 +261,7 @@ void Ui::_startServiceWindow()
 	);
 
 	_window_continue_select_strategy->addEventYesNo(
-		[=](JSArgs args)
+		[this, auto_config](JSArgs args)
 		{
 			if (args[0].ToBoolean())
 				Core::addTask(auto_config);

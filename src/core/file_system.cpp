@@ -220,8 +220,8 @@ std::expected<TypeReturn, std::string> File::parameterSection(pcstr section, pcs
 			std::istringstream{ kay_value.value() } >> state;
 			return state;
 		}
-		else
-			static_assert("Only std data types are supported string || const char* || pcstr, u32 || long long, s32 || int, bool!");
+
+//			static_assert(false, "Only std data types are supported string || const char* || pcstr, u32 || long long, s32 || int, bool!");
 	}
 
 	return Debug::str_unexpected("Не удалось найти параметр [%s] в секции [%s]!", parameter, section);

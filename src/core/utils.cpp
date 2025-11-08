@@ -32,12 +32,12 @@ bool utils::IsUTF8(pcstr string)
 		else
 			return false;
 
-		bytes += 1;
+		bytes++;
 		for (u32 i = 1; i < num; ++i)
 		{
 			if ((*bytes & 0xC0) != 0x80)
 				return false;
-			bytes += 1;
+			bytes++;
 		}
 	}
 
@@ -58,7 +58,7 @@ std::string utils::UTF8_to_CP1251(pcstr str)
 		static thread_local char cache_str_result[4'096];
 		RtlZeroMemory(&cache_str_result, sizeof(cache_str_result));
 
-		WideCharToMultiByte(1'251, 0, &cache_str[0], len, &cache_str_result[0], len, 0, 0);
+		WideCharToMultiByte(1'251, 0, &cache_str[0], len, &cache_str_result[0], len, nullptr, nullptr);
 
 		return { cache_str_result };
 	}

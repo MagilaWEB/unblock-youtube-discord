@@ -22,7 +22,7 @@ private:
 
 public:
 	StrategiesDPI();
-	~StrategiesDPI() = default;
+	~StrategiesDPI() override = default;
 
 	void changeFakeKey(u32 index = 1);
 	void changeFakeKey(std::string key = "");

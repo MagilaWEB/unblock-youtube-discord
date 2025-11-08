@@ -8,7 +8,13 @@ class SecondaryWindow final : public BaseElement
 	JSFunction _hide;
 	JSFunction _set_description;
 
+	#if __clang__
+	[[clang::no_destroy]]
+#endif
 	inline static MapEvent _event_yes_no;
+#if __clang__
+	[[clang::no_destroy]]
+#endif
 	inline static MapEvent _event_cancel;
 
 public:

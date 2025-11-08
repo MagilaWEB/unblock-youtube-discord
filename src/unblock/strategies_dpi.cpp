@@ -27,7 +27,8 @@ StrategiesDPI::StrategiesDPI()
 			const auto path_file = Core::get().binariesPath() / value;
 			ASSERT_ARGS(std::filesystem::exists(path_file), "The [%s] file does not exist!", path_file.string().c_str());
 
-			auto it = std::find_if(_fake_bin_params.begin(), _fake_bin_params.end(), [&key](const FakeBinParam& it) { return it.key.contains(key); });
+			auto it =
+				std::find_if(_fake_bin_params.begin(), _fake_bin_params.end(), [&key](const FakeBinParam& _it) { return _it.key.contains(key); });
 			if (it != _fake_bin_params.end())
 				(*it).file_initial = path_file.string();
 			else
@@ -41,10 +42,10 @@ StrategiesDPI::StrategiesDPI()
 std::vector<std::string> StrategiesDPI::getStrategy(u32 service) const
 {
 	ASSERT_ARGS(
-		service < _STRATEGY_DPI_MAX,
+		service < STRATEGY_DPI_MAX,
 		"getStrategy is an attempt to get a strategy vector for the service [%s] that does not match STRATEGY_DPI_MAX [%s]!",
 		service,
-		_STRATEGY_DPI_MAX
+		STRATEGY_DPI_MAX
 	);
 
 	return _strategy_dpi.at(service);
@@ -76,7 +77,7 @@ void StrategiesDPI::changeFakeKey(std::string key)
 		return;
 	}
 
-	auto it = std::find_if(_fake_bin_params.begin(), _fake_bin_params.end(), [&key](const FakeBinParam& it) { return it.key.contains(key); });
+	auto it = std::find_if(_fake_bin_params.begin(), _fake_bin_params.end(), [&key](const FakeBinParam& _it) { return _it.key.contains(key); });
 
 	ASSERT_ARGS(it != _fake_bin_params.end(), "a key is missing for fake_bin %s", key.c_str());
 
@@ -113,9 +114,9 @@ void StrategiesDPI::_uploadStrategies()
 					{
 						_file_strategy_dpi->forLineSection(
 							service_name,
-							[this, &index](std::string str)
+							[this, &index](std::string _str)
 							{
-								_saveStrategies(_strategy_dpi[index], str);
+								_saveStrategies(_strategy_dpi[index], _str);
 								return false;
 							}
 						);
@@ -265,7 +266,7 @@ std::optional<std::string> StrategiesDPI::_getFake(std::string key, std::string 
 		auto it = std::find_if(
 			_fake_bin_params.begin(),
 			_fake_bin_params.end(),
-			[this](const FakeBinParam& it) { return it.key.contains(_fake_bind_key); }
+			[this](const FakeBinParam& _it) { return _it.key.contains(_fake_bind_key); }
 		);
 
 		if (it != _fake_bin_params.end())

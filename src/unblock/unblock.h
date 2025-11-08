@@ -47,7 +47,7 @@ public:
 	std::string getNameFakeBin();
 
 	template<typename Type>
-	const std::vector<std::string>& getStrategiesList();
+	const std::vector<std::string>&					getStrategiesList();
 	const std::vector<StrategiesDPI::FakeBinParam>& getFakeBinList();
 
 	void startService(bool proxy = false);

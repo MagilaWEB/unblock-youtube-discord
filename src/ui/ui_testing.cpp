@@ -122,7 +122,7 @@ void Ui::_testingWindow()
 	}
 
 	_start_testing->addEventClick(
-		[=](JSArgs)
+		[this, event_test_domain](JSArgs)
 		{
 			if (_unblock->runTest<StrategiesDPI>() || _unblock->runTest<StrategiesDPI>(true))
 				return false;

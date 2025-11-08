@@ -18,7 +18,7 @@
 #endif
 
 using namespace ultralight;
-#define JS_EVENT(map) static_cast<JSCallbackWithRetval>([this](JSObject, const JSArgs& args) -> JSValue { return eventCPP(args, map); })
+#define JS_EVENT(map) static_cast<JSCallbackWithRetval>([this](JSObject, const JSArgs& args) -> JSValue { return this->eventCPP(args, map); })
 
 class BaseElement
 {
@@ -31,10 +31,16 @@ protected:
 	JSFunction	_add_event_click;
 	bool		_created{ false };
 
-	inline static View*							_view;
+	inline static View* _view;
+#if __clang__
+	[[clang::no_destroy]]
+#endif
 	inline static std::map<pcstr, BaseElement*> _all_element;
 
 	using MapEvent = std::map<String, std::vector<std::function<bool(JSArgs)>>>;
+#if __clang__
+	[[clang::no_destroy]]
+#endif
 	inline static MapEvent _event_click{};
 
 	void runCode(std::function<void()> run_code);

@@ -68,7 +68,7 @@ void Ui::_setting()
 			_updateTitleButton();
 
 			_unblock_select_config->addEventChange(
-				[=](JSArgs args)
+				[this, set_new_value](JSArgs args)
 				{
 					set_new_value(_unblock_select_fake_bin, "config", "fake_bin", args);
 					return false;
@@ -91,7 +91,7 @@ void Ui::_setting()
 			set_default_select(_unblock_select_fake_bin, "fake_bin");
 
 			_unblock_select_fake_bin->addEventChange(
-				[=](JSArgs args)
+				[this, set_new_value](JSArgs args)
 				{
 					set_new_value(_unblock_select_config, "fake_bin", "config", args);
 					return false;
@@ -100,7 +100,7 @@ void Ui::_setting()
 		}
 	};
 
-	auto createManual = [=]
+	auto createManual = [this, createSelect]
 	{
 		_unblock_filtering_top_level_domains->remove();
 
@@ -118,7 +118,7 @@ void Ui::_setting()
 			_unblock->changeFilteringTopLevelDomains(_unblock_filtering_top_level_domains->getState());
 
 			_unblock_filtering_top_level_domains->addEventClick(
-				[=](JSArgs args)
+				[this](JSArgs args)
 				{
 					_file_user_setting
 						->writeSectionParameter("UNBLOCK", "filtering_top_level_domains", static_cast<String>(args[0].ToString()).utf8().data());
@@ -138,7 +138,7 @@ void Ui::_setting()
 			createSelect();
 
 			_unblock_manual->addEventClick(
-				[=](JSArgs args)
+				[this, createSelect](JSArgs args)
 				{
 					_file_user_setting->writeSectionParameter("UNBLOCK", "manual", static_cast<String>(args[0].ToString()).utf8().data());
 					createSelect();
@@ -158,7 +158,7 @@ void Ui::_setting()
 		createManual();
 
 		_unblock_enable->addEventClick(
-			[=](JSArgs args)
+			[this, createManual](JSArgs args)
 			{
 				_file_user_setting->writeSectionParameter("UNBLOCK", "enable", static_cast<String>(args[0].ToString()).utf8().data());
 				createManual();
@@ -258,19 +258,19 @@ void Ui::_setting()
 			}
 		};
 
-		auto createManualProxy = [=]
+		auto createManualProxy = [this, createSelectProxy]
 		{
 			_proxy_manual->remove();
 			if (_proxy_enable->getState())
 			{
 				_proxy_manual->create("#setting section .proxy", "str_manual_title", Localization::Str{ "str_manual_description" });
 
-				auto result = _file_user_setting->parameterSection<bool>("PROXY", "manual");
-				_proxy_manual->setState(result ? result.value() : false);
+				auto result_manual = _file_user_setting->parameterSection<bool>("PROXY", "manual");
+				_proxy_manual->setState(result_manual ? result_manual.value() : false);
 				createSelectProxy();
 
 				_proxy_manual->addEventClick(
-					[=](JSArgs args)
+					[this, createSelectProxy](JSArgs args)
 					{
 						_file_user_setting->writeSectionParameter("PROXY", "manual", static_cast<String>(args[0].ToString()).utf8().data());
 						createSelectProxy();
@@ -280,7 +280,7 @@ void Ui::_setting()
 			}
 		};
 
-		auto create_setting_proxy = [=]
+		auto create_setting_proxy = [this]
 		{
 			_proxy_port
 				->create("#setting section .proxy", Input::Types::number, "1080", "str_input_proxy_port_title", "str_input_proxy_port_description");
@@ -292,8 +292,8 @@ void Ui::_setting()
 			_proxy_port->addEventSubmit(
 				[this](JSArgs args)
 				{
-					auto port = static_cast<String>(args[0].ToString());
-					_file_user_setting->writeSectionParameter("PROXY", "port", port.utf8().data());
+					auto arg_port = static_cast<String>(args[0].ToString());
+					_file_user_setting->writeSectionParameter("PROXY", "port", arg_port.utf8().data());
 					return false;
 				}
 			);
@@ -306,15 +306,15 @@ void Ui::_setting()
 			_proxy_port->addEventSubmit(
 				[this](JSArgs args)
 				{
-					auto ip = static_cast<String>(args[0].ToString());
-					_file_user_setting->writeSectionParameter("PROXY", "ip", ip.utf8().data());
+					auto arg_ip = static_cast<String>(args[0].ToString());
+					_file_user_setting->writeSectionParameter("PROXY", "ip", arg_ip.utf8().data());
 					return false;
 				}
 			);
 		};
 
 		_proxy_enable->addEventClick(
-			[=](JSArgs args)
+			[this, createManualProxy, create_setting_proxy](JSArgs args)
 			{
 				createManualProxy();
 
