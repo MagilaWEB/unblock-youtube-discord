@@ -2,7 +2,10 @@
 
 Engine& Engine::get()
 {
-	[[clang::no_destroy]] static Engine instance;
+#if __clang__
+	[[clang::no_destroy]]
+#endif
+	static Engine instance;
 	return instance;
 }
 
@@ -151,7 +154,7 @@ void Engine::console()
 
 		GetCurrentConsoleFontEx(consoleHandle, TRUE, &fontInfo);
 
-		wcscpy(fontInfo.FaceName, L"Lucida Console");
+		wcscpy_s(fontInfo.FaceName, L"Lucida Console");
 		fontInfo.dwFontSize.Y = 15;
 		fontInfo.dwFontSize.X = 38;
 

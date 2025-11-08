@@ -102,7 +102,7 @@ void Service::start()
 	u32	 i_start	= 0;
 	do
 	{
-		send_start = StartService(sc, args.size(), args.data());
+		send_start = StartService(sc, static_cast<u32>(args.size()), args.data());
 		ASSERT_ARGS(i_start++ <= 5, "Failed to send a request to start the service [%s]!", _name.c_str());
 	} while (!send_start);
 

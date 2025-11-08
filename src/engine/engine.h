@@ -6,6 +6,9 @@
 #ifdef __clang__
 	#pragma clang diagnostic push
 	#pragma clang diagnostic ignored "-Weverything"
+#else
+	#pragma warning(push)
+	#pragma warning(disable : 4'100)
 #endif
 
 #include <AppCore/AppCore.h>
@@ -13,6 +16,8 @@
 
 #ifdef __clang__
 	#pragma clang diagnostic pop
+#else
+	#pragma warning(pop)
 #endif
 
 using namespace ultralight;

@@ -42,7 +42,7 @@ const std::vector<std::string>& StrategiesDPIBase::getStrategyList() const
 	return _strategy_files_list;
 }
 
-u32 StrategiesDPIBase::getStrategySize() const
+size_t StrategiesDPIBase::getStrategySize() const
 {
 	return _strategy_files_list.size();
 }

@@ -26,6 +26,4 @@ constexpr auto type_zero = std::numeric_limits<T>::min();
 template<typename T>
 constexpr auto type_epsilon = std::numeric_limits<T>::epsilon();
 
-
-#include "ptr.h"
 #include "timer.h"

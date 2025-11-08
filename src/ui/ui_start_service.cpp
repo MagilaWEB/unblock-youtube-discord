@@ -166,14 +166,14 @@ void Ui::_startServiceWindow()
 			std::string _strategy_name =
 				proxy_click_state ? _unblock->getNameStrategies<ProxyStrategiesDPI>() : _unblock->getNameStrategies<StrategiesDPI>();
 
-			Localization::Str  desc{ "str_window_auto_start_wait_description" };
-			Localization::Str  desc2{ "str_window_auto_start_wait_name_strategy_description" };
-			static std::string text_desc1;
-			text_desc1 = utils::format(desc2(), _strategy_name.c_str());
-			text_desc1.insert(0, "\n");
-			text_desc1.insert(0, desc());
+			Localization::Str  desc_base{ "str_window_auto_start_wait_description" };
+			Localization::Str  desc_base2{ "str_window_auto_start_wait_name_strategy_description" };
+			static std::string text_desc_base;
+			text_desc_base = utils::format(desc_base2(), _strategy_name.c_str());
+			text_desc_base.insert(0, "\n");
+			text_desc_base.insert(0, desc_base());
 
-			_window_auto_start_wait->setDescription(text_desc1.c_str());
+			_window_auto_start_wait->setDescription(text_desc_base.c_str());
 
 			proxy_click_state ? _unblock->testingDomain<ProxyStrategiesDPI>() : _unblock->testingDomain<StrategiesDPI>();
 

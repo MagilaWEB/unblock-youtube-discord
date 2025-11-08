@@ -19,6 +19,7 @@
 #include "types.inl"
 #include "platform.inl"
 #include "dll_exports.inl"
+#include "ptr.h"
 
 #include "lock_thread.hpp"
 #include "localization.h"

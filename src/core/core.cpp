@@ -35,7 +35,10 @@
 
 Core& Core::get()
 {
-	[[clang::no_destroy]] static Core instance;
+	#if __clang__
+	[[clang::no_destroy]]
+	#endif
+	static Core instance;
 	return instance;
 }
 

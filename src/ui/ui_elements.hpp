@@ -8,7 +8,7 @@
 
 #include "ui_list_ul.h"
 
-struct UiElements
+struct UI_API UiElements
 {
 protected:
 	// Setting

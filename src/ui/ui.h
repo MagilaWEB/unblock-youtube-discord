@@ -4,6 +4,9 @@
 #ifdef __clang__
 	#pragma clang diagnostic push
 	#pragma clang diagnostic ignored "-Weverything"
+#else
+	#pragma warning(push)
+	#pragma warning(disable : 4'100)
 #endif
 
 #include <AppCore/AppCore.h>
@@ -13,15 +16,19 @@
 
 #ifdef __clang__
 	#pragma clang diagnostic pop
+#else
+	#pragma warning(pop)
 #endif
+
 #include "ui_elements.hpp"
 
 class Unblock;
 
-class UI_API Ui : public WindowListener,
-				  public LoadListener,
-				  public ViewListener,
-				  public UiElements
+class UI_API Ui : public UiElements,
+				  public WindowListener,
+				  private LoadListener,
+				  private ViewListener
+
 {
 	Ptr<Unblock> _unblock;
 

@@ -34,7 +34,7 @@ public:
 	static u8		   sendNum(std::list<u8> nums);
 	static bool		   getBool();
 
-	static u32 selectFromList(const std::list<std::string>& list, std::function<void(u32 select)>&& callback = [](u32) {});
+	static size_t selectFromList(const std::list<std::string>& list, std::function<void(size_t select)>&& callback = [](u32) {});
 
 	template<typename... Args>
 	static void text(pcstr text, Args&&... args)

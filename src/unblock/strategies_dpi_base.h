@@ -10,10 +10,10 @@ class StrategiesDPIBase
 {
 protected:
 	constexpr static u32 _STRATEGY_DPI_MAX{ sizeof(indexStrategies) / sizeof(std::pair<u32, pcstr>) };
-	Ptr<File>		_file_strategy_dpi;
+	Ptr<File>			 _file_strategy_dpi;
 
-	std::filesystem::path	 patch_file;
-	std::vector<std::string> _strategy_files_list{};
+	std::filesystem::path									patch_file;
+	std::vector<std::string>								_strategy_files_list{};
 	std::array<std::vector<std::string>, _STRATEGY_DPI_MAX> _strategy_dpi{};
 
 public:
@@ -25,7 +25,7 @@ public:
 
 	virtual std::string						getStrategyFileName() const;
 	virtual const std::vector<std::string>& getStrategyList() const;
-	virtual u32								getStrategySize() const;
+	virtual size_t							getStrategySize() const;
 
 protected:
 	virtual void _uploadStrategies();

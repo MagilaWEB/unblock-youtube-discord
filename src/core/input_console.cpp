@@ -148,10 +148,10 @@ bool InputConsole::getBool()
 	return false;
 }
 
-u32 InputConsole::selectFromList(const std::list<std::string>& list, std::function<void(u32)>&& callback)
+size_t InputConsole::selectFromList(const std::list<std::string>& list, std::function<void(size_t)>&& callback)
 {
 	const auto size = list.size();
-	u32		   select{ 0 };
+	size_t	   select{ 0 };
 	bool	   print{ true };
 
 	callback(select);
