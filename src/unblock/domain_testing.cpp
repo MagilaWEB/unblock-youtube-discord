@@ -146,7 +146,7 @@ void DomainTesting::printTestInfo() const
 	);
 }
 
-static size_t progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t /*ulnow*/)
+static size_t progress_callback(void* clientp, curl_off_t /*dltotal*/, curl_off_t /*dlnow*/, curl_off_t /*ultotal*/, curl_off_t /*ulnow*/)
 {
 	if (clientp)
 	{
@@ -165,7 +165,7 @@ static size_t progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dl
 	return CURLE_OK;
 }
 
-static size_t write_data(void* /*buffer*/, size_t size, size_t nmemb, void* userdata)
+static size_t write_data(void* /*buffer*/, size_t size, size_t nmemb, void* /*userdata*/)
 {
 	return size * nmemb;
 }

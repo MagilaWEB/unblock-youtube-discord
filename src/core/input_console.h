@@ -31,7 +31,7 @@ public:
 	static void		   pause(pcstr info = "");
 	static std::string getString();
 	static u32		   getU32();
-	static u8		   sendNum(std::list<u8> nums);
+	static u32		   sendNum(std::list<u8> nums);
 	static bool		   getBool();
 
 	static size_t selectFromList(const std::list<std::string>& list, std::function<void(size_t select)>&& callback = [](u32) {});
@@ -108,5 +108,5 @@ private:
 		std::cout << mod_text.c_str();
 	}
 
-	static bool _forbiddenCharacters(const std::string& text, pcstr info);
+	static bool _forbiddenCharacters(const std::string& text);
 };

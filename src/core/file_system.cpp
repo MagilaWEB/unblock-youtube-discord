@@ -200,10 +200,9 @@ std::expected<TypeReturn, std::string> File::parameterSection(pcstr section, pcs
 				return kay_value.value();
 		}
 
-		TypeReturn state{};
-
 		if constexpr (std::is_same_v<TypeReturn, bool>)
 		{
+			bool state;
 			std::istringstream{ kay_value.value() } >> std::boolalpha >> state;
 			return state;
 		}
@@ -211,11 +210,13 @@ std::expected<TypeReturn, std::string> File::parameterSection(pcstr section, pcs
 			return std::stof(kay_value.value());
 		else if constexpr (std::is_same_v<TypeReturn, u32> || std::is_same_v<TypeReturn, long long>)
 		{
+			u32 state;
 			std::istringstream{ kay_value.value() } >> state;
 			return state;
 		}
 		else if constexpr (std::is_same_v<TypeReturn, s32> || std::is_same_v<TypeReturn, int>)
 		{
+			int state;
 			std::istringstream{ kay_value.value() } >> state;
 			return state;
 		}

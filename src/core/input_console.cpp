@@ -32,7 +32,7 @@ u32 InputConsole::getU32()
 	std::cin.clear();
 	std::cin >> text_input;
 
-	if (!_forbiddenCharacters(text_input, "Ввести можно только целочисленные значения!"))
+	if (!_forbiddenCharacters(text_input))
 		return getU32();
 
 	try
@@ -63,9 +63,9 @@ u32 InputConsole::getU32()
 	return count;
 }
 
-u8 InputConsole::sendNum(std::list<u8> nums)
+u32 InputConsole::sendNum(std::list<u8> nums)
 {
-	constexpr std::pair<VK, u8> key_nums[]{
+	constexpr std::pair<VK, u32> key_nums[]{
 		{	  VK::NUM0, 0 },
 		{	  VK::NUM1, 1 },
 		{	  VK::NUM2, 2 },
@@ -285,7 +285,7 @@ void InputConsole::clear()
 #endif
 }
 
-bool InputConsole::_forbiddenCharacters(const std::string& text, pcstr info)
+bool InputConsole::_forbiddenCharacters(const std::string& text)
 {
 	constexpr static pcstr forbidden_characters[]{ "-", ".", "," };
 
