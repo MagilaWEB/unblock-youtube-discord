@@ -36,7 +36,7 @@ jobs:
     - name: Configure CMake
       run: >
         cmake -GNinja -B ${{ steps.strings.outputs.build-output-dir }}
-        -CUPY_LIBS_DLL_TO_BIN=OFF
+        -DCUPY_LIBS_DLL_TO_BIN=OFF
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
