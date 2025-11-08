@@ -77,7 +77,7 @@ void DomainTesting::test(bool test_video, std::function<void(pcstr url, bool sta
 {
 	Debug::info("Start test domain.");
 
-	_is_testing	   = true;
+	_is_testing		= true;
 	_cancel_testing = false;
 	_domain_error = _domain_ok = 0;
 
@@ -146,7 +146,7 @@ void DomainTesting::printTestInfo() const
 	);
 }
 
-static size_t progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
+static size_t progress_callback(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t /*ulnow*/)
 {
 	if (clientp)
 	{

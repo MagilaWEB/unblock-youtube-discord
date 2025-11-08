@@ -58,7 +58,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 # Enforce Clang warnings
     add_compile_options(-Wall -Wextra -Wpedantic)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    add_compile_options(/utf-8)
+    add_compile_options(/utf-8 /W3)
 endif()
 
 # Add submodules
