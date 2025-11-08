@@ -5,6 +5,8 @@ project(unblock_cpp LANGUAGES CXX VERSION 0)
 
 enable_testing()
 
+option(CUPY_LIBS_DLL_TO_BIN "CUPY_LIBS_DLL_TO_BIN" ON)
+
 if (WIN32)
   set (UNICODE_DEFAULT ON)
 else (WIN32)

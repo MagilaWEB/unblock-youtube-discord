@@ -29,36 +29,38 @@ set_target_properties(${NAME} PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup /MANI
 target_link_options(${NAME} PRIVATE /SUBSYSTEM:WINDOWS)
 
 # Copy library binaries to the folder of the compiled project
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_custom_command(TARGET ${NAME} PRE_BUILD
-                       COMMAND ${CMAKE_COMMAND} -E copy
-                           ${CURL_DIR_DEBUG}/bin/libcurl-d.dll $<TARGET_FILE_DIR:${NAME}>
-                       COMMAND ${CMAKE_COMMAND} -E copy
-                           ${CURL_DIR_DEBUG}/bin/libcurl-d.pdb $<TARGET_FILE_DIR:${NAME}>
-                       COMMAND ${CMAKE_COMMAND} -E copy
-                           ${CURL_DIR_DEBUG}/bin/zlibd1.dll $<TARGET_FILE_DIR:${NAME}>
-                       COMMAND ${CMAKE_COMMAND} -E copy
-                           ${CURL_DIR_DEBUG}/bin/zlibd.pdb $<TARGET_FILE_DIR:${NAME}>
-                       COMMAND ${CMAKE_COMMAND} -E copy
-                           ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/AppCore.dll $<TARGET_FILE_DIR:${NAME}>
-                       COMMAND ${CMAKE_COMMAND} -E copy
-                           ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/Ultralight.dll $<TARGET_FILE_DIR:${NAME}>
-                       COMMAND ${CMAKE_COMMAND} -E copy
-                           ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/UltralightCore.dll $<TARGET_FILE_DIR:${NAME}>
-                       COMMAND ${CMAKE_COMMAND} -E copy
-                           ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/WebCore.dll $<TARGET_FILE_DIR:${NAME}>)
-else()
-    add_custom_command(TARGET ${NAME} PRE_BUILD
-                       COMMAND ${CMAKE_COMMAND} -E copy
-                           ${CURL_DIR_RELEASE}/bin/libcurl.dll $<TARGET_FILE_DIR:${NAME}>
-                       COMMAND ${CMAKE_COMMAND} -E copy
-                           ${CURL_DIR_RELEASE}/bin/zlib1.dll $<TARGET_FILE_DIR:${NAME}>
-                       COMMAND ${CMAKE_COMMAND} -E copy
-                           ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/AppCore.dll $<TARGET_FILE_DIR:${NAME}>
-                       COMMAND ${CMAKE_COMMAND} -E copy
-                           ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/Ultralight.dll $<TARGET_FILE_DIR:${NAME}>
-                       COMMAND ${CMAKE_COMMAND} -E copy
-                           ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/UltralightCore.dll $<TARGET_FILE_DIR:${NAME}>
-                       COMMAND ${CMAKE_COMMAND} -E copy
-                           ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/WebCore.dll $<TARGET_FILE_DIR:${NAME}>)
+if(CUPY_LIBS_DLL_TO_BIN)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        add_custom_command(TARGET ${NAME} PRE_BUILD
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${CURL_DIR_DEBUG}/bin/libcurl-d.dll $<TARGET_FILE_DIR:${NAME}>
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${CURL_DIR_DEBUG}/bin/libcurl-d.pdb $<TARGET_FILE_DIR:${NAME}>
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${CURL_DIR_DEBUG}/bin/zlibd1.dll $<TARGET_FILE_DIR:${NAME}>
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${CURL_DIR_DEBUG}/bin/zlibd.pdb $<TARGET_FILE_DIR:${NAME}>
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/AppCore.dll $<TARGET_FILE_DIR:${NAME}>
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/Ultralight.dll $<TARGET_FILE_DIR:${NAME}>
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/UltralightCore.dll $<TARGET_FILE_DIR:${NAME}>
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/WebCore.dll $<TARGET_FILE_DIR:${NAME}>)
+    else()
+        add_custom_command(TARGET ${NAME} PRE_BUILD
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${CURL_DIR_RELEASE}/bin/libcurl.dll $<TARGET_FILE_DIR:${NAME}>
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${CURL_DIR_RELEASE}/bin/zlib1.dll $<TARGET_FILE_DIR:${NAME}>
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/AppCore.dll $<TARGET_FILE_DIR:${NAME}>
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/Ultralight.dll $<TARGET_FILE_DIR:${NAME}>
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/UltralightCore.dll $<TARGET_FILE_DIR:${NAME}>
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/WebCore.dll $<TARGET_FILE_DIR:${NAME}>)
+    endif()
 endif()
