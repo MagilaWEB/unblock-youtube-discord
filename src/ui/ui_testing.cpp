@@ -107,7 +107,7 @@ void Ui::_testingWindow()
 		_window_wait_testing->setType(SecondaryWindow::Type::Wait);
 
 		_window_wait_testing->addEventCancel(
-			[this](JSArgs args)
+			[this](JSArgs)
 			{
 				_unblock->testingDomainCancel<StrategiesDPI>();
 				_unblock->testingDomainCancel<StrategiesDPI>(true);
@@ -122,7 +122,7 @@ void Ui::_testingWindow()
 	}
 
 	_start_testing->addEventClick(
-		[=](JSArgs args)
+		[=](JSArgs)
 		{
 			if (_unblock->runTest<StrategiesDPI>() || _unblock->runTest<StrategiesDPI>(true))
 				return false;

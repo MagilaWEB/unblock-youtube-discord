@@ -29,10 +29,26 @@
       "displayName": "Ninja CL Release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
-      },
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
+      }
+    },
+    {
+      "name": "clang release",
+      "inherits": "release",
+      "displayName": "Ninja Clang-CL Release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl"
+      }
+    },
+    {
+      "name": "clang debug",
+      "inherits": "debug",
+      "displayName": "Ninja Clang-CL Debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl"
       }
     }
   ]

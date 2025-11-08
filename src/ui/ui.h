@@ -1,11 +1,19 @@
 #pragma once
 #include "../engine/engine_api.hpp"
 
+#ifdef __clang__
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Weverything"
+#endif
+
 #include <AppCore/AppCore.h>
 #include <AppCore/Window.h>
 #include <AppCore/Overlay.h>
 #include <Ultralight/Ultralight.h>
 
+#ifdef __clang__
+	#pragma clang diagnostic pop
+#endif
 #include "ui_elements.hpp"
 
 class Unblock;
@@ -23,7 +31,7 @@ class UI_API Ui : public WindowListener,
 public:
 	Ui() = delete;
 	Ui(IEngineAPI* engine);
-	~Ui();
+	~Ui() override;
 
 	virtual void OnAddConsoleMessage(View* caller, const ConsoleMessage& msg) override;
 
@@ -32,9 +40,7 @@ public:
 
 	virtual void OnClose(Window* window) override;
 
-	virtual void OnResize(Window* window, uint32_t width, uint32_t height) override {}
-
-	virtual void OnChangeCursor(View* caller, Cursor cursor) override { _engine->window()->SetCursor(cursor); }
+	virtual void OnChangeCursor(View*, Cursor cursor) override { _engine->window()->SetCursor(cursor); }
 
 private:
 	void _setting();

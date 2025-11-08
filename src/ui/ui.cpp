@@ -2,15 +2,15 @@
 
 #include "../unblock/unblock.h"
 
-Ui::Ui(IEngineAPI* engine) : _engine(engine)
+Ui::Ui(IEngineAPI* engine) : UiElements(), _engine(engine)
 {
 	_file_user_setting->open((Core::get().userPath() / "setting"), ".config", true);
 
-	#ifndef DEBUG
-		auto result = _file_user_setting->parameterSection<bool>("SUSTEM", "show_console");
-		if (result && result.value())
-			_engine->console();
-	#endif
+#ifndef DEBUG
+	auto result = _file_user_setting->parameterSection<bool>("SUSTEM", "show_console");
+	if (result && result.value())
+		_engine->console();
+#endif
 
 	_overlay = Overlay::Create(_engine->window(), _engine->window()->width(), _engine->window()->height(), 0, 0);
 	_overlay->view()->LoadURL("file:///main.html");
@@ -41,7 +41,7 @@ Ui::~Ui()
 	);
 
 #ifdef DEBUG
-void Ui::OnAddConsoleMessage(View* caller, const ConsoleMessage& msg)
+void Ui::OnAddConsoleMessage(View* /*caller*/, const ConsoleMessage& msg)
 {
 	std::string text_msg{ "MSG: " };
 	uint32_t	num_args = msg.num_arguments();
@@ -90,7 +90,7 @@ void Ui::OnAddConsoleMessage(View* caller, const ConsoleMessage& msg)
 }
 #endif
 
-void Ui::OnWindowObjectReady(View* caller, uint64_t frame_id, bool is_main_frame, const String& url)
+void Ui::OnWindowObjectReady(View* caller, uint64_t /*frame_id*/, bool /*is_main_frame*/, const String& /*url*/)
 {
 	auto locked_context = caller->LockJSContext();
 	SetJSContext(locked_context->ctx());
@@ -101,7 +101,7 @@ void Ui::OnWindowObjectReady(View* caller, uint64_t frame_id, bool is_main_frame
 	global["CPPLangText"] = BindJSCallbackWithRetval(&Ui::langText);
 }
 
-void Ui::OnDOMReady(View* caller, uint64_t frame_id, bool is_main_frame, const String& url)
+void Ui::OnDOMReady(View* caller, uint64_t /*frame_id*/, bool /*is_main_frame*/, const String& /*url*/)
 {
 	Core::setThreadJsID(GetCurrentThreadId());
 
@@ -111,7 +111,8 @@ void Ui::OnDOMReady(View* caller, uint64_t frame_id, bool is_main_frame, const S
 	BaseElement::initializeAll(caller);
 
 	_link_to_github->create("footer", "str_link_to_github");
-	_link_to_github->addEventClick([](JSArgs args)
+	_link_to_github->addEventClick(
+		[](JSArgs)
 		{
 			Core::addTask([] { system("start https://github.com/MagilaWEB/unblock-youtube-discord"); });
 			return false;
@@ -127,13 +128,13 @@ void Ui::OnDOMReady(View* caller, uint64_t frame_id, bool is_main_frame, const S
 	_testing();
 }
 
-void Ui::OnClose(ultralight::Window* window)
+void Ui::OnClose(ultralight::Window* /*window*/)
 {
 	BaseElement::release();
 	_engine->app()->Quit();
 }
 
-void Ui::runTask(const JSObject& obj, const JSArgs& args)
+void Ui::runTask(const JSObject& /*obj*/, const JSArgs& /*args*/)
 {
 	auto& task = Core::getTaskJS();
 	FAST_LOCK(Core::getTaskLockJS());
@@ -144,7 +145,7 @@ void Ui::runTask(const JSObject& obj, const JSArgs& args)
 	}
 }
 
-JSValue Ui::langText(const JSObject& obj, const JSArgs& args)
+JSValue Ui::langText(const JSObject& /*obj*/, const JSArgs& args)
 {
 	if (!args[0].IsString())
 	{

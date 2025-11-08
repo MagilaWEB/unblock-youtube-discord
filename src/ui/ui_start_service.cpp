@@ -15,7 +15,7 @@ void Ui::_startService()
 		_start_proxy_service->create("#home section .button_start_stop", "str_b_start_service_proxy", true);
 
 		_start_proxy_service->addEventClick(
-			[this](JSArgs args)
+			[this](JSArgs)
 			{
 				proxy_click_state = true;
 
@@ -50,7 +50,7 @@ void Ui::_startService()
 		_start_service->create("#home section .button_start_stop", "str_b_start_service", true);
 
 		_start_service->addEventClick(
-			[this](JSArgs args)
+			[this](JSArgs)
 			{
 				auto config = _file_user_setting->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config");
 				if (config)
@@ -142,7 +142,7 @@ void Ui::_startServiceWindow()
 			{
 				_window_configuration_selection_error->show();
 				_window_configuration_selection_error->addEventOk(
-					[this](JSArgs args)
+					[this](JSArgs)
 					{
 						_window_configuration_selection_error->hide();
 						return true;

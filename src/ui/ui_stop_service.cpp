@@ -10,7 +10,7 @@ void Ui::_stopService()
 	_stop_service->create("#home section .button_start_stop", "str_b_stop_service");
 
 	_stop_service->addEventClick(
-		[this](JSArgs args)
+		[this](JSArgs)
 		{
 			Core::addTask(
 				[this]

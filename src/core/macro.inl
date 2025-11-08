@@ -3,6 +3,8 @@
 	#pragma clang diagnostic ignored "-Wc++20-compat-pedantic"
 	#pragma clang diagnostic ignored "-Wswitch-enum"
 	#pragma clang diagnostic ignored "-Wcovered-switch-default"
+	#pragma clang diagnostic ignored "-Winvalid-token-paste"
+	#pragma clang diagnostic ignored "-Wheader-hygiene"
 #endif
 
 #ifndef NDEBUG

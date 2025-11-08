@@ -1,9 +1,18 @@
 #pragma once
+
+#ifdef __clang__
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Weverything"
+#endif
+
 #include <AppCore/JSHelpers.h>
 #include <Ultralight/View.h>
 
-using namespace ultralight;
+#ifdef __clang__
+	#pragma clang diagnostic pop
+#endif
 
+using namespace ultralight;
 #define JS_EVENT(map) static_cast<JSCallbackWithRetval>([this](JSObject, const JSArgs& args) -> JSValue { return eventCPP(args, map); })
 
 class BaseElement
@@ -28,7 +37,7 @@ protected:
 public:
 	BaseElement() = delete;
 	BaseElement(pcstr name);
-	~BaseElement();
+	virtual ~BaseElement();
 
 	void create(pcstr selector, Localization::Str title, bool first = false);
 	void remove();

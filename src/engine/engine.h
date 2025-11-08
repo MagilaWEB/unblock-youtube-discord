@@ -2,6 +2,19 @@
 #include "engine_api.hpp"
 #include "../ui/ui.h"
 
+
+#ifdef __clang__
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Weverything"
+#endif
+
+#include <AppCore/AppCore.h>
+#include <AppCore/Window.h>
+
+#ifdef __clang__
+	#pragma clang diagnostic pop
+#endif
+
 using namespace ultralight;
 
 class ENGINE_API Engine final : public IEngineAPI

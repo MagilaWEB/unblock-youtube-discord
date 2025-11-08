@@ -32,8 +32,8 @@ void File::_forLineSection(pcstr section, std::function<bool(ItParameters&)> fn)
 		return;
 	}
 
-	const static std::regex r_section_name{ "\\[.*\\](?:.*|\\n)" };
-	ItParameters			option_it{};
+	const std::regex r_section_name{ "\\[.*\\](?:.*|\\n)" };
+	ItParameters	 option_it{};
 
 	for (option_it.iterator = _line_string.begin(); option_it.iterator < _line_string.end();)
 	{
@@ -231,7 +231,6 @@ template CORE_API std::expected<pcstr, std::string> File::parameterSection<pcstr
 template CORE_API std::expected<bool, std::string> File::parameterSection<bool>(pcstr section, pcstr parameter);
 template CORE_API std::expected<float, std::string> File::parameterSection<float>(pcstr section, pcstr parameter);
 template CORE_API std::expected<int, std::string> File::parameterSection<int>(pcstr section, pcstr parameter);
-template CORE_API std::expected<s32, std::string> File::parameterSection<s32>(pcstr section, pcstr parameter);
 template CORE_API std::expected<u32, std::string> File::parameterSection<u32>(pcstr section, pcstr parameter);
 template CORE_API std::expected<long long, std::string> File::parameterSection<long long>(pcstr section, pcstr parameter);
 
@@ -244,7 +243,6 @@ void File::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_arg
 
 	_is_write = true;
 
-	u32 save_iterator{ 0 };
 	bool stoped{ false };
 
 	_forLineSection(
@@ -374,7 +372,7 @@ void File::_removeEmptyLine()
 		_line_string,
 		[&front, &empty_line](const std::string& str)
 		{
-			if (front && str.empty() || front && str.contains("\n"))
+			if ((front && str.empty()) || (front && str.contains("\n")))
 				return true;
 			else if (front)
 				front = false;

@@ -18,11 +18,7 @@ else (MSVC)
 endif (MSVC)
 
 # Enable C++23/20
-if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set(CMAKE_CXX_STANDARD 23)
-else()
-    set(CMAKE_CXX_STANDARD 20)
-endif()
+set(CMAKE_CXX_STANDARD 23)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -38,32 +34,6 @@ set(EXPORTED_LIBRARIES_DIRECTORY ${CMAKE_BINARY_DIR}/_deps)
 
 # Macros for all project solutions (except libraries)
 set(ALL_MACRO_CPP )
-
-# Cmake includes
-#include(FetchContent)
-
-# Load GitHub oneTBB
-#FetchContent_Declare(
-#  oneTBB
-#  URL https://github.com/uxlfoundation/oneTBB/archive/refs/tags/v2022.1.0.tar.gz
-#  OVERRIDE_FIND_PACKAGE
-#)
-
-# Load GitHub cpp-httplib
-#FetchContent_Declare(
-#  httplib
-#  URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.21.0.tar.gz
-#  OVERRIDE_FIND_PACKAGE
-#)
-
-# oneTBB disable tests
-# option(TBB_TEST OFF)
-
-# oneTBB BUILD_SHARED
-# set(BUILD_SHARED_LIBS ON)
-
-# oneTBB Changing the folder name for the build oneTBB
-# set(TBB_OUTPUT_DIR_BASE oneTBB)
 
 # Include libcurl
 set(CURL_DIR ${EXPORTED_SDK_DIRECTORY}/curl)
