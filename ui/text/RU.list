@@ -70,7 +70,7 @@ str_window_continue_select_strategy_proxy_description=Выбран файл ко
 // Setting titles blocks
 str_setting_common_title=Общие
 str_setting_unblock_title=Unblock (winws/GoodBayDPI)
-str_setting_proxy_title=Proxy сервер
+str_setting_proxy_title=ProxyDPI
 
 // Setting show console
 str_checkbox_show_console_title=Открывать окно консоли после запуска приложения.
