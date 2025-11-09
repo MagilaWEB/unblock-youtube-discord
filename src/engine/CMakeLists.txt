@@ -8,16 +8,16 @@ add_executable(${NAME} ${src_h} ${src_hpp} ${src_cpp} engine.rc)
 target_precompile_headers(${NAME} PRIVATE pch.h)
 
 # Include files
-target_include_directories(${NAME} PRIVATE ${EXPORTED_SDK_DIRECTORY}/ultralight/include)
+target_include_directories(${NAME} PRIVATE ${ULTRALIGHT_INCLUDE})
 
 # Link
 target_link_libraries(${NAME} PRIVATE
         core
         ui
         unblock
-        ${EXPORTED_SDK_DIRECTORY}/ultralight/lib/AppCore.lib
-        ${EXPORTED_SDK_DIRECTORY}/ultralight/lib/UltralightCore.lib
-        ${EXPORTED_SDK_DIRECTORY}/ultralight/lib/Ultralight.lib
+        ${ULTRALIGHT_LIB}/AppCore.lib
+        ${ULTRALIGHT_LIB}/UltralightCore.lib
+        ${ULTRALIGHT_LIB}/Ultralight.lib
 )
 
 # Define EXPORTS when building the libraries
@@ -41,13 +41,13 @@ if(CUPY_LIBS_DLL_TO_BIN)
                            COMMAND ${CMAKE_COMMAND} -E copy
                                ${CURL_DIR_DEBUG}/bin/zlibd.pdb $<TARGET_FILE_DIR:${NAME}>
                            COMMAND ${CMAKE_COMMAND} -E copy
-                               ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/AppCore.dll $<TARGET_FILE_DIR:${NAME}>
+                               ${ULTRALIGHT_BIN}/AppCore.dll $<TARGET_FILE_DIR:${NAME}>
                            COMMAND ${CMAKE_COMMAND} -E copy
-                               ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/Ultralight.dll $<TARGET_FILE_DIR:${NAME}>
+                               ${ULTRALIGHT_BIN}/Ultralight.dll $<TARGET_FILE_DIR:${NAME}>
                            COMMAND ${CMAKE_COMMAND} -E copy
-                               ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/UltralightCore.dll $<TARGET_FILE_DIR:${NAME}>
+                               ${ULTRALIGHT_BIN}/UltralightCore.dll $<TARGET_FILE_DIR:${NAME}>
                            COMMAND ${CMAKE_COMMAND} -E copy
-                               ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/WebCore.dll $<TARGET_FILE_DIR:${NAME}>)
+                               ${ULTRALIGHT_BIN}/WebCore.dll $<TARGET_FILE_DIR:${NAME}>)
     else()
         add_custom_command(TARGET ${NAME} PRE_BUILD
                            COMMAND ${CMAKE_COMMAND} -E copy
@@ -55,12 +55,12 @@ if(CUPY_LIBS_DLL_TO_BIN)
                            COMMAND ${CMAKE_COMMAND} -E copy
                                ${CURL_DIR_RELEASE}/bin/zlib1.dll $<TARGET_FILE_DIR:${NAME}>
                            COMMAND ${CMAKE_COMMAND} -E copy
-                               ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/AppCore.dll $<TARGET_FILE_DIR:${NAME}>
+                               ${ULTRALIGHT_BIN}/AppCore.dll $<TARGET_FILE_DIR:${NAME}>
                            COMMAND ${CMAKE_COMMAND} -E copy
-                               ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/Ultralight.dll $<TARGET_FILE_DIR:${NAME}>
+                               ${ULTRALIGHT_BIN}/Ultralight.dll $<TARGET_FILE_DIR:${NAME}>
                            COMMAND ${CMAKE_COMMAND} -E copy
-                               ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/UltralightCore.dll $<TARGET_FILE_DIR:${NAME}>
+                               ${ULTRALIGHT_BIN}/UltralightCore.dll $<TARGET_FILE_DIR:${NAME}>
                            COMMAND ${CMAKE_COMMAND} -E copy
-                               ${EXPORTED_SDK_DIRECTORY}/ultralight/bin/WebCore.dll $<TARGET_FILE_DIR:${NAME}>)
+                               ${ULTRALIGHT_BIN}/WebCore.dll $<TARGET_FILE_DIR:${NAME}>)
     endif()
 endif()

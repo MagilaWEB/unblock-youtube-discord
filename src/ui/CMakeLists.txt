@@ -10,16 +10,16 @@ add_library(${NAME} SHARED ${src_h} ${src_hpp} ${src_cpp})
 target_precompile_headers(${NAME} PRIVATE pch.h)
 
 # Include files
-target_include_directories(${NAME} PRIVATE ${EXPORTED_SDK_DIRECTORY}/ultralight/include)
+target_include_directories(${NAME} PRIVATE ${ULTRALIGHT_INCLUDE})
 
 # Link
 target_link_libraries(${NAME} PRIVATE
         core
         unblock
-        ${EXPORTED_SDK_DIRECTORY}/ultralight/lib/AppCore.lib
-        ${EXPORTED_SDK_DIRECTORY}/ultralight/lib/UltralightCore.lib
-        ${EXPORTED_SDK_DIRECTORY}/ultralight/lib/Ultralight.lib
-        ${EXPORTED_SDK_DIRECTORY}/ultralight/lib/WebCore.lib
+        ${ULTRALIGHT_LIB}/AppCore.lib
+        ${ULTRALIGHT_LIB}/UltralightCore.lib
+        ${ULTRALIGHT_LIB}/Ultralight.lib
+        ${ULTRALIGHT_LIB}/WebCore.lib
 )
 
 # Define EXPORTS when building the libraries

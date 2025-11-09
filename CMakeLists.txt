@@ -31,14 +31,36 @@ set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)  # .exe/.dll
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)  # .so/.dylib
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)  # .lib/.a
-set(EXPORTED_SDK_DIRECTORY ${CMAKE_SOURCE_DIR}/sdk)  # all
 set(EXPORTED_LIBRARIES_DIRECTORY ${CMAKE_BINARY_DIR}/_deps)
 
 # Macros for all project solutions (except libraries)
 set(ALL_MACRO_CPP )
 
+# Cmake includes
+include(FetchContent)
+
+# Load GitHub ultralight-sdk
+FetchContent_Declare(
+  ultralight
+  URL https://github.com/MagilaWEB/ultralight-sdk/releases/download/v1.4.1_dev/ultralight-sdk.7z
+  OVERRIDE_FIND_PACKAGE
+)
+
+# Load GitHub curl binaries
+FetchContent_Declare(
+  curl
+  URL https://github.com/MagilaWEB/curl_binaries/releases/download/v8.12/curl_binaries.7z
+  OVERRIDE_FIND_PACKAGE
+)
+
+# Build
+FetchContent_MakeAvailable(
+    ultralight
+    curl
+)
+
 # Include libcurl
-set(CURL_DIR ${EXPORTED_SDK_DIRECTORY}/curl)
+set(CURL_DIR ${EXPORTED_LIBRARIES_DIRECTORY}/curl-src)
 set(CURL_DIR_RELEASE ${CURL_DIR}/release)
 set(CURL_DIR_DEBUG ${CURL_DIR}/debug)
 
@@ -52,6 +74,12 @@ endif()
 
 set(CURL_INCLUDE_DIR ${CURL_DIR}/include)
 set(ZLIB_INCLUDE_DIR ${CURL_INCLUDE_DIR})
+
+# Include ultralight
+set(ULTRALIGHT_DIR ${EXPORTED_LIBRARIES_DIRECTORY}/ultralight-src)
+set(ULTRALIGHT_INCLUDE ${ULTRALIGHT_DIR}/include)
+set(ULTRALIGHT_LIB ${ULTRALIGHT_DIR}/lib)
+set(ULTRALIGHT_BIN ${ULTRALIGHT_DIR}/bin)
 
 # Build
 message(STATUS "COMPILER = ${CMAKE_CXX_COMPILER_ID}")
