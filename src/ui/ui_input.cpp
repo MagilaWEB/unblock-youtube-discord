@@ -31,7 +31,7 @@ void Input::create(pcstr selector, Types type, pcstr value, Localization::Str ti
 	pcstr _description = description();
 
 	runCode(
-		[&]
+		[this, selector, type, value, _title, _description, first]
 		{
 			for (auto& [id, str] : convert_types)
 			{

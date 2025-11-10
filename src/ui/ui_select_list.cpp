@@ -33,12 +33,14 @@ void SelectList::initialize()
 
 void SelectList::create(pcstr selector, Localization::Str title, Localization::Str description, bool first)
 {
+	pcstr _title = title();
+	pcstr _description = description();
 	runCode(
-		[&]
+		[this, selector, _title, _description, first]
 		{
 			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(
-				_create({ selector, _name, title(), description(), first }).ToBoolean() == true,
+				_create({ selector, _name, _title, _description, first }).ToBoolean() == true,
 				"Couldn't create a %s named [%s]",
 				_type,
 				_name
@@ -53,7 +55,7 @@ void SelectList::createOption(JSValue value, Localization::Str text, bool select
 {
 	pcstr _text = text();
 	runCode(
-		[&]
+		[this, value, _text, select]
 		{
 			if (!_created)
 				return;

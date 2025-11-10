@@ -45,7 +45,7 @@ void SecondaryWindow::create(Localization::Str title, Localization::Str descript
 	pcstr _title	   = title();
 	pcstr _description = description();
 	runCode(
-		[&]
+		[this, _title, _description]
 		{
 			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(_create({ _name, _title, _description }).ToBoolean() == true, "Couldn't create a %s named [%s]", _type, _name);
@@ -60,7 +60,7 @@ void SecondaryWindow::create(Localization::Str title, Localization::Str descript
 void SecondaryWindow::setType(Type type)
 {
 	runCode(
-		[&]
+		[this, type]
 		{
 			if (!_created)
 				return;
@@ -78,7 +78,7 @@ void SecondaryWindow::setDescription(Localization::Str description)
 {
 	pcstr _description = description();
 	runCode(
-		[&]
+		[this, _description]
 		{
 			if (!_created)
 				return;
@@ -146,7 +146,7 @@ void SecondaryWindow::clearEventCancel()
 void SecondaryWindow::show()
 {
 	runCode(
-		[&]
+		[this]
 		{
 			if (!_created)
 				return;
@@ -160,7 +160,7 @@ void SecondaryWindow::show()
 void SecondaryWindow::hide()
 {
 	runCode(
-		[&]
+		[this]
 		{
 			if (!_created)
 				return;

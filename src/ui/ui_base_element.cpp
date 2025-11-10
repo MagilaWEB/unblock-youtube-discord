@@ -53,7 +53,7 @@ void BaseElement::create(pcstr selector, Localization::Str title, bool first)
 {
 	pcstr _title = title();
 	runCode(
-		[&]
+		[this, selector, _title, first]
 		{
 			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(_create({ selector, _name, _title, first }).ToBoolean() == true, "Couldn't create a %s named [%s]", _type, _name);

@@ -33,7 +33,7 @@ void CheckBox::create(pcstr selector, Localization::Str title, Localization::Str
 	pcstr _title = title();
 	pcstr _description = description();
 	runCode(
-		[&]
+		[this, selector, _title, _description, first]
 		{
 			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(
