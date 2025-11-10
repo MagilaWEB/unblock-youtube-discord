@@ -198,10 +198,9 @@ bool DomainTesting::isConnectionUrlVideo(const CurlDomain& domain) const
 		curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
 
 		curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(domain.curl, CURLOPT_CONNECTTIMEOUT, _accurate_test ? 10L : 5L);
 		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _accurate_test ? 10L : 5L);
 
-		while (count_connection++ < 8)
+		while (count_connection++ < 4)
 		{
 			u32 http_code{ 0U };
 
@@ -243,7 +242,6 @@ bool DomainTesting::isConnectionUrl(const CurlDomain& domain) const
 		curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
 
 		curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(domain.curl, CURLOPT_CONNECTTIMEOUT, _accurate_test ? 10L : 5L);
 		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _accurate_test ? 10L : 5L);
 
 		while (count_connection++ < 2)

@@ -219,7 +219,7 @@ std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 		return "--blacklist " + (path_file.string());
 	}
 
-	path_file = Core::get().configsPath() / "ip-blacklist.list";
+	
 
 	if (str.contains("%IP-SETLIST%"))
 	{
@@ -233,8 +233,16 @@ std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 			return "--hostlist=" + (path_file_top_level_domains.string());
 		}
 
-		ASSERT_ARGS(std::filesystem::exists(path_file), "The [%s] file does not exist!", path_file.string().c_str());
-		return "--ipset=" + (path_file.string());
+		auto path_ip_set = Core::get().configsPath() / "ip-set-all.list";
+		ASSERT_ARGS(std::filesystem::exists(path_ip_set), "The [%s] file does not exist!", path_ip_set.string().c_str());
+		return "--ipset=" + (path_ip_set.string());
+	}
+
+	if (str.contains("%IP-EXCLUDE%"))
+	{
+		auto path_ip_exclude = Core::get().configsPath() / "ip-exclude.list";
+		ASSERT_ARGS(std::filesystem::exists(path_ip_exclude), "The [%s] file does not exist!", path_ip_exclude.string().c_str());
+		return "--ipset-exclude=" + (path_ip_exclude.string());
 	}
 
 	if (str.contains("%IP-BLOCKLIST%"))
@@ -249,8 +257,9 @@ std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 			return "--hostlist=" + (path_file_top_level_domains.string());
 		}
 
-		ASSERT_ARGS(std::filesystem::exists(path_file), "The [%s] file does not exist!", path_file.string().c_str());
-		return "--hostlist=" + (path_file.string());
+		auto path_ip_blacklist = Core::get().configsPath() / "ip-blacklist.list";
+		ASSERT_ARGS(std::filesystem::exists(path_ip_blacklist), "The [%s] file does not exist!", path_ip_blacklist.string().c_str());
+		return "--hostlist=" + (path_ip_blacklist.string());
 	}
 
 	return std::nullopt;
