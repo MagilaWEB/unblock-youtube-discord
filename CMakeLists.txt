@@ -43,6 +43,7 @@ include(FetchContent)
 FetchContent_Declare(
   ultralight
   URL https://github.com/MagilaWEB/ultralight-sdk/releases/download/v1.4.1_dev/ultralight-sdk.7z
+  URL_HASH SHA256=bd10ac7210ec99d471cc66cca11cc052df8703e8ebe12ddf0bc9b3275ee974e0
   OVERRIDE_FIND_PACKAGE
 )
 
@@ -50,6 +51,7 @@ FetchContent_Declare(
 FetchContent_Declare(
   curl
   URL https://github.com/MagilaWEB/curl_binaries/releases/download/v8.12/curl_binaries.7z
+  URL_HASH SHA256=eec2b0328fd21337fbee434624c074992c8db9c21dbc4f5921c52c815c646a4a
   OVERRIDE_FIND_PACKAGE
 )
 
