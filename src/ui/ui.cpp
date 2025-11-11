@@ -65,7 +65,7 @@ void Ui::OnAddConsoleMessage(View* /*caller*/, const ConsoleMessage& msg)
 		LOGS(Debug::error)
 }
 #else
-void Ui::OnAddConsoleMessage(View* caller, const ConsoleMessage& msg)
+void Ui::OnAddConsoleMessage(View* /*caller*/, const ConsoleMessage& msg)
 {
 	std::string text_msg{ "MSG: " };
 	uint32_t	num_args = msg.num_arguments();

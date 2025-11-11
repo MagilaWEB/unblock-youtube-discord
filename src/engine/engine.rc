@@ -31,8 +31,8 @@ IDI_ICON1               ICON                    "unblock.ico"
 //
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 1,4,0,0
- PRODUCTVERSION 1,4,0,0
+FILEVERSION 1,4,2,0
+ PRODUCTVERSION 1,4,2,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -49,12 +49,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "MAGILA"
             VALUE "FileDescription", "Unblock DPI"
-            VALUE "FileVersion", "1.3.9"
+            VALUE "FileVersion", "1.4.2"
             VALUE "InternalName", "unblock"
             VALUE "LegalCopyright", "Copyright @ Magila"
             VALUE "OriginalFilename", "engine.exe"
             VALUE "ProductName", "UNBLOCK"
-            VALUE "ProductVersion", "1.3.9"
+            VALUE "ProductVersion", "1.4.2"
         END
     END
     BLOCK "VarFileInfo"
