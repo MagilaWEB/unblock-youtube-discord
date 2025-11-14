@@ -72,20 +72,28 @@ str_setting_common_title=Общие
 str_setting_unblock_title=Unblock (winws/GoodBayDPI)
 str_setting_proxy_title=ProxyDPI
 
-// Setting show console
+// Setting common show console
 str_checkbox_show_console_title=Открывать окно консоли после запуска приложения.
 str_checkbox_show_console_description=Функция открывает окно консоли для отслеживания системных сообщений приложения.
 (Параметр применяется только после перезапуска приложения).
 
-// Setting testing on startup
+// Setting common testing on startup
 str_checkbox_testing_startup_title=Запускать тестирование доменов при запуске.
 str_checkbox_testing_startup_description=Если данный параметр включен, тогда при запуске приложения будет запущено тестирование доменов автоматически.
 
-// Setting Accurate testing
+// Setting common Accurate testing
 str_checkbox_accurate_testing_title=Запускать тестирование с повышенной точностью.
 str_checkbox_accurate_testing_description=Если данный параметр включен,
 тогда тестирование доменов производится с повешенной точностью, это подойдет для тех у кого не стабильное интернет соединение
 (Данный режим многократно увеличивает длительность тестирования).
+
+// Setting common input max time wait accurate testing
+str_input_max_wait_accurate_testing_title=Время ожидания ответа в точном режиме
+str_input_max_wait_accurate_testing_description=Время ожидания ответа от сервера в секундах на каждый из доменов в режиме точного тестирования.
+
+// Setting common input max time wait testing
+str_input_max_wait_testing_title=Время ожидания ответа
+str_input_max_wait_testing_description=Время ожидания ответа от сервера в секундах на каждый из доменов.
 
 // Setting checkbox unblock (winws/GoodBayDPI) enable
 str_unblock_enable_title=Использовать unblock сервисы (winws/GoodBayDPI)
