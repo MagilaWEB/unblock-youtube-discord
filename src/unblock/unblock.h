@@ -56,11 +56,13 @@ public:
 	bool activeService(bool proxy = false);
 
 	template<typename Type>
-	void testingDomain(std::function<void(pcstr url, bool state)>&& callback = [](pcstr, bool) {}, bool video = false);
+	void testingDomain(std::function<void(pcstr url, bool state)>&& callback = [](pcstr, bool) {}, bool video = false, bool base_test = true);
 	template<typename Type>
 	void testingDomainCancel(bool video = false);
 
 	void accurateTesting(bool state);
+	void maxWaitTesting(u32 second);
+	void maxWaitAccurateTesting(u32 second);
 
 	bool validDomain(bool proxy = false);
 };

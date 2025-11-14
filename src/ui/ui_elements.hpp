@@ -21,6 +21,8 @@ protected:
 
 	CHECK_BOX(_testing_domains_startup);
 	CHECK_BOX(_accurate_testing);
+	INPUT(_max_time_wait_testing);
+	INPUT(_max_time_wait_accurate_testing);
 
 	// Setting Unblock
 	CHECK_BOX(_unblock_enable);

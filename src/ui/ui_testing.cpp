@@ -44,8 +44,11 @@ void Ui::_testingWindow()
 								 if (_unblock_enable->getState())
 								 {
 									 lock.LeaveShared();
-									 _unblock->testingDomain<StrategiesDPI>([this](pcstr url, bool state)
-																			{ _list_domain->createLiSuccess(url, state); });
+									 _unblock->testingDomain<StrategiesDPI>(
+										 [this](pcstr url, bool state) { _list_domain->createLiSuccess(url, state); },
+										 false,
+										 false
+									 );
 									 return;
 								 }
 								 lock.LeaveShared();
@@ -59,7 +62,8 @@ void Ui::_testingWindow()
 									 lock.LeaveShared();
 									 _unblock->testingDomain<StrategiesDPI>(
 										 [this](pcstr url, bool state) { _list_domain_video->createLiSuccess(url, state); },
-										 true
+										 true,
+										 false
 									 );
 									 return;
 								 }
@@ -72,8 +76,11 @@ void Ui::_testingWindow()
 								 if (_proxy_enable->getState())
 								 {
 									 lock.LeaveShared();
-									 _unblock->testingDomain<ProxyStrategiesDPI>([this](pcstr url, bool state)
-																				 { _list_proxy_domain->createLiSuccess(url, state); });
+									 _unblock->testingDomain<ProxyStrategiesDPI>(
+										 [this](pcstr url, bool state) { _list_proxy_domain->createLiSuccess(url, state); },
+										 false,
+										 false
+									 );
 									 return;
 								 }
 								 lock.LeaveShared();
@@ -87,7 +94,8 @@ void Ui::_testingWindow()
 									 lock.LeaveShared();
 									 _unblock->testingDomain<ProxyStrategiesDPI>(
 										 [this](pcstr url, bool state) { _list_proxy_domain_video->createLiSuccess(url, state); },
-										 true
+										 true,
+										 false
 									 );
 									 return;
 								 }

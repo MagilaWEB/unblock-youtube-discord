@@ -189,6 +189,66 @@ void Ui::_setting()
 		);
 	}
 
+	// MAX time wait testing domains Common
+	auto create_time_wait_testing = [this]
+	{
+		_max_time_wait_testing->remove();
+		_max_time_wait_accurate_testing->remove();
+
+		if (_accurate_testing->getState())
+		{
+			_max_time_wait_accurate_testing->create(
+				"#setting section .common",
+				Input::Types::number,
+				10,
+				"str_input_max_wait_accurate_testing_title",
+				"str_input_max_wait_accurate_testing_description"
+			);
+
+			auto result = _file_user_setting->parameterSection<u32>("TESTING", "max_time_wait_accurate_testing");
+			if (result)
+				_max_time_wait_accurate_testing->setValue(result.value());
+
+			_unblock->maxWaitAccurateTesting(static_cast<u32>(_max_time_wait_accurate_testing->getValue().ToInteger()));
+
+			_max_time_wait_accurate_testing->addEventSubmit(
+				[this](JSArgs args)
+				{
+					_file_user_setting
+						->writeSectionParameter("TESTING", "max_time_wait_accurate_testing", static_cast<String>(args[0].ToString()).utf8().data());
+					_unblock->maxWaitAccurateTesting(static_cast<u32>(args[0].ToInteger()));
+					return false;
+				}
+			);
+		}
+		else
+		{
+			_max_time_wait_testing->create(
+				"#setting section .common",
+				Input::Types::number,
+				5,
+				"str_input_max_wait_testing_title",
+				"str_input_max_wait_testing_description"
+			);
+
+			auto result = _file_user_setting->parameterSection<u32>("TESTING", "max_time_wait_testing");
+			if (result)
+				_max_time_wait_testing->setValue(result.value());
+
+			_unblock->maxWaitTesting(static_cast<u32>(_max_time_wait_testing->getValue().ToInteger()));
+
+			_max_time_wait_testing->addEventSubmit(
+				[this](JSArgs args)
+				{
+					_file_user_setting
+						->writeSectionParameter("TESTING", "max_time_wait_testing", static_cast<String>(args[0].ToString()).utf8().data());
+					_unblock->maxWaitTesting(static_cast<u32>(args[0].ToInteger()));
+					return false;
+				}
+			);
+		}
+	};
+
 	// Accurate testing Common
 	{
 		_accurate_testing->create(
@@ -202,11 +262,14 @@ void Ui::_setting()
 
 		_unblock->accurateTesting(_accurate_testing->getState());
 
+		create_time_wait_testing();
+
 		_accurate_testing->addEventClick(
-			[this](JSArgs args)
+			[this, create_time_wait_testing](JSArgs args)
 			{
 				_file_user_setting->writeSectionParameter("TESTING", "accurate", static_cast<String>(args[0].ToString()).utf8().data());
 				_unblock->accurateTesting(args[0].ToBoolean());
+				create_time_wait_testing();
 				return false;
 			}
 		);

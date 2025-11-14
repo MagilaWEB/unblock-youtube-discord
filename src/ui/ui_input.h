@@ -34,7 +34,7 @@ public:
 
 	void initialize() override;
 
-	void create(pcstr selector, Types type, pcstr value, Localization::Str title, Localization::Str description, bool first = false);
+	void create(pcstr selector, Types type, JSValue value, Localization::Str title, Localization::Str description, bool first = false);
 	void addEventSubmit(std::function<bool(JSArgs)>&& callback);
 
 	void	setValue(JSValue value);

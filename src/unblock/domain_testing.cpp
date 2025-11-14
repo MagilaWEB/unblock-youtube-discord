@@ -4,6 +4,8 @@
 DomainTesting::DomainTesting(bool enable_proxy) : _proxy(enable_proxy)
 {
 	_files_test_domain->open((Core::get().configsPath() / "service"), ".config", true);
+
+	_file_base_test_domain->open((Core::get().configsPath() / "domain_test_base"), ".list", true);
 }
 
 DomainTesting::~DomainTesting()
@@ -73,13 +75,65 @@ void DomainTesting::changeProxy(std::string ip, u32 port)
 	_proxyPORT = port;
 }
 
-void DomainTesting::test(bool test_video, std::function<void(pcstr url, bool state)>&& callback)
+void DomainTesting::test(bool test_video, bool base_test, std::function<void(pcstr url, bool state)>&& callback)
 {
 	Debug::info("Start test domain.");
 
 	_is_testing		= true;
 	_cancel_testing = false;
 	_domain_error = _domain_ok = 0;
+
+	if (base_test && !test_video)
+	{
+		// BASE TESTING!!!
+
+		for (auto& curl_domain : _list_domain)
+			if (curl_domain.curl)
+				curl_easy_cleanup(curl_domain.curl);
+
+		_list_domain.clear();
+
+		_file_base_test_domain->forLine(
+			[this](std::string str)
+			{
+				if (str.empty())
+					return false;
+
+				_list_domain.emplace_back(CurlDomain{ curl_easy_init(), str });
+				return false;
+			}
+		);
+
+		bool state{ false };
+		std::for_each(
+			std::execution::par,
+			_list_domain.begin(),
+			_list_domain.end(),
+			[this, &state](const CurlDomain& domain)
+			{
+				if (isConnectionUrl(domain))
+					_domain_ok++;
+				else
+				{
+					InputConsole::textWarning("проблема доступа: %s", domain.url.c_str());
+					_domain_error++;
+				}
+
+				if (_domain_ok.load() == _list_domain.size())
+					state = true;
+			}
+		);
+
+		if (!state)
+		{
+			Debug::warning("Invalid test domain.");
+			return;
+		}
+
+		_domain_error = _domain_ok = 0;
+
+		InputConsole::textOk("Базовое тетсирование успешно, запуск полного тетсирования...");
+	}
 
 	loadDomain(test_video);
 
@@ -119,6 +173,18 @@ void DomainTesting::test(bool test_video, std::function<void(pcstr url, bool sta
 void DomainTesting::changeAccurateTest(bool state)
 {
 	_accurate_test = state;
+}
+
+void DomainTesting::changeMaxWaitTesting(u32 second)
+{
+	ASSERT_ARGS(second > 0, "The connection timeout cannot be equal to 0! This will provoke endless waiting.");
+	_max_wait_testing = second;
+}
+
+void DomainTesting::changeMaxWaitAccurateTesting(u32 second)
+{
+	ASSERT_ARGS(second > 0, "The connection timeout cannot be equal to 0! This will provoke endless waiting.");
+	_max_wait_accurate_testing = second;
 }
 
 void DomainTesting::cancelTesting()
@@ -198,7 +264,7 @@ bool DomainTesting::isConnectionUrlVideo(const CurlDomain& domain) const
 		curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
 
 		curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _accurate_test ? 10L : 5L);
+		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _accurate_test ? _max_wait_accurate_testing.load() : _max_wait_testing.load());
 
 		while (count_connection++ < 4)
 		{
@@ -215,7 +281,7 @@ bool DomainTesting::isConnectionUrlVideo(const CurlDomain& domain) const
 	return false;
 }
 
-bool DomainTesting::isConnectionUrl(const CurlDomain& domain) const
+bool DomainTesting::isConnectionUrl(const CurlDomain& domain)
 {
 	if (domain.curl)
 	{
@@ -242,7 +308,7 @@ bool DomainTesting::isConnectionUrl(const CurlDomain& domain) const
 		curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
 
 		curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _accurate_test ? 10L : 5L);
+		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _accurate_test ? _max_wait_accurate_testing.load() : _max_wait_testing.load());
 
 		while (count_connection++ < 2)
 		{

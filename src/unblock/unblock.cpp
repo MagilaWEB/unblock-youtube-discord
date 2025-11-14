@@ -170,7 +170,7 @@ template UNBLOCK_API bool Unblock::runTest<StrategiesDPI>(bool);
 template UNBLOCK_API bool Unblock::runTest<ProxyStrategiesDPI>(bool);
 
 template<typename Type>
-void Unblock::testingDomain(std::function<void(pcstr url, bool state)>&& callback, bool video)
+void Unblock::testingDomain(std::function<void(pcstr url, bool state)>&& callback, bool video, bool base_test)
 {
 	static_assert(
 		std::is_same_v<Type, StrategiesDPI> || std::is_same_v<Type, ProxyStrategiesDPI>,
@@ -181,16 +181,16 @@ void Unblock::testingDomain(std::function<void(pcstr url, bool state)>&& callbac
 
 	if (video)
 	{
-		testing_video->test(video, [callback](pcstr url, bool state) { callback(url, state); });
+		testing_video->test(video, base_test, [callback](pcstr url, bool state) { callback(url, state); });
 		testing_video->printTestInfo();
 		return;
 	}
 
-	testing->test(video, [callback](pcstr url, bool state) { callback(url, state); });
+	testing->test(video, base_test, [callback](pcstr url, bool state) { callback(url, state); });
 	testing->printTestInfo();
 }
-template UNBLOCK_API void Unblock::testingDomain<StrategiesDPI>(std::function<void(pcstr, bool)>&&, bool);
-template UNBLOCK_API void Unblock::testingDomain<ProxyStrategiesDPI>(std::function<void(pcstr, bool)>&&, bool);
+template UNBLOCK_API void Unblock::testingDomain<StrategiesDPI>(std::function<void(pcstr, bool)>&&, bool, bool);
+template UNBLOCK_API void Unblock::testingDomain<ProxyStrategiesDPI>(std::function<void(pcstr, bool)>&&, bool, bool);
 
 template<typename Type>
 void Unblock::testingDomainCancel(bool video)
@@ -219,6 +219,22 @@ void Unblock::accurateTesting(bool state)
 	_domain_testing_video->changeAccurateTest(state);
 	_domain_testing_proxy->changeAccurateTest(state);
 	_domain_testing_proxy_video->changeAccurateTest(state);
+}
+
+void Unblock::maxWaitTesting(u32 second)
+{
+	_domain_testing->changeMaxWaitTesting(second);
+	_domain_testing_video->changeMaxWaitTesting(second);
+	_domain_testing_proxy->changeMaxWaitTesting(second);
+	_domain_testing_proxy_video->changeMaxWaitTesting(second);
+}
+
+void Unblock::maxWaitAccurateTesting(u32 second)
+{
+	_domain_testing->changeMaxWaitAccurateTesting(second);
+	_domain_testing_video->changeMaxWaitAccurateTesting(second);
+	_domain_testing_proxy->changeMaxWaitAccurateTesting(second);
+	_domain_testing_proxy_video->changeMaxWaitAccurateTesting(second);
 }
 
 bool Unblock::validDomain(bool proxy)

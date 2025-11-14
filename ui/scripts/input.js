@@ -8,6 +8,7 @@ class INPUT {
         this.value = _value;
         this.title = _title;
 
+        // validator ip
         if (this.type == "ip") {
             this.ipRE = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
         }
@@ -18,12 +19,13 @@ class INPUT {
         }
     }
 
+    blur() {
+        this.object_input.value = "";
+        this.object_input.placeholder = this.title + ": " + this.value;
+    }
+
     _blur() {
-        this.object_input.addEventListener("blur", () => {
-            //this.value = this.object_input.value;
-            this.object_input.value = "";
-            this.object_input.placeholder = this.title + ": " + this.value;
-        });
+        this.object_input.addEventListener("blur", () => this.blur());
     }
 
     _focus() {
@@ -123,7 +125,7 @@ function setInputValue(_name, _new_value) {
         return false;
 
     input.value = _new_value;
-    input.object_input.blur();
+    input.blur();
     return true;
 }
 
@@ -244,6 +246,11 @@ function createInput(_selector, _name, _type, _value, _title, _description, _fir
     return true;
 }
 
+/**
+ * Removing element input. 
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
 function removeInput(_name) {
     const input = getInput(_name);
     if (input === undefined)

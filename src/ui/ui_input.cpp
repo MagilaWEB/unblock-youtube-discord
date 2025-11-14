@@ -25,7 +25,7 @@ void Input::initialize()
 		global_js["CPPInputEventSubmit"] = JS_EVENT(_event_click);
 }
 
-void Input::create(pcstr selector, Types type, pcstr value, Localization::Str title, Localization::Str description, bool first)
+void Input::create(pcstr selector, Types type, JSValue value, Localization::Str title, Localization::Str description, bool first)
 {
 	pcstr _title	   = title();
 	pcstr _description = description();
