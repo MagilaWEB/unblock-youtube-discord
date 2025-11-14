@@ -9,6 +9,19 @@ list_nav.forEach(element => {
 	eventClick(element);
 });
 
+const version_app_text = document.querySelector(".nav .text_version .text");
+if (version_app_text) {
+	if (RUN_CPP) {
+		version_app_text.innerHTML = "Version:" + VERSION_APP;
+		version_app_text.innerText = version_app_text.innerHTML;
+	}
+	else {
+		const text_demo = "DEMO_TEXT    version:1.3.3"
+		version_app_text.innerHTML = text_demo;
+		version_app_text.innerText = text_demo;
+	}
+}
+
 // function localizationText(element) {
 // 	if (RUN_CPP) {
 // 		element.innerHTML = CPPLangText(element.innerHTML);

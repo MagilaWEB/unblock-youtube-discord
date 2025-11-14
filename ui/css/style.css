@@ -56,7 +56,7 @@ h2 {
 	visibility        : hidden;
 	top               : 0;
 	opacity           : 0;
-	z-index           : 3;
+	z-index           : 20;
 	width             : 100%;
 	height            : 100%;
 	transition        : visibility .5s, opacity .5s, transform .5s ease-in-out;
@@ -231,15 +231,14 @@ h2 {
 }
 
 .nav {
-	z-index                   : 2;
+	z-index                   : 10;
 	position                  : fixed;
-	top                       : 0px;
-	left                      : 0px;
+	top                       : -.5em;
+	left                      : -.5em;
 	color                     : #d3d3d3;
-	border-right              : solid 2px rgb(91, 91, 91);
-	border-bottom             : solid 2px rgb(91, 91, 91);
+	border                    : solid 2px rgb(91, 91, 91);
 	border-bottom-right-radius: .3cm;
-	background-color          : rgba(82, 82, 82, .3);
+	background-color          : rgba(82, 82, 82, .5);
 	transition                : filter .5s;
 }
 
@@ -266,6 +265,23 @@ h2 {
 	font-weight: bold;
 }
 
+.nav .text_version {
+	position        : fixed;
+	top             : -.5em;
+	right           : .5em;
+	padding         : .3em;
+	background-color: rgba(82, 82, 82, .5);
+	border          : solid 2px rgb(91, 91, 91);
+	border-left     : solid 2px rgb(91, 91, 91);
+	border-bottom   : solid 2px rgb(91, 91, 91);
+	border-radius   : 0 0 .5em .5em;
+}
+
+.nav .text_version .text {
+	margin   : 0;
+	font-size: small;
+}
+
 main {
 	transition: filter .5s;
 }
@@ -275,7 +291,7 @@ main article {
 	top       : 0;
 	left      : 0;
 	width     : 100%;
-	height    : calc(100% - 1em);
+	height    : 100%;
 	overflow  : auto;
 	visibility: hidden;
 	opacity   : 0;
@@ -340,17 +356,23 @@ footer .button {
 .button_start_stop {
 	display              : grid;
 	grid-template-columns: repeat(4, 1fr);
+	grid-auto-rows       : 4em;
 	gap                  : .333%;
+}
+
+.button_start_stop .button {
+	display    : flex;
+	align-items: center;
+}
+
+.button_start_stop .button button {
+	width: 100%;
 }
 
 #setting section {
 	display              : grid;
 	grid-template-columns: repeat(2, 1fr);
 	gap                  : 1%;
-}
-
-.button_start_stop .button button {
-	width: 100%;
 }
 
 .block {
@@ -449,7 +471,7 @@ footer .button {
 .input input,
 .select_list .label {
 	position        : absolute;
-	z-index         : 1;
+	z-index         : 10;
 	width           : 14em;
 	height          : 100%;
 	border-radius   : 5px;
@@ -488,7 +510,7 @@ footer .button {
 
 .select_list .select {
 	position        : absolute;
-	z-index         : 2;
+	z-index         : 10;
 	visibility      : hidden;
 	opacity         : 0;
 	text-align      : center;
@@ -561,7 +583,7 @@ footer .button {
 .check_box .description,
 .input .description,
 .select_list .description {
-	z-index         : 3;
+	z-index         : 20;
 	position        : fixed;
 	opacity         : 0;
 	visibility      : hidden;
@@ -577,7 +599,7 @@ footer .button {
 .input .description_active,
 .select_list .description_active {
 	opacity   : 1;
-	visibility:inherit;
+	visibility: inherit;
 }
 
 .check_box .check label {
