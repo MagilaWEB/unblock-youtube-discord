@@ -1,6 +1,7 @@
 #include "ui.h"
 
 #include "../unblock/unblock.h"
+#include "../engine/version.h"
 
 Ui::Ui(IEngineAPI* engine) : UiElements(), _engine(engine)
 {
@@ -97,6 +98,7 @@ void Ui::OnWindowObjectReady(View* caller, uint64_t /*frame_id*/, bool /*is_main
 
 	JSObject global		  = JSGlobalObject();
 	global["RUN_CPP"]	  = JSValue(true);
+	global["VERSION_APP"] = JSValue(VERSION_STR);
 	global["CPPTaskRun"]  = BindJSCallback(&Ui::runTask);
 	global["CPPLangText"] = BindJSCallbackWithRetval(&Ui::langText);
 }
