@@ -1,4 +1,5 @@
 #include "engine.h"
+#include "version.h"
 
 Engine& Engine::get()
 {
@@ -23,10 +24,13 @@ void Engine::initialize()
 	Config config{};
 	config.effect_quality = EffectQuality::High;
 
+	static std::string title{ "Unblock " };
+	title.append("Version:").append(VERSION_STR);
+
 	_app = App::Create({}, config);
 
 	_window = Window::Create(_app->main_monitor(), 1'100, 600, false, kWindowFlags_Titled | kWindowFlags_Borderless);
-	_window->SetTitle("Unblock");
+	_window->SetTitle(title.c_str());
 
 	_ui = std::make_unique<Ui>(this);
 
