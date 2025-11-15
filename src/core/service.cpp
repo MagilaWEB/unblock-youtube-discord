@@ -59,7 +59,7 @@ void Service::create()
 		SERVICE_WIN32_OWN_PROCESS,
 		SERVICE_AUTO_START,
 		SERVICE_ERROR_NORMAL,
-		sc_path.c_str(),
+		utils::UTF8_to_CP1251(sc_path.c_str()).c_str(),
 		nullptr,
 		nullptr,
 		nullptr,
@@ -208,7 +208,7 @@ void Service::stop()
 		_waitStatusService(
 			SERVICE_STOP_PENDING,
 			SERVICE_STOPPED,
-			[&]
+			[this, service_stop]
 			{
 				service_stop();
 				_waitStatusService(SERVICE_STOP_PENDING, SERVICE_STOPPED, service_stop);
