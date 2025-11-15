@@ -28,7 +28,7 @@ void Ui::_setting()
 		_unblock_select_config->remove();
 		_unblock_select_fake_bin->remove();
 
-		if (_unblock_manual->getState())
+		if (_unblock_enable->getState() && _unblock_manual->getState())
 		{
 			_unblock_select_config
 				->create("#setting section .unblock", "str_select_config_title", Localization::Str{ "str_select_config_description" });
@@ -135,7 +135,6 @@ void Ui::_setting()
 
 			auto result = _file_user_setting->parameterSection<bool>("UNBLOCK", "manual");
 			_unblock_manual->setState(result ? result.value() : false);
-			createSelect();
 
 			_unblock_manual->addEventClick(
 				[this, createSelect](JSArgs args)
@@ -146,6 +145,8 @@ void Ui::_setting()
 				}
 			);
 		}
+
+		createSelect();
 	};
 
 	// Enable unblock (winws.exe) service
@@ -161,6 +162,7 @@ void Ui::_setting()
 			[this, createManual](JSArgs args)
 			{
 				_file_user_setting->writeSectionParameter("UNBLOCK", "enable", static_cast<String>(args[0].ToString()).utf8().data());
+				
 				createManual();
 				_startService();
 				_testing();
@@ -287,7 +289,7 @@ void Ui::_setting()
 		{
 			_proxy_select_config->remove();
 
-			if (_proxy_manual->getState())
+			if (_proxy_enable->getState() && _proxy_manual->getState())
 			{
 				_proxy_select_config
 					->create("#setting section .proxy", "str_select_config_title", Localization::Str{ "str_select_config_description" });
@@ -330,8 +332,6 @@ void Ui::_setting()
 
 				auto result_manual = _file_user_setting->parameterSection<bool>("PROXY", "manual");
 				_proxy_manual->setState(result_manual ? result_manual.value() : false);
-				createSelectProxy();
-
 				_proxy_manual->addEventClick(
 					[this, createSelectProxy](JSArgs args)
 					{
@@ -341,6 +341,8 @@ void Ui::_setting()
 					}
 				);
 			}
+
+			createSelectProxy();
 		};
 
 		auto create_setting_proxy = [this]
