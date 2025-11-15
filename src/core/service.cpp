@@ -103,7 +103,11 @@ void Service::start()
 	do
 	{
 		send_start = StartService(sc, static_cast<u32>(args.size()), args.data());
-		ASSERT_ARGS(i_start++ <= 5, "Failed to send a request to start the service [%s]!", _name.c_str());
+		if (i_start++ > 8)
+		{
+			InputConsole::textError("истекло время ожидания запуска службы [%s], процесс запуска прерван, причина не известна!", _name.c_str());
+			return;
+		}
 
 		using namespace std::chrono;
 		if (!send_start)
@@ -111,7 +115,6 @@ void Service::start()
 			// wait 3 second
 			std::this_thread::sleep_for(3'000ms);
 		}
-
 	} while (!send_start);
 
 	update();
