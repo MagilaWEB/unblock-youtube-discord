@@ -88,9 +88,12 @@ void Service::start()
 	update();
 
 	if (sc_status.dwCurrentState != SERVICE_STOPPED && sc_status.dwCurrentState != SERVICE_STOP_PENDING)
+	{
+		InputConsole::textError("служба [%s] не остановлена или в прогрессе остановки, запустить не возможно!", _name.c_str());
 		return;
+	}
 
-	_waitStatusService(SERVICE_STOP_PENDING, SERVICE_STOPPED, [this] { remove(); });
+	//_waitStatusService(SERVICE_STOP_PENDING, SERVICE_STOPPED, [this] { remove(); });
 
 	std::vector<pcstr> args;
 	for (auto& arg : _args)
