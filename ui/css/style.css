@@ -524,6 +524,7 @@ footer .button {
 }
 
 .select_list .select_active {
+	z-index   : 20;
 	visibility: visible;
 	opacity   : 1;
 }
