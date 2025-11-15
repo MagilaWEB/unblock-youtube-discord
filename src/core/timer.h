@@ -1,37 +1,46 @@
 #pragma once
-
-#include <chrono>
-
-template<typename Period, typename Rep = float>
-class Timer
+class CORE_API Timer
 {
-	using Time	   = std::chrono::time_point<std::chrono::steady_clock>;
-	using Duration = std::chrono::duration<Rep, Period>;
-	using Self	   = Timer<Period, Rep>;
+public:
+	using Clock	   = std::chrono::high_resolution_clock;
+	using Time	   = std::chrono::time_point<Clock>;
+	using Duration = Time::duration;
+
+protected:
+	Time _start_time;
 
 public:
-	Timer() : _start_time(get_time()) {}
+	constexpr Timer() noexcept : _start_time() {}
 
-private:
-	static Time get_time() { return std::chrono::high_resolution_clock::now(); }
+	void Start();
 
-private:
-	const Time _start_time;
+	virtual Duration getElapsedTime() const;
 
-public:
-	[[nodiscard]] Rep get() const
-	{
-		Duration duration{ get_time() - _start_time };
-		return duration.count();
-	}
+	u64 GetElapsed_ms() const;
 
-	static Rep measure(auto&& func)
-	{
-		Self timer;
-		func();
-		return timer.get();
-	}
+	u64 GetElapsed_mi() const;
+
+	float GetElapsed_sec() const;
+
+	Time Now() const { return Clock::now(); }
 };
 
-typedef Timer<std::milli>		TimerMilli;
-typedef Timer<std::ratio<1, 1>> TimerSec;
+#define LIMIT_UPDATE(name_time, sec, code)    \
+	{                                         \
+		static Timer name_time{};             \
+		if (name_time.GetElapsed_sec() > sec) \
+		{                                     \
+			name_time.Start();                \
+			code                              \
+		}                                     \
+	}
+
+#define LIMIT_UPDATE_FPS(name_time, fps, code)            \
+	{                                                     \
+		static Timer name_time{};                         \
+		if ((name_time.GetElapsed_ms()) >= (1'000 / fps)) \
+		{                                                 \
+			name_time.Start();                            \
+			code                                          \
+		}                                                 \
+	}
