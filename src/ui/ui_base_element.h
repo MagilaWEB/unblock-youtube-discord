@@ -43,15 +43,17 @@ protected:
 #endif
 	inline static MapEvent _event_click{};
 
-	void runCode(std::function<void()> run_code);
-
 public:
 	BaseElement() = delete;
 	BaseElement(pcstr name);
 	virtual ~BaseElement();
 
+	static void runCode(const std::function<void()> & run_code);
+
 	void create(pcstr selector, Localization::Str title, bool first = false);
 	void remove();
+
+	bool isCreate() const;
 
 	void setTitle(Localization::Str title);
 

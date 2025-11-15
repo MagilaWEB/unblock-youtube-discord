@@ -30,8 +30,8 @@ void CheckBox::initialize()
 
 void CheckBox::create(pcstr selector, Localization::Str title, Localization::Str description, bool first)
 {
-	pcstr _title = title();
-	pcstr _description = description();
+	String _title		= title();
+	String _description = description();
 	runCode(
 		[this, selector, _title, _description, first]
 		{

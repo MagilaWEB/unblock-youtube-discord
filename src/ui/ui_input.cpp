@@ -27,8 +27,8 @@ void Input::initialize()
 
 void Input::create(pcstr selector, Types type, JSValue value, Localization::Str title, Localization::Str description, bool first)
 {
-	pcstr _title	   = title();
-	pcstr _description = description();
+	String _title		= title();
+	String _description = description();
 
 	runCode(
 		[this, selector, type, value, _title, _description, first]

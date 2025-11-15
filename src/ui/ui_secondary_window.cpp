@@ -42,8 +42,8 @@ void SecondaryWindow::initialize()
 
 void SecondaryWindow::create(Localization::Str title, Localization::Str description)
 {
-	pcstr _title	   = title();
-	pcstr _description = description();
+	String _title		= title();
+	String _description = description();
 	runCode(
 		[this, _title, _description]
 		{
@@ -76,7 +76,7 @@ void SecondaryWindow::setType(Type type)
 
 void SecondaryWindow::setDescription(Localization::Str description)
 {
-	pcstr _description = description();
+	String _description = description();
 	runCode(
 		[this, _description]
 		{

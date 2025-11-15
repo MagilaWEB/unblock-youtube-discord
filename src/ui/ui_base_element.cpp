@@ -5,7 +5,7 @@
 
 using namespace ultralight;
 
-void BaseElement::runCode(std::function<void()> run_code)
+void BaseElement::runCode(const std::function<void()>& run_code)
 {
 	if (Core::getThreadJsID() != GetCurrentThreadId())
 	{
@@ -76,6 +76,11 @@ void BaseElement::remove()
 			_event_click[_name].clear();
 		}
 	);
+}
+
+bool BaseElement::isCreate() const
+{
+	return _created;
 }
 
 void BaseElement::setTitle(Localization::Str title)

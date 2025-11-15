@@ -33,7 +33,7 @@ void ListUl::initialize()
 
 void ListUl::createLi(Localization::Str text)
 {
-	pcstr _text = text();
+	String _text = text();
 
 	runCode(
 		[this, _text]
@@ -49,7 +49,7 @@ void ListUl::createLiSuccess(Localization::Str text, bool state)
 	if (!_created)
 		return;
 
-	pcstr _text = text();
+	String _text = text();
 
 	runCode(
 		[this, _text, state]

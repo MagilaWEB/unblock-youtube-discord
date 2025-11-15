@@ -33,8 +33,8 @@ void SelectList::initialize()
 
 void SelectList::create(pcstr selector, Localization::Str title, Localization::Str description, bool first)
 {
-	pcstr _title = title();
-	pcstr _description = description();
+	String _title		= title();
+	String _description = description();
 	runCode(
 		[this, selector, _title, _description, first]
 		{
@@ -53,7 +53,7 @@ void SelectList::create(pcstr selector, Localization::Str title, Localization::S
 
 void SelectList::createOption(JSValue value, Localization::Str text, bool select)
 {
-	pcstr _text = text();
+	String _text = text();
 	runCode(
 		[this, value, _text, select]
 		{

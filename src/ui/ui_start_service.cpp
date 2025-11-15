@@ -5,6 +5,16 @@
 static std::atomic_bool automatically_strategy_cancel{ false };
 static std::atomic_bool proxy_click_state{ false };
 
+void Ui::_activeService()
+{
+	_active_service->clear();
+
+	if (!_active_service->isCreate())
+		_active_service->create("#home section", "str_h2_active_service", true);
+
+	_unblock->checkStateServices([this](pcstr name, bool state) { _active_service->createLiSuccess(name, state); });
+}
+
 void Ui::_startService()
 {
 	_start_service->remove();
@@ -126,7 +136,6 @@ void Ui::_startServiceWindow()
 		}
 	);
 
-
 	auto auto_config = [this]
 	{
 		Debug::ok("auto Start");
@@ -134,8 +143,8 @@ void Ui::_startServiceWindow()
 		_window_auto_start_wait->setDescription("str_window_auto_start_wait_description");
 		_window_auto_start_wait->show();
 
-		auto errorAutomalicallyStrategy = [this] {
-
+		auto errorAutomalicallyStrategy = [this]
+		{
 			const bool state =
 				proxy_click_state ? _unblock->automaticallyStrategy<ProxyStrategiesDPI>() : _unblock->automaticallyStrategy<StrategiesDPI>();
 			if (!state)
@@ -166,8 +175,8 @@ void Ui::_startServiceWindow()
 			std::string _strategy_name =
 				proxy_click_state ? _unblock->getNameStrategies<ProxyStrategiesDPI>() : _unblock->getNameStrategies<StrategiesDPI>();
 
-			Localization::Str  desc_base{ "str_window_auto_start_wait_description" };
-			Localization::Str  desc_base2{ "str_window_auto_start_wait_name_strategy_description" };
+			Localization::Str desc_base{ "str_window_auto_start_wait_description" };
+			Localization::Str desc_base2{ "str_window_auto_start_wait_name_strategy_description" };
 #if __clang__
 			[[clang::no_destroy]]
 #endif
@@ -190,7 +199,7 @@ void Ui::_startServiceWindow()
 				if (proxy_click_state)
 				{
 					_file_user_setting->writeSectionParameter("REMEMBER_CONFIGURATION", "config_proxy", _strategy_name.c_str());
-					Localization::Str  desc{ "str_window_continue_select_strategy_proxy_description" };				
+					Localization::Str desc{ "str_window_continue_select_strategy_proxy_description" };
 					text_desc = utils::format(desc(), _strategy_name.c_str());
 				}
 				else
@@ -199,7 +208,7 @@ void Ui::_startServiceWindow()
 					_file_user_setting->writeSectionParameter("REMEMBER_CONFIGURATION", "config", _strategy_name.c_str());
 					_file_user_setting->writeSectionParameter("REMEMBER_CONFIGURATION", "fake_bin", _fake_bin.c_str());
 
-					Localization::Str  desc{ "str_window_continue_select_strategy_description" };
+					Localization::Str desc{ "str_window_continue_select_strategy_description" };
 					text_desc = utils::format(desc(), _strategy_name.c_str(), _fake_bin.c_str());
 				}
 
