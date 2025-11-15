@@ -144,6 +144,8 @@ void Service::start()
 
 	if (sc_status.dwCurrentState == SERVICE_RUNNING)
 		InputConsole::textOk("служба [%s] запущена.", _name.c_str());
+	else
+		InputConsole::textWarning("служба [%s] была запущена но неожиданно сменила свой статус.", _name.c_str());
 }
 
 void Service::update()
