@@ -40,6 +40,8 @@ protected:
 	SELECT_LIST(_proxy_select_config);
 
 	// Home
+	UL_LIST(_active_service);
+
 	BUTTON(_start_service);
 	BUTTON(_start_proxy_service);
 	BUTTON(_start_testing);

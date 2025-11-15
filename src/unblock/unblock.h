@@ -54,6 +54,7 @@ public:
 	void stopService(bool proxy = false);
 	void removeService(bool proxy = false);
 	bool activeService(bool proxy = false);
+	void checkStateServices(const std::function<void(pcstr, bool)>& callback);
 
 	template<typename Type>
 	void testingDomain(std::function<void(pcstr url, bool state)>&& callback = [](pcstr, bool) {}, bool video = false, bool base_test = true);

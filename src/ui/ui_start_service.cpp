@@ -5,16 +5,6 @@
 static std::atomic_bool automatically_strategy_cancel{ false };
 static std::atomic_bool proxy_click_state{ false };
 
-void Ui::_activeService()
-{
-	_active_service->clear();
-
-	if (!_active_service->isCreate())
-		_active_service->create("#home section", "str_h2_active_service", true);
-
-	_unblock->checkStateServices([this](pcstr name, bool state) { _active_service->createLiSuccess(name, state); });
-}
-
 void Ui::_startService()
 {
 	_start_service->remove();
@@ -40,6 +30,7 @@ void Ui::_startService()
 								_unblock->changeProxyStrategy(config_proxy.value().c_str());
 								_unblock->startService(true);
 								_updateTitleButton(true);
+								_activeService();
 								_window_wait_start_service->hide();
 							}
 						);
@@ -76,6 +67,7 @@ void Ui::_startService()
 								_unblock->changeStrategy(config.value().c_str(), fake_bin.value().c_str());
 								_unblock->startService();
 								_updateTitleButton();
+								_activeService();
 								_window_wait_start_service->hide();
 							}
 						);
@@ -212,6 +204,8 @@ void Ui::_startServiceWindow()
 					text_desc = utils::format(desc(), _strategy_name.c_str(), _fake_bin.c_str());
 				}
 
+				_activeService();
+				
 				_window_continue_select_strategy->setDescription(text_desc.c_str());
 				_window_continue_select_strategy->show();
 				break;
@@ -219,6 +213,7 @@ void Ui::_startServiceWindow()
 		}
 
 		_updateTitleButton(proxy_click_state);
+		_activeService();
 
 		automatically_strategy_cancel = false;
 
@@ -258,6 +253,7 @@ void Ui::_startServiceWindow()
 					{
 						_window_wait_start_service->show();
 						_unblock->startService(proxy_click_state);
+						_activeService();
 						_window_wait_start_service->hide();
 						proxy_click_state = false;
 					}

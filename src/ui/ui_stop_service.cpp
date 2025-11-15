@@ -20,6 +20,7 @@ void Ui::_stopService()
 					_unblock->removeService(true);
 					_updateTitleButton();
 					_updateTitleButton(true);
+					_activeService();
 					_window_wait_stop_service->hide();
 				}
 			);

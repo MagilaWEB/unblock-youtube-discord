@@ -253,6 +253,14 @@ bool Unblock::activeService(bool proxy)
 	return _unblock->isRun() || _goodbay_dpi->isRun();
 }
 
+void Unblock::checkStateServices(const std::function<void(pcstr, bool)>& callback)
+{
+	callback("Unblock", _unblock->isRun());
+	callback(_goodbay_dpi->getName().c_str(), _goodbay_dpi->isRun());
+	callback("ProxyDPI", _proxy_dpi->isRun());
+	callback(_win_divert->getName().c_str(), _win_divert->isRun());
+}
+
 void Unblock::removeService(bool proxy)
 {
 	if (proxy)

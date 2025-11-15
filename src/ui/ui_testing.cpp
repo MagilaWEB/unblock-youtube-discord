@@ -2,6 +2,13 @@
 
 #include "../unblock/unblock.h"
 
+void Ui::_activeService()
+{
+	_active_service->remove();
+	_active_service->create("#home section .info_unblock", "str_h2_active_service", true);
+	_unblock->checkStateServices([this](pcstr name, bool state) { _active_service->createLiSuccess(name, state); });
+}
+
 void Ui::_testing()
 {
 	_list_domain->remove();
@@ -28,6 +35,8 @@ void Ui::_testing()
 		_start_testing->create("#home section .button_start_stop", "str_b_start_testing");
 
 	_testingWindow();
+
+	_activeService();
 }
 
 void Ui::_testingWindow()

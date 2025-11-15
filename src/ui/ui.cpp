@@ -1,5 +1,6 @@
 #include "ui.h"
 
+#include "../core/timer.h"
 #include "../unblock/unblock.h"
 #include "../engine/version.h"
 

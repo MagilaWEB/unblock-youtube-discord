@@ -20,6 +20,8 @@ str_please_wait=Пожалуйста подождите!
 str_error=Ошибка!
 
 // BLOCK HOME
+str_h2_active_service=Активные службы:
+
 str_h2_verified_domains=Доступны домены Unblock:
 str_h2_verified_domains_video=Доступность Google Video Unblock:
 

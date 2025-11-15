@@ -32,7 +32,7 @@ if (!RUN_CPP) {
 	createButton("#home section .button_start_stop", "start_service_proxy", "Запустить службы proxy");
 	createButton("#home section .button_start_stop", "stop_service", "Остановить службы");
 
-	createListUl(".info_unblock .success_domain", "success_domain", "Доступные домены:");
+	createListUl(".info_unblock", "success_domain", "Доступные домены:");
 	const ul = getListUl("success_domain");
 	ul.addClass("resource_availability");
 	createListUlLiAddSuccess("success_domain", "YouTube текст", true);
@@ -49,7 +49,12 @@ if (!RUN_CPP) {
 	createListUlLiAddSuccess("success_domain", "x.com текст", true);
 	createListUlLiAddSuccess("success_domain", "Proxy BayDPI текст", false);
 
-	createListUl(".info_unblock .success_service", "success_service", "Список активных сервисов:");
+	createListUl(".info_unblock", "success_service2", "Список активных сервисов:", true);
+	createListUl(".info_unblock", "success_service3", "Список активных сервисов:", true);
+	createListUl(".info_unblock", "success_service4", "Список активных сервисов:", true);
+	createListUl(".info_unblock", "success_service5", "Список активных сервисов:", true);
+
+	createListUl(".info_unblock", "success_service", "Список активных сервисов:");
 	createListUlLiAddSuccess("success_service", "Unblock YouTube", true);
 	createListUlLiAddSuccess("success_service", "Unblock Discord", false);
 	createListUlLiAddSuccess("success_service", "Unblock x.com", true);

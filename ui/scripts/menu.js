@@ -9,7 +9,7 @@ list_nav.forEach(element => {
 	eventClick(element);
 });
 
-const version_app_text = document.querySelector(".nav .text_version .text");
+const version_app_text = document.querySelector(".text_version .text");
 if (version_app_text) {
 	if (RUN_CPP) {
 		version_app_text.innerHTML = "Version:" + VERSION_APP;

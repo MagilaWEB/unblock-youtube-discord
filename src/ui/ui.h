@@ -55,6 +55,7 @@ private:
 	void _testing();
 	void _testingWindow();
 
+	void _activeService();
 	void _startService();
 	void _startServiceWindow();
 
