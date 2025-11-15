@@ -255,9 +255,9 @@ bool Unblock::activeService(bool proxy)
 
 void Unblock::checkStateServices(const std::function<void(pcstr, bool)>& callback)
 {
-	callback("Unblock", _unblock->isRun());
+	callback("Unblock (winws.exe)", _unblock->isRun());
 	callback(_goodbay_dpi->getName().c_str(), _goodbay_dpi->isRun());
-	callback("ProxyDPI", _proxy_dpi->isRun());
+	callback("ProxyDPI (BayDPI)", _proxy_dpi->isRun());
 	callback(_win_divert->getName().c_str(), _win_divert->isRun());
 }
 
