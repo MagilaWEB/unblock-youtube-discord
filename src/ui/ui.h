@@ -50,8 +50,9 @@ public:
 	virtual void OnChangeCursor(View*, Cursor cursor) override { _engine->window()->SetCursor(cursor); }
 
 private:
-	void _setting();
+	void _checkConflictService();
 
+	void _setting();
 	void _testing();
 	void _testingWindow();
 

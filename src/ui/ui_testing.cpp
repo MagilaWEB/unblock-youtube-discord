@@ -2,6 +2,46 @@
 
 #include "../unblock/unblock.h"
 
+void Ui::_checkConflictService()
+{
+	_window_warning_conflict_service->create(Localization::Str{ "str_warning" }, "");
+	_window_warning_conflict_service->setType(SecondaryWindow::Type::YesNo);
+
+	static Localization::Str lang_disc{ "str_window_warning_conflict_service" };
+
+	std::string description = lang_disc();
+
+	auto & conflict_service = _unblock->getConflictingServices();
+	if (!conflict_service.empty())
+	{
+		static std::string names_services;
+
+		for (auto& service : conflict_service)
+			names_services.append(service.getName()).append(",");
+		names_services.pop_back();
+
+		description = utils::format(description.c_str(), names_services.c_str());
+		_window_warning_conflict_service->setDescription(description.c_str());
+
+		_window_warning_conflict_service->show();
+
+		_window_warning_conflict_service->addEventYesNo(
+			[this, &conflict_service](JSArgs args)
+			{
+				if (args[0].ToBoolean())
+					for (auto& service : conflict_service)
+						service.remove();
+
+				conflict_service.clear();
+
+				_window_warning_conflict_service->hide();
+
+				return true;
+			}
+		);
+	}
+}
+
 void Ui::_activeService()
 {
 	_active_service->remove();

@@ -17,6 +17,7 @@ str_b_start_find_config_proxy=Подобрать конфигурациию Prox
 
 // Common
 str_please_wait=Пожалуйста подождите!
+str_warning=Предупреждение!
 str_error=Ошибка!
 
 // BLOCK HOME
@@ -68,6 +69,10 @@ str_window_continue_select_strategy_description=Выбран файл конфи
 str_window_continue_select_strategy_proxy_description=Выбран файл конфигурации [%s].
 Вы можете продолжить подбор конфигурации если текущая не устраивает.
 Продолжить подбор?
+
+// Secondary Window warning to conflict service
+str_window_warning_conflict_service=Обнаружены конфликтные службы [%s], рекомендуется их удалить для коректной работы unblock.
+Удалить службы?
 
 // Setting titles blocks
 str_setting_common_title=Общие

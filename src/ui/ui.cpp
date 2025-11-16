@@ -122,6 +122,8 @@ void Ui::OnDOMReady(View* caller, uint64_t /*frame_id*/, bool /*is_main_frame*/,
 		}
 	);
 
+	_checkConflictService();
+
 	_setting();
 
 	// HOME

@@ -2,7 +2,6 @@
 
 Unblock::Unblock()
 {
-	_zapret->open();
 	_unblock->open();
 	_goodbay_dpi->open();
 	_proxy_dpi->open();
@@ -135,6 +134,44 @@ template UNBLOCK_API const std::vector<std::string>& Unblock::getStrategiesList<
 const std::vector<StrategiesDPI::FakeBinParam>& Unblock::getFakeBinList()
 {
 	return _strategies_dpi->getFakeBinList();
+}
+
+std::list<Service>& Unblock::getConflictingServices()
+{
+	static std::list<Service> conflicting_service;
+
+	Service::allService(
+		[&](std::string name_service)
+		{
+			if (name_service.empty())
+				return;
+
+			Service service{ name_service.c_str() };
+			service.open();
+			auto& config = service.getConfig();
+
+			if (config.binary_path.contains("winws.exe") || config.binary_path.contains("goodbyedpi.exe")
+				|| config.binary_path.contains("ciadpi.exe"))
+			{
+				if (std::regex_match(name_service, std::regex{ _unblock->getName() }))
+					return;
+
+				if (std::regex_match(name_service, std::regex{ _goodbay_dpi->getName() }))
+					return;
+
+				if (std::regex_match(name_service, std::regex{ _proxy_dpi->getName() }))
+					return;
+
+				if (std::regex_match(name_service, std::regex{ _win_divert->getName() }))
+					return;
+
+				conflicting_service.emplace_back(Service{ name_service.c_str() });
+				conflicting_service.back().open();
+			}
+		}
+	);
+
+	return conflicting_service;
 }
 
 #define CODE_TESTING_DOMAIN()                              \
@@ -303,7 +340,6 @@ void Unblock::startService(bool proxy)
 		return;
 	}
 
-	_zapret->remove();
 	_unblock->remove();
 	_goodbay_dpi->remove();
 

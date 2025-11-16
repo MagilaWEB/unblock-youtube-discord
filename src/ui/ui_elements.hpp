@@ -52,6 +52,8 @@ protected:
 	UL_LIST(_list_proxy_domain);
 	UL_LIST(_list_proxy_domain_video);
 
+	SECONDARY_WINDOW(_window_warning_conflict_service);
+
 	SECONDARY_WINDOW(_window_wait_start_service);
 	SECONDARY_WINDOW(_window_wait_stop_service);
 	SECONDARY_WINDOW(_window_wait_testing);

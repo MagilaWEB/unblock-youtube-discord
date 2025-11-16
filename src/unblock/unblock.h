@@ -7,7 +7,6 @@
 
 class UNBLOCK_API Unblock final
 {
-	Ptr<Service> _zapret{ "zapret" };
 	Ptr<Service> _unblock{ "unblock", "winws.exe" };
 	Ptr<Service> _goodbay_dpi{ "GoodByeDpi", "goodbyedpi.exe" };
 	Ptr<Service> _proxy_dpi{ "proxy_dpi", "ciadpi.exe" };
@@ -49,6 +48,7 @@ public:
 	template<typename Type>
 	const std::vector<std::string>&					getStrategiesList();
 	const std::vector<StrategiesDPI::FakeBinParam>& getFakeBinList();
+	std::list<Service>&								getConflictingServices();
 
 	void startService(bool proxy = false);
 	void stopService(bool proxy = false);
