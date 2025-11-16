@@ -2,7 +2,7 @@
 
 #include "../core/timer.h"
 #include "../unblock/unblock.h"
-#include "../engine/version.h"
+#include "../engine/version.hpp"
 
 Ui::Ui(IEngineAPI* engine) : UiElements(), _engine(engine)
 {

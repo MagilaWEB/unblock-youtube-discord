@@ -29,7 +29,7 @@ IDI_ICON1               ICON                    "unblock.ico"
 //
 // Version
 //
-#include "version.h"
+#include "version.hpp"
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION VERSION_NUMBER
