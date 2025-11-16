@@ -12,17 +12,17 @@ protected:
 public:
 	constexpr Timer() noexcept : _start_time() {}
 
-	void Start();
+	void start();
 
 	virtual Duration getElapsedTime() const;
 
-	u64 GetElapsed_ms() const;
+	u64 getElapsed_ms() const;
 
-	u64 GetElapsed_mi() const;
+	u64 getElapsed_mi() const;
 
-	float GetElapsed_sec() const;
+	float getElapsed_sec() const;
 
-	Time Now() const { return Clock::now(); }
+	Time now() const { return Clock::now(); }
 };
 
 #define LIMIT_UPDATE(name_time, sec, code)    \

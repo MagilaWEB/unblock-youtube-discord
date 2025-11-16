@@ -2,27 +2,27 @@
 
 using namespace std::chrono;
 
-void Timer::Start()
+void Timer::start()
 {
-	_start_time = Now();
+	_start_time = now();
 }
 
 Timer::Duration Timer::getElapsedTime() const
 {
-	return Now() - _start_time;
+	return now() - _start_time;
 }
 
-u64 Timer::GetElapsed_ms() const
+u64 Timer::getElapsed_ms() const
 {
 	return duration_cast<milliseconds>(getElapsedTime()).count();
 }
 
-u64 Timer::GetElapsed_mi() const
+u64 Timer::getElapsed_mi() const
 {
 	return duration_cast<microseconds>(getElapsedTime()).count();
 }
 
-float Timer::GetElapsed_sec() const
+float Timer::getElapsed_sec() const
 {
 	return duration_cast<duration<float>>(getElapsedTime()).count();
 }
