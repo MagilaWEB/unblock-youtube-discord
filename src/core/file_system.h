@@ -30,8 +30,11 @@ public:
 
 	std::string name() const;
 
+	size_t lineSize() const;
+
 	bool isOpen() const;
 	void open(path file, pcstr expansion, bool no_default_patch = false);
+	void clear();
 	void close();
 
 	void forLine(std::function<bool(std::string str)> fn);
@@ -41,6 +44,7 @@ public:
 	template<typename TypeReturn>
 	std::expected<TypeReturn, std::string> parameterSection(pcstr section, pcstr paramert);
 
+	void writeText(std::string str);
 	void writeSectionParameter(pcstr section, pcstr paramert, pcstr value_argument);
 
 private:

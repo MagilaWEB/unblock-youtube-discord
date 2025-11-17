@@ -235,6 +235,18 @@ template CORE_API std::expected<int, std::string> File::parameterSection<int>(pc
 template CORE_API std::expected<u32, std::string> File::parameterSection<u32>(pcstr section, pcstr parameter);
 template CORE_API std::expected<long long, std::string> File::parameterSection<long long>(pcstr section, pcstr parameter);
 
+void File::writeText(std::string str)
+{
+	CRITICAL_SECTION_RAII(lock);
+
+		if (!isOpen())
+		_open_state = true;
+
+	_is_write = true;
+
+	_line_string.emplace_back(str);
+}
+
 void File::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_argument)
 {
 	CRITICAL_SECTION_RAII(lock);
@@ -317,6 +329,11 @@ std::string File::name() const
 	return _path_file.filename().string();
 }
 
+size_t File::lineSize() const
+{
+	return _line_string.size();
+}
+
 bool File::isOpen() const
 {
 	return _open_state;
@@ -355,6 +372,13 @@ void File::open(std::filesystem::path file, pcstr expansion, bool no_default_pat
 	_stream.close();
 
 	_open_state = true;
+}
+
+void File::clear()
+{
+	CRITICAL_SECTION_RAII(lock);
+
+	_line_string.clear();
 }
 
 void File::close()
