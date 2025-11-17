@@ -4,7 +4,7 @@ using namespace std::chrono;
 
 void InputConsole::pause(pcstr info)
 {
-	textPlease("%s Нажмите enter чтобы продолжить", true, true, info);
+	textPlease("%s Нажмите enter чтобы продолжить", true, info);
 
 	KEY(VK::ENTER, true);
 
@@ -15,7 +15,7 @@ std::string InputConsole::getString()
 {
 	std::string text_input{ "" };
 
-	textPlease("введите текст и нажмите Enter", true, false);
+	textPlease("введите текст и нажмите Enter", true);
 	std::cin.clear();
 
 	std::cin >> text_input;
@@ -28,7 +28,7 @@ u32 InputConsole::getU32()
 	std::string text_input{ "" };
 	u32			count{ 0 };
 
-	textPlease("введите число и нажмите Enter (Только целочисленные значения)", true, false);
+	textPlease("введите число и нажмите Enter (Только целочисленные значения)", true);
 	std::cin.clear();
 	std::cin >> text_input;
 
@@ -103,7 +103,7 @@ u32 InputConsole::sendNum(std::list<u8> nums)
 			str_nums.append(std::to_string(send_num).append(", "));
 	}
 
-	textPlease("нажмите на один из вариантов [%s]", true, true, str_nums.c_str());
+	textPlease("нажмите на один из вариантов [%s]", true, str_nums.c_str());
 
 	while (true)
 	{
@@ -128,7 +128,7 @@ u32 InputConsole::sendNum(std::list<u8> nums)
 
 bool InputConsole::getBool()
 {
-	textPlease("нажмите ENTER для подтверждения, ESC для отмены", true, true);
+	textPlease("нажмите ENTER для подтверждения, ESC для отмены", true);
 
 	while (true)
 	{
@@ -208,7 +208,7 @@ size_t InputConsole::selectFromList(const std::list<std::string>& list, std::fun
 				it++;
 			}
 
-			textPlease("выберите один из вариантов", true, true);
+			textPlease("выберите один из вариантов", true);
 
 			text(str_all.c_str());
 		}

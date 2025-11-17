@@ -133,45 +133,46 @@ void Engine::run()
 void Engine::console()
 {
 	static bool show{ false };
-	if (!show)
-	{
-		show = true;
+	if (show)
+		return;
 
-		AllocConsole();
-		AttachConsole(ATTACH_PARENT_PROCESS);
+	show = true;
+	AllocConsole();
+	AttachConsole(ATTACH_PARENT_PROCESS);
 
-		FILE* stream;
-		freopen_s(&stream, "CONIN$", "r", stdin);
-		freopen_s(&stream, "CONOUT$", "w+", stdout);
-		freopen_s(&stream, "CONOUT$", "w+", stderr);
+	FILE* stream;
+	freopen_s(&stream, "CONIN$", "r", stdin);
+	freopen_s(&stream, "CONOUT$", "w+", stdout);
+	freopen_s(&stream, "CONOUT$", "w+", stderr);
 
-		// Enable flags so we can color the output
-		HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-		DWORD  dwMode		 = 0;
-		GetConsoleMode(consoleHandle, &dwMode);
-		dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-		SetConsoleMode(consoleHandle, dwMode);
-		SetConsoleTitle("Unblock Console");
+	// Enable flags so we can color the output
+	HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+	DWORD  dwMode		 = 0;
+	GetConsoleMode(consoleHandle, &dwMode);
+	dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+	SetConsoleMode(consoleHandle, dwMode);
+	SetConsoleTitle("Unblock Console");
 
-		CONSOLE_FONT_INFOEX fontInfo{};
-		fontInfo.cbSize = sizeof(fontInfo);
+	CONSOLE_FONT_INFOEX fontInfo{};
+	fontInfo.cbSize = sizeof(fontInfo);
 
-		GetCurrentConsoleFontEx(consoleHandle, TRUE, &fontInfo);
+	GetCurrentConsoleFontEx(consoleHandle, TRUE, &fontInfo);
 
-		wcscpy_s(fontInfo.FaceName, L"Lucida Console");
-		fontInfo.dwFontSize.Y = 15;
-		fontInfo.dwFontSize.X = 38;
+	wcscpy_s(fontInfo.FaceName, L"Lucida Console");
+	fontInfo.dwFontSize.Y = 15;
+	fontInfo.dwFontSize.X = 38;
 
-		SetCurrentConsoleFontEx(consoleHandle, TRUE, &fontInfo);
+	SetCurrentConsoleFontEx(consoleHandle, TRUE, &fontInfo);
 
-		HWND  hwnd	= GetConsoleWindow();
-		HMENU hmenu = GetSystemMenu(hwnd, TRUE);
-		EnableMenuItem(hmenu, SC_CLOSE, MF_GRAYED);
+	HWND  hwnd	= GetConsoleWindow();
+	HMENU hmenu = GetSystemMenu(hwnd, TRUE);
+	EnableMenuItem(hmenu, SC_CLOSE, MF_GRAYED);
 
-		// Set UTF-8
-		SetConsoleCP(65'001);
-		SetConsoleOutputCP(65'001);
-	}
+	// Set UTF-8
+	SetConsoleCP(65'001);
+	SetConsoleOutputCP(65'001);
+
+	Debug::initLogFile();
 }
 
 App* Engine::app()

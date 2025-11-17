@@ -1,5 +1,4 @@
 #include "service.h"
-#include "timer.h"
 
 Service::~Service()
 {
@@ -60,28 +59,50 @@ void Service::create()
 		args = args.append(arg).append(" ");
 
 	sc_path.append(args);
+	
+	_time_limit.start();
+	do{
+		sc = CreateService(
+			_sc_manager,
+			utils::UTF8_to_CP1251(_name.c_str()).c_str(),
+			utils::UTF8_to_CP1251(_description.c_str()).c_str(),
+			SC_MANAGER_ALL_ACCESS,
+			SERVICE_WIN32_OWN_PROCESS,
+			SERVICE_AUTO_START,
+			SERVICE_ERROR_NORMAL,
+			utils::UTF8_to_CP1251(sc_path.c_str()).c_str(),
+			nullptr,
+			nullptr,
+			nullptr,
+			nullptr,
+			nullptr
+		);
 
-	sc = CreateService(
-		_sc_manager,
-		utils::UTF8_to_CP1251(_name.c_str()).c_str(),
-		utils::UTF8_to_CP1251(_description.c_str()).c_str(),
-		SC_MANAGER_ALL_ACCESS,
-		SERVICE_WIN32_OWN_PROCESS,
-		SERVICE_AUTO_START,
-		SERVICE_ERROR_NORMAL,
-		utils::UTF8_to_CP1251(sc_path.c_str()).c_str(),
-		nullptr,
-		nullptr,
-		nullptr,
-		nullptr,
-		nullptr
-	);
+		u32 err = GetLastError();
+		
+		update();
 
-	open();
+		if (sc)
+			break;
+
+		open();
+
+		if (sc)
+			break;
+
+		if (_time_limit.getElapsed_sec() > 5.f)
+		{
+			std::string message = std::system_category().message(err);
+			InputConsole::textError("не удаётся создать службу [%s], причина [%s].", _name.c_str(), message.c_str());
+			return;
+		}
+
+		using namespace std::chrono;
+		std::this_thread::sleep_for(300ms);
+
+	} while (true);
 
 	ASSERT_ARGS(sc, "Service could not be created [%s]!", _name.c_str());
-
-	update();
 }
 
 void Service::setArgs(std::vector<std::string> args)
@@ -103,25 +124,21 @@ void Service::start()
 		return;
 	}
 
-	//_waitStatusService(SERVICE_STOP_PENDING, SERVICE_STOPPED, [this] { remove(); });
-
 	std::vector<pcstr> args;
 	for (auto& arg : _args)
 		args.push_back(arg.c_str());
 
-	InputConsole::textPlease("подождите окончания запуска службы [%s]", true, false, _name.c_str());
+	InputConsole::textPlease("подождите окончания запуска службы [%s]", true, _name.c_str());
 
 	bool send_start = false;
 
-	Timer timer;
-	timer.start();
-
+	_time_limit.start();
 	do
 	{
 		send_start = StartService(sc, static_cast<u32>(args.size()), args.data());
 
 		// We try for 5 seconds, otherwise we interrupt.
-		if (timer.getElapsed_sec() > 5.f)
+		if (_time_limit.getElapsed_sec() > 5.f)
 		{
 			InputConsole::textError("истекло время ожидания запуска службы [%s], процесс запуска прерван, причина не известна!", _name.c_str());
 			return;
@@ -233,7 +250,19 @@ void Service::open()
 	{
 		if (!sc)
 		{
-			sc = OpenService(_sc_manager, _name.c_str(), SC_MANAGER_ALL_ACCESS);
+			
+			u32 it{0};
+			do
+			{
+				sc = OpenService(_sc_manager, _name.c_str(), SC_MANAGER_ALL_ACCESS);
+				if (sc)
+					break;
+
+				using namespace std::chrono;
+				std::this_thread::sleep_for(5ms);
+				
+			} while (it++ < 2);
+
 			update();
 		}
 	}
@@ -252,7 +281,7 @@ void Service::stop()
 
 	if (config.sc_status.dwCurrentState != SERVICE_STOPPED)
 	{
-		InputConsole::textPlease("подождите окончания остановки службы [%s]", true, false, _name.c_str());
+		InputConsole::textPlease("подождите окончания остановки службы [%s]", true, _name.c_str());
 
 		auto service_stop = [this, &stopped]
 		{

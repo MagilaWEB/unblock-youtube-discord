@@ -1,4 +1,5 @@
 #pragma once
+#include "timer.h"
 #include "winsvc.h"
 
 class CORE_API Service final
@@ -11,6 +12,7 @@ class CORE_API Service final
 	std::string				 _name{ "" };
 	std::string				 _description{ "" };
 	std::vector<std::string> _args;
+	Timer					 _time_limit{};
 	ULONGLONG				 _dw_start_time{ GetTickCount64() };
 	ULONGLONG				 _dw_wait_time{ 0 };
 
@@ -64,5 +66,5 @@ public:
 
 private:
 	void _initScManager();
-	void _waitStatusService(DWORD check_state, DWORD check_stat_end, std::function<void()>&& fn);
+	void _waitStatusService(DWORD check_state, DWORD check_stat_end, std::function<void()>&& fn = []() {});
 };

@@ -57,7 +57,6 @@ public:
 	{
 		CriticalSection::raii mt{ _lock };
 		msg(text, "Информация: %s", ColorType::YELLOW, true, std::forward<Args>(args)...);
-		std::cout << std::endl;
 	}
 
 	template<typename... Args>
@@ -66,7 +65,6 @@ public:
 		CriticalSection::raii mt{ _lock };
 		std::cout << std::endl;
 		msg(text, "%s???", ColorType::DARK_GREEN, true, std::forward<Args>(args)...);
-		std::cout << std::endl;
 	}
 
 	template<typename... Args>
@@ -74,7 +72,6 @@ public:
 	{
 		CriticalSection::raii mt{ _lock };
 		msg(text, "Предупреждение: %s", ColorType::ORANGE, true, std::forward<Args>(args)...);
-		std::cout << std::endl;
 	}
 
 	template<typename... Args>
@@ -82,16 +79,13 @@ public:
 	{
 		CriticalSection::raii mt{ _lock };
 		msg(text, "Ошибка: %s", ColorType::RED, true, std::forward<Args>(args)...);
-		std::cout << std::endl;
 	}
 
 	template<typename... Args>
-	static void textPlease(pcstr text, bool reset_color, bool end, Args&&... args)
+	static void textPlease(pcstr text, bool reset_color, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
 		msg(text, "Пожалуйста, %s:", ColorType::CYAN, reset_color, std::forward<Args>(args)...);
-		if (end)
-			std::cout << std::endl;
 	}
 
 	static std::string textColor(pcstr text, ColorType type, bool reset_color = true);
@@ -105,7 +99,7 @@ private:
 		CriticalSection::raii mt{ _lock };
 		std::string			  mod_text = utils::format(prefix, utils::format(text, std::forward<Args>(args)...).c_str());
 		mod_text					   = textColor(mod_text.c_str(), type, reset_color);
-		std::cout << mod_text.c_str();
+		Debug::print("%s", mod_text.c_str());
 	}
 
 	static bool _forbiddenCharacters(const std::string& text);

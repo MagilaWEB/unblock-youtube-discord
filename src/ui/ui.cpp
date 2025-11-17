@@ -12,6 +12,8 @@ Ui::Ui(IEngineAPI* engine) : UiElements(), _engine(engine)
 	auto result = _file_user_setting->parameterSection<bool>("SUSTEM", "show_console");
 	if (result && result.value())
 		_engine->console();
+	else
+		Debug::initLogFile();
 #endif
 
 	_overlay = Overlay::Create(_engine->window(), _engine->window()->width(), _engine->window()->height(), 0, 0);
