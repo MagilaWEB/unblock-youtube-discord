@@ -3,6 +3,7 @@ bin
 out
 assets
 user
+logs
 .vscode
 .vs
 .vscode
