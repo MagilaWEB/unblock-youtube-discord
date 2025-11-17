@@ -254,6 +254,7 @@ void Ui::_startServiceWindow()
 						_window_wait_start_service->show();
 						_unblock->startService(proxy_click_state);
 						_activeService();
+						_updateTitleButton();
 						_window_wait_start_service->hide();
 						proxy_click_state = false;
 					}
