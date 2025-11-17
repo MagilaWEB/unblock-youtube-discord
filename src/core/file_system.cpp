@@ -378,6 +378,8 @@ void File::clear()
 {
 	CRITICAL_SECTION_RAII(lock);
 
+	_is_write = true;
+
 	_line_string.clear();
 }
 
