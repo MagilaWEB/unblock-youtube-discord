@@ -64,8 +64,6 @@ const std::vector<StrategiesDPI::FakeBinParam>& StrategiesDPI::getFakeBinList() 
 void StrategiesDPI::changeFakeKey(u32 index)
 {
 	const auto& strategy_file = _fake_bin_params[index];
-	InputConsole::textInfo("Выбран FakeBin [%s].", strategy_file.key.c_str());
-
 	changeFakeKey(strategy_file.key);
 }
 
@@ -76,6 +74,8 @@ void StrategiesDPI::changeFakeKey(std::string key)
 		_fake_bind_key = "";
 		return;
 	}
+
+	InputConsole::textInfo("Выбран FakeBin [%s].", key.c_str());
 
 	auto it = std::find_if(_fake_bin_params.begin(), _fake_bin_params.end(), [&key](const FakeBinParam& _it) { return _it.key.contains(key); });
 
@@ -161,7 +161,7 @@ void StrategiesDPI::_saveStrategies(std::vector<std::string>& strategy_dpi, std:
 		return;
 	}
 
-	__super::_saveStrategies(strategy_dpi, str);
+	StrategiesDPIBase::_saveStrategies(strategy_dpi, str);
 }
 
 std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
@@ -219,20 +219,8 @@ std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 		return "--blacklist " + (path_file.string());
 	}
 
-	
-
 	if (str.contains("%IP-SETLIST%"))
 	{
-		if (_filtering_top_level_domains)
-		{
-			ASSERT_ARGS(
-				std::filesystem::exists(path_file_top_level_domains),
-				"The [%s] file does not exist!",
-				path_file_top_level_domains.string().c_str()
-			);
-			return "--hostlist=" + (path_file_top_level_domains.string());
-		}
-
 		auto path_ip_set = Core::get().configsPath() / "ip-set-all.list";
 		ASSERT_ARGS(std::filesystem::exists(path_ip_set), "The [%s] file does not exist!", path_ip_set.string().c_str());
 		return "--ipset=" + (path_ip_set.string());
