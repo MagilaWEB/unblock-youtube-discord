@@ -1,5 +1,5 @@
 #pragma once
-class CORE_API Timer
+class CORE_API Timer final
 {
 public:
 	using Clock	   = std::chrono::high_resolution_clock;
@@ -25,22 +25,45 @@ public:
 	Time now() const { return Clock::now(); }
 };
 
-#define LIMIT_UPDATE(name_time, sec, code)    \
-	{                                         \
-		static Timer name_time{};             \
-		if (name_time.GetElapsed_sec() > sec) \
-		{                                     \
-			name_time.Start();                \
-			code                              \
-		}                                     \
-	}
+#if __clang__
+	#define LIMIT_UPDATE(name_time, sec, code)              \
+		{                                                   \
+			[[clang::no_destroy]] static Timer name_time{}; \
+			if (name_time.GetElapsed_sec() > sec)           \
+			{                                               \
+				name_time.Start();                          \
+				code                                        \
+			}                                               \
+		}
 
-#define LIMIT_UPDATE_FPS(name_time, fps, code)            \
-	{                                                     \
-		static Timer name_time{};                         \
-		if ((name_time.GetElapsed_ms()) >= (1'000 / fps)) \
-		{                                                 \
-			name_time.Start();                            \
-			code                                          \
-		}                                                 \
-	}
+	#define LIMIT_UPDATE_FPS(name_time, fps, code)            \
+		{                                                     \
+			[[clang::no_destroy]] static Timer name_time{};   \
+			if ((name_time.GetElapsed_ms()) >= (1'000 / fps)) \
+			{                                                 \
+				name_time.Start();                            \
+				code                                          \
+			}                                                 \
+		}
+#else
+	#define LIMIT_UPDATE(name_time, sec, code)    \
+		{                                         \
+			static Timer name_time{};             \
+			if (name_time.GetElapsed_sec() > sec) \
+			{                                     \
+				name_time.Start();                \
+				code                              \
+			}                                     \
+		}
+
+	#define LIMIT_UPDATE_FPS(name_time, fps, code)            \
+		{                                                     \
+			static Timer name_time{};                         \
+			if ((name_time.GetElapsed_ms()) >= (1'000 / fps)) \
+			{                                                 \
+				name_time.Start();                            \
+				code                                          \
+			}                                                 \
+		}
+
+#endif

@@ -24,6 +24,9 @@ void Engine::initialize()
 	Config config{};
 	config.effect_quality = EffectQuality::High;
 
+#if __clang__
+	[[clang::no_destroy]]
+#endif
 	static std::string title{ "Unblock " };
 	title.append("Version:").append(VERSION_STR);
 

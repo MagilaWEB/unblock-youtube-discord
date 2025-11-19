@@ -14,12 +14,12 @@ Timer::Duration Timer::getElapsedTime() const
 
 u64 Timer::getElapsed_ms() const
 {
-	return duration_cast<milliseconds>(getElapsedTime()).count();
+	return static_cast<u64>(duration_cast<milliseconds>(getElapsedTime()).count());
 }
 
 u64 Timer::getElapsed_mi() const
 {
-	return duration_cast<microseconds>(getElapsedTime()).count();
+	return static_cast<u64>(duration_cast<microseconds>(getElapsedTime()).count());
 }
 
 float Timer::getElapsed_sec() const

@@ -59,9 +59,10 @@ void Service::create()
 		args = args.append(arg).append(" ");
 
 	sc_path.append(args);
-	
+
 	_time_limit.start();
-	do{
+	do
+	{
 		sc = CreateService(
 			_sc_manager,
 			utils::UTF8_to_CP1251(_name.c_str()).c_str(),
@@ -79,7 +80,7 @@ void Service::create()
 		);
 
 		u32 err = GetLastError();
-		
+
 		update();
 
 		if (sc)
@@ -92,7 +93,7 @@ void Service::create()
 
 		if (_time_limit.getElapsed_sec() > 5.f)
 		{
-			std::string message = std::system_category().message(err);
+			std::string message = std::system_category().message(static_cast<int>(err));
 			InputConsole::textError("не удаётся создать службу [%s], причина [%s].", _name.c_str(), message.c_str());
 			return;
 		}
@@ -250,8 +251,7 @@ void Service::open()
 	{
 		if (!sc)
 		{
-			
-			u32 it{0};
+			u32 it{ 0 };
 			do
 			{
 				sc = OpenService(_sc_manager, _name.c_str(), SC_MANAGER_ALL_ACCESS);
@@ -260,7 +260,7 @@ void Service::open()
 
 				using namespace std::chrono;
 				std::this_thread::sleep_for(5ms);
-				
+
 			} while (it++ < 2);
 
 			update();
@@ -339,6 +339,9 @@ void Service::close()
 
 void Service::allService(std::function<void(std::string)>&& callback)
 {
+#if __clang__
+	[[clang::no_destroy]]
+#endif
 	static CriticalSection lock;
 
 	CRITICAL_SECTION_RAII(lock);

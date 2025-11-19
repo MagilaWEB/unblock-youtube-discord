@@ -138,6 +138,9 @@ const std::vector<StrategiesDPI::FakeBinParam>& Unblock::getFakeBinList()
 
 std::list<Service>& Unblock::getConflictingServices()
 {
+#if __clang__
+	[[clang::no_destroy]]
+#endif
 	static std::list<Service> conflicting_service;
 
 	Service::allService(

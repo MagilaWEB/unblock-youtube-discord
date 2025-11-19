@@ -23,10 +23,10 @@ protected:
 		u32 start_type{ 0 };
 		u32 tag_id{ 0 };
 
-		std::string			  binary_path{ "" };
-		std::string			  start_name{ "" };
-		std::string			  display_name{ "" };
-		std::string			  load_order_group{ "" };
+		std::string binary_path{ "" };
+		std::string start_name{ "" };
+		std::string display_name{ "" };
+		std::string load_order_group{ "" };
 
 		SERVICE_STATUS_PROCESS sc_status{};
 	};
@@ -37,6 +37,7 @@ public:
 	const std::filesystem::path file_name;
 	Service(const pcstr name) : _name(name), file_name(std::filesystem::path("")) {}
 	Service(const pcstr name, pcstr _file_name) : _name(name), file_name(std::filesystem::path(_file_name)) {}
+	Service(Service&&) = default;
 	~Service();
 
 	SC_HANDLE sc{ nullptr };

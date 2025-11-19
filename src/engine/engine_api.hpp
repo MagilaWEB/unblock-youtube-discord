@@ -8,8 +8,12 @@ namespace ultralight
 class IEngineAPI
 {
 protected:
-	explicit IEngineAPI() = default;
-	virtual ~IEngineAPI() = default;
+	explicit IEngineAPI()					 = default;
+	IEngineAPI(const IEngineAPI&)			 = default;
+	IEngineAPI(IEngineAPI&&)				 = default;
+	IEngineAPI& operator=(const IEngineAPI&) = default;
+	IEngineAPI& operator=(IEngineAPI&&)		 = default;
+	virtual ~IEngineAPI()					 = default;
 
 public:
 	virtual void				console() = 0;

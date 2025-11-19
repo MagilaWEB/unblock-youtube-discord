@@ -25,7 +25,7 @@ void ProxyStrategiesDPI::_saveStrategies(std::vector<std::string>& strategy_dpi,
 		return;
 	}
 
-	__super::_saveStrategies(strategy_dpi, str);
+	StrategiesDPIBase::_saveStrategies(strategy_dpi, str);
 }
 
 std::optional<std::string> ProxyStrategiesDPI::_getProxySetting(std::string str) const

@@ -14,6 +14,9 @@ void Ui::_checkConflictService()
 	auto & conflict_service = _unblock->getConflictingServices();
 	if (!conflict_service.empty())
 	{
+#if __clang__
+		[[clang::no_destroy]]
+#endif
 		static std::string names_services;
 
 		for (auto& service : conflict_service)
