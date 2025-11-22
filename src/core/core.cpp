@@ -48,51 +48,55 @@ void Core::initialize(const std::string& /*command_line*/)
 
 void Core::parallel_run()
 {
-	std::jthread thread{ [this]
-						 {
-							 while (!_quit_task)
-							 {
-								 using namespace std::chrono;
-								 std::this_thread::sleep_for(30ms);
-								 {
-									 FAST_LOCK(_task_lock);
-									 while (!_task.empty() && !_quit_task)
-									 {
-										 _task.front()();
-										 _task.pop_front();
-									 }
-								 }
-								 std::this_thread::yield();
+	std::jthread thread(
+		[this]
+		{
+			while (!_quit_task)
+			{
+				using namespace std::chrono;
+				std::this_thread::sleep_for(30ms);
+				{
+					FAST_LOCK(_task_lock);
+					while (!_task.empty() && !_quit_task)
+					{
+						_task.front()();
+						_task.pop_front();
+					}
+				}
+				std::this_thread::yield();
 
-								 FAST_LOCK_SHARED(_task_lock_js);
-							 }
-						 } };
+				FAST_LOCK_SHARED(_task_lock_js);
+			}
+		}
+	);
 
-	std::jthread thread2{ [this]
-						  {
-							  while (!_quit_task)
-							  {
-								  using namespace std::chrono;
-								  std::this_thread::sleep_for(30ms);
-								  {
-									  FAST_LOCK(_task_parallel_lock);
-									  std::for_each(
-										  std::execution::par,
-										  _task_parallel.begin(),
-										  _task_parallel.end(),
-										  [this](std::function<void()> callback)
-										  {
-											  if (!_quit_task)
-												  callback();
-										  }
-									  );
-									  _task_parallel.clear();
-								  }
-								  std::this_thread::yield();
+	std::jthread thread2(
+		[this]
+		{
+			while (!_quit_task)
+			{
+				using namespace std::chrono;
+				std::this_thread::sleep_for(30ms);
+				{
+					FAST_LOCK(_task_parallel_lock);
+					std::for_each(
+						std::execution::par,
+						_task_parallel.begin(),
+						_task_parallel.end(),
+						[this](std::function<void()> callback)
+						{
+							if (!_quit_task)
+								callback();
+						}
+					);
+					_task_parallel.clear();
+				}
+				std::this_thread::yield();
 
-								  FAST_LOCK_SHARED(_task_lock_js);
-							  }
-						  } };
+				FAST_LOCK_SHARED(_task_lock_js);
+			}
+		}
+	);
 
 	thread.detach();
 	thread2.detach();
