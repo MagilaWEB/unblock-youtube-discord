@@ -35,15 +35,47 @@
 
 Core& Core::get()
 {
-	#if __clang__
+#if __clang__
 	[[clang::no_destroy]]
-	#endif
+#endif
 	static Core instance;
 	return instance;
 }
 
 void Core::initialize(const std::string& /*command_line*/)
 {
+}
+
+void Core::parallel_run()
+{
+	std::jthread thread{ [this]
+						 {
+							 while (!_quit_task)
+							 {
+								 using namespace std::chrono;
+								 std::this_thread::sleep_for(30ms);
+								 {
+									 FAST_LOCK(_task_lock);
+									 auto& task = Core::getTask();
+									 while (!task.empty())
+									 {
+										 task.front()();
+										 task.pop_front();
+									 }
+								 }
+								 std::this_thread::yield();
+
+								 FAST_LOCK_SHARED(_task_lock_js);
+							 }
+						 } };
+
+	thread.detach();
+}
+
+void Core::finish()
+{
+	FAST_LOCK_SHARED(_task_lock);
+	_quit_task = true;
 }
 
 std::filesystem::path Core::currentPath() const

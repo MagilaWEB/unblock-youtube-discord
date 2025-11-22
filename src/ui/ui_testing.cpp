@@ -178,7 +178,7 @@ void Ui::_testingWindow()
 		);
 
 		if (_testing_domains_startup->getState())
-			Core::addTask(event_test_domain);
+			Core::get().addTask(event_test_domain);
 	}
 
 	_start_testing->addEventClick(
@@ -195,7 +195,7 @@ void Ui::_testingWindow()
 				_list_domain_video->clear();
 				_list_domain->clear();
 			}
-			Core::addTask(event_test_domain);
+			Core::get().addTask(event_test_domain);
 			return false;
 		}
 	);

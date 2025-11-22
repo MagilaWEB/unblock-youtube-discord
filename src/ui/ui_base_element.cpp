@@ -9,7 +9,7 @@ void BaseElement::runCode(const std::function<void()>& run_code)
 {
 	if (Core::getThreadJsID() != GetCurrentThreadId())
 	{
-		Core::addTaskJS(run_code);
+		Core::get().addTaskJS(run_code);
 		return;
 	}
 

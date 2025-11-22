@@ -24,10 +24,10 @@
 
 class Unblock;
 
-class UI_API Ui : public UiElements,
-				  public WindowListener,
-				  private LoadListener,
-				  private ViewListener
+class UI_API Ui final : public UiElements,
+						public WindowListener,
+						private LoadListener,
+						private ViewListener
 
 {
 	Ptr<Unblock> _unblock;
@@ -40,14 +40,16 @@ public:
 	Ui(IEngineAPI* engine);
 	~Ui() override;
 
-	virtual void OnAddConsoleMessage(View* caller, const ConsoleMessage& msg) override;
+	void OnAddConsoleMessage(View* caller, const ConsoleMessage& msg) override;
 
-	virtual void OnWindowObjectReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const String& url) override;
-	virtual void OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const String& url) override;
+	void OnWindowObjectReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const String& url) override;
+	void OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const String& url) override;
 
-	virtual void OnClose(Window* window) override;
+	void OnResize(ultralight::Window* window, uint32_t width, uint32_t height) override;
 
-	virtual void OnChangeCursor(View*, Cursor cursor) override { _engine->window()->SetCursor(cursor); }
+	void OnClose(Window* window) override;
+
+	void OnChangeCursor(View*, Cursor cursor) override { _engine->window()->SetCursor(cursor); }
 
 private:
 	void _checkConflictService();

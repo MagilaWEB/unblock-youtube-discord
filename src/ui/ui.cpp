@@ -119,7 +119,7 @@ void Ui::OnDOMReady(View* caller, uint64_t /*frame_id*/, bool /*is_main_frame*/,
 	_link_to_github->addEventClick(
 		[](JSArgs)
 		{
-			Core::addTask([] { system("start https://github.com/MagilaWEB/unblock-youtube-discord"); });
+			Core::get().addTask([] { system("start https://github.com/MagilaWEB/unblock-youtube-discord"); });
 			return false;
 		}
 	);
@@ -135,6 +135,11 @@ void Ui::OnDOMReady(View* caller, uint64_t /*frame_id*/, bool /*is_main_frame*/,
 	_testing();
 }
 
+void Ui::OnResize(ultralight::Window* window, uint32_t width, uint32_t height)
+{
+	_overlay->Resize(width, height);
+}
+
 void Ui::OnClose(ultralight::Window* /*window*/)
 {
 	BaseElement::release();
@@ -143,8 +148,8 @@ void Ui::OnClose(ultralight::Window* /*window*/)
 
 void Ui::runTask(const JSObject& /*obj*/, const JSArgs& /*args*/)
 {
-	auto& task = Core::getTaskJS();
-	FAST_LOCK(Core::getTaskLockJS());
+	auto& task = Core::get().getTaskJS();
+	FAST_LOCK(Core::get().getTaskLockJS());
 	while (!task.empty())
 	{
 		task.front()();

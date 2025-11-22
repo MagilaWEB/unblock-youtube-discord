@@ -221,7 +221,7 @@ std::expected<TypeReturn, std::string> File::parameterSection(pcstr section, pcs
 			return state;
 		}
 
-//			static_assert(false, "Only std data types are supported string || const char* || pcstr, u32 || long long, s32 || int, bool!");
+		//			static_assert(false, "Only std data types are supported string || const char* || pcstr, u32 || long long, s32 || int, bool!");
 	}
 
 	return Debug::str_unexpected("Не удалось найти параметр [%s] в секции [%s]!", parameter, section);
@@ -239,7 +239,7 @@ void File::writeText(std::string str)
 {
 	CRITICAL_SECTION_RAII(lock);
 
-		if (!isOpen())
+	if (!isOpen())
 		_open_state = true;
 
 	_is_write = true;

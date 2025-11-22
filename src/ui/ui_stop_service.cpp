@@ -12,7 +12,7 @@ void Ui::_stopService()
 	_stop_service->addEventClick(
 		[this](JSArgs)
 		{
-			Core::addTask(
+			Core::get().addTask(
 				[this]
 				{
 					_window_wait_stop_service->show();

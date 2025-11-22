@@ -91,7 +91,6 @@ void SelectList::setSelectedOptionValue(JSValue value)
 
 JSValue SelectList::getSelectedOptionValue()
 {
-	FAST_LOCK_SHARED(Core::getTaskLock());
 	return _get_value({ _name });
 }
 

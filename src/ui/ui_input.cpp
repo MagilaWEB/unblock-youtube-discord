@@ -67,7 +67,6 @@ void Input::addEventSubmit(std::function<bool(JSArgs)>&& callback)
 
 JSValue Input::getValue()
 {
-	FAST_LOCK_SHARED(Core::getTaskLock());
 	RefPtr<JSContext> lock(_view->LockJSContext());
 	return _get_value({ _name });
 }

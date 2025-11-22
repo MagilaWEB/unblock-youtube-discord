@@ -23,7 +23,7 @@ void Ui::_startService()
 				if (config_proxy)
 					if (_proxy_manual->getState())
 					{
-						Core::addTask(
+						Core::get().addTask(
 							[this, config_proxy]
 							{
 								_window_wait_start_service->show();
@@ -60,7 +60,7 @@ void Ui::_startService()
 
 					if (fake_bin && _unblock_manual->getState())
 					{
-						Core::addTask(
+						Core::get().addTask(
 							[this, config, fake_bin]
 							{
 								_window_wait_start_service->show();
@@ -223,7 +223,7 @@ void Ui::_startServiceWindow()
 	_window_config_not_found->addEventOk(
 		[this, auto_config](JSArgs)
 		{
-			Core::addTask(auto_config);
+			Core::get().addTask(auto_config);
 			_window_config_not_found->hide();
 			return false;
 		}
@@ -233,7 +233,7 @@ void Ui::_startServiceWindow()
 		[this, auto_config](JSArgs args)
 		{
 			if (args[0].ToBoolean())
-				Core::addTask(auto_config);
+				Core::get().addTask(auto_config);
 			else
 			{
 				if (proxy_click_state)
@@ -248,7 +248,7 @@ void Ui::_startServiceWindow()
 						_unblock->changeStrategy(config.value().c_str(), fake_bin.value().c_str());
 				}
 
-				Core::addTask(
+				Core::get().addTask(
 					[this]
 					{
 						_window_wait_start_service->show();
@@ -270,7 +270,7 @@ void Ui::_startServiceWindow()
 		[this, auto_config](JSArgs args)
 		{
 			if (args[0].ToBoolean())
-				Core::addTask(auto_config);
+				Core::get().addTask(auto_config);
 			else
 				proxy_click_state = false;
 

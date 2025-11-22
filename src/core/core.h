@@ -2,11 +2,14 @@
 
 class CORE_API Core final
 {
-	inline static DWORD								_thread_js_id{};
-	inline static FastLock							_task_lock;
-	inline static FastLock							_task_lock_js;
-	inline static std::deque<std::function<void()>> _task;
-	inline static std::deque<std::function<void()>> _task_js;
+	inline static DWORD _thread_js_id{};
+
+	FastLock						  _task_lock;
+	FastLock						  _task_lock_js;
+	std::deque<std::function<void()>> _task;
+	std::deque<std::function<void()>> _task_js;
+
+	std::atomic_bool _quit_task{ false };
 
 	Core();
 	~Core() = default;
@@ -22,7 +25,10 @@ public:
 
 public:
 	static Core& get();
-	void		 initialize(const std::string& command_line);
+
+	void initialize(const std::string& command_line);
+	void parallel_run();
+	void finish();
 
 	std::filesystem::path currentPath() const;
 	std::filesystem::path binPath() const;
@@ -30,13 +36,13 @@ public:
 	std::filesystem::path configsPath() const;
 	std::filesystem::path userPath() const;
 
-	static void addTask(std::function<void()>&& callback);
-	static void addTaskJS(std::function<void()> callback);
+	void addTask(std::function<void()>&& callback);
+	void addTaskJS(std::function<void()> callback);
 
-	static std::deque<std::function<void()>>& getTask();
-	static std::deque<std::function<void()>>& getTaskJS();
-	static FastLock&						  getTaskLock();
-	static FastLock&						  getTaskLockJS();
+	std::deque<std::function<void()>>& getTask();
+	std::deque<std::function<void()>>& getTaskJS();
+	FastLock&						   getTaskLock();
+	FastLock&						   getTaskLockJS();
 
 	static void	 setThreadJsID(DWORD id);
 	static DWORD getThreadJsID();

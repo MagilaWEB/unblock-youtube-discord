@@ -40,6 +40,5 @@ public:
 	Window* window() override;
 
 private:
-	void _sendDpiApplicationType();
 	void _finish();
 };

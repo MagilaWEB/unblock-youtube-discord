@@ -4,10 +4,14 @@ using namespace std;
 
 static void run(const std::string& command_line)
 {
-	Core::get().initialize(command_line);
+	auto& core = Core::get();
+	auto& engine = Engine::get();
 
-	Engine::get().initialize();
-	Engine::get().run();
+	core.initialize(command_line);
+	engine.initialize();
+	core.parallel_run();
+	engine.run();
+	core.finish();
 }
 
 #ifdef __clang__
