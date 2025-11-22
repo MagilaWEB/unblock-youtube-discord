@@ -11,7 +11,7 @@ void Ui::_checkConflictService()
 
 	std::string description = lang_disc();
 
-	auto & conflict_service = _unblock->getConflictingServices();
+	auto& conflict_service = _unblock->getConflictingServices();
 	if (!conflict_service.empty())
 	{
 #if __clang__
@@ -89,71 +89,76 @@ void Ui::_testingWindow()
 		_window_wait_testing->show();
 		FastLock lock;
 
-		{
-			std::jthread _0{ [this, &lock]
-							 {
-								 lock.EnterShared();
-								 if (_unblock_enable->getState())
-								 {
-									 lock.LeaveShared();
-									 _unblock->testingDomain<StrategiesDPI>(
-										 [this](pcstr url, bool state) { _list_domain->createLiSuccess(url, state); },
-										 false,
-										 false
-									 );
-									 return;
-								 }
-								 lock.LeaveShared();
-							 } };
+		Core::get().addTaskParallel(
+			[this, &lock]
+			{
+				lock.EnterShared();
+				if (_unblock_enable->getState())
+				{
+					lock.LeaveShared();
+					_unblock
+						->testingDomain<StrategiesDPI>([this](pcstr url, bool state) { _list_domain->createLiSuccess(url, state); }, false, false);
+					return;
+				}
+				lock.LeaveShared();
+			}
+		);
 
-			std::jthread _1{ [this, &lock]
-							 {
-								 lock.EnterShared();
-								 if (_unblock_enable->getState())
-								 {
-									 lock.LeaveShared();
-									 _unblock->testingDomain<StrategiesDPI>(
-										 [this](pcstr url, bool state) { _list_domain_video->createLiSuccess(url, state); },
-										 true,
-										 false
-									 );
-									 return;
-								 }
-								 lock.LeaveShared();
-							 } };
+		Core::get().addTaskParallel(
+			[this, &lock]
+			{
+				lock.EnterShared();
+				if (_unblock_enable->getState())
+				{
+					lock.LeaveShared();
+					_unblock->testingDomain<StrategiesDPI>(
+						[this](pcstr url, bool state) { _list_domain_video->createLiSuccess(url, state); },
+						true,
+						false
+					);
+					return;
+				}
+				lock.LeaveShared();
+			}
+		);
 
-			std::jthread _2{ [this, &lock]
-							 {
-								 lock.EnterShared();
-								 if (_proxy_enable->getState())
-								 {
-									 lock.LeaveShared();
-									 _unblock->testingDomain<ProxyStrategiesDPI>(
-										 [this](pcstr url, bool state) { _list_proxy_domain->createLiSuccess(url, state); },
-										 false,
-										 false
-									 );
-									 return;
-								 }
-								 lock.LeaveShared();
-							 } };
+		Core::get().addTaskParallel(
+			[this, &lock]
+			{
+				lock.EnterShared();
+				if (_proxy_enable->getState())
+				{
+					lock.LeaveShared();
+					_unblock->testingDomain<ProxyStrategiesDPI>(
+						[this](pcstr url, bool state) { _list_proxy_domain->createLiSuccess(url, state); },
+						false,
+						false
+					);
+					return;
+				}
+				lock.LeaveShared();
+			}
+		);
 
-			std::jthread _3{ [this, &lock]
-							 {
-								 lock.EnterShared();
-								 if (_proxy_enable->getState())
-								 {
-									 lock.LeaveShared();
-									 _unblock->testingDomain<ProxyStrategiesDPI>(
-										 [this](pcstr url, bool state) { _list_proxy_domain_video->createLiSuccess(url, state); },
-										 true,
-										 false
-									 );
-									 return;
-								 }
-								 lock.LeaveShared();
-							 } };
-		}
+		Core::get().addTaskParallel(
+			[this, &lock]
+			{
+				lock.EnterShared();
+				if (_proxy_enable->getState())
+				{
+					lock.LeaveShared();
+					_unblock->testingDomain<ProxyStrategiesDPI>(
+						[this](pcstr url, bool state) { _list_proxy_domain_video->createLiSuccess(url, state); },
+						true,
+						false
+					);
+					return;
+				}
+				lock.LeaveShared();
+			}
+		);
+
+		Core::get().waitTaskParallel();
 
 		_window_wait_testing->hide();
 	};

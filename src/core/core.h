@@ -5,8 +5,10 @@ class CORE_API Core final
 	inline static DWORD _thread_js_id{};
 
 	FastLock						  _task_lock;
+	FastLock						  _task_parallel_lock;
 	FastLock						  _task_lock_js;
 	std::deque<std::function<void()>> _task;
+	std::deque<std::function<void()>> _task_parallel;
 	std::deque<std::function<void()>> _task_js;
 
 	std::atomic_bool _quit_task{ false };
@@ -37,6 +39,11 @@ public:
 	std::filesystem::path userPath() const;
 
 	void addTask(std::function<void()>&& callback);
+	void waitTask();
+
+	void addTaskParallel(std::function<void()>&& callback);
+	void waitTaskParallel();
+
 	void addTaskJS(std::function<void()> callback);
 
 	std::deque<std::function<void()>>& getTask();

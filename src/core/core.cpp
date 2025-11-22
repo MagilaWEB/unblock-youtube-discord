@@ -56,11 +56,10 @@ void Core::parallel_run()
 								 std::this_thread::sleep_for(30ms);
 								 {
 									 FAST_LOCK(_task_lock);
-									 auto& task = Core::getTask();
-									 while (!task.empty())
+									 while (!_task.empty() && !_quit_task)
 									 {
-										 task.front()();
-										 task.pop_front();
+										 _task.front()();
+										 _task.pop_front();
 									 }
 								 }
 								 std::this_thread::yield();
@@ -69,12 +68,40 @@ void Core::parallel_run()
 							 }
 						 } };
 
+	std::jthread thread2{ [this]
+						  {
+							  while (!_quit_task)
+							  {
+								  using namespace std::chrono;
+								  std::this_thread::sleep_for(30ms);
+								  {
+									  FAST_LOCK(_task_parallel_lock);
+									  std::for_each(
+										  std::execution::par,
+										  _task_parallel.begin(),
+										  _task_parallel.end(),
+										  [this](std::function<void()> callback)
+										  {
+											  if (!_quit_task)
+												  callback();
+										  }
+									  );
+									  _task_parallel.clear();
+								  }
+								  std::this_thread::yield();
+
+								  FAST_LOCK_SHARED(_task_lock_js);
+							  }
+						  } };
+
 	thread.detach();
+	thread2.detach();
 }
 
 void Core::finish()
 {
-	FAST_LOCK_SHARED(_task_lock);
+	FAST_LOCK(_task_lock, 1);
+	FAST_LOCK(_task_parallel_lock, 2);
 	_quit_task = true;
 }
 
@@ -107,6 +134,42 @@ void Core::addTask(std::function<void()>&& callback)
 {
 	FAST_LOCK(_task_lock);
 	_task.emplace_back(callback);
+}
+
+void Core::waitTask()
+{
+	while (true)
+	{
+		{
+			FAST_LOCK_SHARED(_task_lock);
+			if (_task.empty())
+				break;
+		}
+		using namespace std::chrono;
+		std::this_thread::sleep_for(5ms);
+		std::this_thread::yield();
+	}
+}
+
+void Core::addTaskParallel(std::function<void()>&& callback)
+{
+	FAST_LOCK(_task_parallel_lock);
+	_task_parallel.emplace_back(callback);
+}
+
+void Core::waitTaskParallel()
+{
+	while (true)
+	{
+		{
+			FAST_LOCK_SHARED(_task_parallel_lock);
+			if (_task_parallel.empty())
+				break;
+		}
+		using namespace std::chrono;
+		std::this_thread::sleep_for(5ms);
+		std::this_thread::yield();
+	}
 }
 
 void Core::addTaskJS(std::function<void()> callback)
