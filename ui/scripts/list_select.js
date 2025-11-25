@@ -11,6 +11,7 @@ class SELECT {
         this.array_option = [];
         this.option_size = 0;
 
+        this.select_mouseover = false;
         this.select_active = false;
         this.label.addEventListener("click", () => {
             this.label.focus();
@@ -22,8 +23,19 @@ class SELECT {
         });
 
         this.label.addEventListener("blur", () => {
+            if (this.select_mouseover)
+                return;
+
             this.select.classList.remove("select_active");
             this.select_active = false;
+        });
+
+        this.select.addEventListener("mouseover", () => {
+            this.select_mouseover = true;
+        });
+
+        this.select.addEventListener("mouseout", () => {
+            this.select_mouseover = false;
         });
 
         if (!RUN_CPP) {
@@ -39,8 +51,13 @@ class SELECT {
         option.value = _value;
 
         option.addEventListener("click", () => {
+            if (!this.select_active || !this.select_mouseover)
+                return;
+
             this.select.classList.remove("select_active");
 
+            this.select.classList.remove("select_active");
+            this.select_active = false;
             this.label.removeChild(this.label.firstChild);
             this.label.append(option.innerHTML);
 
