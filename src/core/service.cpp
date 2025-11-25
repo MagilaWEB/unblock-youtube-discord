@@ -293,6 +293,19 @@ void Service::stop()
 		service_stop();
 
 		_waitStatusService(
+			SERVICE_RUNNING,
+			SERVICE_STOPPED,
+			[this, service_stop]
+			{
+				service_stop();
+				_waitStatusService(SERVICE_RUNNING,
+					SERVICE_STOPPED,
+					service_stop
+				);
+			}
+		);
+
+		_waitStatusService(
 			SERVICE_STOP_PENDING,
 			SERVICE_STOPPED,
 			[this, service_stop]
@@ -305,7 +318,7 @@ void Service::stop()
 
 	update();
 
-	if (stopped && config.sc_status.dwCurrentState == SERVICE_STOPPED)
+	if (stopped && config.sc_status.dwCurrentState == SERVICE_STOPPED || !sc)
 		InputConsole::textOk("служба [%s] остановлена.", _name.c_str());
 }
 
@@ -399,7 +412,7 @@ void Service ::_waitStatusService(DWORD check_state, DWORD check_stat_end, std::
 {
 	_dw_start_time = GetTickCount64();
 
-	while (config.sc_status.dwCurrentState == check_state)
+	while (sc && config.sc_status.dwCurrentState == check_state)
 	{
 		_dw_wait_time = std::clamp<DWORD>(config.sc_status.dwWaitHint / 10, 1'000, 10'000);
 
