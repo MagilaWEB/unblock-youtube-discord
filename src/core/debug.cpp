@@ -81,7 +81,9 @@ void Debug::initLogFile()
 	}
 }
 
-void Debug::fatalErrorMessage(pcstr message)
+void Debug::fatalErrorMessage(std::string message)
 {
+	log.writeText(std::to_string(++_console_line) + ". " + message);
+	log.close();
 	std::cerr << message << std::endl;
 }

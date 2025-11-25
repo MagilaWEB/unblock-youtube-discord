@@ -6,7 +6,17 @@
 
 Ui::Ui(IEngineAPI* engine) : UiElements(), _engine(engine)
 {
-	_file_user_setting->open((Core::get().userPath() / "setting"), ".config", true);
+	_file_user_setting->open({ Core::get().userPath() / "setting" }, ".config", true);
+	_file_service_list->open({ Core::get().configsPath() / "service_setting" }, ".config", true);
+
+	_file_service_list->forLineParametersSection(
+		"LIST",
+		[this](std::string key, std::string /*value*/)
+		{
+			_unblock_list_enable_services.emplace(key, std::make_shared<CheckBox>(std::string{ "_unblock_to_list_" } + key));
+			return false;
+		}
+	);
 
 #ifndef DEBUG
 	auto result = _file_user_setting->parameterSection<bool>("SUSTEM", "show_console");
@@ -135,7 +145,7 @@ void Ui::OnDOMReady(View* caller, uint64_t /*frame_id*/, bool /*is_main_frame*/,
 	_testing();
 }
 
-void Ui::OnResize(ultralight::Window* window, uint32_t width, uint32_t height)
+void Ui::OnResize(ultralight::Window* /*window*/, uint32_t width, uint32_t height)
 {
 	_overlay->Resize(width, height);
 }

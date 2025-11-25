@@ -16,40 +16,31 @@ bool Unblock::automaticallyStrategy()
 		"It can only be StrategiesDPI or ProxyStrategiesDPI!"
 	);
 
-	constexpr bool proxy = std::is_same_v<Type, ProxyStrategiesDPI>;
-
-	Type* strategies_dpi = nullptr;
-
-	if constexpr (proxy)
+	if constexpr (std::is_same_v<Type, ProxyStrategiesDPI>)
 	{
-		strategies_dpi = _proxy_strategies_dpi.get();
-
-		if (_strategy.proxy_type == strategies_dpi->getStrategySize())
+		if (_strategy.proxy_type == _proxy_strategies_dpi->getStrategySize())
 		{
 			_strategy.proxy_type = 0;
 			return false;
 		}
+
+		_proxy_strategies_dpi->changeStrategy(_strategy.proxy_type);
+		_strategy.proxy_type++;
 	}
 	else
 	{
-		strategies_dpi = _strategies_dpi.get();
-
-		if (_strategy.type == strategies_dpi->getStrategySize())
+		if (_strategy.type == _strategies_dpi->getStrategySize())
 		{
 			_strategy.type	   = 0;
 			_strategy.fake_bin = 0;
 			return false;
 		}
-	}
 
-	strategies_dpi->changeStrategy(proxy ? _strategy.proxy_type : _strategy.type);
-
-	if constexpr (!proxy)
-	{
-		if (strategies_dpi->isFaked())
+		if (_strategies_dpi->isFaked())
 		{
-			strategies_dpi->changeFakeKey(_strategy.fake_bin);
-			const auto& fake_bin_list = strategies_dpi->getFakeBinList();
+			_strategies_dpi->changeFakeKey(_strategy.fake_bin);
+			_strategies_dpi->changeStrategy(_strategy.type);
+			const auto& fake_bin_list = _strategies_dpi->getFakeBinList();
 			if (_strategy.fake_bin == (fake_bin_list.size() - 1))
 			{
 				_strategy.fake_bin = 0;
@@ -60,13 +51,12 @@ bool Unblock::automaticallyStrategy()
 		}
 		else
 		{
-			strategies_dpi->changeFakeKey(1);
+			_strategies_dpi->changeFakeKey(1);
+			_strategies_dpi->changeStrategy(_strategy.type);
 			_strategy.fake_bin = 0;
 			_strategy.type++;
 		}
 	}
-	else
-		_strategy.proxy_type++;
 
 	return true;
 }
@@ -78,8 +68,8 @@ void Unblock::changeStrategy(pcstr name_config, pcstr name_fake_bin)
 	_strategy.type	   = 0;
 	_strategy.fake_bin = 0;
 
-	_strategies_dpi->changeStrategy(name_config);
 	_strategies_dpi->changeFakeKey(name_fake_bin);
+	_strategies_dpi->changeStrategy(name_config);
 }
 
 void Unblock::changeProxyStrategy(pcstr name_config)
@@ -92,6 +82,24 @@ void Unblock::changeProxyStrategy(pcstr name_config)
 void Unblock::changeFilteringTopLevelDomains(bool state)
 {
 	_strategies_dpi->changeFilteringTopLevelDomains(state);
+}
+
+void Unblock::addOptionalStrategies(std::string name)
+{
+	_strategies_dpi->addOptionalStrategies(name);
+	_domain_testing->addOptionalStrategies(name);
+}
+
+void Unblock::removeOptionalStrategies(std::string name)
+{
+	_strategies_dpi->removeOptionalStrategies(name);
+	_domain_testing->removeOptionalStrategies(name);
+}
+
+void Unblock::clearOptionalStrategies()
+{
+	_strategies_dpi->clearOptionalStrategies();
+	_domain_testing->clearOptionalStrategies();
 }
 
 template<typename Type>

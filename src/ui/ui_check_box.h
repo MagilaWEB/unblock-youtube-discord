@@ -8,6 +8,7 @@ class CheckBox final : public BaseElement
 
 public:
 	CheckBox(pcstr name);
+	CheckBox(std::string name);
 
 	void initialize() override;
 

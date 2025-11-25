@@ -38,6 +38,10 @@ public:
 	void changeProxyStrategy(pcstr name_config);
 	void changeFilteringTopLevelDomains(bool state = false);
 
+	void addOptionalStrategies(std::string name);
+	void removeOptionalStrategies(std::string name);
+	void clearOptionalStrategies();
+
 	template<typename Type>
 	bool runTest(bool video = false);
 

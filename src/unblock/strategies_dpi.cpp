@@ -89,6 +89,28 @@ void StrategiesDPI::changeFilteringTopLevelDomains(bool state)
 	_filtering_top_level_domains = state;
 }
 
+void StrategiesDPI::addOptionalStrategies(std::string name)
+{
+	auto it = std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), name);
+	if (it != _section_opt_service_names.end())
+	{
+		Debug::warning("%s It has already been added!", name.c_str());
+		return;
+	}
+
+	_section_opt_service_names.emplace_back(name);
+}
+
+void StrategiesDPI::removeOptionalStrategies(std::string name)
+{
+	std::erase(_section_opt_service_names, name);
+}
+
+void StrategiesDPI::clearOptionalStrategies()
+{
+	_section_opt_service_names.clear();
+}
+
 bool StrategiesDPI::isFaked() const
 {
 	return _faked;
@@ -112,6 +134,8 @@ void StrategiesDPI::_uploadStrategies()
 				{
 					if (str.contains(service_name))
 					{
+						_service_blocklist_file = "all.list";
+
 						_file_strategy_dpi->forLineSection(
 							service_name,
 							[this, &index](std::string _str)
@@ -120,7 +144,38 @@ void StrategiesDPI::_uploadStrategies()
 								return false;
 							}
 						);
+
+						// Optional strategy sections for individual services.
+						for (auto& name : _section_opt_service_names)
+						{
+							std::string service_name_type{ service_name };
+							service_name_type.append("_");
+							service_name_type.append(name);
+
+							_service_blocklist_file = name;
+							_service_blocklist_file.append(".list");
+
+							_file_strategy_dpi->forLineSection(
+								service_name_type.c_str(),
+								[this, &index](std::string _str)
+								{
+									_saveStrategies(_strategy_dpi[index], _str);
+									return false;
+								}
+							);
+						}
+
+						for (auto& line : _strategy_dpi[index])
+							line.append(" ");
+
+						while ((_strategy_dpi[index].back().contains("--new")) || (_strategy_dpi[index].empty()))
+							_strategy_dpi[index].pop_back();
 					}
+#ifdef DEBUG
+					for (auto& line : _strategy_dpi[index])
+						Debug::ok("%s", line.c_str());
+
+#endif
 				}
 
 				return false;
@@ -139,25 +194,25 @@ void StrategiesDPI::_saveStrategies(std::vector<std::string>& strategy_dpi, std:
 
 	if (auto new_str = _getFake("%FAKE_TLS%", str))
 	{
-		strategy_dpi.push_back(new_str.value());
+		strategy_dpi.emplace_back(new_str.value());
 		return;
 	}
 
 	if (auto new_str = _getFake("%FAKE_QUIC%", str))
 	{
-		strategy_dpi.push_back(new_str.value());
+		strategy_dpi.emplace_back(new_str.value());
 		return;
 	}
 
 	if (auto new_str = _getFake("%FAKE_UNKNOWN%", str))
 	{
-		strategy_dpi.push_back(new_str.value());
+		strategy_dpi.emplace_back(new_str.value());
 		return;
 	}
 
 	if (auto new_str = _getFake("%SEQOVL_PATTERN%", str))
 	{
-		strategy_dpi.push_back(new_str.value());
+		strategy_dpi.emplace_back(new_str.value());
 		return;
 	}
 
@@ -166,7 +221,7 @@ void StrategiesDPI::_saveStrategies(std::vector<std::string>& strategy_dpi, std:
 
 std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 {
-	auto path_file					 = Core::get().configsPath() / "blacklist.list";
+	auto path_file					 = Core::get().configsPath() / "blacklist" / _service_blocklist_file;
 	auto path_file_top_level_domains = Core::get().configsPath() / "top_level_domains.list";
 
 	if (str.contains("%BLOCKLIST%"))
@@ -183,17 +238,6 @@ std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 
 		ASSERT_ARGS(std::filesystem::exists(path_file), "The [%s] file does not exist!", path_file.string().c_str());
 		return "--hostlist=" + (path_file.string());
-	}
-
-	if (str.contains("%DOMAINS-GOOGLE%"))
-	{
-		auto path_file_blacklist_google = Core::get().configsPath() / "blacklist_google.list";
-		ASSERT_ARGS(
-			std::filesystem::exists(path_file_blacklist_google),
-			"The [%s] file does not exist!",
-			path_file_blacklist_google.string().c_str()
-		);
-		return "--hostlist=" + (path_file_blacklist_google.string());
 	}
 
 	if (str.contains("%DOMAINS-EXCLUDE%"))
@@ -258,7 +302,7 @@ std::optional<std::string> StrategiesDPI::_getFake(std::string key, std::string 
 	if (str.contains(key))
 	{
 		if (_fake_bind_key.empty())
-			return "";
+			return std::nullopt;
 
 		auto it = std::find_if(
 			_fake_bin_params.begin(),
@@ -268,18 +312,19 @@ std::optional<std::string> StrategiesDPI::_getFake(std::string key, std::string 
 
 		if (it != _fake_bin_params.end())
 		{
-			std::string argument;
+			if (key == "%FAKE_TLS%")
+				return "--dpi-desync-fake-tls=" + (*it).file_clienthello;
 
-			if (key.contains("TLS"))
-				argument = "--dpi-desync-fake-tls=" + (*it).file_clienthello;
-			else if (key.contains("SEQOVL"))
-				argument = "--dpi-desync-split-seqovl-pattern=" + (*it).file_clienthello;
-			else if (key.contains("UNKNOWN"))
-				argument = "--dpi-desync-fake-unknown-udp=" + (*it).file_initial;
-			else
-				argument = "--dpi-desync-fake-quic=" + (*it).file_initial;
+			if (key == "%FAKE_QUIC%")
+				return "--dpi-desync-fake-quic=" + (*it).file_initial;
 
-			return argument;
+			if (key == "%SEQOVL_PATTERN%")
+				return "--dpi-desync-split-seqovl-pattern=" + (*it).file_clienthello;
+
+			if (key == "%FAKE_UNKNOWN%")
+				return "--dpi-desync-fake-unknown-udp=" + (*it).file_initial;
+
+			return std::nullopt;
 		}
 		else
 		{

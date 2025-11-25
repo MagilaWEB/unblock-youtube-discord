@@ -23,7 +23,7 @@ using namespace ultralight;
 class BaseElement
 {
 protected:
-	const pcstr _name;
+	const std::string _name;
 	pcstr		_type;
 	JSFunction	_create;
 	JSFunction	_remove;
@@ -35,7 +35,7 @@ protected:
 #if __clang__
 	[[clang::no_destroy]]
 #endif
-	inline static std::map<pcstr, BaseElement*> _all_element;
+	inline static std::map<std::string, BaseElement*> _all_element;
 
 	using MapEvent = std::map<String, std::vector<std::function<bool(JSArgs)>>>;
 #if __clang__
@@ -47,6 +47,8 @@ public:
 	BaseElement() = delete;
 	BaseElement(pcstr name);
 	virtual ~BaseElement();
+
+	pcstr name() const { return _name.c_str(); };
 
 	static void runCode(const std::function<void()> & run_code);
 

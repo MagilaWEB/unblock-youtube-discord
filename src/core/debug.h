@@ -44,17 +44,21 @@ private:
 		auto str	 = utils::format(message, std::forward<Args>(args)...);
 		auto log_str = utils::format("%d. %s%s", ++_console_line, get_prefix(type), str.c_str());
 
-		Debug::log.writeText(std::to_string(_console_line) + ". " + str);
+		log.writeText(std::to_string(_console_line) + ". " + str);
 
 		((type >= MessageTypes::eError) ? std::cerr : std::cout) << log_str.c_str() << std::endl;
+
 		if (type == MessageTypes::eFatal || (type == MessageTypes::eError && s_error_fatal))
+		{
+			log.close();
 			throw(exception(str.c_str()));
+		}
 	}
 
 public:
 	static void initialize(const std::string& command_line);
 	static void initLogFile();
-	static void fatalErrorMessage(pcstr message);
+	static void fatalErrorMessage(std::string message);
 
 	template<typename Fn, typename... Args>
 	static int try_wrap(Fn&& fn, Args&&... args)
@@ -67,7 +71,7 @@ public:
 			}
 			catch (std::exception& E)
 			{
-				fatalErrorMessage(utils::format("Exception caught!\n%s", E.what()).c_str());
+				fatalErrorMessage(utils::format("Exception caught!\n%s", E.what()));
 				return -1;
 			}
 			catch (...)

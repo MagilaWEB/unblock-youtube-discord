@@ -104,23 +104,31 @@ void Ui::_testingWindow()
 			}
 		);
 
-		Core::get().addTaskParallel(
-			[this, &lock]
+		for (auto& [name, check_box] : _unblock_list_enable_services)
+		{
+			if (name.contains("youtube") && check_box->getState())
 			{
-				lock.EnterShared();
-				if (_unblock_enable->getState())
-				{
-					lock.LeaveShared();
-					_unblock->testingDomain<StrategiesDPI>(
-						[this](pcstr url, bool state) { _list_domain_video->createLiSuccess(url, state); },
-						true,
-						false
-					);
-					return;
-				}
-				lock.LeaveShared();
+				Core::get().addTaskParallel(
+					[this, &lock]
+					{
+						lock.EnterShared();
+						if (_unblock_enable->getState())
+						{
+							lock.LeaveShared();
+							_unblock->testingDomain<StrategiesDPI>(
+								[this](pcstr url, bool state) { _list_domain_video->createLiSuccess(url, state); },
+								true,
+								false
+							);
+							return;
+						}
+						lock.LeaveShared();
+					}
+				);
+
+				break;
 			}
-		);
+		}
 
 		Core::get().addTaskParallel(
 			[this, &lock]

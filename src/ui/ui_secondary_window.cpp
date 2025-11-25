@@ -48,10 +48,10 @@ void SecondaryWindow::create(Localization::Str title, Localization::Str descript
 		[this, _title, _description]
 		{
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_create({ _name, _title, _description }).ToBoolean() == true, "Couldn't create a %s named [%s]", _type, _name);
-			_event_click[_name].clear();
-			_event_yes_no[_name].clear();
-			_event_cancel[_name].clear();
+			ASSERT_ARGS(_create({ name(), _title, _description }).ToBoolean() == true, "Couldn't create a %s named [%s]", _type, name());
+			_event_click[name()].clear();
+			_event_yes_no[name()].clear();
+			_event_cancel[name()].clear();
 			_created = true;
 		}
 	);
@@ -66,10 +66,10 @@ void SecondaryWindow::setType(Type type)
 				return;
 
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_set_type({ _name, static_cast<u8>(type) }).ToBoolean() == true, "Couldn't setType a %s named [%s]", _type, _name);
-			_event_click[_name].clear();
-			_event_yes_no[_name].clear();
-			_event_cancel[_name].clear();
+			ASSERT_ARGS(_set_type({ name(), static_cast<u8>(type) }).ToBoolean() == true, "Couldn't setType a %s named [%s]", _type, name());
+			_event_click[name()].clear();
+			_event_yes_no[name()].clear();
+			_event_cancel[name()].clear();
 		}
 	);
 }
@@ -84,7 +84,7 @@ void SecondaryWindow::setDescription(Localization::Str description)
 				return;
 
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_set_description({ _name, _description }).ToBoolean() == true, "Couldn't setDescription a %s named [%s]", _type, _name);
+			ASSERT_ARGS(_set_description({ name(), _description }).ToBoolean() == true, "Couldn't setDescription a %s named [%s]", _type, name());
 		}
 	);
 }
@@ -97,14 +97,14 @@ void SecondaryWindow::addEventOk(std::function<bool(JSArgs)>&& callback)
 			if (!_created)
 				return;
 
-			_event_click[_name].push_back(callback);
+			_event_click[name()].push_back(callback);
 		}
 	);
 }
 
 void SecondaryWindow::clearEventOk()
 {
-	_event_click[_name].clear();
+	_event_click[name()].clear();
 }
 
 void SecondaryWindow::addEventYesNo(std::function<bool(JSArgs)>&& callback)
@@ -115,14 +115,14 @@ void SecondaryWindow::addEventYesNo(std::function<bool(JSArgs)>&& callback)
 			if (!_created)
 				return;
 
-			_event_yes_no[_name].push_back(callback);
+			_event_yes_no[name()].push_back(callback);
 		}
 	);
 }
 
 void SecondaryWindow::clearEventYesNo()
 {
-	_event_yes_no[_name].clear();
+	_event_yes_no[name()].clear();
 }
 
 void SecondaryWindow::addEventCancel(std::function<bool(JSArgs)>&& callback)
@@ -133,14 +133,14 @@ void SecondaryWindow::addEventCancel(std::function<bool(JSArgs)>&& callback)
 			if (!_created)
 				return;
 
-			_event_cancel[_name].push_back(callback);
+			_event_cancel[name()].push_back(callback);
 		}
 	);
 }
 
 void SecondaryWindow::clearEventCancel()
 {
-	_event_cancel[_name].clear();
+	_event_cancel[name()].clear();
 }
 
 void SecondaryWindow::show()
@@ -152,7 +152,7 @@ void SecondaryWindow::show()
 				return;
 
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_show({ _name }).ToBoolean() == true, "Couldn't show a %s named [%s]", _type, _name);
+			ASSERT_ARGS(_show({ name() }).ToBoolean() == true, "Couldn't show a %s named [%s]", _type, name());
 		}
 	);
 }
@@ -166,7 +166,7 @@ void SecondaryWindow::hide()
 				return;
 
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_hide({ _name }).ToBoolean() == true, "Couldn't hide a %s named [%s]", _type, _name);
+			ASSERT_ARGS(_hide({ name() }).ToBoolean() == true, "Couldn't hide a %s named [%s]", _type, name());
 		}
 	);
 }

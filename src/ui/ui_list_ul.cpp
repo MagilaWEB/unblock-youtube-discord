@@ -39,7 +39,7 @@ void ListUl::createLi(Localization::Str text)
 		[this, _text]
 		{
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_create_li({ _name, _text }).ToBoolean() == true, "Couldn't create_li a %s named [%s]", _type, _name);
+			ASSERT_ARGS(_create_li({ name(), _text }).ToBoolean() == true, "Couldn't create_li a %s named [%s]", _type, name());
 		}
 	);
 }
@@ -55,10 +55,10 @@ void ListUl::createLiSuccess(Localization::Str text, bool state)
 		[this, _text, state]
 		{
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_create_li_success({ _name, _text, state }).ToBoolean() == true,
+			ASSERT_ARGS(_create_li_success({ name(), _text, state }).ToBoolean() == true,
 				"Couldn't create_li_success a %s named [%s]",
 				_type,
-				_name
+				name()
 			);
 		}
 	);
@@ -72,7 +72,7 @@ void ListUl::addClass(pcstr name_class)
 			if (!_created)
 				return;
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_add_class({ _name, name_class }).ToBoolean() == true, "Couldn't addClass a %s named [%s]", _type, _name);
+			ASSERT_ARGS(_add_class({ name(), name_class }).ToBoolean() == true, "Couldn't addClass a %s named [%s]", _type, name());
 		}
 	);
 }
@@ -85,7 +85,7 @@ void ListUl::removeClass(pcstr name_class)
 			if (!_created)
 				return;
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_remove_class({ _name, name_class }).ToBoolean() == true, "Couldn't removeClass a %s named [%s]", _type, _name);
+			ASSERT_ARGS(_remove_class({ name(), name_class }).ToBoolean() == true, "Couldn't removeClass a %s named [%s]", _type, name());
 		}
 	);
 }
@@ -98,7 +98,7 @@ void ListUl::clear()
 			if (!_created)
 				return;
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_clear_li({ _name }).ToBoolean() == true, "Couldn't clear a %s named [%s]", _type, _name);
+			ASSERT_ARGS(_clear_li({ name() }).ToBoolean() == true, "Couldn't clear a %s named [%s]", _type, name());
 		}
 	);
 }

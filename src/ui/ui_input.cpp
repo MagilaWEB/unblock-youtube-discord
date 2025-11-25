@@ -39,12 +39,12 @@ void Input::create(pcstr selector, Types type, JSValue value, Localization::Str 
 				{
 					RefPtr<JSContext> lock(_view->LockJSContext());
 					ASSERT_ARGS(
-						_create({ selector, _name, str, value, _title, _description, first }).ToBoolean() == true,
+						_create({ selector, name(), str, value, _title, _description, first }).ToBoolean() == true,
 						"Couldn't create a %s named [%s]",
 						_type,
-						_name
+						name()
 					);
-					_event_click[_name].clear();
+					_event_click[name()].clear();
 					_created = true;
 					break;
 				}
@@ -60,7 +60,7 @@ void Input::addEventSubmit(std::function<bool(JSArgs)>&& callback)
 		{
 			if (!_created)
 				return;
-			_event_click[_name].push_back(callback);
+			_event_click[name()].push_back(callback);
 		}
 	);
 }
@@ -68,7 +68,7 @@ void Input::addEventSubmit(std::function<bool(JSArgs)>&& callback)
 JSValue Input::getValue()
 {
 	RefPtr<JSContext> lock(_view->LockJSContext());
-	return _get_value({ _name });
+	return _get_value({ name() });
 }
 
 void Input::setValue(JSValue value)
@@ -79,7 +79,7 @@ void Input::setValue(JSValue value)
 			if (!_created)
 				return;
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_set_value({ _name, value }).ToBoolean() == true, "Couldn't setValue a %s named [%s]", _type, _name);
+			ASSERT_ARGS(_set_value({ name(), value }).ToBoolean() == true, "Couldn't setValue a %s named [%s]", _type, name());
 		}
 	);
 }

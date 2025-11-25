@@ -31,6 +31,9 @@ protected:
 	SELECT_LIST(_unblock_select_config);
 	SELECT_LIST(_unblock_select_fake_bin);
 
+	// Setting Unblock list enable services
+	std::map<std::string, std::shared_ptr<CheckBox>> _unblock_list_enable_services{};
+
 	// Setting Proxy
 	CHECK_BOX(_proxy_enable);
 	INPUT(_proxy_port);

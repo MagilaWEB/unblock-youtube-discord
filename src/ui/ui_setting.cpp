@@ -100,8 +100,62 @@ void Ui::_setting()
 		}
 	};
 
-	auto createManual = [this, createSelect]
+	auto createElements = [this, createSelect]
 	{
+		// Unblock enable services
+		_unblock->clearOptionalStrategies();
+
+		for (auto& [name, check_box] : _unblock_list_enable_services)
+		{
+			check_box->remove();
+			if (_unblock_enable->getState())
+			{
+				check_box->create(
+					"#setting section .unblock",
+					std::string{ "str_unblock_enable_" + name + "_title" }.c_str(),
+					Localization::Str{ std::string{ "str_unblock_enable_" + name + "_description" }.c_str() }
+				);
+
+				std::string setting_name{ "enable_" + name };
+
+				auto result = _file_user_setting->parameterSection<bool>("UNBLOCK", setting_name.c_str());
+				if (result)
+				{
+					if (result.value())
+						_unblock->addOptionalStrategies(name);
+
+					check_box->setState(result.value());
+				}
+				else
+				{
+					auto state = _file_service_list->parameterSection<bool>("LIST", name.c_str());
+					if (state)
+					{
+						if (state.value())
+							_unblock->addOptionalStrategies(name);
+
+						check_box->setState(state.value());
+					}
+					else
+						Debug::warning(state.error().c_str());
+				}
+
+				check_box->addEventClick(
+					[this, setting_name, name](JSArgs args)
+					{
+						_file_user_setting
+							->writeSectionParameter("UNBLOCK", setting_name.c_str(), static_cast<String>(args[0].ToString()).utf8().data());
+
+						if (args[0].ToBoolean())
+							_unblock->addOptionalStrategies(name);
+						else
+							_unblock->removeOptionalStrategies(name);
+						return false;
+					}
+				);
+			}
+		}
+
 		_unblock_filtering_top_level_domains->remove();
 
 		if (_unblock_enable->getState())
@@ -156,14 +210,14 @@ void Ui::_setting()
 		auto result = _file_user_setting->parameterSection<bool>("UNBLOCK", "enable");
 		_unblock_enable->setState(result ? result.value() : true);
 
-		createManual();
+		createElements();
 
 		_unblock_enable->addEventClick(
-			[this, createManual](JSArgs args)
+			[this, createElements](JSArgs args)
 			{
 				_file_user_setting->writeSectionParameter("UNBLOCK", "enable", static_cast<String>(args[0].ToString()).utf8().data());
-				
-				createManual();
+
+				createElements();
 				_startService();
 				_testing();
 				return false;

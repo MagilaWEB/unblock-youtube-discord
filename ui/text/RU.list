@@ -80,16 +80,16 @@ str_setting_unblock_title=Unblock (winws/GoodBayDPI)
 str_setting_proxy_title=ProxyDPI
 
 // Setting common show console
-str_checkbox_show_console_title=Открывать окно консоли после запуска приложения.
+str_checkbox_show_console_title=Открывать окно консоли после запуска приложения
 str_checkbox_show_console_description=Функция открывает окно консоли для отслеживания системных сообщений приложения.
 (Параметр применяется только после перезапуска приложения).
 
 // Setting common testing on startup
-str_checkbox_testing_startup_title=Запускать тестирование доменов при запуске.
+str_checkbox_testing_startup_title=Запускать тестирование доменов при запуске
 str_checkbox_testing_startup_description=Если данный параметр включен, тогда при запуске приложения будет запущено тестирование доменов автоматически.
 
 // Setting common Accurate testing
-str_checkbox_accurate_testing_title=Запускать тестирование с повышенной точностью.
+str_checkbox_accurate_testing_title=Запускать тестирование с повышенной точностью
 str_checkbox_accurate_testing_description=Если данный параметр включен,
 тогда тестирование доменов производится с повешенной точностью, это подойдет для тех у кого не стабильное интернет соединение
 (Данный режим многократно увеличивает длительность тестирования).
@@ -107,6 +107,20 @@ str_unblock_enable_title=Использовать unblock сервисы (winws/
 str_unblock_enable_description=Параметр отвечающий за использование основный unblock сервисов.
 (Это основной режим и его не возможно отключить если выключен proxy режим, можно использовать совместно или одно из unblock или proxy).
 
+// Setting checkbox unblock enable services
+str_unblock_enable_discord_title=Обход блокировки discord
+str_unblock_enable_discord_description=Опция включает\отключает обход блокировки для discord, если опция отключена, тестирование доменов discord будет так же отключена,
+фильтры трафика для discord тоже будут отключены.
+str_unblock_enable_x.com_title=Обход блокировки сотсети x.com
+str_unblock_enable_x.com_description=Опция включает\отключает обход блокировки для сотсети x.com, если опция отключена, тестирование доменов x.com будет так же отключена,
+фильтры трафика для x.com тоже будут отключены.
+str_unblock_enable_youtube_title=Обход блокировки youtube
+str_unblock_enable_youtube_description=Опция включает\отключает обход блокировки для youtube, если опция отключена, тестирование доменов youtube будет так же отключена,
+фильтры трафика для youtube тоже будут отключены.
+str_unblock_enable_game_mod_title=Обход блокировок онлайн игр
+str_unblock_enable_game_mod_description=Опция включает\отключает обход блокировки для онлайновых игр, данный режим достаточно груб и может пагубно влиять на сетевой трафик.
+Рекомендуется использовать только если в онлайновой игре действительно есть проблемы с доступности к серверу.
+
 // Setting checkbox unblock enable top_level_domains
 str_unblock_filtering_top_level_domains_title=Фильтровать трафик по доменам высшего уровня
 str_unblock_filtering_top_level_domains_description=Параметр отвечающий за фильтрования трафика по доменам высшего уровня (Например .com, .ru, .net и тд).
@@ -119,11 +133,11 @@ str_manual_description=Данный параметр позволяет вклю
 // Setting manual config
 str_select_config_title=Выбор конфигурации.
 str_select_config_description=Установленная конфигурация будет сохранена в настройки.
-str_unblock_select_fake_bin_title=Выбор маскировки ClientHello.
+str_unblock_select_fake_bin_title=Выбор маскировки ClientHello
 str_unblock_select_fake_bin_description=Данная настройка позволяет выбрать тип маскировки ClientHello, конфигурации имеет более широкий спектр возможностей благодаря данному параметру.
 
 // Setting checkbox proxy enable
-str_checkbox_proxy_enable_title=Сервис локального proxy сервера.
+str_checkbox_proxy_enable_title=Сервис локального proxy сервера
 str_checkbox_proxy_enable_description=Когда включен данный сервис, при запуске служб создаётся локальный proxy сервер со своим списком конфигураций для обхода блокировок посредством DPI.
 Данный режим позволяет подключать различные приложения по протоколу SOCKS4 и SOCKS5 (IP и PORT для подключения укажите в настройках).
 

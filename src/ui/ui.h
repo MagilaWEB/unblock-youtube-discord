@@ -30,6 +30,8 @@ class UI_API Ui final : public UiElements,
 						private ViewListener
 
 {
+	Ptr<File>	 _file_service_list;
+
 	Ptr<Unblock> _unblock;
 
 	IEngineAPI*		_engine;

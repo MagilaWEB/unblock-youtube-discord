@@ -3,33 +3,22 @@
 
 DomainTesting::DomainTesting(bool enable_proxy) : _proxy(enable_proxy)
 {
-	_files_test_domain->open((Core::get().configsPath() / "service"), ".config", true);
-
-	_file_base_test_domain->open((Core::get().configsPath() / "domain_test_base"), ".list", true);
 }
 
 DomainTesting::~DomainTesting()
 {
 	_is_testing = false;
 
-	for (auto& curl_domain : _list_domain)
-		if (curl_domain.curl)
-			curl_easy_cleanup(curl_domain.curl);
-
-	_list_domain.clear();
+	_clearURLS();
 }
 
 void DomainTesting::loadDomain(bool video)
 {
-	for (auto& curl_domain : _list_domain)
-		if (curl_domain.curl)
-			curl_easy_cleanup(curl_domain.curl);
+	_clearURLS();
 
-	_list_domain.clear();
-
-	if (video)
+	if (video || _proxy)
 	{
-		_loadFile("domain_video");
+		_loadFile(video ? "domain_video" : "all");
 
 		_file_test_domain->forLine(
 			[this](std::string str)
@@ -41,32 +30,11 @@ void DomainTesting::loadDomain(bool video)
 				return false;
 			}
 		);
+
+		return;
 	}
-	else
-	{
-		_files_test_domain->forLine(
-			[this](std::string str_line)
-			{
-				if (str_line.empty())
-					return false;
 
-				_loadFile(str_line);
-
-				_file_test_domain->forLine(
-					[this](std::string str)
-					{
-						if (str.empty())
-							return false;
-
-						_list_domain.emplace_back(CurlDomain{ curl_easy_init(), str });
-						return false;
-					}
-				);
-
-				return false;
-			}
-		);
-	}
+	_genericURLS();
 }
 
 void DomainTesting::changeProxy(std::string ip, u32 port)
@@ -87,22 +55,9 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(pcs
 	{
 		// BASE TESTING!!!
 
-		for (auto& curl_domain : _list_domain)
-			if (curl_domain.curl)
-				curl_easy_cleanup(curl_domain.curl);
+		_clearURLS();
 
-		_list_domain.clear();
-
-		_file_base_test_domain->forLine(
-			[this](std::string str)
-			{
-				if (str.empty())
-					return false;
-
-				_list_domain.emplace_back(CurlDomain{ curl_easy_init(), str });
-				return false;
-			}
-		);
+		_genericURLS("base");
 
 		bool state{ false };
 		std::for_each(
@@ -132,7 +87,7 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(pcs
 
 		_domain_error = _domain_ok = 0;
 
-		InputConsole::textOk("Базовое тетсирование успешно, запуск полного тетсирования...");
+		InputConsole::textOk("Базовое тестирование успешно, запуск полного тестирование...");
 	}
 
 	loadDomain(test_video);
@@ -185,6 +140,28 @@ void DomainTesting::changeMaxWaitAccurateTesting(u32 second)
 {
 	ASSERT_ARGS(second > 0, "The connection timeout cannot be equal to 0! This will provoke endless waiting.");
 	_max_wait_accurate_testing = second;
+}
+
+void DomainTesting::addOptionalStrategies(std::string name)
+{
+	auto it = std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), name);
+	if (it != _section_opt_service_names.end())
+	{
+		Debug::warning("%s It has already been added!", name.c_str());
+		return;
+	}
+
+	_section_opt_service_names.emplace_back(name);
+}
+
+void DomainTesting::removeOptionalStrategies(std::string name)
+{
+	std::erase(_section_opt_service_names, name);
+}
+
+void DomainTesting::clearOptionalStrategies()
+{
+	_section_opt_service_names.clear();
 }
 
 void DomainTesting::cancelTesting()
@@ -400,5 +377,51 @@ bool DomainTesting::isConnectionUrl(const CurlDomain& domain)
 
 void DomainTesting::_loadFile(std::filesystem::path file)
 {
-	_file_test_domain->open((Core::get().configsPath() / file), ".list", true);
+	_file_test_domain->open((Core::get().configsPath() / "domain_test" / file), ".list", true);
+}
+
+void DomainTesting::_genericURLS(std::string base_name)
+{
+	if (_section_opt_service_names.empty())
+	{
+		if (base_name.empty())
+			base_name = "all";
+
+		_loadFile(base_name);
+		_appendURLS();
+	}
+	else
+	{
+		if (!base_name.empty())
+			base_name += "_";
+
+		for (auto& name : _section_opt_service_names)
+		{
+			_loadFile(base_name + name);
+			_appendURLS();
+		}
+	}
+}
+
+void DomainTesting::_appendURLS()
+{
+	_file_test_domain->forLine(
+		[this](std::string str)
+		{
+			if (str.empty())
+				return false;
+
+			_list_domain.emplace_back(CurlDomain{ curl_easy_init(), str });
+			return false;
+		}
+	);
+}
+
+void DomainTesting::_clearURLS()
+{
+	for (auto& curl_domain : _list_domain)
+		if (curl_domain.curl)
+			curl_easy_cleanup(curl_domain.curl);
+
+	_list_domain.clear();
 }

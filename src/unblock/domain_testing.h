@@ -12,18 +12,17 @@ class UNBLOCK_API DomainTesting final
 		std::string url{};
 	};
 
-	Ptr<File>			  _files_test_domain;
-	Ptr<File>			  _file_test_domain;
-	Ptr<File>			  _file_base_test_domain;
-	std::list<CurlDomain> _list_domain{};
+	Ptr<File>				 _file_test_domain;
+	std::list<CurlDomain>	 _list_domain{};
+	std::list<std::string>	 _section_opt_service_names{};
 
-	std::atomic_uint   _domain_ok{ 0 };
-	std::atomic_uint   _domain_error{ 0 };
-	std::atomic_uint   _max_wait_testing{ 5U };
-	std::atomic_uint   _max_wait_accurate_testing{ 10U };
-	std::atomic_bool   _is_testing{ false };
-	std::atomic_bool   _cancel_testing{ false };
-	std::atomic_bool   _accurate_test{ false };
+	std::atomic_uint _domain_ok{ 0 };
+	std::atomic_uint _domain_error{ 0 };
+	std::atomic_uint _max_wait_testing{ 5U };
+	std::atomic_uint _max_wait_accurate_testing{ 10U };
+	std::atomic_bool _is_testing{ false };
+	std::atomic_bool _cancel_testing{ false };
+	std::atomic_bool _accurate_test{ false };
 
 	std::string _proxyIP{ "127.0.0.1" };
 	u32			_proxyPORT{ 1'080 };
@@ -41,6 +40,10 @@ public:
 	void changeMaxWaitTesting(u32 second);
 	void changeMaxWaitAccurateTesting(u32 second);
 
+	void addOptionalStrategies(std::string name);
+	void removeOptionalStrategies(std::string name);
+	void clearOptionalStrategies();
+
 	void cancelTesting();
 
 	inline bool isTesting() { return _is_testing; }
@@ -56,4 +59,7 @@ public:
 
 private:
 	void _loadFile(std::filesystem::path file);
+	void _genericURLS(std::string base_name = "");
+	void _appendURLS();
+	void _clearURLS();
 };

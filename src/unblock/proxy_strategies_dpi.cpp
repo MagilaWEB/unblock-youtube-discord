@@ -9,7 +9,7 @@ ProxyStrategiesDPI::ProxyStrategiesDPI()
 
 std::vector<std::string> ProxyStrategiesDPI::getStrategy() const
 {
-	return _strategy_dpi.at(0);
+	return _strategy_dpi[0];
 }
 
 void ProxyStrategiesDPI::changeProxyData(const ProxyData& proxy_data)

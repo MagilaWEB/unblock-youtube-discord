@@ -5,6 +5,10 @@ CheckBox::CheckBox(pcstr name) : BaseElement(name)
 	_type = "check_box";
 }
 
+CheckBox::CheckBox(std::string name) : BaseElement(name.c_str())
+{
+}
+
 void CheckBox::initialize()
 {
 	auto global_js = JSGlobalObject();
@@ -37,12 +41,12 @@ void CheckBox::create(pcstr selector, Localization::Str title, Localization::Str
 		{
 			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(
-				_create({ selector, _name, _title, _description, first }).ToBoolean() == true,
+				_create({ selector, name(), _title, _description, first }).ToBoolean() == true,
 				"Couldn't create a %s named [%s]",
 				_type,
-				_name
+				name()
 			);
-			_event_click[_name].clear();
+			_event_click[name()].clear();
 			_created = true;
 		}
 	);
@@ -56,7 +60,7 @@ void CheckBox::setState(bool state)
 			if (!_created)
 				return;
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			_set_state({ _name, state });
+			_set_state({ name(), state });
 		}
 	);
 }
@@ -65,5 +69,5 @@ bool CheckBox::getState()
 {
 
 	RefPtr<JSContext> lock(_view->LockJSContext());
-	return _get_state({ _name }).ToBoolean();
+	return _get_state({ name() }).ToBoolean();
 }

@@ -17,7 +17,7 @@ void BaseElement::runCode(const std::function<void()>& run_code)
 }
 
 BaseElement::BaseElement(pcstr name) : _name(name), _type("base_element")
-{
+	{
 	for (const auto& [_name_element, element] : _all_element)
 	{
 		ASSERT_ARGS(
@@ -56,8 +56,8 @@ void BaseElement::create(pcstr selector, Localization::Str title, bool first)
 		[this, selector, _title, first]
 		{
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_create({ selector, _name, _title, first }).ToBoolean() == true, "Couldn't create a %s named [%s]", _type, _name);
-			_event_click[_name].clear();
+			ASSERT_ARGS(_create({ selector, name(), _title, first }).ToBoolean() == true, "Couldn't create a %s named [%s]", _type, _name);
+			_event_click[name()].clear();
 			_created = true;
 		}
 	);
@@ -72,8 +72,8 @@ void BaseElement::remove()
 				return;
 
 			_created = false;
-			ASSERT_ARGS(_remove({ _name }).ToBoolean() == true, "Couldn't remove a %s named [%s]", _type, _name);
-			_event_click[_name].clear();
+			ASSERT_ARGS(_remove({ name() }).ToBoolean() == true, "Couldn't remove a %s named [%s]", _type, name());
+			_event_click[name()].clear();
 		}
 	);
 }
@@ -93,7 +93,7 @@ void BaseElement::setTitle(Localization::Str title)
 				return;
 
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_set_title({ _name, _title }).ToBoolean() == true, "Couldn't setTitle a %s named [%s]", _type, _name);
+			ASSERT_ARGS(_set_title({ name(), _title }).ToBoolean() == true, "Couldn't setTitle a %s named [%s]", _type, name());
 		}
 	);
 }
@@ -105,11 +105,11 @@ void BaseElement::addEventClick(std::function<bool(JSArgs)>&& callback)
 		{
 			if (!_created)
 				return;
-			auto& vector_event = _event_click[_name];
+			auto& vector_event = _event_click[name()];
 			if (vector_event.empty())
 			{
 				RefPtr<JSContext> lock(_view->LockJSContext());
-				_add_event_click({ _name });
+				_add_event_click({ name() });
 			}
 
 			vector_event.push_back(callback);

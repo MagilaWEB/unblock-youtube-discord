@@ -60,9 +60,14 @@ void File::_forLineSection(pcstr section, std::function<bool(ItParameters&)> fn)
 			return false;
 		};
 
-		const bool presumably_section = std::regex_match(str, r_section_name);
 
-		if (option_it.entered_section == false && presumably_section && str.contains(section))
+		std::string name_section{ "[]" };
+		name_section.insert(1, section);
+
+		const bool presumably_section = std::regex_match(str, r_section_name);
+		const bool is_str_name		  = str.contains(name_section);
+
+		if (option_it.entered_section == false && presumably_section && is_str_name)
 		{
 			option_it.entered_section = true;
 			if (iterator())
@@ -83,7 +88,7 @@ void File::_forLineSection(pcstr section, std::function<bool(ItParameters&)> fn)
 			continue;
 		}
 
-		if (option_it.entered_section && presumably_section && !str.contains(section))
+		if (option_it.entered_section && presumably_section && !is_str_name)
 		{
 			option_it.ran_parameter = false;
 			option_it.section_end	= true;
@@ -122,11 +127,14 @@ void File::forLineSection(pcstr section, std::function<bool(std::string str)> fn
 		section,
 		[fn](const ItParameters& it)
 		{
-			if (it.ran_parameter && !it.section_end)
+			if (it.section_end)
+				return true;
+
+			if(it.ran_parameter)
 				if (fn(*it.iterator))
 					return true;
 
-			return it.section_end;
+			return false;
 		}
 	);
 }
@@ -399,7 +407,7 @@ void File::_removeEmptyLine()
 		_line_string,
 		[&front, &empty_line](const std::string& str)
 		{
-			if ((front && str.empty()) || (front && str.contains("\n")))
+			if (front && (str.empty() || std::regex_match(str, std::regex{ "\n" })))
 				return true;
 			else if (front)
 				front = false;
