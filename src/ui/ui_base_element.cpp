@@ -23,7 +23,7 @@ BaseElement::BaseElement(pcstr name) : _name(name), _type("base_element")
 		ASSERT_ARGS(
 			!std::string{ _name_element }.contains(_name),
 			"You can't create different independent elements with the same name, it will break the logic of the name:[%s] is already occupied!",
-			_name
+			this->name()
 		);
 	}
 
@@ -56,7 +56,7 @@ void BaseElement::create(pcstr selector, Localization::Str title, bool first)
 		[this, selector, _title, first]
 		{
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_create({ selector, name(), _title, first }).ToBoolean() == true, "Couldn't create a %s named [%s]", _type, _name);
+			ASSERT_ARGS(_create({ selector, name(), _title, first }).ToBoolean() == true, "Couldn't create a %s named [%s]", _type, name());
 			_event_click[name()].clear();
 			_created = true;
 		}
