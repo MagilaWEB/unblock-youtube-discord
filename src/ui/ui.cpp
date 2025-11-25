@@ -112,8 +112,8 @@ void Ui::OnWindowObjectReady(View* caller, uint64_t /*frame_id*/, bool /*is_main
 	JSObject global		  = JSGlobalObject();
 	global["RUN_CPP"]	  = JSValue(true);
 	global["VERSION_APP"] = JSValue(VERSION_STR);
-	global["CPPTaskRun"]  = BindJSCallback(&Ui::runTask);
-	global["CPPLangText"] = BindJSCallbackWithRetval(&Ui::langText);
+	global["CPPTaskRun"]  = static_cast<JSCallback>(std::bind(&Ui::runTask, this, std::placeholders::_1, std::placeholders::_2));
+	global["CPPLangText"] = static_cast<JSCallbackWithRetval>(std::bind(&Ui::langText, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 void Ui::OnDOMReady(View* caller, uint64_t /*frame_id*/, bool /*is_main_frame*/, const String& /*url*/)
