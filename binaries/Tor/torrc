@@ -1,0 +1,10 @@
+ExcludeNodes {ru}, {by}, {ua}, {kz}
+StrictNodes 1
+ConnectionPadding 1
+GeoIPExcludeUnknown 1
+DNSPort 53
+NewCircuitPeriod 300
+
+Log notice file tor.log
+GeoIPFile "Tor/geoip"
+GeoIPv6File "Tor/geoip6"
