@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "ui_base.h"
 
 #include "../unblock/unblock.h"
 
@@ -10,13 +11,13 @@ void Ui::_setting()
 		_show_console
 			->create("#setting section .common", "str_checkbox_show_console_title", Localization::Str{ "str_checkbox_show_console_description" });
 
-		auto result = _file_user_setting->parameterSection<bool>("SUSTEM", "show_console");
+		auto result = _ui_base->userSetting()->parameterSection<bool>("SUSTEM", "show_console");
 		_show_console->setState(result ? result.value() : false);
 
 		_show_console->addEventClick(
 			[this](JSArgs args)
 			{
-				_file_user_setting->writeSectionParameter("SUSTEM", "show_console", static_cast<String>(args[0].ToString()).utf8().data());
+				_ui_base->userSetting()->writeSectionParameter("SUSTEM", "show_console", static_cast<String>(args[0].ToString()).utf8().data());
 				return false;
 			}
 		);
@@ -42,10 +43,10 @@ void Ui::_setting()
 
 			auto set_default_select = [this](Ptr<SelectList>& select, pcstr name)
 			{
-				if (auto config = _file_user_setting->parameterSection<std::string>("REMEMBER_CONFIGURATION", name))
+				if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", name))
 					select->setSelectedOptionValue(config.value().c_str());
 				else
-					_file_user_setting->writeSectionParameter(
+					_ui_base->userSetting()->writeSectionParameter(
 						"REMEMBER_CONFIGURATION",
 						name,
 						static_cast<String>(select->getSelectedOptionValue().ToString()).utf8().data()
@@ -54,9 +55,10 @@ void Ui::_setting()
 
 			auto set_new_value = [this](Ptr<SelectList>& select, pcstr set_val, pcstr check_val, JSArgs args)
 			{
-				_file_user_setting->writeSectionParameter("REMEMBER_CONFIGURATION", set_val, static_cast<String>(args[1].ToString()).utf8().data());
+				_ui_base->userSetting()
+					->writeSectionParameter("REMEMBER_CONFIGURATION", set_val, static_cast<String>(args[1].ToString()).utf8().data());
 
-				_file_user_setting->writeSectionParameter(
+				_ui_base->userSetting()->writeSectionParameter(
 					"REMEMBER_CONFIGURATION",
 					check_val,
 					static_cast<String>(select->getSelectedOptionValue().ToString()).utf8().data()
@@ -118,7 +120,7 @@ void Ui::_setting()
 
 				std::string setting_name{ "enable_" + name };
 
-				auto result = _file_user_setting->parameterSection<bool>("UNBLOCK", setting_name.c_str());
+				auto result = _ui_base->userSetting()->parameterSection<bool>("UNBLOCK", setting_name.c_str());
 				if (result)
 				{
 					if (result.value())
@@ -143,7 +145,7 @@ void Ui::_setting()
 				check_box->addEventClick(
 					[this, setting_name, name](JSArgs args)
 					{
-						_file_user_setting
+						_ui_base->userSetting()
 							->writeSectionParameter("UNBLOCK", setting_name.c_str(), static_cast<String>(args[0].ToString()).utf8().data());
 
 						if (args[0].ToBoolean())
@@ -166,7 +168,7 @@ void Ui::_setting()
 				Localization::Str{ "str_unblock_filtering_top_level_domains_description" }
 			);
 
-			auto result = _file_user_setting->parameterSection<bool>("UNBLOCK", "filtering_top_level_domains");
+			auto result = _ui_base->userSetting()->parameterSection<bool>("UNBLOCK", "filtering_top_level_domains");
 			_unblock_filtering_top_level_domains->setState(result ? result.value() : false);
 
 			_unblock->changeFilteringTopLevelDomains(_unblock_filtering_top_level_domains->getState());
@@ -174,7 +176,7 @@ void Ui::_setting()
 			_unblock_filtering_top_level_domains->addEventClick(
 				[this](JSArgs args)
 				{
-					_file_user_setting
+					_ui_base->userSetting()
 						->writeSectionParameter("UNBLOCK", "filtering_top_level_domains", static_cast<String>(args[0].ToString()).utf8().data());
 					_unblock->changeFilteringTopLevelDomains(args[0].ToBoolean());
 					return false;
@@ -187,13 +189,13 @@ void Ui::_setting()
 		{
 			_unblock_manual->create("#setting section .unblock", "str_manual_title", Localization::Str{ "str_manual_description" });
 
-			auto result = _file_user_setting->parameterSection<bool>("UNBLOCK", "manual");
+			auto result = _ui_base->userSetting()->parameterSection<bool>("UNBLOCK", "manual");
 			_unblock_manual->setState(result ? result.value() : false);
 
 			_unblock_manual->addEventClick(
 				[this, createSelect](JSArgs args)
 				{
-					_file_user_setting->writeSectionParameter("UNBLOCK", "manual", static_cast<String>(args[0].ToString()).utf8().data());
+					_ui_base->userSetting()->writeSectionParameter("UNBLOCK", "manual", static_cast<String>(args[0].ToString()).utf8().data());
 					createSelect();
 					return false;
 				}
@@ -207,7 +209,7 @@ void Ui::_setting()
 	{
 		_unblock_enable->create("#setting section .unblock", "str_unblock_enable_title", Localization::Str{ "str_unblock_enable_description" });
 
-		auto result = _file_user_setting->parameterSection<bool>("UNBLOCK", "enable");
+		auto result = _ui_base->userSetting()->parameterSection<bool>("UNBLOCK", "enable");
 		_unblock_enable->setState(result ? result.value() : true);
 
 		createElements();
@@ -215,10 +217,10 @@ void Ui::_setting()
 		_unblock_enable->addEventClick(
 			[this, createElements](JSArgs args)
 			{
-				_file_user_setting->writeSectionParameter("UNBLOCK", "enable", static_cast<String>(args[0].ToString()).utf8().data());
+				_ui_base->userSetting()->writeSectionParameter("UNBLOCK", "enable", static_cast<String>(args[0].ToString()).utf8().data());
 
 				createElements();
-				_startService();
+				_startUnblock();
 				_testing();
 				return false;
 			}
@@ -233,13 +235,13 @@ void Ui::_setting()
 			Localization::Str{ "str_checkbox_testing_startup_description" }
 		);
 
-		auto result = _file_user_setting->parameterSection<bool>("TESTING", "startup");
+		auto result = _ui_base->userSetting()->parameterSection<bool>("TESTING", "startup");
 		_testing_domains_startup->setState(result ? result.value() : true);
 
 		_testing_domains_startup->addEventClick(
 			[this](JSArgs args)
 			{
-				_file_user_setting->writeSectionParameter("TESTING", "startup", static_cast<String>(args[0].ToString()).utf8().data());
+				_ui_base->userSetting()->writeSectionParameter("TESTING", "startup", static_cast<String>(args[0].ToString()).utf8().data());
 				return false;
 			}
 		);
@@ -261,7 +263,7 @@ void Ui::_setting()
 				"str_input_max_wait_accurate_testing_description"
 			);
 
-			auto result = _file_user_setting->parameterSection<u32>("TESTING", "max_time_wait_accurate_testing");
+			auto result = _ui_base->userSetting()->parameterSection<u32>("TESTING", "max_time_wait_accurate_testing");
 			if (result)
 				_max_time_wait_accurate_testing->setValue(result.value());
 
@@ -270,7 +272,7 @@ void Ui::_setting()
 			_max_time_wait_accurate_testing->addEventSubmit(
 				[this](JSArgs args)
 				{
-					_file_user_setting
+					_ui_base->userSetting()
 						->writeSectionParameter("TESTING", "max_time_wait_accurate_testing", static_cast<String>(args[0].ToString()).utf8().data());
 					_unblock->maxWaitAccurateTesting(static_cast<u32>(args[0].ToInteger()));
 					return false;
@@ -287,7 +289,7 @@ void Ui::_setting()
 				"str_input_max_wait_testing_description"
 			);
 
-			auto result = _file_user_setting->parameterSection<u32>("TESTING", "max_time_wait_testing");
+			auto result = _ui_base->userSetting()->parameterSection<u32>("TESTING", "max_time_wait_testing");
 			if (result)
 				_max_time_wait_testing->setValue(result.value());
 
@@ -296,7 +298,7 @@ void Ui::_setting()
 			_max_time_wait_testing->addEventSubmit(
 				[this](JSArgs args)
 				{
-					_file_user_setting
+					_ui_base->userSetting()
 						->writeSectionParameter("TESTING", "max_time_wait_testing", static_cast<String>(args[0].ToString()).utf8().data());
 					_unblock->maxWaitTesting(static_cast<u32>(args[0].ToInteger()));
 					return false;
@@ -313,7 +315,7 @@ void Ui::_setting()
 			Localization::Str{ "str_checkbox_accurate_testing_description" }
 		);
 
-		auto result = _file_user_setting->parameterSection<bool>("TESTING", "accurate");
+		auto result = _ui_base->userSetting()->parameterSection<bool>("TESTING", "accurate");
 		_accurate_testing->setState(result ? result.value() : false);
 
 		_unblock->accurateTesting(_accurate_testing->getState());
@@ -323,7 +325,7 @@ void Ui::_setting()
 		_accurate_testing->addEventClick(
 			[this, create_time_wait_testing](JSArgs args)
 			{
-				_file_user_setting->writeSectionParameter("TESTING", "accurate", static_cast<String>(args[0].ToString()).utf8().data());
+				_ui_base->userSetting()->writeSectionParameter("TESTING", "accurate", static_cast<String>(args[0].ToString()).utf8().data());
 				_unblock->accurateTesting(args[0].ToBoolean());
 				create_time_wait_testing();
 				return false;
@@ -336,7 +338,7 @@ void Ui::_setting()
 		_proxy_enable
 			->create("#setting section .proxy", "str_checkbox_proxy_enable_title", Localization::Str{ "str_checkbox_proxy_enable_description" });
 
-		auto result = _file_user_setting->parameterSection<bool>("PROXY", "enable");
+		auto result = _ui_base->userSetting()->parameterSection<bool>("PROXY", "enable");
 		_proxy_enable->setState(result ? result.value() : false);
 
 		auto createSelectProxy = [this]
@@ -355,10 +357,10 @@ void Ui::_setting()
 					_proxy_select_config->createOption(i, file_name.c_str());
 				}
 
-				if (auto config = _file_user_setting->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config_proxy"))
+				if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config_proxy"))
 					_proxy_select_config->setSelectedOptionValue(config.value().c_str());
 				else
-					_file_user_setting->writeSectionParameter(
+					_ui_base->userSetting()->writeSectionParameter(
 						"REMEMBER_CONFIGURATION",
 						"config_proxy",
 						static_cast<String>(_proxy_select_config->getSelectedOptionValue().ToString()).utf8().data()
@@ -369,7 +371,7 @@ void Ui::_setting()
 				_proxy_select_config->addEventChange(
 					[this](JSArgs args)
 					{
-						_file_user_setting
+						_ui_base->userSetting()
 							->writeSectionParameter("REMEMBER_CONFIGURATION", "config_proxy", static_cast<String>(args[1].ToString()).utf8().data());
 						return false;
 					}
@@ -384,12 +386,12 @@ void Ui::_setting()
 			{
 				_proxy_manual->create("#setting section .proxy", "str_manual_title", Localization::Str{ "str_manual_description" });
 
-				auto result_manual = _file_user_setting->parameterSection<bool>("PROXY", "manual");
+				auto result_manual = _ui_base->userSetting()->parameterSection<bool>("PROXY", "manual");
 				_proxy_manual->setState(result_manual ? result_manual.value() : false);
 				_proxy_manual->addEventClick(
 					[this, createSelectProxy](JSArgs args)
 					{
-						_file_user_setting->writeSectionParameter("PROXY", "manual", static_cast<String>(args[0].ToString()).utf8().data());
+						_ui_base->userSetting()->writeSectionParameter("PROXY", "manual", static_cast<String>(args[0].ToString()).utf8().data());
 						createSelectProxy();
 						return false;
 					}
@@ -404,7 +406,7 @@ void Ui::_setting()
 			_proxy_port
 				->create("#setting section .proxy", Input::Types::number, "1080", "str_input_proxy_port_title", "str_input_proxy_port_description");
 
-			auto port = _file_user_setting->parameterSection<u32>("PROXY", "port");
+			auto port = _ui_base->userSetting()->parameterSection<u32>("PROXY", "port");
 			if (port)
 				_proxy_port->setValue(port.value());
 
@@ -412,13 +414,13 @@ void Ui::_setting()
 				[this](JSArgs args)
 				{
 					auto arg_port = static_cast<String>(args[0].ToString());
-					_file_user_setting->writeSectionParameter("PROXY", "port", arg_port.utf8().data());
+					_ui_base->userSetting()->writeSectionParameter("PROXY", "port", arg_port.utf8().data());
 					return false;
 				}
 			);
 
 			_proxy_ip->create("#setting section .proxy", Input::Types::ip, "127.0.0.1", "str_input_proxy_ip_title", "str_input_proxy_ip_description");
-			auto ip = _file_user_setting->parameterSection<pcstr>("PROXY", "ip");
+			auto ip = _ui_base->userSetting()->parameterSection<pcstr>("PROXY", "ip");
 			if (ip)
 				_proxy_ip->setValue(ip.value());
 
@@ -426,7 +428,7 @@ void Ui::_setting()
 				[this](JSArgs args)
 				{
 					auto arg_ip = static_cast<String>(args[0].ToString());
-					_file_user_setting->writeSectionParameter("PROXY", "ip", arg_ip.utf8().data());
+					_ui_base->userSetting()->writeSectionParameter("PROXY", "ip", arg_ip.utf8().data());
 					return false;
 				}
 			);
@@ -438,7 +440,7 @@ void Ui::_setting()
 				createManualProxy();
 
 				auto input_checked = static_cast<String>(args[0].ToString());
-				_file_user_setting->writeSectionParameter("PROXY", "enable", input_checked.utf8().data());
+				_ui_base->userSetting()->writeSectionParameter("PROXY", "enable", input_checked.utf8().data());
 
 				if (args[0].ToBoolean())
 					create_setting_proxy();
@@ -448,7 +450,7 @@ void Ui::_setting()
 					_proxy_ip->remove();
 				}
 
-				_startService();
+				_startProxy();
 				_testing();
 
 				return false;
@@ -461,4 +463,26 @@ void Ui::_setting()
 			create_setting_proxy();
 		}
 	}
+
+	// Tor Proxy
+	/*{
+		_tor_proxy_enable->create(
+			"#setting section .tor_proxy",
+			"str_checkbox_tor_proxy_enable_title",
+			Localization::Str{ "str_checkbox_tor_proxy_enable_description" }
+		);
+
+		auto result = _ui_base->userSetting()->parameterSection<bool>("TOR_PROXY", "enable");
+		_tor_proxy_enable->setState(result ? result.value() : false);
+
+		_tor_proxy_enable->addEventClick(
+			[this](JSArgs args)
+			{
+				auto input_checked = static_cast<String>(args[0].ToString());
+				_ui_base->userSetting()->writeSectionParameter("TOR_PROXY", "enable", input_checked.utf8().data());
+				_startTorProxy();
+				return false;
+			}
+		);
+	}*/
 }

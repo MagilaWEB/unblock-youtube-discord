@@ -1,12 +1,8 @@
 #include "ui.h"
+#include "ui_base.h"
 
-#include "../core/timer.h"
-#include "../unblock/unblock.h"
-#include "../engine/version.hpp"
-
-Ui::Ui(IEngineAPI* engine) : UiElements(), _engine(engine)
+Ui::Ui(UiBase* ui_base) : _ui_base(ui_base)
 {
-	_file_user_setting->open({ Core::get().userPath() / "setting" }, ".config", true);
 	_file_service_list->open({ Core::get().configsPath() / "service_setting" }, ".config", true);
 
 	_file_service_list->forLineParametersSection(
@@ -17,114 +13,24 @@ Ui::Ui(IEngineAPI* engine) : UiElements(), _engine(engine)
 			return false;
 		}
 	);
-
-#ifndef DEBUG
-	auto result = _file_user_setting->parameterSection<bool>("SUSTEM", "show_console");
-	if (result && result.value())
-		_engine->console();
-	else
-		Debug::initLogFile();
-#endif
-
-	_overlay = Overlay::Create(_engine->window(), _engine->window()->width(), _engine->window()->height(), 0, 0);
-	_overlay->view()->LoadURL("file:///main.html");
-
-	_overlay->view()->set_load_listener(this);
-	_overlay->view()->set_view_listener(this);
 }
 
-Ui::~Ui()
+void Ui::initialize()
 {
-	_overlay->view()->set_load_listener(nullptr);
-	_overlay->view()->set_view_listener(nullptr);
-	_engine = nullptr;
+	_checkConflictService();
+
+	_setting();
+
+	// HOME
+	_startInit();
+	_stopInit();
+	_testing();
+
+	_footerElements();
 }
 
-#define LOGS(method)                                                                                        \
-	method(                                                                                                 \
-		"Java/Script\n\tsource:\t%d\n\ttype:\t%d\n\tmessage:\t%s\n\tline_number:\t%d\n\tcolumn_number:\t%d" \
-		"\n\tsource_id:\t%s\n\tnum_arguments:\t%d\n\t%s",                                                   \
-		static_cast<u32>(msg.source()),                                                                     \
-		static_cast<u32>(msg.type()),                                                                       \
-		msg.message().utf8().data(),                                                                        \
-		msg.line_number(),                                                                                  \
-		msg.column_number(),                                                                                \
-		msg.source_id().utf8().data(),                                                                      \
-		msg.num_arguments(),                                                                                \
-		text_msg.c_str()                                                                                    \
-	);
-
-#ifdef DEBUG
-void Ui::OnAddConsoleMessage(View* /*caller*/, const ConsoleMessage& msg)
+void Ui::_footerElements()
 {
-	std::string text_msg{ "MSG: " };
-	uint32_t	num_args = msg.num_arguments();
-
-	if (num_args > 0)
-	{
-		for (uint32_t i = 0; i < num_args; i++)
-		{
-			JSValue arg = static_cast<JSValue>(msg.argument_at(i));
-			text_msg.append(static_cast<String>(arg.ToString()).utf8().data()).append(" ");
-		}
-	}
-
-	if (msg.level() == kMessageLevel_Log)
-		LOGS(Debug::ok)
-	else if (msg.level() == kMessageLevel_Debug || msg.level() == kMessageLevel_Info)
-		LOGS(Debug::info)
-	else if (msg.level() == kMessageLevel_Warning)
-		LOGS(Debug::warning)
-	else if (msg.level() == kMessageLevel_Error)
-		LOGS(Debug::error)
-}
-#else
-void Ui::OnAddConsoleMessage(View* /*caller*/, const ConsoleMessage& msg)
-{
-	std::string text_msg{ "MSG: " };
-	uint32_t	num_args = msg.num_arguments();
-
-	if (num_args > 0)
-	{
-		for (uint32_t i = 0; i < num_args; i++)
-		{
-			JSValue arg = static_cast<JSValue>(msg.argument_at(i));
-			text_msg.append(static_cast<String>(arg.ToString()).utf8().data()).append(" ");
-		}
-	}
-
-	if (msg.level() == kMessageLevel_Log)
-		LOGS(InputConsole::textOk)
-	else if (msg.level() == kMessageLevel_Debug || msg.level() == kMessageLevel_Info)
-		LOGS(InputConsole::textInfo)
-	else if (msg.level() == kMessageLevel_Warning)
-		LOGS(InputConsole::textWarning)
-	else if (msg.level() == kMessageLevel_Error)
-		LOGS(InputConsole::textError)
-}
-#endif
-
-void Ui::OnWindowObjectReady(View* caller, uint64_t /*frame_id*/, bool /*is_main_frame*/, const String& /*url*/)
-{
-	auto locked_context = caller->LockJSContext();
-	SetJSContext(locked_context->ctx());
-
-	JSObject global		  = JSGlobalObject();
-	global["RUN_CPP"]	  = JSValue(true);
-	global["VERSION_APP"] = JSValue(VERSION_STR);
-	global["CPPTaskRun"]  = static_cast<JSCallback>(std::bind(&Ui::runTask, this, std::placeholders::_1, std::placeholders::_2));
-	global["CPPLangText"] = static_cast<JSCallbackWithRetval>(std::bind(&Ui::langText, this, std::placeholders::_1, std::placeholders::_2));
-}
-
-void Ui::OnDOMReady(View* caller, uint64_t /*frame_id*/, bool /*is_main_frame*/, const String& /*url*/)
-{
-	Core::setThreadJsID(GetCurrentThreadId());
-
-	auto locked_context = caller->LockJSContext();
-	SetJSContext(locked_context->ctx());
-
-	BaseElement::initializeAll(caller);
-
 	_link_to_github->create("footer", "str_link_to_github");
 	_link_to_github->addEventClick(
 		[](JSArgs)
@@ -133,50 +39,47 @@ void Ui::OnDOMReady(View* caller, uint64_t /*frame_id*/, bool /*is_main_frame*/,
 			return false;
 		}
 	);
-
-	_checkConflictService();
-
-	_setting();
-
-	// HOME
-	_startService();
-	_startServiceWindow();
-	_stopService();
-	_testing();
 }
 
-void Ui::OnResize(ultralight::Window* /*window*/, uint32_t width, uint32_t height)
+void Ui::_checkConflictService()
 {
-	_overlay->Resize(width, height);
-}
+	_window_warning_conflict_service->create(Localization::Str{ "str_warning" }, "");
+	_window_warning_conflict_service->setType(SecondaryWindow::Type::YesNo);
 
-void Ui::OnClose(ultralight::Window* /*window*/)
-{
-	BaseElement::release();
-	_engine->app()->Quit();
-}
+	static Localization::Str lang_disc{ "str_window_warning_conflict_service" };
 
-void Ui::runTask(const JSObject& /*obj*/, const JSArgs& /*args*/)
-{
-	auto& task = Core::get().getTaskJS();
-	FAST_LOCK(Core::get().getTaskLockJS());
-	while (!task.empty())
+	std::string description = lang_disc();
+
+	auto& conflict_service = _unblock->getConflictingServices();
+	if (!conflict_service.empty())
 	{
-		task.front()();
-		task.pop_front();
-	}
-}
+#if __clang__
+		[[clang::no_destroy]]
+#endif
+		static std::string names_services;
 
-JSValue Ui::langText(const JSObject& /*obj*/, const JSArgs& args)
-{
-	if (!args[0].IsString())
-	{
-		Debug::warning(
-			"The passed argument in LANG_TEXT is not a string, it is necessary to pass the string value of the text_id of the localization system."
+		for (auto& service : conflict_service)
+			names_services.append(service.getName()).append(",");
+		names_services.pop_back();
+
+		description = utils::format(description.c_str(), names_services.c_str());
+		_window_warning_conflict_service->setDescription(description.c_str());
+
+		_window_warning_conflict_service->show();
+
+		_window_warning_conflict_service->addEventYesNo(
+			[this, &conflict_service](JSArgs args)
+			{
+				if (args[0].ToBoolean())
+					for (auto& service : conflict_service)
+						service.remove();
+
+				conflict_service.clear();
+
+				_window_warning_conflict_service->hide();
+
+				return true;
+			}
 		);
-		return "";
 	}
-
-	const auto text_id = static_cast<String>(args[0].ToString());
-	return Localization::Str{ text_id.utf8().data() }();
 }

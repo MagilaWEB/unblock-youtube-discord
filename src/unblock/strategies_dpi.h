@@ -41,6 +41,7 @@ public:
 	const std::vector<FakeBinParam>& getFakeBinList() const;
 
 private:
+	void _readFileStrategies(std::string section, u32 index_service);
 	void _uploadStrategies() override;
 	void _saveStrategies(std::vector<std::string>& strategy_dpi, std::string str) override;
 

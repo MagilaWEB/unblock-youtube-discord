@@ -27,6 +27,12 @@ void SelectList::initialize()
 	if (!_remove)
 		_remove = global_js["removeListSelect"];
 
+	if (!_show)
+		_show = global_js["showListSelect"];
+
+	if (!_hide)
+		_hide = global_js["hideListSelect"];
+
 	if (!global_js["CPPSelectEventChange"])
 		global_js["CPPSelectEventChange"] = JS_EVENT(_event_click);
 }

@@ -28,6 +28,12 @@ void CheckBox::initialize()
 	if (!_get_state)
 		_get_state = global_js["getCheckBoxState"];
 
+	if (!_show)
+		_show = global_js["showCheckBox"];
+
+	if (!_hide)
+		_hide = global_js["hideCheckBox"];
+
 	if (!global_js["CPPCheckBoxEventClick"])
 		global_js["CPPCheckBoxEventClick"] = JS_EVENT(_event_click);
 }
@@ -67,7 +73,6 @@ void CheckBox::setState(bool state)
 
 bool CheckBox::getState()
 {
-
 	RefPtr<JSContext> lock(_view->LockJSContext());
 	return _get_state({ name() }).ToBoolean();
 }

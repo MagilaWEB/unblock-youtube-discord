@@ -21,6 +21,12 @@ void Button::initialize()
 	if (!_set_title)
 		_set_title = global_js["setTitleButton"];
 
+	if (!_show)
+		_show = global_js["showButton"];
+	
+	if (!_hide)
+		_hide = global_js["hideButton"];
+
 	if (!global_js["CPPButtonEventClick"])
 		global_js["CPPButtonEventClick"] = JS_EVENT(_event_click);
 }

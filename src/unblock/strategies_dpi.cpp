@@ -116,6 +116,26 @@ bool StrategiesDPI::isFaked() const
 	return _faked;
 }
 
+void StrategiesDPI::_readFileStrategies(std::string section, u32 index_service)
+{
+	_file_strategy_dpi->forLineSection(
+		section.c_str(),
+		[this, index_service](std::string _str)
+		{
+			static std::string include_section{ "include_section>>" };
+			if (_str.starts_with(include_section))
+			{
+				std::string result = _str.substr(include_section.length(), _str.length());
+
+				_readFileStrategies(result, index_service);
+				return false;
+			}
+			_saveStrategies(_strategy_dpi[index_service], _str);
+			return false;
+		}
+	);
+}
+
 void StrategiesDPI::_uploadStrategies()
 {
 	if (_file_strategy_dpi->isOpen())
@@ -136,14 +156,7 @@ void StrategiesDPI::_uploadStrategies()
 					{
 						_service_blocklist_file = "all.list";
 
-						_file_strategy_dpi->forLineSection(
-							service_name,
-							[this, &index](std::string _str)
-							{
-								_saveStrategies(_strategy_dpi[index], _str);
-								return false;
-							}
-						);
+						_readFileStrategies(service_name, index);
 
 						// Optional strategy sections for individual services.
 						for (auto& name : _section_opt_service_names)
@@ -155,14 +168,7 @@ void StrategiesDPI::_uploadStrategies()
 							_service_blocklist_file = name;
 							_service_blocklist_file.append(".list");
 
-							_file_strategy_dpi->forLineSection(
-								service_name_type.c_str(),
-								[this, &index](std::string _str)
-								{
-									_saveStrategies(_strategy_dpi[index], _str);
-									return false;
-								}
-							);
+							_readFileStrategies(service_name_type, index);
 						}
 
 						for (auto& line : _strategy_dpi[index])
@@ -174,7 +180,6 @@ void StrategiesDPI::_uploadStrategies()
 #ifdef DEBUG
 					for (auto& line : _strategy_dpi[index])
 						Debug::ok("%s", line.c_str());
-
 #endif
 				}
 

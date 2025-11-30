@@ -4,8 +4,6 @@
 class SecondaryWindow final : public BaseElement
 {
 	JSFunction _set_type;
-	JSFunction _show;
-	JSFunction _hide;
 	JSFunction _set_description;
 
 	#if __clang__
@@ -45,9 +43,6 @@ public:
 
 	void addEventCancel(std::function<bool(JSArgs)>&& callback);
 	void clearEventCancel();
-
-	void show();
-	void hide();
 };
 
 

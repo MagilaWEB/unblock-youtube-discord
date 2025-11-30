@@ -17,7 +17,7 @@ void BaseElement::runCode(const std::function<void()>& run_code)
 }
 
 BaseElement::BaseElement(pcstr name) : _name(name), _type("base_element")
-	{
+{
 	for (const auto& [_name_element, element] : _all_element)
 	{
 		ASSERT_ARGS(
@@ -37,6 +37,9 @@ BaseElement::~BaseElement()
 
 void BaseElement::initializeAll(View* view)
 {
+	if (_view)
+		return;
+
 	_view = view;
 
 	for (const auto& [name, element] : _all_element)
@@ -74,6 +77,34 @@ void BaseElement::remove()
 			_created = false;
 			ASSERT_ARGS(_remove({ name() }).ToBoolean() == true, "Couldn't remove a %s named [%s]", _type, name());
 			_event_click[name()].clear();
+		}
+	);
+}
+
+void BaseElement::show()
+{
+	runCode(
+		[this]
+		{
+			if (!_created)
+				return;
+
+			RefPtr<JSContext> lock(_view->LockJSContext());
+			ASSERT_ARGS(_show({ name() }).ToBoolean() == true, "Couldn't remove a %s named [%s]", _type, name());
+		}
+	);
+}
+
+void BaseElement::hide()
+{
+	runCode(
+		[this]
+		{
+			if (!_created)
+				return;
+
+			RefPtr<JSContext> lock(_view->LockJSContext());
+			ASSERT_ARGS(_hide({ name() }).ToBoolean() == true, "Couldn't remove a %s named [%s]", _type, name());
 		}
 	);
 }

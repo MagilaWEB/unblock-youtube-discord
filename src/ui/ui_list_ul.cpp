@@ -15,6 +15,12 @@ void ListUl::initialize()
 	if (!_remove)
 		_remove = global_js["removeListUl"];
 
+	if (!_show)
+		_show = global_js["showListUl"];
+
+	if (!_hide)
+		_hide = global_js["hideListUl"];
+
 	if (!_create_li)
 		_create_li = global_js["createListUlLiAdd"];
 
@@ -55,7 +61,8 @@ void ListUl::createLiSuccess(Localization::Str text, bool state)
 		[this, _text, state]
 		{
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_create_li_success({ name(), _text, state }).ToBoolean() == true,
+			ASSERT_ARGS(
+				_create_li_success({ name(), _text, state }).ToBoolean() == true,
 				"Couldn't create_li_success a %s named [%s]",
 				_type,
 				name()

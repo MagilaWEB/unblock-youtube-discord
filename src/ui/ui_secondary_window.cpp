@@ -142,31 +142,3 @@ void SecondaryWindow::clearEventCancel()
 {
 	_event_cancel[name()].clear();
 }
-
-void SecondaryWindow::show()
-{
-	runCode(
-		[this]
-		{
-			if (!_created)
-				return;
-
-			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_show({ name() }).ToBoolean() == true, "Couldn't show a %s named [%s]", _type, name());
-		}
-	);
-}
-
-void SecondaryWindow::hide()
-{
-	runCode(
-		[this]
-		{
-			if (!_created)
-				return;
-
-			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_hide({ name() }).ToBoolean() == true, "Couldn't hide a %s named [%s]", _type, name());
-		}
-	);
-}

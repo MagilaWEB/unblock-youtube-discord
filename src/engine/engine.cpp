@@ -35,9 +35,7 @@ void Engine::initialize()
 	_window = Window::Create(_app->main_monitor(), 1'100, 600, false, kWindowFlags_Titled | kWindowFlags_Borderless | kWindowFlags_Resizable);
 	_window->SetTitle(title.c_str());
 
-	_ui = std::make_unique<Ui>(this);
-
-
+	_ui = std::make_unique<UiBase>(this);
 	_window->set_listener(_ui.get());
 }
 

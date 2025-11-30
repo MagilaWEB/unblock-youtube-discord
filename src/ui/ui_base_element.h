@@ -24,12 +24,14 @@ class BaseElement
 {
 protected:
 	const std::string _name;
-	pcstr		_type;
-	JSFunction	_create;
-	JSFunction	_remove;
-	JSFunction	_set_title;
-	JSFunction	_add_event_click;
-	bool		_created{ false };
+	pcstr			  _type;
+	JSFunction		  _create;
+	JSFunction		  _remove;
+	JSFunction		  _set_title;
+	JSFunction		  _add_event_click;
+	JSFunction		  _show;
+	JSFunction		  _hide;
+	bool			  _created{ false };
 
 	inline static View* _view;
 #if __clang__
@@ -48,12 +50,15 @@ public:
 	BaseElement(pcstr name);
 	virtual ~BaseElement();
 
-	pcstr name() const { return _name.c_str(); };
+	pcstr name() const { return _name.c_str(); }
 
-	static void runCode(const std::function<void()> & run_code);
+	static void runCode(const std::function<void()>& run_code);
 
 	void create(pcstr selector, Localization::Str title, bool first = false);
 	void remove();
+
+	void show();
+	void hide();
 
 	bool isCreate() const;
 

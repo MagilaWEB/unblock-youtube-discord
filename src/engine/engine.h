@@ -1,24 +1,6 @@
 #pragma once
 #include "engine_api.hpp"
-#include "../ui/ui.h"
-
-
-#ifdef __clang__
-	#pragma clang diagnostic push
-	#pragma clang diagnostic ignored "-Weverything"
-#else
-	#pragma warning(push)
-	#pragma warning(disable : 4'100)
-#endif
-
-#include <AppCore/AppCore.h>
-#include <AppCore/Window.h>
-
-#ifdef __clang__
-	#pragma clang diagnostic pop
-#else
-	#pragma warning(pop)
-#endif
+#include "../ui/ui_base.h"
 
 using namespace ultralight;
 
@@ -27,7 +9,7 @@ class ENGINE_API Engine final : public IEngineAPI
 	RefPtr<App>	   _app;
 	RefPtr<Window> _window;
 
-	std::unique_ptr<Ui> _ui{ nullptr };
+	std::unique_ptr<UiBase> _ui{ nullptr };
 
 public:
 	static Engine& get();

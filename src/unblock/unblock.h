@@ -10,6 +10,8 @@ class UNBLOCK_API Unblock final
 	Ptr<Service> _unblock{ "unblock", "winws.exe" };
 	Ptr<Service> _goodbay_dpi{ "GoodByeDpi", "goodbyedpi.exe" };
 	Ptr<Service> _proxy_dpi{ "proxy_dpi", "ciadpi.exe" };
+	Ptr<Service> _tor{ "tor", "tor.exe" };
+
 	Ptr<Service> _win_divert{ "WinDivert" };
 
 	Ptr<DomainTesting>		_domain_testing;
@@ -59,6 +61,9 @@ public:
 	void removeService(bool proxy = false);
 	bool activeService(bool proxy = false);
 	void checkStateServices(const std::function<void(pcstr, bool)>& callback);
+	void startTor();
+	void removeTor();
+	bool activeTor();
 
 	template<typename Type>
 	void testingDomain(std::function<void(pcstr url, bool state)>&& callback = [](pcstr, bool) {}, bool video = false, bool base_test = true);

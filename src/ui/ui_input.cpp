@@ -21,6 +21,12 @@ void Input::initialize()
 	if (!_get_value)
 		_get_value = global_js["getInputValue"];
 
+	if (!_show)
+		_show = global_js["showInput"];
+
+	if (!_hide)
+		_hide = global_js["hideInput"];
+
 	if (!global_js["CPPInputEventSubmit"])
 		global_js["CPPInputEventSubmit"] = JS_EVENT(_event_click);
 }
