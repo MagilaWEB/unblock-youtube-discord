@@ -18,7 +18,7 @@ if (!RUN_CPP) {
 
 	setTypeSecondaryWindow("start_test_window", 2);
 
-	createButton("#home section .button_start_stop", "start_test", "Запустить тестирование");
+	createButton("#home section .buttons_start", "start_test", "Запустить тестирование");
 
 	addButtonEventClick("start_test", () => {
 		showSecondaryWindow("start_test_window");
@@ -28,9 +28,9 @@ if (!RUN_CPP) {
 		}, 3000)
 	});
 
-	createButton("#home section .button_start_stop", "start_service", "Запустить службы");
-	createButton("#home section .button_start_stop", "start_service_proxy", "Запустить службы proxy");
-	createButton("#home section .button_start_stop", "stop_service", "Остановить службы");
+	createButton("#home section .buttons_start", "start_service", "Запустить службы");
+	createButton("#home section .buttons_start", "start_service_proxy", "Запустить службы proxy");
+	createButton("#home section .buttons_stop", "stop_service", "Остановить службы");
 
 	createListUl(".info_unblock", "success_domain", "Доступные домены:");
 	const ul = getListUl("success_domain");

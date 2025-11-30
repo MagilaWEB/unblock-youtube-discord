@@ -19,6 +19,14 @@ class INPUT {
         }
     }
 
+    show() {
+        this.object_input_div.classList.add("show");
+    }
+
+    hide() {
+        this.object_input_div.classList.remove("show");
+    }
+
     blur() {
         this.object_input.value = "";
         this.object_input.placeholder = this.title + ": " + this.value;
@@ -183,10 +191,11 @@ function removeInputEventSubmit(_name, _function) {
  * 
  * @param {*} _selector The selector of the element to add the created element to.
  * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
- * @param {*} _type 
- * @param {*} _value 
+ * @param {*} _type Input type as a string.
+ * @param {*} _value The basic default value.
  * @param {*} _title Title text.
  * @param {*} _description Description text.
+ * @param {*} _first The element at the beginning of the block.
  * @returns Returns false if an error occurs, and true if successful.
  */
 function createInput(_selector, _name, _type, _value, _title, _description, _first) {
@@ -204,6 +213,7 @@ function createInput(_selector, _name, _type, _value, _title, _description, _fir
 
     const div = document.createElement("div");
     div.classList.add("input");
+    div.classList.add("show");
 
     if (_first)
         element.insertBefore(div, element.firstChild);
@@ -259,5 +269,33 @@ function removeInput(_name) {
     input.object_input_div.remove();
 
     array_input[_name] = undefined;
+    return true;
+}
+
+/**
+ * Shows the element. When creating the element, it has the "show" status by default.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
+function showInput(_name) {
+    const input = getInput(_name);
+    if (input === undefined)
+        return false;
+
+    input.show();
+    return true;
+}
+
+/**
+ * Hides the element. the function deletes the status of the "show" element.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
+function hideInput(_name) {
+    const input = getInput(_name);
+    if (input === undefined)
+        return false;
+
+    input.hide();
     return true;
 }

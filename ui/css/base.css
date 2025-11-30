@@ -1,0 +1,183 @@
+@charset "UTF-8";
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	color      : #aeaeae;
+	font-size  : 100%;
+	font-family: "Segoe UI";
+	text-shadow: 1px 1px 2px black;
+	margin     : 0;
+	padding    : 0;
+	width      : 100%;
+	height     : 100%;
+}
+
+#background {
+	z-index            : 0;
+	position           : fixed;
+	top                : 0;
+	left               : 0;
+	width              : 100%;
+	height             : 100%;
+	background-image   : url('../resources/jpg/win11.jpg');
+	background-position: center;
+	background-repeat  : no-repeat;
+	background-size    : cover;
+	filter             : blur(1em);
+	box-shadow         : 0 0 5em 5em black;
+}
+
+h1,
+h2 {
+	margin-bottom: .1em;
+	font-weight  : 300;
+}
+
+h1 {
+	font-size  : 2.5em;
+	line-height: 1em;
+}
+
+h2 {
+	font-size  : 1.8em;
+	line-height: 1em;
+}
+
+.blur {
+	filter: blur(10px);
+}
+
+.text_version {
+	z-index         : 30;
+	position        : fixed;
+	top             : -.5em;
+	right           : .5em;
+	padding         : .3em;
+	background-color: rgba(82, 82, 82, .5);
+	border          : solid 2px rgb(91, 91, 91);
+	border-left     : solid 2px rgb(91, 91, 91);
+	border-bottom   : solid 2px rgb(91, 91, 91);
+	border-radius   : 0 0 .5em .5em;
+	transition      : filter .5s;
+}
+
+.text_version .text {
+	margin   : 0;
+	font-size: small;
+}
+
+main {
+	transition: filter .5s;
+}
+
+main article {
+	position  : fixed;
+	top       : 0;
+	left      : 0;
+	width     : 100%;
+	height    : 100%;
+	overflow  : auto;
+	visibility: hidden;
+	opacity   : 0;
+	padding   : 0 .4em;
+	transition: opacity 200ms;
+}
+
+main .active {
+	visibility: visible;
+	opacity   : 1;
+}
+
+main article .header_title {
+	margin    : 0;
+	font-size : 3em;
+	padding   : .6em;
+	text-align: right;
+}
+
+footer {
+	position        : fixed;
+	align-items     : center;
+	bottom          : -3em;
+	padding-top     : 1.1em;
+	width           : 100%;
+	background-color: #3131316b;
+	height          : 4em;
+	transition      : bottom 200ms, filter .5s;
+}
+
+footer::after {
+	content    : ". . .";
+	position   : absolute;
+	left       : 0;
+	top        : -.6em;
+	text-align : center;
+	font-weight: 700;
+	font-size  : 1.4em;
+	width      : 100%;
+	height     : 2em;
+}
+
+footer:hover {
+	bottom: 0;
+}
+
+footer .button {
+	margin: auto;
+	width : 11em;
+}
+
+.info_unblock {
+	display              : grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap                  : 1%;
+}
+
+.info_unblock .block ul {
+	height: 21em;
+}
+
+.buttons_start,
+.buttons_stop {
+	display              : grid;
+	grid-template-columns: repeat(4, 1fr);
+	grid-auto-rows       : 4em;
+	gap                  : .333%;
+	margin-bottom        : 1em;
+}
+
+.buttons_start .button,
+.buttons_stop .button {
+	display    : flex;
+	align-items: center;
+}
+
+.buttons_start .button button,
+.buttons_stop .button button {
+	width: 100%;
+}
+
+#setting section {
+	display              : grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap                  : 1%;
+}
+
+/* изменяем полоcу прокрутки */
+::-webkit-scrollbar {
+	width     : .4em;
+	background: transparent;
+}
+
+::-webkit-scrollbar-track {
+	background: rgb(140, 140, 140);
+}
+
+::-webkit-scrollbar-thumb {
+	width: 0px;
+	background: rgba(82, 82, 82, .9);
+}

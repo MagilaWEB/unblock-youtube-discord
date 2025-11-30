@@ -103,6 +103,7 @@ function addCheckBoxEventCheck(_name, _function) {
  * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
  * @param {*} _title Title text.
  * @param {*} _description Description text.
+ * @param {*} _first The element at the beginning of the block.
  * @returns Returns false if an error occurs, and true if successful.
  */
 function createCheckBox(_selector, _name, _title, _description, _first) {
@@ -120,6 +121,7 @@ function createCheckBox(_selector, _name, _title, _description, _first) {
 
 	const div = document.createElement("div");
 	div.classList.add("check_box");
+	div.classList.add("show");
 	
 	if(_first)
 		element.insertBefore(div, element.firstChild);
@@ -170,4 +172,34 @@ function removeCheckBox(_name) {
 	check_box.remove();
 	array_check_box[_name] = undefined;
 	return true
+}
+
+/**
+ * Shows the element. When creating the element, it has the "show" status by default.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
+function showCheckBox(_name)
+{
+	const check_box = getCheckBox(_name);
+	if (check_box === undefined)
+		return false;
+
+	check_box.classList.add("show");
+	return true;
+}
+
+/**
+ * Hides the element. the function deletes the status of the "show" element.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
+function hideCheckBox(_name)
+{
+	const check_box = getCheckBox(_name);
+	if (check_box === undefined)
+		return false;
+
+	check_box.classList.remove("show");
+	return true;
 }

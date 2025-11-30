@@ -9,6 +9,14 @@ class UL {
 		this.li_size = 0;
 	}
 
+	show() {
+		this.object_div.classList.add("show");
+	}
+
+	hide() {
+		this.object_div.classList.remove("show");
+	}
+
 	addLi(_text, _state) {
 		const li = document.createElement("li");
 
@@ -141,6 +149,7 @@ function createListUlLiAddSuccess(_name, _text, state) {
  * Creates a base Ul element for the list.
  * @param {*} _selector The selector of the element to add the created element to.
  * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @param {*} _first The element at the beginning of the block.
  * @returns Returns false if an error occurs, and true if successful.
  */
 function createListUl(_selector, _name, _title, _first) {
@@ -158,6 +167,7 @@ function createListUl(_selector, _name, _title, _first) {
 
 	const div = document.createElement("div");
 	div.classList.add("block");
+	div.classList.add("show");
 
 	if (_first)
 		element.insertBefore(div, element.firstChild);
@@ -170,7 +180,6 @@ function createListUl(_selector, _name, _title, _first) {
 
 	const ul = document.createElement("ul");
 	div.appendChild(ul);
-
 
 	array_list_ul[_name] = new UL(_name, div);
 
@@ -200,11 +209,38 @@ function clearListUl(_name) {
  */
 function removeListUl(_name) {
 	const ul_class = getListUl(_name);
-
 	if (ul_class === undefined)
 		return false;
 
 	ul_class.delete();
 	array_list_ul[_name] = undefined;
+	return true;
+}
+
+/**
+ * Shows the element. When creating the element, it has the "show" status by default.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
+function showListUl(_name) {
+	const ul_class = getListUl(_name);
+	if (ul_class === undefined)
+		return false;
+
+	ul_class.show();
+	return true;
+}
+
+/**
+ * Hides the element. the function deletes the status of the "show" element.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
+function hideListUl(_name) {
+	const ul_class = getListUl(_name);
+	if (ul_class === undefined)
+		return false;
+
+	ul_class.hide();
 	return true;
 }

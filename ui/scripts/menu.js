@@ -22,24 +22,6 @@ if (version_app_text) {
 	}
 }
 
-// function localizationText(element) {
-// 	if (RUN_CPP) {
-// 		element.innerHTML = CPPLangText(element.innerHTML);
-
-// 		const main_block = document.querySelector(element.hash);
-// 		if (main_block) {
-
-// 			const header = main_block.firstElementChild;
-// 			if (header) {
-// 				const header_text = header.firstElementChild;
-// 				if (header_text) {
-// 					header_text.innerHTML = CPPLangText(header_text.innerHTML);
-// 				}
-// 			}
-// 		}
-// 	}
-// }
-
 function eventClick(element) {
 	element.addEventListener("click", () => {
 		const hash = document.querySelector(element.hash);

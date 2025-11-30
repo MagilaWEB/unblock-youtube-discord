@@ -44,6 +44,14 @@ class SELECT {
         }
     }
 
+    show() {
+        this.div.classList.add("show");
+    }
+
+    hide() {
+        this.div.classList.remove("show");
+    }
+
     addOption(_value, _title, _selected) {
         const option = document.createElement("div");
         option.classList.add("option");
@@ -164,8 +172,6 @@ class SELECT {
     }
 }
 
-
-
 function getSelect(_name) {
     const select = array_select[_name];
     if (select === undefined) {
@@ -176,6 +182,12 @@ function getSelect(_name) {
     return select;
 }
 
+/**
+ * Sets the option based on the passed value.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @param {*} _value The value by which the option will be selected, if it is incorrect, an error will occur.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
 function setSelectSelectedOption(_name, _value) {
     const select = getSelect(_name)
     if (select === undefined)
@@ -184,6 +196,11 @@ function setSelectSelectedOption(_name, _value) {
     return select.setValue(_value);
 }
 
+/**
+ * Returns the value of the selected option.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns Returns the value of the selected option, if the error is then "undefined".
+ */
 function getSelectSelectedOption(_name) {
     const select = getSelect(_name)
     if (select === undefined)
@@ -192,6 +209,12 @@ function getSelectSelectedOption(_name) {
     return select.getValue();
 }
 
+/**
+ * Registers the option selection event.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @param {*} _function A callback function that will be called when an option is selected.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
 function addSelectEventChange(_name, _function) {
     const select = getSelect(_name)
     if (select === undefined)
@@ -202,6 +225,14 @@ function addSelectEventChange(_name, _function) {
     return true;
 }
 
+/**
+ * Creates an option inside the "select option".
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @param {*} _value The value of the option.
+ * @param {*} _title Title text.
+ * @param {*} _selected Whether this option is selected by default is bool[true/false].
+ * @returns Returns false if an error occurs, and true if successful.
+ */
 function createSelectOption(_name, _value, _title, _selected) {
     const select = getSelect(_name)
     if (select === undefined)
@@ -212,6 +243,15 @@ function createSelectOption(_name, _value, _title, _selected) {
     return true;
 }
 
+/**
+ * 
+ * @param {*} _selector The selector of the element to add the created element to.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @param {*} _title Title text.
+ * @param {*} _description Description text.
+ * @param {*} _first The element at the beginning of the block.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
 function createListSelect(_selector, _name, _title, _description, _first) {
     const element = document.querySelector(_selector);
 
@@ -227,6 +267,7 @@ function createListSelect(_selector, _name, _title, _description, _first) {
 
     const div = document.createElement("div");
     div.classList.add("select_list");
+    div.classList.add("show");
 
     if (_first)
         element.insertBefore(div, element.firstChild);
@@ -260,6 +301,11 @@ function createListSelect(_selector, _name, _title, _description, _first) {
     return true;
 }
 
+/**
+ * Deletes all options.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
 function clearSelect(_name) {
     const select = getSelect(_name)
     if (select === undefined)
@@ -269,6 +315,11 @@ function clearSelect(_name) {
     return true;
 }
 
+/**
+ * Complete removal of an element.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
 function removeListSelect(_name) {
     const select = getSelect(_name)
     if (select === undefined)
@@ -277,5 +328,33 @@ function removeListSelect(_name) {
     select.div.remove();
     array_select[_name] = undefined;
 
+    return true;
+}
+
+/**
+ * Shows the element. When creating the element, it has the "show" status by default.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
+function showListSelect(_name) {
+    const select = getSelect(_name)
+    if (select === undefined)
+        return false;
+
+    select.show();
+    return true;
+}
+
+/**
+ * Hides the element. the function deletes the status of the "show" element.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
+function hideListSelect(_name) {
+    const select = getSelect(_name)
+    if (select === undefined)
+        return false;
+
+    select.hide();
     return true;
 }

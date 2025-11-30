@@ -81,6 +81,7 @@ function createButton(_selector, _name, _title, _first) {
 	const div = document.createElement("div");
 	div.id = _name;
 	div.classList.add("button");
+	div.classList.add("show");
 
 	if(_first)
 		element.insertBefore(div, element.firstChild);
@@ -112,7 +113,44 @@ function removeButton(_name)
 	return true;
 }
 
+/**
+ * Shows the element. When creating the element, it has the "show" status by default.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
+function showButton(_name)
+{
+	const button = getButton(_name);
 
+	if(button === undefined)
+		return false;
+
+	button.classList.add("show");
+	return true;
+}
+
+/**
+ * Hides the element. the function deletes the status of the "show" element.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
+function hideButton(_name)
+{
+	const button = getButton(_name);
+
+	if(button === undefined)
+		return false;
+
+	button.classList.remove("show");
+	return true;
+}
+
+/**
+ * Changes the title text of an element.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @param {*} _title The new title bar for the element
+ * @returns Returns false if an error occurs, and true if successful.
+ */
 function setTitleButton(_name, _title)
 {
 	const button = getButton(_name);

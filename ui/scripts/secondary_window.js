@@ -123,7 +123,7 @@ class SecondaryWindow {
             document.querySelector("footer").classList.add("blur");
         }
 
-        this.base_div.classList.add("secondary_window_show");
+        this.base_div.classList.add("show");
 
         size_show_secondary_window++;
     }
@@ -139,7 +139,7 @@ class SecondaryWindow {
             document.querySelector("footer").classList.remove("blur");
         }
 
-        this.base_div.classList.remove("secondary_window_show");
+        this.base_div.classList.remove("show");
     }
 }
 
