@@ -91,6 +91,8 @@ if (!RUN_CPP) {
 	addSelectEventChange("test_select", value => { console.dir(value); });
 
 	console.dir(getSelectSelectedOption("test_select"));
+
+	updateCountStartStopButtonToCss();
 }
 else
 	setInterval(CPPTaskRun, 100);

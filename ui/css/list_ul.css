@@ -1,0 +1,45 @@
+
+.list_ul{
+	display: none;
+}
+
+.list_ul.show{
+	display: block;
+}
+
+.list_ul ul {
+	border-top: solid 2px rgb(91, 91, 91);
+	overflow  : auto;
+	max-height: 20em;
+	margin    : 0;
+}
+
+.list_ul ul li {
+	position: relative;
+}
+
+.list_ul ul li::after {
+	position: absolute;
+	top     : 0;
+}
+
+.list_ul ul .li_success {
+	list-style-type: none;
+}
+
+.list_ul ul .li_success::after {
+	list-style-type: none;
+	color          : #08a105;
+	left           : -1em;
+	content        : '\2713';
+}
+
+.list_ul .li_fail {
+	list-style-type: none;
+}
+
+.list_ul ul .li_fail::after {
+	left   : -1em;
+	color  : #d00000;
+	content: '\2717';
+}

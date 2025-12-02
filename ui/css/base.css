@@ -126,7 +126,7 @@ footer:hover {
 	bottom: 0;
 }
 
-footer .button {
+footer .button.show {
 	margin: auto;
 	width : 11em;
 }
@@ -144,20 +144,27 @@ footer .button {
 .buttons_start,
 .buttons_stop {
 	display              : grid;
-	grid-template-columns: repeat(4, 1fr);
 	grid-auto-rows       : 4em;
 	gap                  : .333%;
 	margin-bottom        : 1em;
 }
 
-.buttons_start .button,
-.buttons_stop .button {
+.buttons_start{
+	grid-template-columns: repeat(clamp(1, var(--js-buttons-start-count, 4), 4), 1fr);
+}
+
+.buttons_stop {
+	grid-template-columns: repeat(clamp(1, var(--js-buttons-stop-count, 4), 4), 1fr);
+}
+
+.buttons_start .button.show,
+.buttons_stop .button.show {
 	display    : flex;
 	align-items: center;
 }
 
-.buttons_start .button button,
-.buttons_stop .button button {
+.buttons_start .button.show button,
+.buttons_stop .button.show button {
 	width: 100%;
 }
 

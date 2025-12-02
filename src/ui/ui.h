@@ -58,7 +58,6 @@ class Ui final
 	BUTTON(_start_proxy_dpi);
 	BUTTON(_stop_proxy_dpi);
 	BUTTON(_stop_service_all);
-
 	BUTTON(_start_testing);
 
 	UL_LIST(_active_service);
@@ -84,6 +83,12 @@ class Ui final
 	// footer
 	BUTTON(_link_to_github);
 
+	enum StoppingService : u32
+	{
+		eUnblock = (1 << 0),
+		eProxyDpi = (1 << 1)
+	};
+
 public:
 	Ui() = delete;
 	Ui(UiBase* ui_base);
@@ -99,27 +104,39 @@ private:
 	void _checkConflictService();
 
 	void _setting();
-	void _testing();
+
+	// Testing
+	void _testingInit();
+	void _testingUpdate();
 	void _testingWindow();
 
-	void _activeService();
+	// Testing methods base
+	void _activeServiceUpdate();
+	void _testingServiceDomains();
 
+
+	// Starting services
 	void _startInit();
 	void _startUnblock();
 	void _startProxy();
 	//void _startTorProxy();
+
+	// Starting services base methods 
 	void _startServiceWindow();
-
-	void _stopInit();
-	void _stopUnblock();
-	void _stopProxy();
-	//void _stopTorProxy();
-
-	void _buttonUpdate();
-
 	void _clickStartService();
 	void _autoStart();
 	void _startServiceFromConfig();
+	JSFunction _updateCountStartStopButtonToCss;
 
+	// Starting services update button
+	void _buttonUpdate();
+
+	// Stopping services
+	void _stopInit();
+	void _stoppingButtonUpdate();
+	void _stoppingServices(StoppingService type);
+	//void _stopTorProxy();
+
+	// base footer
 	void _footerElements();
 };

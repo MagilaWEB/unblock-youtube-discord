@@ -164,6 +164,9 @@ void Ui::_buttonUpdate()
 		_stop_proxy_dpi->hide();
 	}
 
+	if (_updateCountStartStopButtonToCss)
+		_updateCountStartStopButtonToCss({});
+
 	/*if (_tor_proxy_enable->getState() && _unblock->activeTor())
 		_start_proxy_dpi->setTitle("str_b_restart_service_proxy");
 	else
@@ -274,7 +277,7 @@ void Ui::_autoStart()
 			}
 
 			_buttonUpdate();
-			_activeService();
+			_activeServiceUpdate();
 
 			_automatically_strategy_cancel = false;
 			_window_auto_start_wait->hide();
@@ -301,7 +304,7 @@ void Ui::_startServiceFromConfig()
 
 				_unblock->startService(_proxy_click_state);
 				_buttonUpdate();
-				_activeService();
+				_activeServiceUpdate();
 				_proxy_click_state = false;
 				_window_wait_start_service->hide();
 			}

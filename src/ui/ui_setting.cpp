@@ -221,7 +221,7 @@ void Ui::_setting()
 
 				createElements();
 				_buttonUpdate();
-				_testing();
+				_testingUpdate();
 				return false;
 			}
 		);
@@ -450,7 +450,7 @@ void Ui::_setting()
 				}
 
 				_buttonUpdate();
-				_testing();
+				_testingUpdate();
 
 				return false;
 			}

@@ -166,6 +166,7 @@ function createListUl(_selector, _name, _title, _first) {
 	}
 
 	const div = document.createElement("div");
+	div.classList.add("list_ul");
 	div.classList.add("block");
 	div.classList.add("show");
 

@@ -6,19 +6,25 @@ str_h2_setting=Настройки
 str_link_to_github=Перейти в GitHub
 
 // BUTTON HOME
-str_b_start_service=Запустить службу
-str_b_restart_service=Перезапустить службу
-str_b_start_find_config=Подобрать конфигурациию
-str_b_stop_service=Остановить службы
+str_b_start_unblock=Запустить unblock
+str_b_restart_unblock=Перезапустить unblock
+str_b_stop_unblock=Остановить unblock
+str_b_start_proxy_dpi=Запустить ProxyDPI
+str_b_restart_proxy_dpi=Перезапустить ProxyDPI
+str_b_stop_proxy_dpi=Остановить ProxyDPI
+str_b_stop_service_all=Остановить все службы
+
 str_b_start_testing=Запустить тестирование
-str_b_start_service_proxy=Запустить ProxyDPI
-str_b_restart_service_proxy=Перезапустить службу ProxyDPI
+str_b_start_find_config=Подобрать конфигурациию
 str_b_start_find_config_proxy=Подобрать конфигурациию ProxyDPI
 
 // Common
 str_please_wait=Пожалуйста подождите!
 str_warning=Предупреждение!
 str_error=Ошибка!
+
+// Input console log info
+str_beginning_auto_selection=Запущен автоматический подбор конфигурации.
 
 // BLOCK HOME
 str_h2_active_service=Активные службы:
@@ -111,15 +117,22 @@ str_unblock_enable_description=Параметр отвечающий за исп
 str_unblock_enable_discord_title=Обход блокировки discord
 str_unblock_enable_discord_description=Опция включает\отключает обход блокировки для discord, если опция отключена, тестирование доменов discord будет так же отключена,
 фильтры трафика для discord тоже будут отключены.
+
 str_unblock_enable_x.com_title=Обход блокировки сотсети x.com
 str_unblock_enable_x.com_description=Опция включает\отключает обход блокировки для сотсети x.com, если опция отключена, тестирование доменов x.com будет так же отключена,
 фильтры трафика для x.com тоже будут отключены.
+
 str_unblock_enable_youtube_title=Обход блокировки youtube
 str_unblock_enable_youtube_description=Опция включает\отключает обход блокировки для youtube, если опция отключена, тестирование доменов youtube будет так же отключена,
 фильтры трафика для youtube тоже будут отключены.
+
 str_unblock_enable_game_mod_title=Обход блокировок онлайн игр
 str_unblock_enable_game_mod_description=Опция включает\отключает обход блокировки для онлайновых игр, данный режим достаточно груб и может пагубно влиять на сетевой трафик.
 Рекомендуется использовать только если в онлайновой игре действительно есть проблемы с доступности к серверу.
+
+str_unblock_enable_torproject_title=Обход блокировки torproject
+str_unblock_enable_torproject_description=Опция включает\отключает обход блокировки для torproject, если опция отключена, тестирование доменов torproject будет так же отключена,
+фильтры трафика для torproject тоже будут отключены.
 
 // Setting checkbox unblock enable top_level_domains
 str_unblock_filtering_top_level_domains_title=Фильтровать трафик по доменам высшего уровня

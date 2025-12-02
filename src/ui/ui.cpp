@@ -13,10 +13,15 @@ Ui::Ui(UiBase* ui_base) : _ui_base(ui_base)
 			return false;
 		}
 	);
+
+	
 }
 
 void Ui::initialize()
 {
+	auto js_global = JSGlobalObject();
+	_updateCountStartStopButtonToCss = js_global["updateCountStartStopButtonToCss"];
+
 	_checkConflictService();
 
 	_setting();
@@ -24,7 +29,7 @@ void Ui::initialize()
 	// HOME
 	_startInit();
 	_stopInit();
-	_testing();
+	_testingInit();
 
 	_footerElements();
 }
