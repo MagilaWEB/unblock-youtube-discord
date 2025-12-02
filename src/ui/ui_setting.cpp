@@ -67,7 +67,7 @@ void Ui::_setting()
 
 			set_default_select(_unblock_select_config, "config");
 
-			_updateTitleButton();
+			_buttonUpdate();
 
 			_unblock_select_config->addEventChange(
 				[this, set_new_value](JSArgs args)
@@ -220,7 +220,7 @@ void Ui::_setting()
 				_ui_base->userSetting()->writeSectionParameter("UNBLOCK", "enable", static_cast<String>(args[0].ToString()).utf8().data());
 
 				createElements();
-				_startUnblock();
+				_buttonUpdate();
 				_testing();
 				return false;
 			}
@@ -335,8 +335,7 @@ void Ui::_setting()
 
 	// Proxy Service
 	{
-		_proxy_enable
-			->create("#setting section .proxy", "str_checkbox_proxy_enable_title", Localization::Str{ "str_checkbox_proxy_enable_description" });
+		_proxy_enable->create("#setting section .proxy", "str_checkbox_proxy_enable_title", Localization::Str{ "str_checkbox_proxy_enable_description" });
 
 		auto result = _ui_base->userSetting()->parameterSection<bool>("PROXY", "enable");
 		_proxy_enable->setState(result ? result.value() : false);
@@ -366,7 +365,7 @@ void Ui::_setting()
 						static_cast<String>(_proxy_select_config->getSelectedOptionValue().ToString()).utf8().data()
 					);
 
-				_updateTitleButton(true);
+				_buttonUpdate();
 
 				_proxy_select_config->addEventChange(
 					[this](JSArgs args)
@@ -450,7 +449,7 @@ void Ui::_setting()
 					_proxy_ip->remove();
 				}
 
-				_startProxy();
+				_buttonUpdate();
 				_testing();
 
 				return false;

@@ -7,15 +7,34 @@ void Ui::_stopInit()
 	_window_wait_stop_service->create(Localization::Str{ "str_please_wait" }, "str_window_service_stop_wait_description");
 	_window_wait_stop_service->setType(SecondaryWindow::Type::Wait);
 
-	_stopUnblock();
+	_stop_service_all->create("#home section .buttons_stop", "str_b_stop_service_all");
+	_stop_service_all->addEventClick(
+		[this](JSArgs)
+		{
+			Core::get().addTask(
+				[this]
+				{
+					_window_wait_stop_service->show();
+					_unblock->removeService();
+					_unblock->removeService(true);
+					_buttonUpdate();
+					_activeService();
+					_window_wait_stop_service->hide();
+				}
+			);
+			return false;
+		}
+	);
+
 	_stopProxy();
+	_stopUnblock();
+	
 	//_stopTorProxy();
 }
 
 void Ui::_stopUnblock()
 {
-	_stop_unblock->remove();
-	_stop_unblock->create("#home section .buttons_stop", "str_b_stop_unblock");
+	_stop_unblock->create("#home section .buttons_stop", "str_b_stop_unblock", true);
 
 	_stop_unblock->addEventClick(
 		[this](JSArgs)
@@ -25,7 +44,7 @@ void Ui::_stopUnblock()
 				{
 					_window_wait_stop_service->show();
 					_unblock->removeService();
-					_updateTitleButton();
+					_buttonUpdate();
 					_activeService();
 					_window_wait_stop_service->hide();
 				}
@@ -38,8 +57,7 @@ void Ui::_stopUnblock()
 
 void Ui::_stopProxy()
 {
-	_stop_proxy_dpi->remove();
-	_stop_proxy_dpi->create("#home section .buttons_stop", "str_b_stop_proxy_dpi");
+	_stop_proxy_dpi->create("#home section .buttons_stop", "str_b_stop_proxy_dpi", true);
 
 	_stop_proxy_dpi->addEventClick(
 		[this](JSArgs)
@@ -49,8 +67,7 @@ void Ui::_stopProxy()
 				{
 					_window_wait_stop_service->show();
 					_unblock->removeService(true);
-					_unblock->removeTor();
-					_updateTitleButton(true);
+					_buttonUpdate();
 					_activeService();
 					_window_wait_stop_service->hide();
 				}

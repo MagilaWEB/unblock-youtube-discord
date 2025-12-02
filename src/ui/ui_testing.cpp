@@ -166,6 +166,8 @@ void Ui::_testingWindow()
 			{
 				_list_domain_video->clear();
 				_list_domain->clear();
+				_list_proxy_domain->clear();
+				_list_proxy_domain_video->clear();
 			}
 			Core::get().addTask(event_test_domain);
 			return false;

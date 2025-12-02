@@ -19,6 +19,9 @@ class Ui final
 	// Setting
 	Ptr<File> _file_service_list;
 
+	std::atomic_bool _automatically_strategy_cancel{ false };
+	std::atomic_bool _proxy_click_state{ false };
+
 	// Setting Common
 #ifndef DEBUG
 	CHECK_BOX(_show_console);
@@ -54,6 +57,7 @@ class Ui final
 	BUTTON(_stop_unblock);
 	BUTTON(_start_proxy_dpi);
 	BUTTON(_stop_proxy_dpi);
+	BUTTON(_stop_service_all);
 
 	BUTTON(_start_testing);
 
@@ -111,7 +115,11 @@ private:
 	void _stopProxy();
 	//void _stopTorProxy();
 
-	void _updateTitleButton(bool proxy = false);
+	void _buttonUpdate();
+
+	void _clickStartService();
+	void _autoStart();
+	void _startServiceFromConfig();
 
 	void _footerElements();
 };
