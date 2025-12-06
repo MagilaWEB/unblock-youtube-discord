@@ -21,6 +21,8 @@ class UNBLOCK_API Unblock final
 	Ptr<StrategiesDPI>		_strategies_dpi;
 	Ptr<ProxyStrategiesDPI> _proxy_strategies_dpi;
 
+	ProxyData _proxy_data{};
+
 	struct StrategyType
 	{
 		u32 proxy_type{ 0 };
@@ -39,6 +41,9 @@ public:
 	void changeStrategy(pcstr name_config, pcstr name_fake_bin);
 	void changeProxyStrategy(pcstr name_config);
 	void changeFilteringTopLevelDomains(bool state = false);
+
+	void changeProxyIP(std::string ip);
+	void changeProxyPort(u32 port);
 
 	void addOptionalStrategies(std::string name);
 	void removeOptionalStrategies(std::string name);
@@ -75,4 +80,7 @@ public:
 	void maxWaitAccurateTesting(u32 second);
 
 	bool validDomain(bool proxy = false);
+
+private:
+	void _updateProxyData();
 };

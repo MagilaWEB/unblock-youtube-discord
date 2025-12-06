@@ -79,6 +79,18 @@ void Unblock::changeProxyStrategy(pcstr name_config)
 	_proxy_strategies_dpi->changeStrategy(name_config);
 }
 
+void Unblock::changeProxyIP(std::string ip)
+{
+	_proxy_data.IP = ip;
+	_updateProxyData();
+}
+
+void Unblock::changeProxyPort(u32 port)
+{
+	_proxy_data.PORT = port;
+	_updateProxyData();
+}
+
 void Unblock::changeFilteringTopLevelDomains(bool state)
 {
 	_strategies_dpi->changeFilteringTopLevelDomains(state);
@@ -410,4 +422,11 @@ void Unblock::startService(bool proxy)
 			}
 		}
 	}
+}
+
+void Unblock::_updateProxyData()
+{
+	_proxy_strategies_dpi->changeProxyData(_proxy_data);
+	_domain_testing_proxy->changeProxy(_proxy_data.IP, _proxy_data.PORT);
+	_domain_testing_proxy_video->changeProxy(_proxy_data.IP, _proxy_data.PORT);
 }

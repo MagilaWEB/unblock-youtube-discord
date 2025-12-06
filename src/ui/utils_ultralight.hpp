@@ -1,0 +1,169 @@
+#pragma once
+
+#ifdef __clang__
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Weverything"
+#else
+	#pragma warning(push)
+	#pragma warning(disable : 4'100)
+#endif
+
+#include <AppCore/AppCore.h>
+#include <AppCore/Window.h>
+#include <AppCore/Overlay.h>
+#include <Ultralight/Ultralight.h>
+
+#ifdef __clang__
+	#pragma clang diagnostic pop
+#else
+	#pragma warning(pop)
+#endif
+
+namespace ultralight
+{
+	template<typename Type = pcstr>
+	Type JSToCPP(JSValue value_str)
+	{
+		if constexpr (std::is_same_v<Type, pcstr> || std::is_same_v<Type, cpcstr> || std::is_same_v<Type, std::string>)
+			return static_cast<String>(value_str.ToString()).utf8().data();
+
+		if constexpr (std::is_same_v<Type, bool>)
+			return value_str.ToBoolean();
+
+		if constexpr (std::is_same_v<Type, u32> || std::is_same_v<Type, u64> || std::is_same_v<Type, u16> || std::is_same_v<Type, u8>)
+		{
+			if (!value_str.IsNumber())
+			{
+				Debug::warning("Could not be converted to an unsigned int because integer JS is less than 0, returned by default for CPP 0.");
+				return 0;
+			}
+
+			auto integer = value_str.ToInteger();
+			if (integer < 0)
+			{
+				Debug::warning(
+					"Could not be converted to an unsigned int because integer JS is less than 0, the current value [%d] is returned by default for "
+					"CPP 0.",
+					integer
+				);
+				return 0;
+			}
+
+			constexpr Type max_integer = type_max<Type>;
+			if (integer > max_integer)
+			{
+				Debug::warning(
+					"Failed to convert to unsigned int because integer JS is greater than the maximum value of the current CPP data type[% d],the "
+					"current value of JS is integer[%d], by default, CPP returns[%d].",
+					max_integer,
+					integer,
+					max_integer
+				);
+
+				return max_integer;
+			}
+			return static_cast<Type>(integer);
+		}
+
+		if constexpr (std::is_same_v<Type, s64>)
+		{
+			if (!value_str.IsNumber())
+			{
+				Debug::warning("Could not be converted to an int because integer JS is less than 0, returned by default for CPP 0.");
+				return 0;
+			}
+
+			return value_str.ToInteger();
+		}
+
+		if constexpr (std::is_same_v<Type, s32> || std::is_same_v<Type, u16> || std::is_same_v<Type, u8>)
+		{
+			if (!value_str.IsNumber())
+			{
+				Debug::warning("Could not be converted to an int because integer JS is less than 0, returned by default for CPP 0.");
+				return 0;
+			}
+
+			auto integer		  = value_str.ToInteger();
+			constexpr Type min_integer = type_min<Type>;
+			if (integer < min_integer)
+			{
+				Debug::warning(
+					"Couldn't convert to int because integer JS exceeds the minimum value of the current data type CPP [%d], the current value of JS "
+					"is integer [%d], by default CPP returns [%d].",
+					min_integer,
+					integer,
+					min_integer
+				);
+				return min_integer;
+			}
+
+			constexpr Type max_integer = type_max<Type>;
+			if (integer > max_integer)
+			{
+				Debug::warning(
+					"Failed to convert to int because integer JS is greater than the maximum value of the current CPP data type[%d],the "
+					"current value of JS is integer[%d], by default, CPP returns[%d].",
+					max_integer,
+					integer,
+					max_integer
+				);
+
+				return max_integer;
+			}
+			return static_cast<Type>(integer);
+		}
+
+		if constexpr (std::is_same_v<Type, float>)
+		{
+			if (!value_str.IsNumber())
+			{
+				Debug::warning("Could not be converted to an float because integer JS is less than 0, returned by default for CPP 0.");
+				return 0.f;
+			}
+
+			auto integer		  = value_str.ToNumber();
+			constexpr Type min_integer = type_min<Type>;
+			if (integer < min_integer)
+			{
+				Debug::warning(
+					"Couldn't convert to float because integer JS exceeds the minimum value of the current data type CPP [%f], the current value of "
+					"JS "
+					"is integer [%f], by default CPP returns [%f].",
+					min_integer,
+					integer,
+					min_integer
+				);
+				return min_integer;
+			}
+
+			constexpr Type max_integer = type_max<Type>;
+			if (integer > max_integer)
+			{
+				Debug::warning(
+					"Failed to convert to float because integer JS is greater than the maximum value of the current CPP data type[%f],the "
+					"current value of JS is integer[%f], by default, CPP returns[%f].",
+					max_integer,
+					integer,
+					max_integer
+				);
+
+				return max_integer;
+			}
+			return static_cast<Type>(integer);
+		}
+
+		if constexpr (std::is_same_v<Type, double>)
+		{
+			if (!value_str.IsNumber())
+			{
+				Debug::warning("Could not be converted to an double because integer JS is less than 0, returned by default for CPP 0.");
+				return 0.0;
+			}
+			return value_str.ToNumber();
+		}
+
+		Debug::warning("It is not possible to convert this data type.");
+		return Type{};
+	}
+}

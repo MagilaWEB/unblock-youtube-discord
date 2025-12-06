@@ -103,7 +103,41 @@ public:
 private:
 	void _checkConflictService();
 
-	void _setting();
+	void _settingInit();
+	void _settingShowConsole();
+	void _settingTestDomainsStartup();
+	void _settingAccurateTesting();
+
+	void _settingMaxTimeWait();
+	void _settingMaxTimeWaitUpdate();
+
+	void _settingUnblockEnable();
+
+	void _settingUnblockListEnableServices();
+	void _settingUnblockListEnableServicesUpdate();
+
+	void _settingUnblockFilteringTopLevelDomains();
+	void _settingUnblockFilteringTopLevelDomainsUpdate();
+
+	void _settingUnblockEnableManual();
+	void _settingUnblockEnableManualUpdate();
+
+	void _settingUnblockEnableManualSelect();
+	void _settingUnblockEnableManualSelectUpdate();
+
+	void _settingProxyDPIEnable();
+
+	void _settingProxyDPIManualEnable();
+	void _settingProxyDPIManualEnableUpdate();
+
+	void _settingProxyDPISelectConfig();
+	void _settingProxyDPISelectConfigUpdate();
+
+	void _settingProxyDPIInputIP();
+	void _settingProxyDPIInputIPUpdate();
+
+	void _settingProxyDPIInputPort();
+	void _settingProxyDPIInputPortUpdate();
 
 	// Testing
 	void _testingInit();

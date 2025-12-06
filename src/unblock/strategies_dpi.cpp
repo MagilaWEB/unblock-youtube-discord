@@ -93,10 +93,7 @@ void StrategiesDPI::addOptionalStrategies(std::string name)
 {
 	auto it = std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), name);
 	if (it != _section_opt_service_names.end())
-	{
-		Debug::warning("%s It has already been added!", name.c_str());
 		return;
-	}
 
 	_section_opt_service_names.emplace_back(name);
 }

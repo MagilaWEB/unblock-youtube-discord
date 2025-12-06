@@ -13,8 +13,6 @@ Ui::Ui(UiBase* ui_base) : _ui_base(ui_base)
 			return false;
 		}
 	);
-
-	
 }
 
 void Ui::initialize()
@@ -24,7 +22,7 @@ void Ui::initialize()
 
 	_checkConflictService();
 
-	_setting();
+	_settingInit();
 
 	// HOME
 	_startInit();
