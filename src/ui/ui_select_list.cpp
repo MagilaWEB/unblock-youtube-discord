@@ -108,9 +108,8 @@ void SelectList::clear()
 			if (!_created)
 				return;
 
-			_event_click[name()].clear();
 			RefPtr<JSContext> lock(_view->LockJSContext());
-			ASSERT_ARGS(_create({ name() }).ToBoolean() == true, "Couldn't clear a %s named [%s]", _type, name());
+			ASSERT_ARGS(_clear({ name() }).ToBoolean() == true, "Couldn't clear a %s named [%s]", _type, name());
 		}
 	);
 }
