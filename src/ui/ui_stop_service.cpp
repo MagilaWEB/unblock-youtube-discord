@@ -37,10 +37,6 @@ void Ui::_stopInit()
 	_buttonUpdate();
 }
 
-void Ui::_stoppingButtonUpdate()
-{
-}
-
 void Ui::_stoppingServices(StoppingService type)
 {
 	Core::get().addTask(

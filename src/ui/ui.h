@@ -167,7 +167,6 @@ private:
 
 	// Stopping services
 	void _stopInit();
-	void _stoppingButtonUpdate();
 	void _stoppingServices(StoppingService type);
 	//void _stopTorProxy();
 
