@@ -168,6 +168,9 @@ void StrategiesDPI::_uploadStrategies()
 							_readFileStrategies(service_name_type, index);
 						}
 
+						_service_blocklist_file = "all.list";
+						_readFileStrategies("END", index);
+
 						for (auto& line : _strategy_dpi[index])
 							line.append(" ");
 
