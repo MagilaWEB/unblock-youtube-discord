@@ -10,7 +10,7 @@
 #include "../unblock/unblock.h"
 
 class UiBase;
-class Ui final
+class Ui final : public utils::DefaultInit
 {
 	std::shared_ptr<UiBase> _ui_base{ nullptr };
 
@@ -29,6 +29,7 @@ class Ui final
 
 	CHECK_BOX(_testing_domains_startup);
 	CHECK_BOX(_accurate_testing);
+	CHECK_BOX(_enable_dns_hosts);
 	INPUT(_max_time_wait_testing);
 	INPUT(_max_time_wait_accurate_testing);
 
@@ -80,6 +81,8 @@ class Ui final
 
 	SECONDARY_WINDOW(_window_configuration_selection_error);
 
+	SECONDARY_WINDOW(_window_to_warn_enable_dns_hosts);
+
 	// footer
 	BUTTON(_link_to_github);
 
@@ -90,13 +93,7 @@ class Ui final
 	};
 
 public:
-	Ui() = delete;
 	Ui(UiBase* ui_base);
-	Ui(const Ui&)			 = default;
-	Ui(Ui&&)				 = default;
-	Ui& operator=(const Ui&) = default;
-	Ui& operator=(Ui&&)		 = default;
-	virtual ~Ui()			 = default;
 
 	void initialize();
 
@@ -106,6 +103,8 @@ private:
 	void _settingInit();
 	void _settingShowConsole();
 	void _settingTestDomainsStartup();
+	void _settingEnableDnsHosts();
+	void _settingEnableDnsHostsUpdate();
 	void _settingAccurateTesting();
 
 	void _settingMaxTimeWait();

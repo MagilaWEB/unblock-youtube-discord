@@ -2,8 +2,10 @@
 #include "strategies_dpi.h"
 #include "proxy_strategies_dpi.h"
 #include "domain_testing.h"
+#include "dns_host.h"
 
 #include "../core/service.h"
+
 
 class UNBLOCK_API Unblock final
 {
@@ -20,6 +22,7 @@ class UNBLOCK_API Unblock final
 	Ptr<DomainTesting>		_domain_testing_proxy_video{ true };
 	Ptr<StrategiesDPI>		_strategies_dpi;
 	Ptr<ProxyStrategiesDPI> _proxy_strategies_dpi;
+	Ptr<DNSHost>			_dns_hosts;
 
 	ProxyData _proxy_data{};
 
@@ -69,6 +72,9 @@ public:
 	void startTor();
 	void removeTor();
 	bool activeTor();
+
+	void dnsHosts(bool state);
+	const std::list<std::string>& dnsHostsListName();
 
 	template<typename Type>
 	void testingDomain(std::function<void(pcstr url, bool state)>&& callback = [](pcstr, bool) {}, bool video = false, bool base_test = true);

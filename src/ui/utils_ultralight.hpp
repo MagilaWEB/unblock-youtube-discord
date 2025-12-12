@@ -28,7 +28,13 @@ namespace ultralight
 			return static_cast<String>(value_str.ToString()).utf8().data();
 
 		if constexpr (std::is_same_v<Type, bool>)
-			return value_str.ToBoolean();
+		{
+			if (value_str.IsBoolean())
+				return value_str.ToBoolean();
+
+			Debug::warning("Could not be converted to bool because the JS value is not the bool returned by default for CPP false.");
+			return false;
+		}
 
 		if constexpr (std::is_same_v<Type, u32> || std::is_same_v<Type, u64> || std::is_same_v<Type, u16> || std::is_same_v<Type, u8>)
 		{
@@ -84,7 +90,7 @@ namespace ultralight
 				return 0;
 			}
 
-			auto integer		  = value_str.ToInteger();
+			auto		   integer	   = value_str.ToInteger();
 			constexpr Type min_integer = type_min<Type>;
 			if (integer < min_integer)
 			{
@@ -122,7 +128,7 @@ namespace ultralight
 				return 0.f;
 			}
 
-			auto integer		  = value_str.ToNumber();
+			auto		   integer	   = value_str.ToNumber();
 			constexpr Type min_integer = type_min<Type>;
 			if (integer < min_integer)
 			{
@@ -162,8 +168,5 @@ namespace ultralight
 			}
 			return value_str.ToNumber();
 		}
-
-		Debug::warning("It is not possible to convert this data type.");
-		return Type{};
 	}
 }

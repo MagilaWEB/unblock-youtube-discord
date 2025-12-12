@@ -351,6 +351,15 @@ bool Unblock::activeTor()
 	return _tor->isRun();
 }
 
+void Unblock::dnsHosts(bool state)
+{
+	state ? _dns_hosts->enable() : _dns_hosts->disable();
+}
+
+const std::list<std::string> & Unblock::dnsHostsListName()
+{
+	return _dns_hosts->listDnsFileName();
+}
 
 void Unblock::removeService(bool proxy)
 {

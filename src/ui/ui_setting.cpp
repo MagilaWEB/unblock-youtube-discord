@@ -8,6 +8,7 @@ void Ui::_settingInit()
 	_settingShowConsole();
 	_settingTestDomainsStartup();
 	_settingAccurateTesting();
+	_settingEnableDnsHosts();
 	_settingMaxTimeWait();
 
 	_settingUnblockEnable();
@@ -60,6 +61,66 @@ void Ui::_settingTestDomainsStartup()
 	);
 }
 
+void Ui::_settingEnableDnsHosts()
+{
+	Localization::Str window_description{ "str_window_to_warn_enable_dns_hosts_description" };
+	std::string		  description = window_description();
+
+	std::string str_list_name{};
+
+	auto& list_name = _unblock->dnsHostsListName();
+	for (auto& name : list_name)
+		str_list_name.append(name).append(", ");
+
+	str_list_name.pop_back();
+	str_list_name.pop_back();
+
+	_window_to_warn_enable_dns_hosts->create(Localization::Str{ "str_warning" }, utils::format(description.c_str(), str_list_name.c_str()).c_str());
+
+	_window_to_warn_enable_dns_hosts->setType(SecondaryWindow::Type::YesNo);
+	_window_to_warn_enable_dns_hosts->addEventYesNo(
+		[this](JSArgs args)
+		{
+			_ui_base->userSetting()->writeSectionParameter("SUSTEM", "enable_dns_hosts", JSToCPP(args[0]));
+			_settingEnableDnsHostsUpdate();
+			_window_to_warn_enable_dns_hosts->hide();
+			return false;
+		}
+	);
+
+	_enable_dns_hosts
+		->create("#setting section .common", "str_checkbox_enable_dns_hosts_title", Localization::Str{ "str_checkbox_enable_dns_hosts_description" });
+	_enable_dns_hosts->addEventClick(
+		[this](JSArgs args)
+		{
+			if (JSToCPP<bool>(args[0]))
+			{
+				_window_to_warn_enable_dns_hosts->show();
+				return false;
+			}
+
+			_ui_base->userSetting()->writeSectionParameter("SUSTEM", "enable_dns_hosts", "false");
+			_settingEnableDnsHostsUpdate();
+			return false;
+		}
+	);
+
+	_settingEnableDnsHostsUpdate();
+}
+
+void Ui::_settingEnableDnsHostsUpdate()
+{
+	auto result = _ui_base->userSetting()->parameterSection<bool>("SUSTEM", "enable_dns_hosts");
+	if (result)
+	{
+		const bool state = result.value();
+		_enable_dns_hosts->setState(state);
+		Core::get().addTask([this, state] { _unblock->dnsHosts(state); });
+	}
+	else
+		_window_to_warn_enable_dns_hosts->show();
+}
+
 void Ui::_settingAccurateTesting()
 {
 	_accurate_testing
@@ -104,8 +165,7 @@ void Ui::_settingMaxTimeWait()
 	_max_time_wait_accurate_testing->addEventSubmit(
 		[this](JSArgs args)
 		{
-			_ui_base->userSetting()
-				->writeSectionParameter("TESTING", "max_time_wait_accurate_testing", JSToCPP(args[0]));
+			_ui_base->userSetting()->writeSectionParameter("TESTING", "max_time_wait_accurate_testing", JSToCPP(args[0]));
 			_settingMaxTimeWaitUpdate();
 			return false;
 		}
@@ -119,7 +179,7 @@ void Ui::_settingMaxTimeWaitUpdate()
 	if (_accurate_testing->getState())
 	{
 		_max_time_wait_accurate_testing->show();
-		
+
 		// get user setting
 		auto result = _ui_base->userSetting()->parameterSection<u32>("TESTING", "max_time_wait_accurate_testing");
 		if (result)
@@ -132,7 +192,7 @@ void Ui::_settingMaxTimeWaitUpdate()
 	else
 	{
 		_max_time_wait_testing->show();
-		
+
 		// get user setting
 		auto result = _ui_base->userSetting()->parameterSection<u32>("TESTING", "max_time_wait_testing");
 		if (result)
@@ -178,10 +238,7 @@ void Ui::_settingUnblockListEnableServices()
 		check_box->addEventClick(
 			[this, name](JSArgs args)
 			{
-				_ui_base->userSetting()->writeSectionParameter(
-					"UNBLOCK",
-					(std::string{ "enable_" } + name).c_str(), JSToCPP(args[0])
-				);
+				_ui_base->userSetting()->writeSectionParameter("UNBLOCK", (std::string{ "enable_" } + name).c_str(), JSToCPP(args[0]));
 
 				_settingUnblockListEnableServicesUpdate();
 				return false;
@@ -305,10 +362,7 @@ void Ui::_settingUnblockEnableManualSelect()
 	{
 		_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", set_val, JSToCPP(args[1]));
 
-		_ui_base->userSetting()->writeSectionParameter(
-			"REMEMBER_CONFIGURATION",
-			check_val, JSToCPP(select->getSelectedOptionValue())
-		);
+		_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", check_val, JSToCPP(select->getSelectedOptionValue()));
 	};
 
 	_unblock_select_config->create("#setting section .unblock", "str_select_config_title", Localization::Str{ "str_select_config_description" });
@@ -358,10 +412,7 @@ void Ui::_settingUnblockEnableManualSelectUpdate()
 			if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", name))
 				select->setSelectedOptionValue(config.value().c_str());
 			else
-				_ui_base->userSetting()->writeSectionParameter(
-					"REMEMBER_CONFIGURATION",
-					name, JSToCPP(select->getSelectedOptionValue())
-				);
+				_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", name, JSToCPP(select->getSelectedOptionValue()));
 		};
 
 		set_default_select(_unblock_select_config, "config");
@@ -469,12 +520,8 @@ void Ui::_settingProxyDPISelectConfigUpdate()
 		if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config_proxy"))
 			_proxy_select_config->setSelectedOptionValue(config.value().c_str());
 		else
-			_ui_base->userSetting()->writeSectionParameter(
-				"REMEMBER_CONFIGURATION",
-				"config_proxy",
-				JSToCPP(_proxy_select_config->getSelectedOptionValue()
-				)
-			);
+			_ui_base->userSetting()
+				->writeSectionParameter("REMEMBER_CONFIGURATION", "config_proxy", JSToCPP(_proxy_select_config->getSelectedOptionValue()));
 
 		_buttonUpdate();
 		return;
@@ -494,8 +541,9 @@ void Ui::_settingProxyDPIInputIP()
 		{
 			_ui_base->userSetting()->writeSectionParameter("PROXY", "ip", JSToCPP(args[0]));
 			_settingProxyDPIInputIPUpdate();
-		return false;
-	});
+			return false;
+		}
+	);
 
 	_settingProxyDPIInputIPUpdate();
 }

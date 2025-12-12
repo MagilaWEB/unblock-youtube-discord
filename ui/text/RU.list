@@ -80,6 +80,13 @@ str_window_continue_select_strategy_proxy_description=Выбран файл ко
 str_window_warning_conflict_service=Обнаружены конфликтные службы [%s], рекомендуется их удалить для коректной работы unblock.
 Удалить службы?
 
+// Secondary Window Warning about the introduction into the system
+str_window_to_warn_enable_dns_hosts_description=Для более эффективной работы Unblock требуется доступ к системным файлам Windows.
+Это требуется для обхода регеональных блокировок и DNS блокировок.
+Если вы согласитесь в системе будет редактирован hosts (это текстовый файл, который сопоставляет имена хостов с IP-адресами перед обращением к DNS-серверам).
+Рекомендовано включить данный режим, если что-то пойдет не так вы можете отключить данный режим из настроек а системный hosts будет востановлен к оригинальному.
+На текущий момент unblock сопоставляет имена хостов с IP-адресами перед обращением к DNS-серверам для следующий сервисов [%s].
+
 // Setting titles blocks
 str_setting_common_title=Общие
 str_setting_unblock_title=Unblock (winws/GoodBayDPI)
@@ -99,6 +106,11 @@ str_checkbox_accurate_testing_title=Запускать тестирование 
 str_checkbox_accurate_testing_description=Если данный параметр включен,
 тогда тестирование доменов производится с повешенной точностью, это подойдет для тех у кого не стабильное интернет соединение
 (Данный режим многократно увеличивает длительность тестирования).
+
+// Setting common Accurate testing
+str_checkbox_enable_dns_hosts_title=Локальный DNS hosts
+str_checkbox_enable_dns_hosts_description=Локальный DNS hosts позволяет сопоставлять имена хостов с IP-адресами перед обращением к DNS-серверам.
+Это позволяет обходить региональные блокировки и блокировки DNS серверов.
 
 // Setting common input max time wait accurate testing
 str_input_max_wait_accurate_testing_title=Время ожидания ответа в точном режиме

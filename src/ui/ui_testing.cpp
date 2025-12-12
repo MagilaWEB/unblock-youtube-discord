@@ -133,9 +133,9 @@ void Ui::_testingServiceDomains()
 								);
 							}
 						);
-					}
 
-					break;
+						break;
+					}
 				}
 			}
 
