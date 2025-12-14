@@ -318,7 +318,7 @@ void Service::stop()
 
 	update();
 
-	if (stopped && config.sc_status.dwCurrentState == SERVICE_STOPPED || !sc)
+	if ((stopped && config.sc_status.dwCurrentState == SERVICE_STOPPED) || !sc)
 		InputConsole::textOk("служба [%s] остановлена.", _name.c_str());
 }
 

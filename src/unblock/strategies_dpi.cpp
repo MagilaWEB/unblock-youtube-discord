@@ -119,6 +119,9 @@ void StrategiesDPI::_readFileStrategies(std::string section, u32 index_service)
 		section.c_str(),
 		[this, index_service](std::string _str)
 		{
+#if __clang__
+			[[clang::no_destroy]]
+#endif
 			static std::string include_section{ "include_section>>" };
 			if (_str.starts_with(include_section))
 			{

@@ -7,22 +7,16 @@ class CORE_API File final
 	CriticalSection lock;
 
 	using v_line_string = std::vector<std::string>;
+	using v_sections = std::map<std::string, std::list<std::string>>;
 
 	path		  _path_file{};
 	std::fstream  _stream;
 	v_line_string _line_string;
+	v_sections	  _map_list_string;
+
+
 	bool		  _open_state{ false };
 	bool		  _is_write{ false };
-
-	struct ItParameters
-	{
-		bool					entered_section{ false };
-		bool					section_end{ false };
-		bool					ran_parameter{ false };
-		v_line_string::iterator iterator;
-
-		u32 i{ 0 };
-	};
 
 public:
 	File() = default;
@@ -37,8 +31,8 @@ public:
 	void clear();
 	void close();
 
-	void forLine(std::function<bool(std::string str)> fn);
-	void forLineSection(pcstr section, std::function<bool(std::string str)> fn);
+	void forLine(std::function<bool(std::string)> fn);
+	void forLineSection(pcstr section, std::function<bool(std::string&)> fn);
 	void forLineParametersSection(pcstr section, std::function<bool(std::string key, std::string value)> fn);
 
 	template<typename TypeReturn>
@@ -48,7 +42,7 @@ public:
 	void writeSectionParameter(pcstr section, pcstr paramert, pcstr value_argument);
 
 private:
-	void _forLineSection(pcstr section, std::function<bool(ItParameters& it_opt)> fn);
+	void _normalize();
 	void _removeEmptyLine();
 	void _writeToFile();
 };

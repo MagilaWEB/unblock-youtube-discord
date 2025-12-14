@@ -1,5 +1,7 @@
 #include "file_system.h"
 
+static const std::regex r_section_name{ "\\[.*\\](?:.*|\\n)" };
+
 File::~File()
 {
 	close();
@@ -22,7 +24,7 @@ void File::forLine(std::function<bool(std::string)> fn)
 			break;
 }
 
-void File::_forLineSection(pcstr section, std::function<bool(ItParameters&)> fn)
+void File::forLineSection(pcstr section, std::function<bool(std::string&)> fn)
 {
 	CRITICAL_SECTION_RAII(lock);
 
@@ -32,111 +34,48 @@ void File::_forLineSection(pcstr section, std::function<bool(ItParameters&)> fn)
 		return;
 	}
 
-	const std::regex r_section_name{ "\\[.*\\](?:.*|\\n)" };
-	ItParameters	 option_it{};
-
-	for (option_it.iterator = _line_string.begin(); option_it.iterator < _line_string.end();)
+	auto& list_string = _map_list_string[section];
+	if (list_string.empty())
 	{
-		const auto& str = *option_it.iterator;
-
-		if (str.empty() || std::regex_match(str, std::regex{ "\n" }))
-		{
-			++option_it.iterator;
-			++option_it.i;
-			continue;
-		}
-
-		auto iterator = [&]
-		{
-			++option_it.i;
-			if (++option_it.iterator == _line_string.end())
-			{
-				option_it.iterator--;
-				option_it.section_end = true;
-				fn(option_it);
-				return true;
-			}
-
-			return false;
-		};
-
-
+		bool		start{ false };
+		bool		event{ true };
 		std::string name_section{ "[]" };
 		name_section.insert(1, section);
-
-		const bool presumably_section = std::regex_match(str, r_section_name);
-		const bool is_str_name		  = str.contains(name_section);
-
-		if (option_it.entered_section == false && presumably_section && is_str_name)
-		{
-			option_it.entered_section = true;
-			if (iterator())
-				break;
-			continue;
-		}
-
-		if (option_it.entered_section && !presumably_section)
-		{
-			option_it.ran_parameter = true;
-
-			if (fn(option_it))
-				break;
-
-			if (iterator())
-				break;
-
-			continue;
-		}
-
-		if (option_it.entered_section && presumably_section && !is_str_name)
-		{
-			option_it.ran_parameter = false;
-			option_it.section_end	= true;
-
-			if (fn(option_it))
+		forLine(
+			[&](std::string str)
 			{
-				option_it.entered_section = false;
-				break;
-			}
+				if ((!start) && std::regex_match(str, r_section_name) && str.contains(name_section))
+				{
+					start = true;
+					return false;
+				}
 
-			option_it.entered_section = false;
+				if (!start)
+					return false;
 
-			continue;
-		}
-
-		if (fn(option_it))
-		{
-			option_it.ran_parameter = false;
-			option_it.section_end	= false;
-			break;
-		}
-
-		option_it.ran_parameter = false;
-		option_it.section_end	= false;
-
-		if (iterator())
-			break;
-	}
-}
-
-void File::forLineSection(pcstr section, std::function<bool(std::string str)> fn)
-{
-	CRITICAL_SECTION_RAII(lock);
-
-	_forLineSection(
-		section,
-		[fn](const ItParameters& it)
-		{
-			if (it.section_end)
-				return true;
-
-			if(it.ran_parameter)
-				if (fn(*it.iterator))
+				if (std::regex_match(str, r_section_name))
 					return true;
 
-			return false;
-		}
-	);
+				if ((!str.empty()) && (!std::regex_match(str, std::regex{ "\n" })))
+				{
+					if (event)
+						event = !fn(str);
+
+					list_string.emplace_back(str);
+				}
+
+				return false;
+			}
+		);
+
+		_normalize();
+
+		return;
+	}
+
+	for (auto& str : list_string)
+		if (fn(str))
+			break;
 }
 
 void File::forLineParametersSection(pcstr section, std::function<bool(std::string key, std::string value)> fn)
@@ -266,50 +205,24 @@ void File::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_arg
 
 	bool stoped{ false };
 
-	_forLineSection(
+	forLineSection(
 		section,
-		[&](ItParameters& it)
+		[this, &stoped, parameter, value_argument](std::string& str)
 		{
-			if (it.ran_parameter && !it.section_end)
+			size_t pos = str.find_first_of("=");
+			if (pos != std::string::npos)
 			{
-				auto&  str = *it.iterator;
-				size_t pos = str.find_first_of("=");
-				if (pos != std::string::npos)
+				auto key = str.substr(0, pos);
+				utils::trim(key);
+				auto value = str.substr(++pos, str.size());
+				utils::trim(value);
+
+				if (key.contains(parameter))
 				{
-					auto key = str.substr(0, pos);
-					utils::trim(key);
-					auto value = str.substr(++pos, str.size());
-					utils::trim(value);
-
-					if (key.contains(parameter))
-					{
-						str	   = std::regex_replace(str, std::regex{ value }, value_argument);
-						stoped = true;
-						return true;
-					}
+					str	   = std::regex_replace(str, std::regex{ value }, value_argument);
+					stoped = true;
+					return true;
 				}
-			}
-			else if (it.section_end)
-			{
-				if (!it.entered_section)
-				{
-					if (!_line_string.empty())
-						_line_string.emplace_back("\n");
-
-					std::string str{ "[]" };
-					_line_string.emplace_back(str.insert(1, section));
-				}
-
-				std::string str{ parameter };
-				str += "=";
-				str += value_argument;
-				if (!it.entered_section)
-					_line_string.insert(_line_string.end(), str);
-				else
-					_line_string.insert(_line_string.begin() + (it.i - 1), str);
-
-				stoped = true;
-				return true;
 			}
 
 			return false;
@@ -319,17 +232,12 @@ void File::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_arg
 	if (stoped)
 		return;
 
-	if (!_line_string.empty())
-		_line_string.emplace_back("\n");
-
-	std::string str{ "[]" };
-	_line_string.emplace_back(str.insert(1, section));
-	str.clear();
-
+	std::string str{};
 	str	 = parameter;
 	str += "=";
 	str += value_argument;
-	_line_string.emplace_back(str);
+	_map_list_string[section].emplace_back(str);
+	_normalize();
 }
 
 std::string File::name() const
@@ -399,6 +307,40 @@ void File::close()
 	_open_state = false;
 }
 
+void File::_normalize()
+{
+	for (auto& [section, list_string] : _map_list_string)
+	{
+		std::string key{ "[]" };
+		key.insert(1, section);
+
+		bool   is_section{ false };
+		size_t it = 0;
+		for (; it < _line_string.size(); it++)
+		{
+			auto& str = _line_string[it];
+			if ((!is_section) && std::regex_match(str, r_section_name) && str.contains(key))
+				is_section = true;
+			else if (is_section && std::regex_match(str, r_section_name))
+				break;
+
+			if (is_section)
+			{
+				_line_string.erase(_line_string.begin() + it);
+				it--;
+			}
+		}
+
+		_line_string.insert(_line_string.begin() + it, key);
+
+		for (auto& str : list_string)
+			_line_string.insert(_line_string.begin() + ++it, str);
+
+		if (++it < _line_string.size())
+			_line_string.insert(_line_string.begin() + it, "\n");
+	}
+}
+
 void File::_removeEmptyLine()
 {
 	bool front{ true };
@@ -434,6 +376,8 @@ void File::_writeToFile()
 		return;
 
 	_stream.open(_path_file, std::ios::out | std::ios::binary);
+
+	_normalize();
 
 	_removeEmptyLine();
 
