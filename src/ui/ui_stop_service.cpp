@@ -56,26 +56,3 @@ void Ui::_stoppingServices(StoppingService type)
 		}
 	);
 }
-
-// void Ui::_stopTorProxy()
-//{
-//	_stop_tor_proxy->remove();
-//	_stop_tor_proxy->create("#home section .buttons_stop", "str_b_stop_tor_proxy");
-//
-//	_stop_tor_proxy->addEventClick(
-//		[this](JSArgs)
-//		{
-//			Core::get().addTask(
-//				[this]
-//				{
-//					_window_wait_stop_service->show();
-//					_unblock->removeTor();
-//					_activeService();
-//					_window_wait_stop_service->hide();
-//				}
-//			);
-//
-//			return false;
-//		}
-//	);
-// }
