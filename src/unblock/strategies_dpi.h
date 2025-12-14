@@ -4,6 +4,7 @@
 class StrategiesDPI final : public StrategiesDPIBase
 {
 	Ptr<File> _file_fake_bin_config;
+	Ptr<File> _file_blacklist_all;
 
 	std::atomic_bool _filtering_top_level_domains{ false };
 	std::atomic_bool _faked{ true };

@@ -37,6 +37,8 @@ StrategiesDPI::StrategiesDPI()
 			return false;
 		}
 	);
+
+	_file_blacklist_all->open(Core::get().userPath() / "all_service", ".list", true);
 }
 
 std::vector<std::string> StrategiesDPI::getStrategy(u32 service) const
@@ -146,32 +148,54 @@ void StrategiesDPI::_uploadStrategies()
 		for (auto& service : _strategy_dpi)
 			service.clear();
 
+		std::string base_path_blacklist = (Core::get().configsPath() / "blacklist").string();
+
+		_file_blacklist_all->clear();
+
+		for (auto& name : _section_opt_service_names)
+		{
+			_service_blocklist_file = base_path_blacklist + "\\";
+			_service_blocklist_file.append(name + ".list");
+
+			File blacklist{};
+			blacklist.open(_service_blocklist_file, "", true);
+
+			blacklist.forLine(
+				[this](std::string str)
+				{
+					_file_blacklist_all->writeText(str);
+					return false;
+				}
+			);
+		}
+
+		_file_blacklist_all->close();
+
 		_file_strategy_dpi->forLineSection(
 			"START_SERVICE",
-			[this](std::string str)
+			[this, base_path_blacklist](std::string str)
 			{
 				for (auto& [index, service_name] : indexStrategies)
 				{
 					if (str.contains(service_name))
 					{
-						_service_blocklist_file = "all.list";
+						_service_blocklist_file = _file_blacklist_all->getPath().string();
 
 						_readFileStrategies(service_name, index);
 
 						// Optional strategy sections for individual services.
 						for (auto& name : _section_opt_service_names)
 						{
+							_service_blocklist_file = base_path_blacklist + "\\";
+							_service_blocklist_file.append(name + ".list");
+
 							std::string service_name_type{ service_name };
 							service_name_type.append("_");
 							service_name_type.append(name);
-
-							_service_blocklist_file = name;
-							_service_blocklist_file.append(".list");
-
 							_readFileStrategies(service_name_type, index);
 						}
 
-						_service_blocklist_file = "all.list";
+						_service_blocklist_file = _file_blacklist_all->getPath().string();
 						_readFileStrategies("END", index);
 
 						for (auto& line : _strategy_dpi[index])
@@ -229,23 +253,21 @@ void StrategiesDPI::_saveStrategies(std::vector<std::string>& strategy_dpi, std:
 
 std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 {
-	auto path_file					 = Core::get().configsPath() / "blacklist" / _service_blocklist_file;
-	auto path_file_top_level_domains = Core::get().configsPath() / "top_level_domains.list";
-
 	if (str.contains("%BLOCKLIST%"))
 	{
 		if (_filtering_top_level_domains)
 		{
+			auto path_file_top_level_domains = Core::get().configsPath() / "top_level_domains.list";
 			ASSERT_ARGS(
 				std::filesystem::exists(path_file_top_level_domains),
 				"The [%s] file does not exist!",
 				path_file_top_level_domains.string().c_str()
 			);
-			return "--hostlist=" + (path_file_top_level_domains.string());
+			return "--blacklist " + (path_file_top_level_domains.string());
 		}
 
-		ASSERT_ARGS(std::filesystem::exists(path_file), "The [%s] file does not exist!", path_file.string().c_str());
-		return "--hostlist=" + (path_file.string());
+		ASSERT_ARGS(std::filesystem::exists(_service_blocklist_file), "The [%s] file does not exist!", _service_blocklist_file.c_str());
+		return "--hostlist=" + _service_blocklist_file;
 	}
 
 	if (str.contains("%DOMAINS-EXCLUDE%"))
@@ -259,6 +281,7 @@ std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 	{
 		if (_filtering_top_level_domains)
 		{
+			auto path_file_top_level_domains = Core::get().configsPath() / "top_level_domains.list";
 			ASSERT_ARGS(
 				std::filesystem::exists(path_file_top_level_domains),
 				"The [%s] file does not exist!",
@@ -267,8 +290,8 @@ std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 			return "--blacklist " + (path_file_top_level_domains.string());
 		}
 
-		ASSERT_ARGS(std::filesystem::exists(path_file), "The [%s] file does not exist!", path_file.string().c_str());
-		return "--blacklist " + (path_file.string());
+		ASSERT_ARGS(std::filesystem::exists(_service_blocklist_file), "The [%s] file does not exist!", _service_blocklist_file.c_str());
+		return "--blacklist " + _service_blocklist_file;
 	}
 
 	if (str.contains("%IP-SETLIST%"))
@@ -287,16 +310,6 @@ std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 
 	if (str.contains("%IP-BLOCKLIST%"))
 	{
-		if (_filtering_top_level_domains)
-		{
-			ASSERT_ARGS(
-				std::filesystem::exists(path_file_top_level_domains),
-				"The [%s] file does not exist!",
-				path_file_top_level_domains.string().c_str()
-			);
-			return "--hostlist=" + (path_file_top_level_domains.string());
-		}
-
 		auto path_ip_blacklist = Core::get().configsPath() / "ip-blacklist.list";
 		ASSERT_ARGS(std::filesystem::exists(path_ip_blacklist), "The [%s] file does not exist!", path_ip_blacklist.string().c_str());
 		return "--hostlist=" + (path_ip_blacklist.string());
