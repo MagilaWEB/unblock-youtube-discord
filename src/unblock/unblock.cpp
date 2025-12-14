@@ -318,37 +318,7 @@ void Unblock::checkStateServices(const std::function<void(pcstr, bool)>& callbac
 	callback("Unblock (winws.exe)", _unblock->isRun());
 	callback(_goodbay_dpi->getName().c_str(), _goodbay_dpi->isRun());
 	callback("ProxyDPI (BayDPI)", _proxy_dpi->isRun());
-	callback(_tor->getName().c_str(), _tor->isRun());
 	callback(_win_divert->getName().c_str(), _win_divert->isRun());
-}
-
-static std::vector<std ::string> test{};
-void Unblock::startTor()
-{
-	_tor->remove();
-	
-	if (test.empty())
-	{
-		test.push_back("-nt-service");
-		test.push_back("-f");
-		test.push_back(Core::get().binariesPath().string() + "\\Tor\\torrc");
-	}
-
-	_tor->setArgs(test);
-	_tor->setDescription("Tor сеть, программное обеспечение для обхода блокировки.");
-	_tor->create();
-
-	_tor->start();
-}
-
-void Unblock::removeTor()
-{
-	_tor->remove();
-}
-
-bool Unblock::activeTor()
-{
-	return _tor->isRun();
 }
 
 void Unblock::dnsHosts(bool state)
