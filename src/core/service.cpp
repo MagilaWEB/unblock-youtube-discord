@@ -60,6 +60,8 @@ void Service::create()
 
 	sc_path.append(args);
 
+	ASSERT_ARGS(sc_path.length() <= 4'128, "The maximum line size for the service path is 4127!");
+
 	_time_limit.start();
 	do
 	{
@@ -125,10 +127,6 @@ void Service::start()
 		return;
 	}
 
-	std::vector<pcstr> args;
-	for (auto& arg : _args)
-		args.push_back(arg.c_str());
-
 	InputConsole::textPlease("подождите окончания запуска службы [%s]", true, _name.c_str());
 
 	bool send_start = false;
@@ -136,7 +134,7 @@ void Service::start()
 	_time_limit.start();
 	do
 	{
-		send_start = StartService(sc, static_cast<u32>(args.size()), args.data());
+		send_start = StartService(sc, 0, nullptr);
 
 		// We try for 5 seconds, otherwise we interrupt.
 		if (_time_limit.getElapsed_sec() > 5.f)
