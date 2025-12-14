@@ -38,7 +38,7 @@ StrategiesDPI::StrategiesDPI()
 		}
 	);
 
-	_file_blacklist_all->open(Core::get().userPath() / "all_service", ".list", true);
+	_file_blacklist_all->open(Core::get().userPath() / "all_blacklist", ".list", true);
 }
 
 std::vector<std::string> StrategiesDPI::getStrategy(u32 service) const
