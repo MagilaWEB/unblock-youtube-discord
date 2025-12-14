@@ -23,6 +23,7 @@ public:
 	~File();
 
 	std::string name() const;
+	path		getPath() const;
 
 	size_t lineSize() const;
 

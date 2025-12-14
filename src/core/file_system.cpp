@@ -245,6 +245,11 @@ std::string File::name() const
 	return _path_file.filename().string();
 }
 
+path File::getPath() const
+{
+	return _path_file;
+}
+
 size_t File::lineSize() const
 {
 	return _line_string.size();
