@@ -148,7 +148,7 @@ KeepEmptyLines:
   AtStartOfBlock: false
   AtStartOfFile: false
 LambdaBodyIndentation: Signature
-LineEnding: LF
+LineEnding: CRLF
 MaxEmptyLinesToKeep: 1
 NamespaceIndentation: All
 PackConstructorInitializers: CurrentLine

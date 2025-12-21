@@ -129,12 +129,15 @@ void Service::start()
 
 	InputConsole::textPlease("подождите окончания запуска службы [%s]", true, _name.c_str());
 
-	bool send_start = false;
+	std::vector<pcstr> args;
+	for (auto& arg : _args)
+		args.push_back(arg.c_str());
 
+	bool send_start = false;
 	_time_limit.start();
 	do
 	{
-		send_start = StartService(sc, 0, nullptr);
+		send_start = StartService(sc, static_cast<u32>(args.size()), args.data());
 
 		// We try for 5 seconds, otherwise we interrupt.
 		if (_time_limit.getElapsed_sec() > 5.f)

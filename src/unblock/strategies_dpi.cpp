@@ -154,11 +154,11 @@ void StrategiesDPI::_uploadStrategies()
 
 		for (auto& name : _section_opt_service_names)
 		{
-			_service_blocklist_file = base_path_blacklist + "\\";
-			_service_blocklist_file.append(name + ".list");
+			auto service_blocklist_file = base_path_blacklist + "\\";
+			service_blocklist_file.append(name);
 
 			File blacklist{};
-			blacklist.open(_service_blocklist_file, "", true);
+			blacklist.open(service_blocklist_file, ".list", true);
 
 			blacklist.forLine(
 				[this](std::string str)
