@@ -44,31 +44,31 @@
 
 ### 📝 Предоставляет обход для следующих сервисов:
 
-YouTube
-Discord
-Instagram
-x.com
-TorProject
-Сlaude
-Beepl
-Deezer
-ElevenLabs
-FitBit
-GoogleAi
-Grok
-JetBrains
-LinearApp
-MicrosoftCopilot
-OpenAI
-Proton
-Rutor
-Spotify
-Supercell
-TraeAI
-Twitch
-WeatherCom
-Windsurf
-Xbox
+- YouTube
+- Discord
+- Instagram
+- x.com
+- TorProject
+- Сlaude
+- Beepl
+- Deezer
+- ElevenLabs
+- FitBit
+- GoogleAi
+- Grok
+- JetBrains
+- LinearApp
+- MicrosoftCopilot
+- OpenAI
+- Proton
+- Rutor
+- Spotify
+- Supercell
+- TraeAI
+- Twitch
+- WeatherCom
+- Windsurf
+- Xbox
 
 ### 📜 Инструкция:
 
