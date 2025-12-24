@@ -13,14 +13,11 @@ class ProxyStrategiesDPI final : public StrategiesDPIBase
 
 public:
 	ProxyStrategiesDPI();
+	void changeProxyData(const ProxyData& proxy_data);
 
-	std::vector<std::string> getStrategy(u32) const = delete;
-
-	std::vector<std::string> getStrategy() const;
-	void					 changeProxyData(const ProxyData& proxy_data);
+protected:
+	void _saveStrategies(std::string str) override;
 
 private:
-	void _saveStrategies(std::vector<std::string>& strategy_dpi, std::string str) override;
-
 	std::optional<std::string> _getProxySetting(std::string str) const;
 };

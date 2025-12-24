@@ -3,19 +3,13 @@
 Unblock::Unblock()
 {
 	_unblock->open();
-	_goodbay_dpi->open();
 	_proxy_dpi->open();
 	_win_divert->open();
 }
 
-template<typename Type>
+template<ValidStrategies Type>
 bool Unblock::automaticallyStrategy()
 {
-	static_assert(
-		std::is_same_v<Type, StrategiesDPI> || std::is_same_v<Type, ProxyStrategiesDPI>,
-		"It can only be StrategiesDPI or ProxyStrategiesDPI!"
-	);
-
 	if constexpr (std::is_same_v<Type, ProxyStrategiesDPI>)
 	{
 		if (_strategy.proxy_type == _proxy_strategies_dpi->getStrategySize())
@@ -36,26 +30,16 @@ bool Unblock::automaticallyStrategy()
 			return false;
 		}
 
-		if (_strategies_dpi->isFaked())
+		_strategies_dpi->changeFakeKey(_strategy.fake_bin);
+		_strategies_dpi->changeStrategy(_strategy.type);
+		const auto& fake_bin_list = _strategies_dpi->getFakeBinList();
+		if (_strategy.fake_bin == (fake_bin_list.size() - 1))
 		{
-			_strategies_dpi->changeFakeKey(_strategy.fake_bin);
-			_strategies_dpi->changeStrategy(_strategy.type);
-			const auto& fake_bin_list = _strategies_dpi->getFakeBinList();
-			if (_strategy.fake_bin == (fake_bin_list.size() - 1))
-			{
-				_strategy.fake_bin = 0;
-				_strategy.type++;
-			}
-			else
-				_strategy.fake_bin++;
-		}
-		else
-		{
-			_strategies_dpi->changeFakeKey(1);
-			_strategies_dpi->changeStrategy(_strategy.type);
 			_strategy.fake_bin = 0;
 			_strategy.type++;
 		}
+		else
+			_strategy.fake_bin++;
 	}
 
 	return true;
@@ -114,14 +98,9 @@ void Unblock::clearOptionalStrategies()
 	_domain_testing->clearOptionalStrategies();
 }
 
-template<typename Type>
+template<ValidStrategies Type>
 std::string Unblock::getNameStrategies()
 {
-	static_assert(
-		std::is_same_v<Type, StrategiesDPI> || std::is_same_v<Type, ProxyStrategiesDPI>,
-		"It can only be StrategiesDPI or ProxyStrategiesDPI!"
-	);
-
 	if constexpr (std::is_same_v<Type, StrategiesDPI>)
 		return _strategies_dpi->getStrategyFileName();
 	else
@@ -135,14 +114,9 @@ std::string Unblock::getNameFakeBin()
 	return _strategies_dpi->getKeyFakeBin();
 }
 
-template<typename Type>
+template<ValidStrategies Type>
 const std::vector<std::string>& Unblock::getStrategiesList()
 {
-	static_assert(
-		std::is_same_v<Type, StrategiesDPI> || std::is_same_v<Type, ProxyStrategiesDPI>,
-		"It can only be StrategiesDPI or ProxyStrategiesDPI!"
-	);
-
 	if constexpr (std::is_same_v<Type, StrategiesDPI>)
 		return _strategies_dpi->getStrategyList();
 	else
@@ -179,9 +153,6 @@ std::list<Service>& Unblock::getConflictingServices()
 				if (std::regex_match(name_service, std::regex{ _unblock->getName() }))
 					return;
 
-				if (std::regex_match(name_service, std::regex{ _goodbay_dpi->getName() }))
-					return;
-
 				if (std::regex_match(name_service, std::regex{ _proxy_dpi->getName() }))
 					return;
 
@@ -211,14 +182,9 @@ std::list<Service>& Unblock::getConflictingServices()
 		testing_video = _domain_testing_proxy_video.get(); \
 	}
 
-template<typename Type>
+template<ValidStrategies Type>
 bool Unblock::runTest(bool video)
 {
-	static_assert(
-		std::is_same_v<Type, StrategiesDPI> || std::is_same_v<Type, ProxyStrategiesDPI>,
-		"It can only be StrategiesDPI or ProxyStrategiesDPI!"
-	);
-
 	CODE_TESTING_DOMAIN()
 
 	if (video)
@@ -229,14 +195,9 @@ bool Unblock::runTest(bool video)
 template UNBLOCK_API bool Unblock::runTest<StrategiesDPI>(bool);
 template UNBLOCK_API bool Unblock::runTest<ProxyStrategiesDPI>(bool);
 
-template<typename Type>
+template<ValidStrategies Type>
 void Unblock::testingDomain(std::function<void(pcstr url, bool state)>&& callback, bool video, bool base_test)
 {
-	static_assert(
-		std::is_same_v<Type, StrategiesDPI> || std::is_same_v<Type, ProxyStrategiesDPI>,
-		"It can only be StrategiesDPI or ProxyStrategiesDPI!"
-	);
-
 	CODE_TESTING_DOMAIN()
 
 	if (video)
@@ -252,14 +213,9 @@ void Unblock::testingDomain(std::function<void(pcstr url, bool state)>&& callbac
 template UNBLOCK_API void Unblock::testingDomain<StrategiesDPI>(std::function<void(pcstr, bool)>&&, bool, bool);
 template UNBLOCK_API void Unblock::testingDomain<ProxyStrategiesDPI>(std::function<void(pcstr, bool)>&&, bool, bool);
 
-template<typename Type>
+template<ValidStrategies Type>
 void Unblock::testingDomainCancel(bool video)
 {
-	static_assert(
-		std::is_same_v<Type, StrategiesDPI> || std::is_same_v<Type, ProxyStrategiesDPI>,
-		"It can only be StrategiesDPI or ProxyStrategiesDPI!"
-	);
-
 	CODE_TESTING_DOMAIN()
 
 	if (video)
@@ -310,13 +266,12 @@ bool Unblock::activeService(bool proxy)
 	if (proxy)
 		return _proxy_dpi->isRun();
 
-	return _unblock->isRun() || _goodbay_dpi->isRun();
+	return _unblock->isRun();
 }
 
 void Unblock::checkStateServices(const std::function<void(pcstr, bool)>& callback)
 {
 	callback("Unblock (winws.exe)", _unblock->isRun());
-	callback(_goodbay_dpi->getName().c_str(), _goodbay_dpi->isRun());
 	callback("ProxyDPI (BayDPI)", _proxy_dpi->isRun());
 	callback(_win_divert->getName().c_str(), _win_divert->isRun());
 }
@@ -326,7 +281,7 @@ void Unblock::dnsHosts(bool state)
 	state ? _dns_hosts->enable() : _dns_hosts->disable();
 }
 
-const std::list<std::string> & Unblock::dnsHostsListName()
+const std::list<std::string>& Unblock::dnsHostsListName()
 {
 	return _dns_hosts->listDnsFileName();
 }
@@ -340,7 +295,6 @@ void Unblock::removeService(bool proxy)
 	}
 
 	_unblock->remove();
-	_goodbay_dpi->remove();
 	_win_divert->remove();
 }
 
@@ -353,14 +307,13 @@ void Unblock::stopService(bool proxy)
 	}
 
 	_unblock->stop();
-	_goodbay_dpi->stop();
 }
 
 void Unblock::startService(bool proxy)
 {
 	if (proxy)
 	{
-		const auto list = _proxy_strategies_dpi->getStrategy();
+		auto & list = _proxy_strategies_dpi->getStrategy();
 		if (!list.empty())
 		{
 			_proxy_dpi->remove();
@@ -374,32 +327,15 @@ void Unblock::startService(bool proxy)
 	}
 
 	_unblock->remove();
-	_goodbay_dpi->remove();
 
-	for (auto& [index, service] : indexStrategies)
+	auto& list = _strategies_dpi->getStrategy();
+	if (!list.empty())
 	{
-		const auto list = _strategies_dpi->getStrategy(index);
-		if (!list.empty())
-		{
-			std::string str_service{ service };
-			if (index == 0)
-			{
-				_unblock->setDescription("DPI программное обеспечение для обхода блокировки.");
-				_unblock->setArgs(list);
-				_unblock->create();
+		_unblock->setDescription("DPI программное обеспечение для обхода блокировки.");
+		_unblock->setArgs(list);
+		_unblock->create();
 
-				_unblock->start();
-			}
-
-			if (index == 1)
-			{
-				_goodbay_dpi->setDescription("GoodbyeDPI программное обеспечение для обхода блокировки.");
-				_goodbay_dpi->setArgs(list);
-				_goodbay_dpi->create();
-
-				_goodbay_dpi->start();
-			}
-		}
+		_unblock->start();
 	}
 }
 

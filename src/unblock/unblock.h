@@ -6,13 +6,13 @@
 
 #include "../core/service.h"
 
+template<typename T>
+concept ValidStrategies = std::same_as<T, StrategiesDPI> || std::same_as<T, ProxyStrategiesDPI>;
 
 class UNBLOCK_API Unblock final
 {
 	Ptr<Service> _unblock{ "unblock", "winws.exe" };
-	Ptr<Service> _goodbay_dpi{ "GoodByeDpi", "goodbyedpi.exe" };
 	Ptr<Service> _proxy_dpi{ "proxy_dpi", "ciadpi.exe" };
-
 	Ptr<Service> _win_divert{ "WinDivert" };
 
 	Ptr<DomainTesting>		_domain_testing;
@@ -37,7 +37,7 @@ class UNBLOCK_API Unblock final
 public:
 	Unblock();
 
-	template<typename Type>
+	template<ValidStrategies Type>
 	bool automaticallyStrategy();
 
 	void changeStrategy(pcstr name_config, pcstr name_fake_bin);
@@ -51,14 +51,14 @@ public:
 	void removeOptionalStrategies(std::string name);
 	void clearOptionalStrategies();
 
-	template<typename Type>
+	template<ValidStrategies Type>
 	bool runTest(bool video = false);
 
-	template<typename Type>
+	template<ValidStrategies Type>
 	std::string getNameStrategies();
 	std::string getNameFakeBin();
 
-	template<typename Type>
+	template<ValidStrategies Type>
 	const std::vector<std::string>&					getStrategiesList();
 	const std::vector<StrategiesDPI::FakeBinParam>& getFakeBinList();
 	std::list<Service>&								getConflictingServices();
@@ -72,9 +72,9 @@ public:
 	void dnsHosts(bool state);
 	const std::list<std::string>& dnsHostsListName();
 
-	template<typename Type>
+	template<ValidStrategies Type>
 	void testingDomain(std::function<void(pcstr, bool)>&& callback = [](pcstr, bool) {}, bool video = false, bool base_test = true);
-	template<typename Type>
+	template<ValidStrategies Type>
 	void testingDomainCancel(bool video = false);
 
 	void accurateTesting(bool state);

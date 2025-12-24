@@ -374,7 +374,11 @@ bool DomainTesting::isConnectionUrl(const CurlDomain& domain)
 
 void DomainTesting::_loadFile(std::filesystem::path file)
 {
-	_file_test_domain->open((Core::get().configsPath() / "domain_test" / file), ".list", true);
+	auto path = Core::get().configsPath() / "domain_test" / (file.string() + ".list");
+	if (!std::filesystem::exists(path))
+		return;
+
+	_file_test_domain->open(path, "", true);
 }
 
 void DomainTesting::_genericURLS(std::string base_name)
@@ -402,16 +406,17 @@ void DomainTesting::_genericURLS(std::string base_name)
 
 void DomainTesting::_appendURLS()
 {
-	_file_test_domain->forLine(
-		[this](std::string str)
-		{
-			if (str.empty())
-				return false;
+	if (_file_test_domain->isOpen())
+		_file_test_domain->forLine(
+			[this](std::string str)
+			{
+				if (str.empty())
+					return false;
 
-			_list_domain.emplace_back(CurlDomain{ curl_easy_init(), str });
-			return false;
-		}
-	);
+				_list_domain.emplace_back(CurlDomain{ curl_easy_init(), str });
+				return false;
+			}
+		);
 }
 
 void DomainTesting::_clearURLS()
