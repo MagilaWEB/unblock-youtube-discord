@@ -7,8 +7,6 @@ DomainTesting::DomainTesting(bool enable_proxy) : _proxy(enable_proxy)
 
 DomainTesting::~DomainTesting()
 {
-	_is_testing = false;
-
 	_clearURLS();
 }
 
@@ -164,6 +162,7 @@ void DomainTesting::clearOptionalStrategies()
 void DomainTesting::cancelTesting()
 {
 	_cancel_testing = true;
+	_is_testing		= false;
 }
 
 u32 DomainTesting::successRate() const
