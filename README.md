@@ -190,7 +190,7 @@ BayDPI: https://github.com/hufrea/byedpi
 
 ## 📄 Лицензия
 
-Проект распространяется под лицензией [MIT](https://github.com/MagilaWEB/unblock-youtube-discord/LICENSE.txt).
+Проект распространяется под лицензией [MIT](https://github.com/MagilaWEB/unblock-youtube-discord?tab=License-1-ov-file).
 
 ---
 
