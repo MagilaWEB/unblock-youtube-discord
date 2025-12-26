@@ -128,7 +128,11 @@ str_unblock_enable_description=Параметр отвечающий за исп
 // Setting checkbox unblock enable services
 str_unblock_enable_discord_title=Обход блокировки discord
 str_unblock_enable_discord_description=Опция включает\отключает обход блокировки для discord, если опция отключена, тестирование доменов discord будет так же отключена,
-фильтры трафика для discord тоже будут отключены.
+фильтры трафика для discord тоже будут отключены (Рекомендуется при включении даннной опции включить обход cloudflare).
+
+str_unblock_enable_cloudflare_title=Обход блокировки cloudflare
+str_unblock_enable_cloudflare_description=Опция включает\отключает обход блокировки для cloudflare, если опция отключена, тестирование доменов cloudflare будет так же отключена,
+фильтры трафика для cloudflare тоже будут отключены.
 
 str_unblock_enable_instagram_title=Обход блокировки соцсети instagram
 str_unblock_enable_instagram_description=Опция включает\отключает обход блокировки для соцсети instagram, если опция отключена, тестирование доменов instagram будет так же отключена,
