@@ -193,25 +193,7 @@ void StrategiesDPI::_saveStrategies(std::string str)
 		return;
 	}
 
-	if (auto new_str = _getFake("%FAKE_TLS%", str))
-	{
-		_strategy_dpi.emplace_back(new_str.value());
-		return;
-	}
-
-	if (auto new_str = _getFake("%FAKE_QUIC%", str))
-	{
-		_strategy_dpi.emplace_back(new_str.value());
-		return;
-	}
-
-	if (auto new_str = _getFake("%FAKE_UNKNOWN%", str))
-	{
-		_strategy_dpi.emplace_back(new_str.value());
-		return;
-	}
-
-	if (auto new_str = _getFake("%SEQOVL_PATTERN%", str))
+	if (auto new_str = _getFake(str))
 	{
 		_strategy_dpi.emplace_back(new_str.value());
 		return;
@@ -246,23 +228,6 @@ std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 		return "--hostlist-exclude=" + (path_file_domains_exclude.string());
 	}
 
-	if (str.contains("%BLOCKLIST-GD-DPI%"))
-	{
-		if (_filtering_top_level_domains)
-		{
-			auto path_file_top_level_domains = Core::get().configsPath() / "top_level_domains.list";
-			ASSERT_ARGS(
-				std::filesystem::exists(path_file_top_level_domains),
-				"The [%s] file does not exist!",
-				path_file_top_level_domains.string().c_str()
-			);
-			return "--blacklist " + (path_file_top_level_domains.string());
-		}
-
-		ASSERT_ARGS(std::filesystem::exists(_service_blocklist_file), "The [%s] file does not exist!", _service_blocklist_file.c_str());
-		return "--blacklist " + _service_blocklist_file;
-	}
-
 	if (str.contains("%IP-SETLIST%"))
 	{
 		auto path_ip_set = Core::get().configsPath() / "ip-set-all.list";
@@ -285,9 +250,9 @@ std::optional<std::string> StrategiesDPI::_getGameFilter(std::string str) const
 	if (str.contains("%GameFilter%"))
 	{
 		std::string ports{ "12" };
-		auto it = std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), "game_mod");
+		auto		it = std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), "game_mod");
 		if (it != _section_opt_service_names.end())
-			ports =  "1024-65535";
+			ports = "1024-65535";
 
 		return std::regex_replace(str, std::regex{ "%GameFilter%" }, ports);
 	}
@@ -295,46 +260,52 @@ std::optional<std::string> StrategiesDPI::_getGameFilter(std::string str) const
 	return std::nullopt;
 }
 
-std::optional<std::string> StrategiesDPI::_getFake(std::string key, std::string str) const
+std::optional<std::string> StrategiesDPI::_getFake(std::string str) const
 {
-	if (str.contains(key))
+	if (_fake_bind_key.empty())
+		return std::nullopt;
+
+	auto it =
+		std::find_if(_fake_bin_params.begin(), _fake_bin_params.end(), [this](const FakeBinParam& _it) { return _it.key.contains(_fake_bind_key); });
+
+	if (it != _fake_bin_params.end())
 	{
-		if (_fake_bind_key.empty())
-			return std::nullopt;
+		if (str.contains("%FAKE_TLS%"))
+			return "--dpi-desync-fake-tls=" + (*it).file_clienthello;
 
-		auto it = std::find_if(
-			_fake_bin_params.begin(),
-			_fake_bin_params.end(),
-			[this](const FakeBinParam& _it) { return _it.key.contains(_fake_bind_key); }
-		);
+		if (str.contains("%FAKE_QUIC%"))
+			return "--dpi-desync-fake-quic=" + (*it).file_initial;
 
-		if (it != _fake_bin_params.end())
-		{
-			if (key == "%FAKE_TLS%")
-				return "--dpi-desync-fake-tls=" + (*it).file_clienthello;
+		if (str.contains("%FAKE_DISCORD%"))
+			return "--dpi-desync-fake-discord=" + (*it).file_initial;
 
-			if (key == "%FAKE_QUIC%")
-				return "--dpi-desync-fake-quic=" + (*it).file_initial;
+		if (str.contains("%FAKE_STUN%"))
+			return "--dpi-desync-fake-stun=" + (*it).file_initial;
 
-			if (key == "%SEQOVL_PATTERN%")
-				return "--dpi-desync-split-seqovl-pattern=" + (*it).file_clienthello;
+		if (str.contains("%SEQOVL_PATTERN%"))
+			return "--dpi-desync-split-seqovl-pattern=" + (*it).file_clienthello;
 
-			if (key == "%FAKE_UNKNOWN%")
-				return "--dpi-desync-fake-unknown-udp=" + (*it).file_initial;
+		if (str.contains("%FAKE_UNKNOWN%"))
+			return "--dpi-desync-fake-unknown-udp=" + (*it).file_initial;
 
-			return std::nullopt;
-		}
-		else
-		{
-			std::string list_key{};
-			for (auto& fake : _fake_bin_params)
-				if (list_key.empty())
-					list_key = fake.key;
-				else
-					list_key.append("," + fake.key);
+		if (str.contains("%FAKE_CLIENT_HELLO%"))
+			return std::regex_replace(str, std::regex{ "%FAKE_CLIENT_HELLO%" }, (*it).file_clienthello);
 
-			Debug::error("fake ключ [%s] не найден! Доступные ключи [%s].", _fake_bind_key.c_str(), list_key.c_str());
-		}
+		if (str.contains("%FAKE_INITIAL%"))
+			return std::regex_replace(str, std::regex{ "%FAKE_INITIAL%" }, (*it).file_initial);
+
+		return std::nullopt;
+	}
+	else
+	{
+		std::string list_key{};
+		for (auto& fake : _fake_bin_params)
+			if (list_key.empty())
+				list_key = fake.key;
+			else
+				list_key.append("," + fake.key);
+
+		Debug::error("fake ключ [%s] не найден! Доступные ключи [%s].", _fake_bind_key.c_str(), list_key.c_str());
 	}
 
 	return std::nullopt;

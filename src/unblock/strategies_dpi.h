@@ -44,5 +44,5 @@ private:
 
 	std::optional<std::string> _getBlockList(std::string str) const;
 	std::optional<std::string> _getGameFilter(std::string str) const;
-	std::optional<std::string> _getFake(std::string key, std::string str) const;
+	std::optional<std::string> _getFake(std::string str) const;
 };
