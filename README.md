@@ -2,7 +2,7 @@
 
 ![GitHub Stars](https://img.shields.io/github/stars/MagilaWEB/unblock-youtube-discord?style=for-the-badge&logo=github&color=yellow)
 ![GitHub Releases](https://img.shields.io/github/downloads/MagilaWEB/unblock-youtube-discord/total?style=for-the-badge&logo=github&color=blue)
-![GitHub License](https://img.shields.io/github/license/MagilaWEB/unblock-youtube-discord?style=for-the-badge&logo=github)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
 ![Windows Version](https://img.shields.io/badge/Windows-10%2F11-0078D6?style=for-the-badge&logo=windows&logoColor=white)
 
 > **Важное обновление**: С 25 июля 2024 года началось замедление работы YouTube в России, а 8 октября 2024 года Discord был официально заблокирован РКН. Unblock предоставляет решение для доступа к этим и другим ограниченным сервисам.
