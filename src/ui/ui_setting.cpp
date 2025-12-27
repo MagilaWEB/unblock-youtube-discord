@@ -21,6 +21,7 @@ void Ui::_settingInit()
 	_settingProxyDPIInputIP();
 	_settingProxyDPIInputPort();
 	_settingProxyDPIManualEnable();
+	_settingProxyDPISelectConfig();
 }
 
 void Ui::_settingShowConsole()
@@ -449,8 +450,10 @@ void Ui::_settingProxyDPIEnable()
 		[this](JSArgs args)
 		{
 			_ui_base->userSetting()->writeSectionParameter("PROXY", "enable", JSToCPP(args[0]));
-
+			_settingProxyDPIInputIPUpdate();
+			_settingProxyDPIInputPortUpdate();
 			_settingProxyDPIManualEnableUpdate();
+			_settingProxyDPISelectConfigUpdate();
 			_buttonUpdate();
 			_testingUpdate();
 
@@ -468,6 +471,7 @@ void Ui::_settingProxyDPIManualEnable()
 		{
 			_ui_base->userSetting()->writeSectionParameter("PROXY", "manual", JSToCPP(args[0]));
 			_settingProxyDPIManualEnableUpdate();
+			_settingProxyDPISelectConfigUpdate();
 			return false;
 		}
 	);
@@ -484,7 +488,6 @@ void Ui::_settingProxyDPIManualEnableUpdate()
 		_proxy_manual->setState(result ? result.value() : false);
 		return;
 	}
-
 	_proxy_manual->hide();
 }
 
@@ -526,7 +529,6 @@ void Ui::_settingProxyDPISelectConfigUpdate()
 		_buttonUpdate();
 		return;
 	}
-
 	_proxy_select_config->hide();
 }
 

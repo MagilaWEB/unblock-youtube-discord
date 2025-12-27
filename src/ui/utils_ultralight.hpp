@@ -21,10 +21,20 @@
 
 namespace ultralight
 {
-	template<typename Type = pcstr>
+	template<typename T>
+	concept VallidIntegerUsignet = std::same_as<T, u32> || std::same_as<T, u64> || std::same_as<T, u16> || std::same_as<T, u8>;
+	template<typename T>
+	concept VallidInteger = std::same_as<T, s32> || std::same_as<T, s16> || std::same_as<T, u8>;
+	template<typename T>
+	concept VallidString = std::same_as<T, pcstr> || std::same_as<T, cpcstr> || std::same_as<T, std::string>;
+	template<typename T>
+	concept VallidALL = VallidIntegerUsignet<T> || VallidInteger<T> || VallidString<T> || std::same_as<T, float> || std::same_as<T, double>
+					 || std::same_as<T, bool> || std::same_as<T, s64>;
+
+	template<VallidALL Type = pcstr>
 	Type JSToCPP(JSValue value_str)
 	{
-		if constexpr (std::is_same_v<Type, pcstr> || std::is_same_v<Type, cpcstr> || std::is_same_v<Type, std::string>)
+		if constexpr (VallidString<Type>)
 			return static_cast<String>(value_str.ToString()).utf8().data();
 
 		if constexpr (std::is_same_v<Type, bool>)
@@ -36,14 +46,8 @@ namespace ultralight
 			return false;
 		}
 
-		if constexpr (std::is_same_v<Type, u32> || std::is_same_v<Type, u64> || std::is_same_v<Type, u16> || std::is_same_v<Type, u8>)
+		if constexpr (VallidIntegerUsignet<Type>)
 		{
-			if (!value_str.IsNumber())
-			{
-				Debug::warning("Could not be converted to an unsigned int because integer JS is less than 0, returned by default for CPP 0.");
-				return 0;
-			}
-
 			auto integer = value_str.ToInteger();
 			if (integer < 0)
 			{
@@ -72,24 +76,10 @@ namespace ultralight
 		}
 
 		if constexpr (std::is_same_v<Type, s64>)
-		{
-			if (!value_str.IsNumber())
-			{
-				Debug::warning("Could not be converted to an int because integer JS is less than 0, returned by default for CPP 0.");
-				return 0;
-			}
-
 			return value_str.ToInteger();
-		}
 
-		if constexpr (std::is_same_v<Type, s32> || std::is_same_v<Type, u16> || std::is_same_v<Type, u8>)
+		if constexpr (VallidInteger<Type>)
 		{
-			if (!value_str.IsNumber())
-			{
-				Debug::warning("Could not be converted to an int because integer JS is less than 0, returned by default for CPP 0.");
-				return 0;
-			}
-
 			auto		   integer	   = value_str.ToInteger();
 			constexpr Type min_integer = type_min<Type>;
 			if (integer < min_integer)
