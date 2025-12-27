@@ -1,178 +1,179 @@
 .input,
 .select_list {
-    display : none;
-    position: relative;
-    left    : 0;
-    top     : 0;
-    width   : 90%;
-    margin  : 1em auto;
-    height  : 2em;
+	display : none;
+	position: relative;
+	left    : 0;
+	top     : 0;
+	width   : 90%;
+	margin  : 1em auto;
+	height  : 2em;
 }
 
 .input.show,
 .select_list.show {
-    display: block;
+	display: block;
 }
 
 .input input,
 .select_list .label {
-    position        : absolute;
-    z-index         : 10;
-    width           : 14em;
-    height          : 100%;
-    border-radius   : 5px;
-    color           : white;
-    font-size       : 1em;
-    transition      : .3s;
-    background-color: rgba(82, 82, 82, .5);
-    border          : solid 2px rgb(91, 91, 91);
-    border-radius   : 5px;
+	position        : absolute;
+	z-index         : 10;
+	width           : 14em;
+	height          : 100%;
+	border-radius   : 5px;
+	color           : white;
+	font-size       : 1em;
+	transition      : .3s;
+	background-color: rgba(82, 82, 82, .5);
+	border          : solid 2px rgb(91, 91, 91);
+	border-radius   : 5px;
 }
 
 .input input {
-    width: 100%;
+	width: 100%;
 }
 
 .input input:hover {
-    cursor          : text;
-    background-color: #474747;
+	cursor          : text;
+	background-color: #474747;
 }
 
 .select_list {
-    background-color: rgba(82, 82, 82, .5);
-    border          : solid 2px rgb(91, 91, 91);
-    border-radius   : 5px;
+	background-color: rgba(82, 82, 82, .5);
+	border          : solid 2px rgb(91, 91, 91);
+	border-radius   : 5px;
 }
 
 .select_list .label {
-    color : #aeaeae;
-    cursor: pointer;
+	color : #aeaeae;
+	cursor: pointer;
 }
 
 .select_list .label:focus {
-    color           : white;
-    background-color: rgba(82, 82, 82, 1);
+	color           : white;
+	background-color: rgba(82, 82, 82, 1);
 }
 
 .select_list .select {
-    position        : absolute;
-    z-index         : 10;
-    visibility      : hidden;
-    opacity         : 0;
-    text-align      : center;
-    overflow        : auto;
-    top             : 101%;
-    width           : 14em;
-    max-height      : 16em;
-    background-color: rgba(82, 82, 82, .9);
-    border          : solid 2px rgb(91, 91, 91);
-    transition      : visibility 100ms, opacity 100ms;
+	position        : absolute;
+	z-index         : 10;
+	visibility      : hidden;
+	opacity         : 0;
+	text-align      : center;
+	overflow        : auto;
+	top             : 101%;
+	width           : 14em;
+	background-color: rgba(82, 82, 82, .9);
+	border          : solid 2px rgb(91, 91, 91);
+	transition      : visibility 100ms, opacity 100ms;
 }
 
 .select_list .select_active {
-    z-index   : 20;
-    visibility: visible;
-    opacity   : 1;
+	z-index   : 20;
+	visibility: visible;
+	opacity   : 1;
+	max-height: 15em;
+	height    : max-content;
 }
 
 .select_list .select .option {
-    cursor       : pointer;
-    width        : 100%;
-    border-bottom: solid 3px rgb(91, 91, 91);
-    padding      : .1em 1em;
-    transition   : background 100ms;
+	cursor       : pointer;
+	width        : 100%;
+	border-bottom: solid 3px rgb(91, 91, 91);
+	padding      : .1em 1em;
+	transition   : background 100ms;
 }
 
 .select_list .select .option:last-child {
-    border-bottom: 0;
+	border-bottom: 0;
 }
 
 .select_list .select .option:hover {
-    background-color: #2d2d2d;
+	background-color: #2d2d2d;
 }
 
 .check_box {
-    display         : none;
-    position        : relative;
-    width           : 90%;
-    margin          : 1em auto;
-    background-color: rgba(82, 82, 82, .5);
-    border          : solid 2px rgb(91, 91, 91);
-    border-radius   : 5px;
+	display         : none;
+	position        : relative;
+	width           : 90%;
+	margin          : 1em auto;
+	background-color: rgba(82, 82, 82, .5);
+	border          : solid 2px rgb(91, 91, 91);
+	border-radius   : 5px;
 }
 
 .check_box.show {
-    display: block;
+	display: block;
 }
 
 .check_box .check {
-    position     : absolute;
-    top          : .4em;
-    left         : 0;
-    width        : 2em;
-    height       : .6em;
-    background   : currentColor;
-    border-radius: 50px;
-    box-shadow   : 0 0 5px 0px rgba(0, 0, 0, 0.3);
+	position     : absolute;
+	top          : .4em;
+	left         : 0;
+	width        : 2em;
+	height       : .6em;
+	background   : currentColor;
+	border-radius: 50px;
+	box-shadow   : 0 0 5px 0px rgba(0, 0, 0, 0.3);
 }
 
 .check_box .title,
 .select_list .title {
-    position  : relative;
-    text-align: center;
-    margin    : 0;
-    bottom    : 0;
-    left      : 2.5em;
-    width     : max-content;
-    height    : 1.5em;
+	position  : relative;
+	text-align: center;
+	margin    : 0;
+	bottom    : 0;
+	left      : 2.5em;
+	width     : max-content;
+	height    : 1.5em;
 }
 
 .select_list .title {
-    top : .2em;
-    left: 15em;
+	top : .2em;
+	left: 15em;
 }
 
 .check_box .description,
 .input .description,
 .select_list .description {
-    z-index         : 20;
-    position        : fixed;
-    opacity         : 0;
-    visibility      : hidden;
-    width           : 30em;
-    margin-left     : 1em;
-    background-color: rgba(82, 82, 82, .8);
-    border          : solid 2px rgb(91, 91, 91);
-    border-radius   : 5px;
-    transition      : opacity 700ms;
+	z-index         : 20;
+	position        : fixed;
+	opacity         : 0;
+	visibility      : hidden;
+	width           : 30em;
+	margin-left     : 1em;
+	background-color: rgba(82, 82, 82, .8);
+	border          : solid 2px rgb(91, 91, 91);
+	border-radius   : 5px;
+	transition      : opacity 700ms;
 }
 
 .check_box .description_active,
 .input .description_active,
 .select_list .description_active {
-    opacity   : 1;
-    visibility: inherit;
+	opacity   : 1;
+	visibility: inherit;
 }
 
 .check_box .check label {
-    position        : absolute;
-    width           : 1em;
-    height          : 1em;
-    top             : -.2em;
-    left            : 0;
-    cursor          : pointer;
-    border-radius   : 50px;
-    background-color: #c0c0c0;
-    box-shadow      : 0 0 5px 0px rgba(0, 0, 0, 0.3);
-    transition      : .4s;
+	position        : absolute;
+	width           : 1em;
+	height          : 1em;
+	top             : -.2em;
+	left            : 0;
+	cursor          : pointer;
+	border-radius   : 50px;
+	background-color: #c0c0c0;
+	box-shadow      : 0 0 5px 0px rgba(0, 0, 0, 0.3);
+	transition      : .4s;
 }
 
 .check_box .check input[type="checkbox"] {
-    visibility: hidden;
+	visibility: hidden;
 }
 
 .check_box .check input[type="checkbox"]:checked+label {
-    left            : 1em;
-    background-color: #60ff26;
+	left            : 1em;
+	background-color: #60ff26;
 
 }
