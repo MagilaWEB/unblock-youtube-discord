@@ -283,6 +283,7 @@ void File::open(std::filesystem::path file, pcstr expansion, bool no_default_pat
 	}
 
 	_line_string.clear();
+	_map_list_string.clear();
 
 	std::string str;
 	while (getline(_stream, str))
@@ -302,6 +303,7 @@ void File::clear()
 	_is_write = true;
 
 	_line_string.clear();
+	_map_list_string.clear();
 }
 
 void File::close()
@@ -310,6 +312,7 @@ void File::close()
 
 	_writeToFile();
 	_open_state = false;
+	clear();
 }
 
 void File::_normalize()
