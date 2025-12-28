@@ -269,9 +269,13 @@ bool File::isOpen() const
 void File::open(std::filesystem::path file, pcstr expansion, bool no_default_patch)
 {
 	CRITICAL_SECTION_RAII(lock);
+	_is_write = false;
 
 	if (isOpen())
+	{
 		close();
+		_is_write = false;
+	}
 
 	if (!no_default_patch)
 		_path_file = (Core::get().currentPath() / file) += expansion;
@@ -333,9 +337,8 @@ void File::save()
 void File::close()
 {
 	CRITICAL_SECTION_RAII(lock);
-
-	save();
 	_open_state = false;
+	save();
 	clear();
 }
 
