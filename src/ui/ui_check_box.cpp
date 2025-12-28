@@ -45,7 +45,6 @@ void CheckBox::create(pcstr selector, Localization::Str title, Localization::Str
 	runCode(
 		[this, selector, _title, _description, first]
 		{
-			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(
 				_create({ selector, name(), _title, _description, first }).ToBoolean() == true,
 				"Couldn't create a %s named [%s]",
@@ -65,7 +64,6 @@ void CheckBox::setState(bool state)
 		{
 			if (!_created)
 				return;
-			RefPtr<JSContext> lock(_view->LockJSContext());
 			_set_state({ name(), state });
 		}
 	);
@@ -73,6 +71,6 @@ void CheckBox::setState(bool state)
 
 bool CheckBox::getState()
 {
-	RefPtr<JSContext> lock(_view->LockJSContext());
+	FAST_LOCK_SHARED(Core::get().getTaskLockJS());
 	return _get_state({ name() }).ToBoolean();
 }
