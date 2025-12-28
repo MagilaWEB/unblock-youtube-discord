@@ -2,8 +2,8 @@
 
 StrategiesDPI::StrategiesDPI()
 {
-	patch_file = Core::get().configsPath() / "strategy";
-	for (auto& entry : std::filesystem::directory_iterator(patch_file))
+	_patch_file = Core::get().configsPath() / "strategy";
+	for (auto& entry : std::filesystem::directory_iterator(_patch_file))
 		_strategy_files_list.push_back(entry.path().filename().string());
 
 	_file_fake_bin_config->open(Core::get().configsPath() / "fake_bin", ".config", true);
@@ -67,7 +67,7 @@ void StrategiesDPI::changeFakeKey(std::string key)
 
 	InputConsole::textInfo("Выбран FakeBin [%s].", key.c_str());
 
-	auto it = std::find_if(_fake_bin_params.begin(), _fake_bin_params.end(), [&key](const FakeBinParam& _it) { return _it.key.contains(key); });
+	auto it = std::find_if(_fake_bin_params.begin(), _fake_bin_params.end(), [&key](const FakeBinParam& _it) { return _it.key == key; });
 
 	ASSERT_ARGS(it != _fake_bin_params.end(), "a key is missing for fake_bin %s", key.c_str());
 
@@ -127,10 +127,9 @@ void StrategiesDPI::_uploadStrategies()
 	if (_file_strategy_dpi->isOpen())
 	{
 		_strategy_dpi.clear();
+		_file_blacklist_all->clear();
 
 		const std::string base_path_blacklist = (Core::get().configsPath() / "blacklist").string();
-
-		_file_blacklist_all->clear();
 
 		for (auto& name : _section_opt_service_names)
 		{
@@ -167,7 +166,7 @@ void StrategiesDPI::_uploadStrategies()
 		_readFileStrategies("END");
 
 		for (auto& line : _strategy_dpi)
-			line.append(" ");
+			line = std::regex_replace(line, std::regex{ "\\=" }, " ");
 
 		while ((_strategy_dpi.back().contains("--new")) || (_strategy_dpi.empty()))
 			_strategy_dpi.pop_back();
@@ -214,32 +213,32 @@ std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 				"The [%s] file does not exist!",
 				path_file_top_level_domains.string().c_str()
 			);
-			return "--blacklist " + (path_file_top_level_domains.string());
+			return "--hostlist \"" + (path_file_top_level_domains.string()) + "\"";
 		}
 
 		ASSERT_ARGS(std::filesystem::exists(_service_blocklist_file), "The [%s] file does not exist!", _service_blocklist_file.c_str());
-		return "--hostlist=" + _service_blocklist_file;
+		return "--hostlist \"" + _service_blocklist_file + "\"";
 	}
 
 	if (str.contains("%DOMAINS-EXCLUDE%"))
 	{
 		auto path_file_domains_exclude = Core::get().configsPath() / "domains_exclude.list";
 		ASSERT_ARGS(std::filesystem::exists(path_file_domains_exclude), "The [%s] file does not exist!", path_file_domains_exclude.string().c_str());
-		return "--hostlist-exclude=" + (path_file_domains_exclude.string());
+		return "--hostlist-exclude \"" + (path_file_domains_exclude.string()) + "\"";
 	}
 
 	if (str.contains("%IP-SETLIST%"))
 	{
 		auto path_ip_set = Core::get().configsPath() / "ip-set-all.list";
 		ASSERT_ARGS(std::filesystem::exists(path_ip_set), "The [%s] file does not exist!", path_ip_set.string().c_str());
-		return "--ipset=" + (path_ip_set.string());
+		return "--ipset \"" + (path_ip_set.string()) + "\"";
 	}
 
 	if (str.contains("%IP-EXCLUDE%"))
 	{
 		auto path_ip_exclude = Core::get().configsPath() / "ip-exclude.list";
 		ASSERT_ARGS(std::filesystem::exists(path_ip_exclude), "The [%s] file does not exist!", path_ip_exclude.string().c_str());
-		return "--ipset-exclude=" + (path_ip_exclude.string());
+		return "--ipset-exclude \"" + (path_ip_exclude.string()) + "\"";
 	}
 
 	return std::nullopt;
@@ -271,22 +270,22 @@ std::optional<std::string> StrategiesDPI::_getFake(std::string str) const
 	if (it != _fake_bin_params.end())
 	{
 		if (str.contains("%FAKE_TLS%"))
-			return "--dpi-desync-fake-tls=" + (*it).file_clienthello;
+			return "--dpi-desync-fake-tls \"" + (*it).file_clienthello + "\"";
 
 		if (str.contains("%FAKE_QUIC%"))
-			return "--dpi-desync-fake-quic=" + (*it).file_initial;
+			return "--dpi-desync-fake-quic \"" + (*it).file_initial + "\"";
 
 		if (str.contains("%FAKE_DISCORD%"))
-			return "--dpi-desync-fake-discord=" + (*it).file_initial;
+			return "--dpi-desync-fake-discord \"" + (*it).file_initial + "\"";
 
 		if (str.contains("%FAKE_STUN%"))
-			return "--dpi-desync-fake-stun=" + (*it).file_initial;
+			return "--dpi-desync-fake-stun \"" + (*it).file_initial + "\"";
 
 		if (str.contains("%SEQOVL_PATTERN%"))
-			return "--dpi-desync-split-seqovl-pattern=" + (*it).file_clienthello;
+			return "--dpi-desync-split-seqovl-pattern \"" + (*it).file_clienthello + "\"";
 
 		if (str.contains("%FAKE_UNKNOWN%"))
-			return "--dpi-desync-fake-unknown-udp=" + (*it).file_initial;
+			return "--dpi-desync-fake-unknown-udp \"" + (*it).file_initial + "\"";
 
 		if (str.contains("%FAKE_CLIENT_HELLO%"))
 			return std::regex_replace(str, std::regex{ "%FAKE_CLIENT_HELLO%" }, (*it).file_clienthello);

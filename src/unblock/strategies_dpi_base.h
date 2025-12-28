@@ -6,7 +6,7 @@ class StrategiesDPIBase
 protected:
 	Ptr<File> _file_strategy_dpi;
 
-	std::filesystem::path	 patch_file;
+	std::filesystem::path	 _patch_file;
 	std::vector<std::string> _strategy_files_list{};
 	std::vector<std::string> _strategy_dpi{};
 

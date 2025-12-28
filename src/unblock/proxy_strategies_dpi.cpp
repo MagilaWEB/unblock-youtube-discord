@@ -2,8 +2,8 @@
 
 ProxyStrategiesDPI::ProxyStrategiesDPI()
 {
-	patch_file = Core::get().configsPath() / "proxy_strategy";
-	for (auto& entry : std::filesystem::directory_iterator(patch_file))
+	_patch_file = Core::get().configsPath() / "proxy_strategy";
+	for (auto& entry : std::filesystem::directory_iterator(_patch_file))
 		_strategy_files_list.push_back(entry.path().filename().string());
 }
 

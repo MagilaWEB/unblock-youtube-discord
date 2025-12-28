@@ -5,26 +5,21 @@ void StrategiesDPIBase::changeStrategy(u32 index)
 	const auto& strategy_file = _strategy_files_list[index];
 	InputConsole::textInfo("Выбрана конфигурация [%s].", strategy_file.c_str());
 
-	_file_strategy_dpi->open(patch_file / strategy_file, "", true);
-
-	_strategy_dpi.clear();
+	_file_strategy_dpi->open(_patch_file / strategy_file, "", true);
 
 	_uploadStrategies();
 }
 
 void StrategiesDPIBase::changeStrategy(pcstr file)
 {
-	std::string strategy_file{};
+	auto it_file = std::find(_strategy_files_list.begin(), _strategy_files_list.end(), file);
+	ASSERT_ARGS(it_file != _strategy_files_list.end(), "the file was not found");
 
-	for (const auto& _file : _strategy_files_list)
-		if (_file.contains(file))
-			strategy_file = _file;
-
+	std::string strategy_file{ *it_file };
+	 
 	InputConsole::textInfo("Выбрана конфигурация [%s].", strategy_file.c_str());
 
-	_file_strategy_dpi->open(patch_file / strategy_file, "", true);
-
-	_strategy_dpi.clear();
+	_file_strategy_dpi->open(_patch_file / strategy_file, "", true);
 
 	_uploadStrategies();
 }
