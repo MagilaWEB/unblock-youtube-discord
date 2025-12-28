@@ -46,9 +46,9 @@ public:
 
 	void cancelTesting();
 
-	inline bool isTesting() { return _is_testing; }
-	inline bool isAccurateTest() { return _accurate_test; }
-	inline bool isCancelTesting() { return _cancel_testing; }
+	inline bool isTesting() { return _is_testing.load(); }
+	inline bool isAccurateTest() { return _accurate_test.load(); }
+	inline bool isCancelTesting() { return _cancel_testing.load(); }
 
 	u32	 successRate() const;
 	u32	 errorRate() const;
