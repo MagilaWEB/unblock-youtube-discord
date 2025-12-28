@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../core/concepts.h"
+
 using namespace std::filesystem;
 
 class CORE_API File final
@@ -37,7 +39,7 @@ public:
 	void forLineSection(pcstr section, std::function<bool(std::string&)> fn);
 	void forLineParametersSection(pcstr section, std::function<bool(std::string key, std::string value)> fn);
 
-	template<typename TypeReturn>
+	template<concepts::VallidALL TypeReturn>
 	std::expected<TypeReturn, std::string> parameterSection(pcstr section, pcstr paramert);
 
 	void writeText(std::string str);

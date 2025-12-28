@@ -111,7 +111,7 @@ void File::forLineParametersSection(pcstr section, std::function<bool(std::strin
 	);
 }
 
-template<typename TypeReturn>
+template<concepts::VallidALL TypeReturn>
 std::expected<TypeReturn, std::string> File::parameterSection(pcstr section, pcstr parameter)
 {
 	CRITICAL_SECTION_RAII(lock);
@@ -139,31 +139,37 @@ std::expected<TypeReturn, std::string> File::parameterSection(pcstr section, pcs
 
 	if (kay_value)
 	{
-		if constexpr (std::is_same_v<TypeReturn, std::string> || std::is_same_v<TypeReturn, pcstr>)
+		using namespace concepts;
+		if constexpr (VallidString<TypeReturn>)
 		{
-			if constexpr (std::is_same_v<TypeReturn, pcstr>)
+			if constexpr (VallidStringPctr<TypeReturn>)
 				return kay_value.value().c_str();
 			else
 				return kay_value.value();
 		}
 
-		if constexpr (std::is_same_v<TypeReturn, bool>)
+		if constexpr (std::same_as<TypeReturn, bool>)
 		{
 			bool state;
 			std::istringstream{ kay_value.value() } >> std::boolalpha >> state;
 			return state;
 		}
-		else if constexpr (std::is_same_v<TypeReturn, float>)
-			return std::stof(kay_value.value());
-		else if constexpr (std::is_same_v<TypeReturn, u32> || std::is_same_v<TypeReturn, long long>)
+		else if constexpr (VallidNumber<TypeReturn>)
 		{
-			u32 state;
+			if constexpr (std::same_as<TypeReturn, float>)
+				return std::stof(kay_value.value());
+			else
+				return std::stod(kay_value.value());
+		}
+		else if constexpr (VallidIntegerUsignet<TypeReturn>)
+		{
+			TypeReturn state{};
 			std::istringstream{ kay_value.value() } >> state;
 			return state;
 		}
-		else if constexpr (std::is_same_v<TypeReturn, s32> || std::is_same_v<TypeReturn, int>)
+		else if constexpr (VallidInteger<TypeReturn>)
 		{
-			int state;
+			TypeReturn state{};
 			std::istringstream{ kay_value.value() } >> state;
 			return state;
 		}
@@ -173,12 +179,14 @@ std::expected<TypeReturn, std::string> File::parameterSection(pcstr section, pcs
 }
 
 template CORE_API std::expected<std::string, std::string> File::parameterSection<std::string>(pcstr section, pcstr parameter);
+template CORE_API std::expected<cpcstr, std::string> File::parameterSection<cpcstr>(pcstr section, pcstr parameter);
 template CORE_API std::expected<pcstr, std::string> File::parameterSection<pcstr>(pcstr section, pcstr parameter);
 template CORE_API std::expected<bool, std::string> File::parameterSection<bool>(pcstr section, pcstr parameter);
 template CORE_API std::expected<float, std::string> File::parameterSection<float>(pcstr section, pcstr parameter);
-template CORE_API std::expected<int, std::string> File::parameterSection<int>(pcstr section, pcstr parameter);
+template CORE_API std::expected<s32, std::string> File::parameterSection<s32>(pcstr section, pcstr parameter);
+template CORE_API std::expected<u8, std::string> File::parameterSection<u8>(pcstr section, pcstr parameter);
 template CORE_API std::expected<u32, std::string> File::parameterSection<u32>(pcstr section, pcstr parameter);
-template CORE_API std::expected<long long, std::string> File::parameterSection<long long>(pcstr section, pcstr parameter);
+template CORE_API std::expected<u64, std::string> File::parameterSection<u64>(pcstr section, pcstr parameter);
 
 void File::writeText(std::string str)
 {

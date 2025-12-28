@@ -21,20 +21,11 @@
 
 namespace ultralight
 {
-	template<typename T>
-	concept VallidIntegerUsignet = std::same_as<T, u32> || std::same_as<T, u64> || std::same_as<T, u16> || std::same_as<T, u8>;
-	template<typename T>
-	concept VallidInteger = std::same_as<T, s32> || std::same_as<T, s16> || std::same_as<T, u8>;
-	template<typename T>
-	concept VallidString = std::same_as<T, pcstr> || std::same_as<T, cpcstr> || std::same_as<T, std::string>;
-	template<typename T>
-	concept VallidALL = VallidIntegerUsignet<T> || VallidInteger<T> || VallidString<T> || std::same_as<T, float> || std::same_as<T, double>
-					 || std::same_as<T, bool> || std::same_as<T, s64>;
 
-	template<VallidALL Type = pcstr>
+	template<concepts::VallidALL Type = pcstr>
 	Type JSToCPP(JSValue value_str)
 	{
-		if constexpr (VallidString<Type>)
+		if constexpr (concepts::VallidString<Type>)
 			return static_cast<String>(value_str.ToString()).utf8().data();
 
 		if constexpr (std::is_same_v<Type, bool>)
@@ -46,7 +37,7 @@ namespace ultralight
 			return false;
 		}
 
-		if constexpr (VallidIntegerUsignet<Type>)
+		if constexpr (concepts::VallidIntegerUsignet<Type>)
 		{
 			auto integer = value_str.ToInteger();
 			if (integer < 0)
@@ -75,10 +66,10 @@ namespace ultralight
 			return static_cast<Type>(integer);
 		}
 
-		if constexpr (std::is_same_v<Type, s64>)
+		if constexpr (std::same_as<Type, s64>)
 			return value_str.ToInteger();
 
-		if constexpr (VallidInteger<Type>)
+		if constexpr (concepts::VallidInteger<Type>)
 		{
 			auto		   integer	   = value_str.ToInteger();
 			constexpr Type min_integer = type_min<Type>;
@@ -110,7 +101,7 @@ namespace ultralight
 			return static_cast<Type>(integer);
 		}
 
-		if constexpr (std::is_same_v<Type, float>)
+		if constexpr (std::same_as<Type, float>)
 		{
 			if (!value_str.IsNumber())
 			{
@@ -149,7 +140,7 @@ namespace ultralight
 			return static_cast<Type>(integer);
 		}
 
-		if constexpr (std::is_same_v<Type, double>)
+		if constexpr (std::same_as<Type, double>)
 		{
 			if (!value_str.IsNumber())
 			{
