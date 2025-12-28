@@ -223,7 +223,7 @@ bool DomainTesting::isConnectionUrlVideo(const CurlDomain& domain) const
 			curl_easy_setopt(domain.curl, CURLOPT_PORT, std::to_string(_proxyPORT).c_str());
 		}
 
-		curl_easy_setopt(domain.curl, CURLOPT_HTTPHEADER, 0L);
+		curl_easy_setopt(domain.curl, CURLOPT_HEADER, 1L);
 		curl_easy_setopt(domain.curl, CURLOPT_HTTPGET, 1L);
 		curl_easy_setopt(
 			domain.curl,
@@ -275,7 +275,7 @@ bool DomainTesting::isConnectionUrl(const CurlDomain& domain)
 			"Mozilla/5.0 ( Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 "
 			"YaBrowser/138.0.9197.153"
 		);
-
+		curl_easy_setopt(domain.curl, CURLOPT_HEADER, 1L);
 		curl_easy_setopt(domain.curl, CURLOPT_NOPROGRESS, 0L);
 		curl_easy_setopt(domain.curl, CURLOPT_XFERINFODATA, this);
 		curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
