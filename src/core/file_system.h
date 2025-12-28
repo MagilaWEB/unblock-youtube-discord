@@ -30,6 +30,7 @@ public:
 	bool isOpen() const;
 	void open(path file, pcstr expansion, bool no_default_patch = false);
 	void clear();
+	void save();
 	void close();
 
 	void forLine(std::function<bool(std::string)> fn);
@@ -45,5 +46,4 @@ public:
 private:
 	void _normalize();
 	void _removeEmptyLine();
-	void _writeToFile();
 };

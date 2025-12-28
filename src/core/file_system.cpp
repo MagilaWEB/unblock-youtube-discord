@@ -167,8 +167,6 @@ std::expected<TypeReturn, std::string> File::parameterSection(pcstr section, pcs
 			std::istringstream{ kay_value.value() } >> state;
 			return state;
 		}
-
-		//			static_assert(false, "Only std data types are supported string || const char* || pcstr, u32 || long long, s32 || int, bool!");
 	}
 
 	return Debug::str_unexpected("Не удалось найти параметр [%s] в секции [%s]!", parameter, section);
@@ -306,11 +304,29 @@ void File::clear()
 	_map_list_string.clear();
 }
 
+void File::save()
+{
+	if (!_is_write)
+		return;
+
+	_stream.open(_path_file, std::ios::out | std::ios::binary);
+
+	_normalize();
+
+	_removeEmptyLine();
+
+	for (auto& _string : _line_string)
+		_stream << _string << std::endl;
+	_stream.close();
+
+	_is_write = false;
+}
+
 void File::close()
 {
 	CRITICAL_SECTION_RAII(lock);
 
-	_writeToFile();
+	save();
 	_open_state = false;
 	clear();
 }
@@ -376,22 +392,4 @@ void File::_removeEmptyLine()
 
 	for (auto& str : _line_string)
 		utils::trim(str);
-}
-
-void File::_writeToFile()
-{
-	if (!_is_write)
-		return;
-
-	_stream.open(_path_file, std::ios::out | std::ios::binary);
-
-	_normalize();
-
-	_removeEmptyLine();
-
-	for (auto& _string : _line_string)
-		_stream << _string << std::endl;
-	_stream.close();
-
-	_is_write = false;
 }
