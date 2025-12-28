@@ -8,6 +8,8 @@ void StrategiesDPIBase::changeStrategy(u32 index)
 	_file_strategy_dpi->open(_patch_file / strategy_file, "", true);
 
 	_uploadStrategies();
+
+	_file_strategy_dpi->close();
 }
 
 void StrategiesDPIBase::changeStrategy(pcstr file)
@@ -22,6 +24,8 @@ void StrategiesDPIBase::changeStrategy(pcstr file)
 	_file_strategy_dpi->open(_patch_file / strategy_file, "", true);
 
 	_uploadStrategies();
+
+	_file_strategy_dpi->close();
 }
 
 std::string StrategiesDPIBase::getStrategyFileName() const
