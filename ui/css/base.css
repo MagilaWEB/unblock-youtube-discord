@@ -144,6 +144,7 @@ footer .button.show {
 	display       : grid;
 	grid-auto-rows: 4em;
 	gap           : .333%;
+	margin        : 0 1em;
 	margin-bottom : 1em;
 }
 
