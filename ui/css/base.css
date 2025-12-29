@@ -75,12 +75,10 @@ main {
 }
 
 main article {
-	position  : fixed;
-	top       : 0;
+	position  : absolute;
+	top       : 12em;
 	left      : 0;
 	width     : 100%;
-	height    : 100%;
-	overflow  : auto;
 	visibility: hidden;
 	opacity   : 0;
 	padding   : 0 .4em;
@@ -143,13 +141,14 @@ footer .button.show {
 
 .buttons_start,
 .buttons_stop {
-	display              : grid;
-	grid-auto-rows       : 4em;
-	gap                  : .333%;
-	margin-bottom        : 1em;
+	display       : grid;
+	grid-auto-rows: 4em;
+	gap           : .333%;
+	margin-bottom : 1em;
 }
 
-.buttons_start{
+.buttons_start {
+	padding-top          : 4em;
 	grid-template-columns: repeat(clamp(1, var(--js-buttons-start-count, 4), 4), 1fr);
 }
 
@@ -185,6 +184,6 @@ footer .button.show {
 }
 
 ::-webkit-scrollbar-thumb {
-	width: 0px;
+	width     : 0px;
 	background: rgba(82, 82, 82, .9);
 }

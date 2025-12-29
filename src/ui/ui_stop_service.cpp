@@ -7,7 +7,7 @@ void Ui::_stopInit()
 	_window_wait_stop_service->create(Localization::Str{ "str_please_wait" }, "str_window_service_stop_wait_description");
 	_window_wait_stop_service->setType(SecondaryWindow::Type::Wait);
 
-	_stop_unblock->create("#home section .buttons_stop", "str_b_stop_unblock");
+	_stop_unblock->create(".buttons_stop", "str_b_stop_unblock");
 	_stop_unblock->addEventClick(
 		[this](JSArgs)
 		{
@@ -16,7 +16,7 @@ void Ui::_stopInit()
 		}
 	);
 
-	_stop_proxy_dpi->create("#home section .buttons_stop", "str_b_stop_proxy_dpi");
+	_stop_proxy_dpi->create(".buttons_stop", "str_b_stop_proxy_dpi");
 	_stop_proxy_dpi->addEventClick(
 		[this](JSArgs)
 		{
@@ -25,7 +25,7 @@ void Ui::_stopInit()
 		}
 	);
 
-	_stop_service_all->create("#home section .buttons_stop", "str_b_stop_service_all");
+	_stop_service_all->create(".buttons_stop", "str_b_stop_service_all");
 	_stop_service_all->addEventClick(
 		[this](JSArgs)
 		{

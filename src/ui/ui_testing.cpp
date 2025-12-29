@@ -14,7 +14,7 @@ void Ui::_testingInit()
 	_list_proxy_domain->create("#home section .info_unblock", "str_h2_verified_proxy_domains");
 	_list_proxy_domain_video->create("#home section .info_unblock", "str_h2_verified_proxy_domains_video");
 
-	_start_testing->create("#home section .buttons_start", "str_b_start_testing");
+	_start_testing->create(".buttons_start", "str_b_start_testing");
 	_start_testing->addEventClick(
 		[this](JSArgs)
 		{

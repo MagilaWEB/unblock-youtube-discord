@@ -12,7 +12,7 @@ void Ui::_startInit()
 
 void Ui::_startUnblock()
 {
-	_start_unblock->create("#home section .buttons_start", "str_b_start_unblock", true);
+	_start_unblock->create(".buttons_start", "str_b_start_unblock", true);
 
 	_start_unblock->addEventClick(
 		[this](JSArgs)
@@ -28,7 +28,7 @@ void Ui::_startUnblock()
 
 void Ui::_startProxy()
 {
-	_start_proxy_dpi->create("#home section .buttons_start", "str_b_start_proxy_dpi", true);
+	_start_proxy_dpi->create(".buttons_start", "str_b_start_proxy_dpi", true);
 
 	_start_proxy_dpi->addEventClick(
 		[this](JSArgs)
