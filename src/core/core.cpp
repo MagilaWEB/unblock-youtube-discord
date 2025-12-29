@@ -96,8 +96,6 @@ void Core::parallel_run()
 				else
 					_task_lock.LeaveShared();
 
-				_task_run_state.store(false);
-
 				FAST_LOCK_SHARED(_task_lock_js);
 			}
 		}
