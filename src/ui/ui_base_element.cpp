@@ -21,7 +21,7 @@ BaseElement::BaseElement(pcstr name) : _name(name), _type("base_element")
 	for (const auto& [_name_element, element] : _all_element)
 	{
 		ASSERT_ARGS(
-			!std::string{ _name_element }.contains(_name),
+			_name_element != _name,
 			"You can't create different independent elements with the same name, it will break the logic of the name:[%s] is already occupied!",
 			this->name()
 		);

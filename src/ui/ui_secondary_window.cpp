@@ -3,6 +3,16 @@
 SecondaryWindow::SecondaryWindow(pcstr name) : BaseElement(name)
 {
 	_type = "secondary_window";
+	_all_window.push_back(this);
+}
+
+SecondaryWindow::~SecondaryWindow()
+{
+	auto it = std::find(_all_window.begin(), _all_window.end(), this);
+	if (it != _all_window.end())
+		_all_window.erase(it);
+
+	BaseElement::~BaseElement();
 }
 
 void SecondaryWindow::initialize()
@@ -87,6 +97,56 @@ void SecondaryWindow::setDescription(Localization::Str description)
 			ASSERT_ARGS(_set_description({ name(), _description }).ToBoolean() == true, "Couldn't setDescription a %s named [%s]", _type, name());
 		}
 	);
+}
+
+void SecondaryWindow::show()
+{
+	for (auto& window : _all_window)
+	{
+		if (window->isShow() && (!window->waitShow()))
+		{
+			setWaitShow(true);
+			return;
+		}
+	}
+
+	_is_show = true;
+	BaseElement::show();
+}
+
+void SecondaryWindow::hide()
+{
+	setWaitShow(false);
+
+	_is_show = false;
+
+	for (auto& window : _all_window)
+	{
+		if ((!window->isShow()) && window->waitShow())
+		{
+			window->show();
+			window->setWaitShow(false);
+			break;
+		}
+	}
+
+	BaseElement::hide();
+}
+
+bool SecondaryWindow::isShow()
+{
+	return _is_show.load();
+}
+
+void SecondaryWindow::setWaitShow(bool state)
+{
+	if (_wait_show.load() != state)
+		_wait_show = state;
+}
+
+bool SecondaryWindow::waitShow()
+{
+	return _wait_show.load();
 }
 
 void SecondaryWindow::addEventOk(std::function<bool(JSArgs)>&& callback)

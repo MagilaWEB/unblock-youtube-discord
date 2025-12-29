@@ -28,7 +28,7 @@ namespace ultralight
 		if constexpr (concepts::VallidString<Type>)
 			return static_cast<String>(value_str.ToString()).utf8().data();
 
-		if constexpr (std::is_same_v<Type, bool>)
+		if constexpr (std::same_as<Type, bool>)
 		{
 			if (value_str.IsBoolean())
 				return value_str.ToBoolean();

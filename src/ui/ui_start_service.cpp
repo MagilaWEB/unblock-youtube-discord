@@ -42,23 +42,6 @@ void Ui::_startProxy()
 	_buttonUpdate();
 }
 
-// void Ui::_startTorProxy()
-//{
-//	if (_tor_proxy_enable->getState())
-//	{
-//		// Core::get().addTask(
-//		//	[this]
-//		//	{
-//		//		_window_wait_start_service->show();
-//		//		_unblock->startTor();
-//		//		_updateTitleButton(true);
-//		//		_activeService();
-//		//		_window_wait_start_service->hide();
-//		//	}
-//		//);
-//	}
-// }
-
 void Ui::_startServiceWindow()
 {
 	_window_config_not_found->create(Localization::Str{ "str_window_config_not_found_title" }, "str_window_config_not_found_description");

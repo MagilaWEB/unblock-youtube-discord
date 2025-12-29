@@ -101,72 +101,59 @@ void Ui::_testingServiceDomains()
 	_list_proxy_domain->clear();
 	_list_proxy_domain_video->clear();
 
-	Core::get().addTask(
-		[this]
-		{
-			_window_wait_testing->show();
+	_window_wait_testing->show();
 
-			if (_unblock_enable->getState())
+	if (_unblock_enable->getState())
+	{
+		Core::get().addTask(
+			[this]
+			{ _unblock->testingDomain<StrategiesDPI>([this](pcstr url, bool state) { _list_domain->createLiSuccess(url, state); }, false, false); }
+		);
+
+		for (auto& [name, check_box] : _unblock_list_enable_services)
+		{
+			if (name.contains("youtube") && check_box->getState())
 			{
-				Core::get().addTaskParallel(
+				Core::get().addTask(
 					[this]
 					{
 						_unblock->testingDomain<StrategiesDPI>(
-							[this](pcstr url, bool state) { _list_domain->createLiSuccess(url, state); },
-							false,
-							false
-						);
-					}
-				);
-
-				for (auto& [name, check_box] : _unblock_list_enable_services)
-				{
-					if (name.contains("youtube") && check_box->getState())
-					{
-						Core::get().addTaskParallel(
-							[this]
-							{
-								_unblock->testingDomain<StrategiesDPI>(
-									[this](pcstr url, bool state) { _list_domain_video->createLiSuccess(url, state); },
-									true,
-									false
-								);
-							}
-						);
-
-						break;
-					}
-				}
-			}
-
-			if (_proxy_enable->getState())
-			{
-				Core::get().addTaskParallel(
-					[this]
-					{
-						_unblock->testingDomain<ProxyStrategiesDPI>(
-							[this](pcstr url, bool state) { _list_proxy_domain->createLiSuccess(url, state); },
-							false,
-							false
-						);
-					}
-				);
-
-				Core::get().addTaskParallel(
-					[this]
-					{
-						_unblock->testingDomain<ProxyStrategiesDPI>(
-							[this](pcstr url, bool state) { _list_proxy_domain_video->createLiSuccess(url, state); },
+							[this](pcstr url, bool state) { _list_domain_video->createLiSuccess(url, state); },
 							true,
 							false
 						);
 					}
 				);
+
+				break;
 			}
-
-			Core::get().waitTaskParallel();
-
-			_window_wait_testing->hide();
 		}
-	);
+	}
+
+	if (_proxy_enable->getState())
+	{
+		Core::get().addTask(
+			[this]
+			{
+				_unblock->testingDomain<ProxyStrategiesDPI>(
+					[this](pcstr url, bool state) { _list_proxy_domain->createLiSuccess(url, state); },
+					false,
+					false
+				);
+			}
+		);
+
+		Core::get().addTask(
+			[this]
+			{
+				_unblock->testingDomain<ProxyStrategiesDPI>(
+					[this](pcstr url, bool state) { _list_proxy_domain_video->createLiSuccess(url, state); },
+					true,
+					false
+				);
+			}
+		);
+	}
+
+	Core::get().taskComplete([this] { _window_wait_testing->hide(); });
 }

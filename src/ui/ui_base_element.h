@@ -57,8 +57,8 @@ public:
 	void create(pcstr selector, Localization::Str title, bool first = false);
 	void remove();
 
-	void show();
-	void hide();
+	virtual void show();
+	virtual void hide();
 
 	bool isCreate() const;
 

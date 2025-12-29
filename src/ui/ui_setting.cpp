@@ -186,7 +186,14 @@ void Ui::_settingMaxTimeWaitUpdate()
 		if (result)
 			_max_time_wait_accurate_testing->setValue(result.value());
 
-		_unblock->maxWaitAccurateTesting(_max_time_wait_accurate_testing->getValue());
+		const u32 second = JSToCPP<u32>(_max_time_wait_accurate_testing->getValue());
+		if (second > 0)
+			_unblock->maxWaitAccurateTesting(second);
+		else
+		{
+			_ui_base->userSetting()->writeSectionParameter("TESTING", "max_time_wait_accurate_testing", "10");
+			_settingMaxTimeWaitUpdate();
+		}
 
 		_max_time_wait_testing->hide();
 	}
@@ -199,7 +206,14 @@ void Ui::_settingMaxTimeWaitUpdate()
 		if (result)
 			_max_time_wait_testing->setValue(result.value());
 
-		_unblock->maxWaitTesting(_max_time_wait_testing->getValue());
+		const u32 second = JSToCPP<u32>(_max_time_wait_testing->getValue());
+		if (second > 0)
+			_unblock->maxWaitTesting(second);
+		else
+		{
+			_ui_base->userSetting()->writeSectionParameter("TESTING", "max_time_wait_testing", "5");
+			_settingMaxTimeWaitUpdate();
+		}
 
 		_max_time_wait_accurate_testing->hide();
 	}
