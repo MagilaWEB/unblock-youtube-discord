@@ -54,44 +54,49 @@ void Core::parallel_run()
 			while (!_quit_task)
 			{
 				using namespace std::chrono;
-				std::this_thread::sleep_for(30ms);
+				std::this_thread::sleep_for(20ms);
+
 				{
 					FAST_LOCK(_task_lock);
-					while (!_task.empty() && !_quit_task)
+
+					if (_task_run.empty())
 					{
-						_task.front()();
-						_task.pop_front();
+						while (!_task_buffer.empty() && !_quit_task)
+						{
+							_task_run.emplace_back(_task_buffer.front());
+							_task_buffer.pop_front();
+						}
 					}
 				}
-				std::this_thread::yield();
 
-				FAST_LOCK_SHARED(_task_lock_js);
-			}
-		}
-	);
+				std::for_each(
+					std::execution::par,
+					_task_run.begin(),
+					_task_run.end(),
+					[this](std::function<void()> callback)
+					{
+						if (!_quit_task)
+							callback();
+					}
+				);
 
-	std::jthread thread2(
-		[this]
-		{
-			while (!_quit_task)
-			{
-				using namespace std::chrono;
-				std::this_thread::sleep_for(30ms);
+				_task_run.clear();
+
+				_task_lock.EnterShared();
+				if (_task_buffer.empty())
 				{
-					FAST_LOCK(_task_parallel_lock);
-					std::for_each(
-						std::execution::par,
-						_task_parallel.begin(),
-						_task_parallel.end(),
-						[this](std::function<void()> callback)
-						{
-							if (!_quit_task)
-								callback();
-						}
-					);
-					_task_parallel.clear();
+					_task_lock.LeaveShared();
+					FAST_LOCK(_task_complete_lock);
+					while (!_task_complete.empty() && !_quit_task)
+					{
+						_task_complete.front()();
+						_task_complete.pop_front();
+					}
 				}
-				std::this_thread::yield();
+				else
+					_task_lock.LeaveShared();
+
+				_task_run_state.store(false);
 
 				FAST_LOCK_SHARED(_task_lock_js);
 			}
@@ -99,14 +104,13 @@ void Core::parallel_run()
 	);
 
 	thread.detach();
-	thread2.detach();
 }
 
 void Core::finish()
 {
-	FAST_LOCK(_task_lock, 1);
-	FAST_LOCK(_task_parallel_lock, 2);
 	_quit_task = true;
+	FAST_LOCK(_task_lock, 1);
+	FAST_LOCK(_task_complete_lock);
 }
 
 std::filesystem::path Core::currentPath() const
@@ -137,54 +141,20 @@ std::filesystem::path Core::userPath() const
 void Core::addTask(std::function<void()>&& callback)
 {
 	FAST_LOCK(_task_lock);
-	_task.emplace_back(callback);
+	_task_buffer.emplace_back(callback);
 }
 
-void Core::waitTask()
+void Core::taskComplete(std::function<void()>&& callback)
 {
-	while (true)
-	{
-		{
-			FAST_LOCK_SHARED(_task_lock);
-			if (_task.empty())
-				break;
-		}
-		using namespace std::chrono;
-		std::this_thread::sleep_for(5ms);
-		std::this_thread::yield();
-	}
-}
-
-void Core::addTaskParallel(std::function<void()>&& callback)
-{
-	FAST_LOCK(_task_parallel_lock);
-	_task_parallel.emplace_back(callback);
-}
-
-void Core::waitTaskParallel()
-{
-	while (true)
-	{
-		{
-			FAST_LOCK_SHARED(_task_parallel_lock);
-			if (_task_parallel.empty())
-				break;
-		}
-		using namespace std::chrono;
-		std::this_thread::sleep_for(5ms);
-		std::this_thread::yield();
-	}
+	FAST_LOCK_SHARED(_task_lock, _get);
+	FAST_LOCK(_task_complete_lock);
+	_task_complete.emplace_back(callback);
 }
 
 void Core::addTaskJS(std::function<void()> callback)
 {
 	FAST_LOCK(_task_lock_js);
 	_task_js.emplace_back(callback);
-}
-
-std::deque<std::function<void()>>& Core::getTask()
-{
-	return _task;
 }
 
 std::deque<std::function<void()>>& Core::getTaskJS()
