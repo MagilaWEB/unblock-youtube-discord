@@ -16,7 +16,8 @@ void DomainTesting::loadDomain(bool video)
 
 	if (video || _proxy)
 	{
-		_loadFile(video ? "domain_video" : "all");
+		if (!_loadFile(video ? "domain_video" : "all"))
+			return;
 
 		_file_test_domain->forLine(
 			[this](std::string str)
@@ -371,13 +372,14 @@ bool DomainTesting::isConnectionUrl(const CurlDomain& domain)
 	return false;
 }
 
-void DomainTesting::_loadFile(std::filesystem::path file)
+bool DomainTesting::_loadFile(std::filesystem::path file)
 {
 	auto path = Core::get().configsPath() / "domain_test" / (file.string() + ".list");
 	if (!std::filesystem::exists(path))
-		return;
+		return false;
 
 	_file_test_domain->open(path, "", true);
+	return true;
 }
 
 void DomainTesting::_genericURLS(std::string base_name)
@@ -387,8 +389,8 @@ void DomainTesting::_genericURLS(std::string base_name)
 		if (base_name.empty())
 			base_name = "all";
 
-		_loadFile(base_name);
-		_appendURLS();
+		if (_loadFile(base_name))
+			_appendURLS();
 	}
 	else
 	{
@@ -397,7 +399,7 @@ void DomainTesting::_genericURLS(std::string base_name)
 
 		for (auto& name : _section_opt_service_names)
 		{
-			_loadFile(base_name + name);
+			if (_loadFile(base_name + name))
 			_appendURLS();
 		}
 	}

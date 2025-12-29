@@ -58,7 +58,7 @@ public:
 	bool isConnectionUrlVideo(const CurlDomain& domain) const;
 
 private:
-	void _loadFile(std::filesystem::path file);
+	bool _loadFile(std::filesystem::path file);
 	void _genericURLS(std::string base_name = "");
 	void _appendURLS();
 	void _clearURLS();
