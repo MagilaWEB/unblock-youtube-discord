@@ -9,16 +9,15 @@ class CORE_API File final
 	CriticalSection lock;
 
 	using v_line_string = std::vector<std::string>;
-	using v_sections = std::map<std::string, std::list<std::string>>;
+	using v_sections	= std::map<std::string, std::list<std::string>>;
 
 	path		  _path_file{};
 	std::fstream  _stream;
 	v_line_string _line_string;
 	v_sections	  _map_list_string;
 
-
-	bool		  _open_state{ false };
-	bool		  _is_write{ false };
+	bool _open_state{ false };
+	bool _is_write{ false };
 
 public:
 	File() = default;

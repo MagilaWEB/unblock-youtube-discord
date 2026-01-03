@@ -209,11 +209,12 @@ void File::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_arg
 
 	_is_write = true;
 
-	bool stoped{ false };
+	bool		stoped{ false };
+	std::string new_value{ value_argument };
 
 	forLineSection(
 		section,
-		[this, &stoped, parameter, value_argument](std::string& str)
+		[this, &stoped, parameter, new_value](std::string& str)
 		{
 			size_t pos = str.find_first_of("=");
 			if (pos != std::string::npos)
@@ -225,7 +226,7 @@ void File::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_arg
 
 				if (key.contains(parameter))
 				{
-					str	   = std::regex_replace(str, std::regex{ value }, value_argument);
+					str	   = std::regex_replace(str, std::regex{ value }, new_value);
 					stoped = true;
 					return true;
 				}
@@ -238,11 +239,10 @@ void File::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_arg
 	if (stoped)
 		return;
 
-	std::string str{};
-	str	 = parameter;
-	str += "=";
-	str += value_argument;
-	_map_list_string[section].emplace_back(str);
+	std::string& str  = _map_list_string[section].emplace_back(std::string{ parameter });
+	str				 += "=";
+	str				 += new_value;
+
 	_normalize();
 }
 
