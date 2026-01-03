@@ -22,7 +22,7 @@ void Engine::initialize()
 	Platform::instance().set_file_system(GetPlatformFileSystem("./../ui/"));
 
 	Config config{};
-	config.effect_quality = EffectQuality::High;
+	config.effect_quality = EffectQuality::Low;
 
 #if __clang__
 	[[clang::no_destroy]]
