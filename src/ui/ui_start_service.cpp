@@ -147,13 +147,13 @@ void Ui::_buttonUpdate()
 		_stop_proxy_dpi->hide();
 	}
 
-	if (_updateCountStartStopButtonToCss)
-		_updateCountStartStopButtonToCss({});
-
-	/*if (_tor_proxy_enable->getState() && _unblock->activeTor())
-		_start_proxy_dpi->setTitle("str_b_restart_service_proxy");
-	else
-		_start_proxy_dpi->setTitle("str_b_start_service_proxy");*/
+	Core::get().addTaskJS(
+		[this]
+		{
+			if (_updateCountStartStopButtonToCss)
+				_updateCountStartStopButtonToCss({});
+		}
+	);
 }
 
 void Ui::_clickStartService()

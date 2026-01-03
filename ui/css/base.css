@@ -158,12 +158,6 @@ footer .button.show {
 	grid-template-columns: repeat(clamp(1, var(--js-buttons-stop-count, 4), 4), 1fr);
 }
 
-.buttons_start .button.show,
-.buttons_stop .button.show {
-	display    : flex;
-	align-items: center;
-}
-
 .buttons_start .button.show button,
 .buttons_stop .button.show button {
 	width: 100%;

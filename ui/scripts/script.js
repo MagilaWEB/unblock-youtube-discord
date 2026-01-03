@@ -101,4 +101,4 @@ if (!RUN_CPP) {
 	updateCountStartStopButtonToCss();
 }
 else
-	setInterval(CPPTaskRun, 100);
+	setInterval(CPPTaskRun, 30);
