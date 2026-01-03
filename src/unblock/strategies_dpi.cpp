@@ -229,6 +229,9 @@ std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 
 	if (str.contains("%IP-SETLIST%"))
 	{
+		if (std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), "game_mod") != _section_opt_service_names.end())
+			return "";
+
 		auto path_ip_set = Core::get().configsPath() / "ip-set-all.list";
 		ASSERT_ARGS(std::filesystem::exists(path_ip_set), "The [%s] file does not exist!", path_ip_set.string().c_str());
 		return "--ipset \"" + (path_ip_set.string()) + "\"";
@@ -248,7 +251,7 @@ std::optional<std::string> StrategiesDPI::_getGameFilter(std::string str) const
 {
 	if (str.contains("%GameFilter%"))
 	{
-		std::string ports{ "12" };
+		std::string ports{ "" };
 		auto		it = std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), "game_mod");
 		if (it != _section_opt_service_names.end())
 			ports = "1024-65535";
