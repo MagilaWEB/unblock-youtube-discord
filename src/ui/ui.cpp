@@ -42,6 +42,15 @@ void Ui::_footerElements()
 			return false;
 		}
 	);
+
+	_link_to_telegram->create("footer", "str_link_to_telegram");
+	_link_to_telegram->addEventClick(
+		[](JSArgs)
+		{
+			Core::get().addTask([] { system("start https://t.me/+OqRXcWFw4kpmMTcy"); });
+			return false;
+		}
+	);
 }
 
 void Ui::_checkConflictService()

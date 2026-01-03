@@ -99,6 +99,7 @@ main article .header_title {
 
 footer {
 	position        : fixed;
+	display         : flex;
 	align-items     : center;
 	bottom          : -3em;
 	padding-top     : 1.1em;
@@ -126,7 +127,7 @@ footer:hover {
 
 footer .button.show {
 	margin: auto;
-	width : 11em;
+	width : 14em;
 }
 
 .info_unblock {

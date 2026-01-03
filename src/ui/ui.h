@@ -85,6 +85,7 @@ class Ui final : public utils::DefaultInit
 
 	// footer
 	BUTTON(_link_to_github);
+	BUTTON(_link_to_telegram);
 
 	enum StoppingService : u32
 	{

@@ -12,13 +12,19 @@ if (!RUN_CPP) {
 		 window.open("https://github.com/MagilaWEB/unblock-youtube-discord", '_blank');
 	});
 
+	createButton("footer", "link_to_github2", "Follow on GitHub2");
+
+	addButtonEventClick("link_to_github2", () => {
+		 window.open("https://github.com/MagilaWEB/unblock-youtube-discord", '_blank');
+	});
+
 	createSecondaryWindow("start_test_window", "Какое-то окно", "Описание окна");
 
 	setDescriptionSecondaryWindow("start_test_window", "sdasdasdadasdasdasdad");
 
 	setTypeSecondaryWindow("start_test_window", 2);
 
-	createButton("#home section .buttons_start", "start_test", "Запустить тестирование");
+	createButton(".buttons_start", "start_test", "Запустить тестирование");
 
 	addButtonEventClick("start_test", () => {
 		showSecondaryWindow("start_test_window");
@@ -28,9 +34,9 @@ if (!RUN_CPP) {
 		}, 3000)
 	});
 
-	createButton("#home section .buttons_start", "start_service", "Запустить службы");
-	createButton("#home section .buttons_start", "start_service_proxy", "Запустить службы proxy");
-	createButton("#home section .buttons_stop", "stop_service", "Остановить службы");
+	createButton(".buttons_start", "start_service", "Запустить службы");
+	createButton(".buttons_start", "start_service_proxy", "Запустить службы proxy");
+	createButton(".buttons_stop", "stop_service", "Остановить службы");
 
 	createListUl(".info_unblock", "success_domain", "Доступные домены:");
 	const ul = getListUl("success_domain");
