@@ -75,6 +75,11 @@ void Unblock::changeProxyPort(u32 port)
 	_updateProxyData();
 }
 
+void Unblock::changeDirVersionStrategy(std::string dir_version)
+{
+	_strategies_dpi->changeDirVersion(dir_version);
+}
+
 void Unblock::changeFilteringTopLevelDomains(bool state)
 {
 	_strategies_dpi->changeFilteringTopLevelDomains(state);

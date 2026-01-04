@@ -47,6 +47,8 @@ public:
 	void changeProxyIP(std::string ip);
 	void changeProxyPort(u32 port);
 
+	void changeDirVersionStrategy(std::string dir_version);
+
 	void addOptionalStrategies(std::string name);
 	void removeOptionalStrategies(std::string name);
 	void clearOptionalStrategies();

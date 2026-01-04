@@ -18,7 +18,7 @@ void StrategiesDPIBase::changeStrategy(pcstr file)
 	ASSERT_ARGS(it_file != _strategy_files_list.end(), "the file was not found");
 
 	std::string strategy_file{ *it_file };
-	 
+
 	InputConsole::textInfo("Выбрана конфигурация [%s].", strategy_file.c_str());
 
 	_file_strategy_dpi->open(_patch_file / strategy_file, "", true);
@@ -26,6 +26,11 @@ void StrategiesDPIBase::changeStrategy(pcstr file)
 	_uploadStrategies();
 
 	_file_strategy_dpi->close();
+}
+
+void StrategiesDPIBase::changeDirVersion(std::string dir_version)
+{
+	_patch_dir_version = dir_version;
 }
 
 std::string StrategiesDPIBase::getStrategyFileName() const

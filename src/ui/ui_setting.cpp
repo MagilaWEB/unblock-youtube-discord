@@ -14,8 +14,10 @@ void Ui::_settingInit()
 	_settingUnblockEnable();
 	_settingUnblockListEnableServices();
 	_settingUnblockFilteringTopLevelDomains();
+
 	_settingUnblockEnableManual();
 	_settingUnblockEnableManualSelect();
+	_settingUnblockSelectStrategyVersion();
 
 	_settingProxyDPIEnable();
 	_settingProxyDPIInputIP();
@@ -341,6 +343,63 @@ void Ui::_settingUnblockFilteringTopLevelDomainsUpdate()
 	_unblock_filtering_top_level_domains->hide();
 }
 
+void Ui::_settingUnblockSelectStrategyVersion()
+{
+	_unblock_select_version_strategy
+		->create("#setting section .unblock", "str_select_version_strategy_title", Localization::Str{ "str_select_version_strategy_description" });
+	_unblock_select_version_strategy->addEventChange(
+		[this](JSArgs args)
+		{
+			_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy", JSToCPP(args[1]));
+			_settingUnblockSelectStrategyVersionUpdate();
+			return false;
+		}
+	);
+
+	_settingUnblockSelectStrategyVersionUpdate();
+}
+
+void Ui::_settingUnblockSelectStrategyVersionUpdate()
+{
+	if (!_unblock_select_version_strategy->isCreate())
+		return;
+
+	if (_unblock_enable->getState())
+	{
+		_unblock_select_version_strategy->clear();
+
+		_unblock_select_version_strategy->show();
+
+		static std::vector<std::string> strategy_dirs{};
+
+		auto patch_dir = Core::get().configsPath() / "strategy";
+		for (auto& entry : std::filesystem::directory_iterator(patch_dir))
+			strategy_dirs.push_back(entry.path().filename().string());
+
+		std::sort(
+			strategy_dirs.begin(),
+			strategy_dirs.end(),
+			[](const std::string& left, const std::string& right)
+			{
+				static std::regex reg{ "\\." };
+				return std::stoul(std::regex_replace(left, reg, "")) > std::stoul(std::regex_replace(right, reg, ""));
+			}
+		);
+
+		for (u32 i = 0; i < strategy_dirs.size(); i++)
+			_unblock_select_version_strategy->createOption(i, strategy_dirs[i].c_str());
+
+		if (auto strategy_version = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "version_strategy"))
+			_unblock_select_version_strategy->setSelectedOptionValue(strategy_version.value().c_str());
+
+		_unblock->changeDirVersionStrategy(JSToCPP<std::string>(_unblock_select_version_strategy->getSelectedOptionValue()));
+
+		strategy_dirs.clear();
+	}
+
+	_settingUnblockEnableManualSelectUpdate();
+}
+
 void Ui::_settingUnblockEnableManual()
 {
 	_unblock_manual->create("#setting section .unblock", "str_manual_title", Localization::Str{ "str_manual_description" });
@@ -412,15 +471,16 @@ void Ui::_settingUnblockEnableManualSelectUpdate()
 		_unblock_select_config->clear();
 		_unblock_select_fake_bin->clear();
 
+		auto& strategies_list = _unblock->getStrategiesList<StrategiesDPI>();
+
+		if (strategies_list.empty())
+			return;
+
 		_unblock_select_config->show();
 		_unblock_select_fake_bin->show();
 
-		auto& strategies_list = _unblock->getStrategiesList<StrategiesDPI>();
 		for (u32 i = 0; i < strategies_list.size(); i++)
-		{
-			auto& file_name = strategies_list[i];
-			_unblock_select_config->createOption(i, file_name.c_str());
-		}
+			_unblock_select_config->createOption(i, strategies_list[i].c_str());
 
 		auto set_default_select = [this](Ptr<SelectList>& select, pcstr name)
 		{
@@ -436,10 +496,7 @@ void Ui::_settingUnblockEnableManualSelectUpdate()
 
 		auto& fake_bin_list = _unblock->getFakeBinList();
 		for (u32 i = 0; i < fake_bin_list.size(); i++)
-		{
-			auto& fake_bin = fake_bin_list[i];
-			_unblock_select_fake_bin->createOption(i, fake_bin.key.c_str());
-		}
+			_unblock_select_fake_bin->createOption(i, fake_bin_list[i].key.c_str());
 
 		set_default_select(_unblock_select_fake_bin, "fake_bin");
 

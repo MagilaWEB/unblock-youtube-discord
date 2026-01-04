@@ -2,12 +2,6 @@
 
 StrategiesDPI::StrategiesDPI()
 {
-	_patch_file = Core::get().configsPath() / "strategy";
-	for (auto& entry : std::filesystem::directory_iterator(_patch_file))
-		_strategy_files_list.push_back(entry.path().filename().string());
-
-	_sortFiles();
-
 	_file_fake_bin_config->open(Core::get().configsPath() / "fake_bin", ".config", true);
 
 	_file_fake_bin_config->forLineParametersSection(
@@ -79,6 +73,23 @@ void StrategiesDPI::changeFakeKey(std::string key)
 void StrategiesDPI::changeFilteringTopLevelDomains(bool state)
 {
 	_filtering_top_level_domains = state;
+}
+
+void StrategiesDPI::changeDirVersion(std::string dir_version)
+{
+	StrategiesDPIBase::changeDirVersion(dir_version);
+
+	_strategy_files_list.clear();
+
+	if (_patch_dir_version.empty())
+		_patch_file = Core::get().configsPath() / "strategy";
+	else
+		_patch_file = Core::get().configsPath() / "strategy" / _patch_dir_version;
+
+	for (auto& entry : std::filesystem::directory_iterator(_patch_file))
+		_strategy_files_list.push_back(entry.path().filename().string());
+
+	_sortFiles();
 }
 
 void StrategiesDPI::addOptionalStrategies(std::string name)

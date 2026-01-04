@@ -37,6 +37,7 @@ class Ui final : public utils::DefaultInit
 	CHECK_BOX(_unblock_enable);
 	CHECK_BOX(_unblock_manual);
 	CHECK_BOX(_unblock_filtering_top_level_domains);
+	SELECT_LIST(_unblock_select_version_strategy);
 	SELECT_LIST(_unblock_select_config);
 	SELECT_LIST(_unblock_select_fake_bin);
 
@@ -118,6 +119,9 @@ private:
 
 	void _settingUnblockFilteringTopLevelDomains();
 	void _settingUnblockFilteringTopLevelDomainsUpdate();
+
+	void _settingUnblockSelectStrategyVersion();
+	void _settingUnblockSelectStrategyVersionUpdate();
 
 	void _settingUnblockEnableManual();
 	void _settingUnblockEnableManualUpdate();
