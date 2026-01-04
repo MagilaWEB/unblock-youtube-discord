@@ -182,7 +182,9 @@ void StrategiesDPI::_uploadStrategies()
 			if (line.contains("=\""))
 				line = std::regex_replace(line, std::regex{ "\\=" }, " ");
 
-		while ((_strategy_dpi.back().contains("--new")) || (_strategy_dpi.empty()))
+		std::erase_if(_strategy_dpi, [](std::string line) { return line.empty(); });
+
+		while ((_strategy_dpi.back().contains("--new")))
 			_strategy_dpi.pop_back();
 
 #ifdef DEBUG
