@@ -28,4 +28,6 @@ protected:
 	virtual void _saveStrategies(std::string str);
 
 	virtual std::optional<std::string> _getPath(std::string str, std::string prefix, std::filesystem::path path) const;
+
+	void _sortFiles();
 };

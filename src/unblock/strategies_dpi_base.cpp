@@ -103,3 +103,21 @@ std::optional<std::string> StrategiesDPIBase::_getPath(std::string str, std::str
 
 	return std::nullopt;
 }
+
+void StrategiesDPIBase::_sortFiles()
+{
+	std::sort(
+		_strategy_files_list.begin(),
+		_strategy_files_list.end(),
+		[](const std::string& left, const std::string& right)
+		{
+			std::smatch		  left_res;
+			std::smatch		  right_res;
+			static std::regex reg("\\d+");
+			if (std::regex_search(left, left_res, reg) && std::regex_search(right, right_res, reg))
+				return std::stoul(left_res.str()) < std::stoul(right_res.str());
+
+			return left.length() < right.length();
+		}
+	);
+}

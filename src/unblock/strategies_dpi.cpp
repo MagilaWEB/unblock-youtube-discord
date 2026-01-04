@@ -6,6 +6,8 @@ StrategiesDPI::StrategiesDPI()
 	for (auto& entry : std::filesystem::directory_iterator(_patch_file))
 		_strategy_files_list.push_back(entry.path().filename().string());
 
+	_sortFiles();
+
 	_file_fake_bin_config->open(Core::get().configsPath() / "fake_bin", ".config", true);
 
 	_file_fake_bin_config->forLineParametersSection(
