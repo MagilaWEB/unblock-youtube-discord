@@ -99,8 +99,8 @@ void File::forLineParametersSection(pcstr section, std::function<bool(std::strin
 			else
 			{
 				Debug::warning(
-					"при попытке получить ключи и значения в файле [%s] в секции [%s] отсутствует "
-					"разминователь [=]! Строка следующего вида [%s].",
+					"when trying to get the keys and values in the [%s] file in the [%s] section The kneader is missing [=]! A string of the "
+					"following format [%s].",
 					name().c_str(),
 					section,
 					str.c_str()
