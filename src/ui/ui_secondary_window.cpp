@@ -116,9 +116,15 @@ void SecondaryWindow::show()
 
 void SecondaryWindow::hide()
 {
-	setWaitShow(false);
-
 	_is_show = false;
+
+	if (waitShow())
+	{
+		setWaitShow(false);
+		return;
+	}
+
+	BaseElement::hide();
 
 	for (auto& window : _all_window)
 	{
@@ -129,8 +135,6 @@ void SecondaryWindow::hide()
 			break;
 		}
 	}
-
-	BaseElement::hide();
 }
 
 bool SecondaryWindow::isShow()
