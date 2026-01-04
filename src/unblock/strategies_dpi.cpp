@@ -243,7 +243,7 @@ std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
 
 	if (str.contains("%IP-SETLIST%"))
 	{
-		if (std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), "game_mod") != _section_opt_service_names.end())
+		if (std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), "game_mod") == _section_opt_service_names.end())
 			return "";
 
 		auto path_ip_set = Core::get().configsPath() / "ip-set-all.list";
