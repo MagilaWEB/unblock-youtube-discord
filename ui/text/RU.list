@@ -173,6 +173,12 @@ str_select_config_description=Конфигурация будет сохране
 str_unblock_select_fake_bin_title=🎭 Маскировка ClientHello
 str_unblock_select_fake_bin_description=Выбор типа маскировки соединения.
 
+// Setting strategy version
+str_select_version_strategy_title=📚 Версия списка стратегий
+str_select_version_strategy_description=Выбор списка стратегий для обхода блокировок:
+Актуальные (рекомендуется) – новые обновляемые стратегии.
+Устаревшие – старые стратегии из предыдущих версий Unblock.
+
 // Setting checkbox proxy enable
 str_checkbox_proxy_enable_title=🔌 Локальный прокси-сервер
 str_checkbox_proxy_enable_description=Создаёт локальный прокси для обхода блокировок (SOCKS4/SOCKS5).
