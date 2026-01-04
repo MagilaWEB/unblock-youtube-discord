@@ -166,7 +166,8 @@ void StrategiesDPI::_uploadStrategies()
 		_readFileStrategies("END");
 
 		for (auto& line : _strategy_dpi)
-			line = std::regex_replace(line, std::regex{ "\\=" }, " ");
+			if (line.contains("=\""))
+				line = std::regex_replace(line, std::regex{ "\\=" }, " ");
 
 		while ((_strategy_dpi.back().contains("--new")) || (_strategy_dpi.empty()))
 			_strategy_dpi.pop_back();
@@ -251,7 +252,7 @@ std::optional<std::string> StrategiesDPI::_getGameFilter(std::string str) const
 {
 	if (str.contains("%GameFilter%"))
 	{
-		std::string ports{ "" };
+		std::string ports{ "0" };
 		auto		it = std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), "game_mod");
 		if (it != _section_opt_service_names.end())
 			ports = "1024-65535";
