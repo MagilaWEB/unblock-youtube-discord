@@ -1,6 +1,7 @@
 #include "file_system.h"
 
 static const std::regex r_section_name{ "\\[.*\\](?:.*|\\n)" };
+static const std::regex reg_equally("\\=");
 
 File::~File()
 {
@@ -86,12 +87,12 @@ void File::forLineParametersSection(pcstr section, std::function<bool(std::strin
 		section,
 		[this, section, fn](std::string str)
 		{
-			size_t pos = str.find_first_of("=");
-			if (pos != std::string::npos)
+			std::smatch para;
+			if (std::regex_search(str, para, reg_equally))
 			{
-				auto key = str.substr(0, pos);
+				auto key = para.prefix().str();
 				utils::trim(key);
-				auto value = str.substr(++pos, str.size());
+				auto value = para.suffix().str();
 				utils::trim(value);
 				return fn(key, value);
 			}
@@ -216,12 +217,12 @@ void File::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_arg
 		section,
 		[this, &stoped, parameter, new_value](std::string& str)
 		{
-			size_t pos = str.find_first_of("=");
-			if (pos != std::string::npos)
+			std::smatch para;
+			if (std::regex_search(str, para, reg_equally))
 			{
-				auto key = str.substr(0, pos);
+				auto key = para.prefix().str();
 				utils::trim(key);
-				auto value = str.substr(++pos, str.size());
+				auto value = para.suffix().str();
 				utils::trim(value);
 
 				if (key.contains(parameter))
