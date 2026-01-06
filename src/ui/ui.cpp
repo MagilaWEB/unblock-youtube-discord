@@ -34,7 +34,7 @@ void Ui::initialize()
 
 void Ui::jsUpdate()
 {
-	_recurs();
+	_settingDnsHostsUpdateInfoWindow();
 }
 
 void Ui::_footerElements()

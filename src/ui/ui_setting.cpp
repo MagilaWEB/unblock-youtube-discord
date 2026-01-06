@@ -91,7 +91,7 @@ void Ui::_settingEnableDnsHosts()
 		}
 	);
 
-	_window_wait_update_dns->create(Localization::Str{ "str_wait" }, "wait");
+	_window_wait_update_dns->create(Localization::Str{ "str_please_wait" }, "");
 
 	_window_wait_update_dns->setType(SecondaryWindow::Type::Wait);
 	_window_wait_update_dns->addEventCancel(
@@ -122,15 +122,16 @@ void Ui::_settingEnableDnsHosts()
 	_settingEnableDnsHostsUpdate();
 }
 
-void Ui::_recurs()
+void Ui::_settingDnsHostsUpdateInfoWindow()
 {
-	if (_window_wait_update_dns->isShow())
-	{
-		static std::string ddd;
-		float			   t = _unblock->dnsHostsUpdateProgress();
-		ddd					 = utils::format("test %.2f%%", t);
-		_window_wait_update_dns->setDescription(ddd.c_str());
-	}
+	LIMIT_UPDATE(Description, .5f, {
+		if (_window_wait_update_dns->isShow())
+		{
+			static std::string disc_text{ Localization::Str{ "str_window_wait_update_dns_description" }() };
+			float			   progress = _unblock->dnsHostsUpdateProgress();
+			_window_wait_update_dns->setDescription(utils::format(disc_text.c_str(), progress).c_str());
+		}
+	});
 }
 
 void Ui::_settingEnableDnsHostsUpdate()
@@ -140,13 +141,13 @@ void Ui::_settingEnableDnsHostsUpdate()
 	{
 		const bool state = result.value();
 		_enable_dns_hosts->setState(state);
+
 		Core::get().addTask(
 			[this, state]
 			{
 				if (state && (!_unblock->dnsHostsCheck()))
 				{
 					_window_wait_update_dns->show();
-					_recurs();
 					_unblock->dnsHostsUpdate();
 					_window_wait_update_dns->hide();
 				}

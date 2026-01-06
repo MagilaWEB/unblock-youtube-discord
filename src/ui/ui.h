@@ -110,6 +110,7 @@ private:
 	void _settingTestDomainsStartup();
 	void _settingEnableDnsHosts();
 	void _settingEnableDnsHostsUpdate();
+	void _settingDnsHostsUpdateInfoWindow();
 	void _settingAccurateTesting();
 
 	void _settingMaxTimeWait();
@@ -146,7 +147,7 @@ private:
 	void _settingProxyDPIInputPort();
 	void _settingProxyDPIInputPortUpdate();
 
-	void _recurs();
+
 
 	// Testing
 	void _testingInit();
