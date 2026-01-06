@@ -128,7 +128,7 @@ std::expected<TypeReturn, std::string> File::parameterSection(pcstr section, pcs
 		section,
 		[&kay_value, parameter](std::string key, std::string value)
 		{
-			if (key.contains(parameter))
+			if (key == parameter)
 			{
 				kay_value = value;
 				return true;
