@@ -16,7 +16,7 @@ DNSHost::Google::Google(std::string test_domain)
 {
 	_curl = curl_easy_init();
 
-	_url.append(test_domain);
+	_url.append(_domain = test_domain);
 
 	curl_easy_setopt(_curl, CURLOPT_URL, _url.c_str());
 	curl_easy_setopt(_curl, CURLOPT_HTTPGET, 1L);
@@ -38,7 +38,10 @@ void DNSHost::Google::run()
 
 	_code_result = static_cast<u32>(curl_easy_perform(_curl));
 	if (_code_result != CURLcode::CURLE_OK)
+	{
+		Debug::warning("Couldn't get domain data[%s].", _domain.c_str());
 		return;
+	}
 
 	auto stringBuffer = std::regex_replace(_stringBuffer, reg_symbols_del, "");
 	stringBuffer	  = std::regex_replace(stringBuffer, reg_period_comma_del, ",");

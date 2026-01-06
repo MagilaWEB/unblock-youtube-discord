@@ -43,6 +43,7 @@ public:
 	private:
 		CURL*		_curl{ nullptr };
 		std::string _url{ "https://dns.google/resolve?name=" };
+		std::string _domain{};
 		u32			_code_result{ 0 };
 		std::string _stringBuffer;
 		MapDomainIP _map_domains_ip{};
