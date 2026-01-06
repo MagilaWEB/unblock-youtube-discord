@@ -71,7 +71,11 @@ public:
 	bool activeService(bool proxy = false);
 	void checkStateServices(const std::function<void(pcstr, bool)>& callback);
 
-	void dnsHosts(bool state);
+	void						  dnsHosts(bool state);
+	void						  dnsHostsUpdate();
+	void						  dnsHostsCancelUpdate();
+	float						  dnsHostsUpdateProgress() const;
+	bool						  dnsHostsCheck() const;
 	const std::list<std::string>& dnsHostsListName();
 
 	template<ValidStrategies Type>

@@ -147,6 +147,8 @@ void UiBase::runTask(const JSObject& /*obj*/, const JSArgs& /*args*/)
 		task.front()();
 		task.pop_front();
 	}
+
+	_ui->jsUpdate();
 }
 
 JSValue UiBase::langText(const JSObject& /*obj*/, const JSArgs& args)

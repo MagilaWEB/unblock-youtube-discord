@@ -32,6 +32,11 @@ void Ui::initialize()
 	_footerElements();
 }
 
+void Ui::jsUpdate()
+{
+	_recurs();
+}
+
 void Ui::_footerElements()
 {
 	_link_to_github->create("footer", "str_link_to_github");

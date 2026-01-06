@@ -286,6 +286,27 @@ void Unblock::dnsHosts(bool state)
 	state ? _dns_hosts->enable() : _dns_hosts->disable();
 }
 
+void Unblock::dnsHostsUpdate()
+{
+	_dns_hosts->update();
+}
+
+void Unblock::dnsHostsCancelUpdate()
+{
+	_dns_hosts->cancel();
+}
+
+float Unblock::dnsHostsUpdateProgress() const
+{
+	return _dns_hosts->percentageCompletion();
+}
+
+
+bool Unblock::dnsHostsCheck() const
+{
+	return _dns_hosts->isHostsUser();
+}
+
 const std::list<std::string>& Unblock::dnsHostsListName()
 {
 	return _dns_hosts->listDnsFileName();

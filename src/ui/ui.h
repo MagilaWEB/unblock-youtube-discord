@@ -74,6 +74,7 @@ class Ui final : public utils::DefaultInit
 	SECONDARY_WINDOW(_window_wait_start_service);
 	SECONDARY_WINDOW(_window_wait_stop_service);
 	SECONDARY_WINDOW(_window_wait_testing);
+	SECONDARY_WINDOW(_window_wait_update_dns);
 
 	SECONDARY_WINDOW(_window_config_not_found);
 	SECONDARY_WINDOW(_window_config_found);
@@ -98,6 +99,8 @@ public:
 	Ui(UiBase* ui_base);
 
 	void initialize();
+
+	void jsUpdate();
 
 private:
 	void _checkConflictService();
@@ -142,6 +145,8 @@ private:
 
 	void _settingProxyDPIInputPort();
 	void _settingProxyDPIInputPortUpdate();
+
+	void _recurs();
 
 	// Testing
 	void _testingInit();

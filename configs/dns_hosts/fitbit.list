@@ -1,8 +1,4 @@
-95.182.120.241 api.fitbit.com
-185.87.51.182 api.fitbit.com
-95.182.120.241 fitbit-pa.googleapis.com
-185.87.51.182 fitbit-pa.googleapis.com
-95.182.120.241 fitbit.google.com
-185.87.51.182 fitbit.google.com
-95.182.120.241 fitbitvestibuleshim-pa.googleapis.com
-185.87.51.182 fitbitvestibuleshim-pa.googleapis.com
+api.fitbit.com
+fitbit-pa.googleapis.com
+fitbit.google.com
+fitbitvestibuleshim-pa.googleapis.com

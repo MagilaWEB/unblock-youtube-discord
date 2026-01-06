@@ -1,8 +1,4 @@
-95.182.120.241 api-sg-central.trae.ai
-185.87.51.182 api-sg-central.trae.ai
-95.182.120.241 api.trae.ai
-185.87.51.182 api.trae.ai
-95.182.120.241 api16-normal-alisg.mchost.guru
-185.87.51.182 api16-normal-alisg.mchost.guru
-95.182.120.241 trae-api-sg.mchost.guru
-185.87.51.182 trae-api-sg.mchost.guru
+api-sg-central.trae.ai
+api.trae.ai
+api16-normal-alisg.mchost.guru
+trae-api-sg.mchost.guru

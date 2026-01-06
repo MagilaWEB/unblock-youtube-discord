@@ -1,14 +1,7 @@
-95.182.120.241 client-api.linear.app
-185.87.51.182 client-api.linear.app
-95.182.120.241 constellation.linear.app
-185.87.51.182 constellation.linear.app
-95.182.120.241 linear.app
-185.87.51.182 linear.app
-95.182.120.241 public.linear.app
-185.87.51.182 public.linear.app
-95.182.120.241 s.linear.app
-185.87.51.182 s.linear.app
-95.182.120.241 static.linear.app
-185.87.51.182 static.linear.app
-95.182.120.241 uploads.linear.app
-185.87.51.182 uploads.linear.app
+client-api.linear.app
+constellation.linear.app
+linear.app
+public.linear.app
+s.linear.app
+static.linear.app
+uploads.linear.app

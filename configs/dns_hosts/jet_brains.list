@@ -1,10 +1,5 @@
-95.182.120.241 account.jetbrains.com
-185.87.51.182 account.jetbrains.com
-95.182.120.241 api.jetbrains.ai
-185.87.51.182 api.jetbrains.ai
-95.182.120.241 datalore.jetbrains.com
-185.87.51.182 datalore.jetbrains.com
-95.182.120.241 download.jetbrains.com
-185.87.51.182 download.jetbrains.com
-95.182.120.241 plugins.jetbrains.com
-185.87.51.182 plugins.jetbrains.com
+account.jetbrains.com
+api.jetbrains.ai
+datalore.jetbrains.com
+download.jetbrains.com
+plugins.jetbrains.com

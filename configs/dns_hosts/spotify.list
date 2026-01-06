@@ -1,28 +1,14 @@
-95.182.120.241 accounts.spotify.com
-185.87.51.182 accounts.spotify.com
-95.182.120.241 aet.spotify.com
-185.87.51.182 aet.spotify.com
-95.182.120.241 ap-gew1.spotify.com
-185.87.51.182 ap-gew1.spotify.com
-95.182.120.241 api-partner.spotify.com
-185.87.51.182 api-partner.spotify.com
-95.182.120.241 api.spotify.com
-185.87.51.182 api.spotify.com
-95.182.120.241 appresolve.spotify.com
-185.87.51.182 appresolve.spotify.com
-95.182.120.241 encore.scdn.co
-185.87.51.182 encore.scdn.co
-95.182.120.241 gew1-spclient.spotify.com
-185.87.51.182 gew1-spclient.spotify.com
-95.182.120.241 login.app.spotify.com
-185.87.51.182 login.app.spotify.com
-95.182.120.241 login5.spotify.com
-185.87.51.182 login5.spotify.com
-95.182.120.241 open.spotify.com
-185.87.51.182 open.spotify.com
-95.182.120.241 spclient.wg.spotify.com
-185.87.51.182 spclient.wg.spotify.com
-95.182.120.241 www.spotify.com
-185.87.51.182 www.spotify.com
-95.182.120.241 xpui.app.spotify.com
-185.87.51.182 xpui.app.spotify.com
+accounts.spotify.com
+aet.spotify.com
+ap-gew1.spotify.com
+api-partner.spotify.com
+api.spotify.com
+appresolve.spotify.com
+encore.scdn.co
+gew1-spclient.spotify.com
+login.app.spotify.com
+login5.spotify.com
+open.spotify.com
+spclient.wg.spotify.com
+www.spotify.com
+xpui.app.spotify.com

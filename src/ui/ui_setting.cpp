@@ -91,6 +91,17 @@ void Ui::_settingEnableDnsHosts()
 		}
 	);
 
+	_window_wait_update_dns->create(Localization::Str{ "str_wait" }, "wait");
+
+	_window_wait_update_dns->setType(SecondaryWindow::Type::Wait);
+	_window_wait_update_dns->addEventCancel(
+		[this](JSArgs)
+		{
+			_unblock->dnsHostsCancelUpdate();
+			return false;
+		}
+	);
+
 	_enable_dns_hosts
 		->create("#setting section .common", "str_checkbox_enable_dns_hosts_title", Localization::Str{ "str_checkbox_enable_dns_hosts_description" });
 	_enable_dns_hosts->addEventClick(
@@ -111,6 +122,17 @@ void Ui::_settingEnableDnsHosts()
 	_settingEnableDnsHostsUpdate();
 }
 
+void Ui::_recurs()
+{
+	if (_window_wait_update_dns->isShow())
+	{
+		static std::string ddd;
+		float			   t = _unblock->dnsHostsUpdateProgress();
+		ddd					 = utils::format("test %.2f%%", t);
+		_window_wait_update_dns->setDescription(ddd.c_str());
+	}
+}
+
 void Ui::_settingEnableDnsHostsUpdate()
 {
 	auto result = _ui_base->userSetting()->parameterSection<bool>("SUSTEM", "enable_dns_hosts");
@@ -118,7 +140,20 @@ void Ui::_settingEnableDnsHostsUpdate()
 	{
 		const bool state = result.value();
 		_enable_dns_hosts->setState(state);
-		Core::get().addTask([this, state] { _unblock->dnsHosts(state); });
+		Core::get().addTask(
+			[this, state]
+			{
+				if (state && (!_unblock->dnsHostsCheck()))
+				{
+					_window_wait_update_dns->show();
+					_recurs();
+					_unblock->dnsHostsUpdate();
+					_window_wait_update_dns->hide();
+				}
+
+				_unblock->dnsHosts(state);
+			}
+		);
 	}
 	else
 		_window_to_warn_enable_dns_hosts->show();

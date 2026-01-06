@@ -1,34 +1,17 @@
-95.182.120.241 ab.chatgpt.com
-185.87.51.182 ab.chatgpt.com
-95.182.120.241 android.chat.openai.com
-185.87.51.182 android.chat.openai.com
-95.182.120.241 api.openai.com
-185.87.51.182 api.openai.com
-95.182.120.241 auth.openai.com
-185.87.51.182 auth.openai.com
-95.182.120.241 auth0.openai.com
-185.87.51.182 auth0.openai.com
-95.182.120.241 cdn.auth0.com
-185.87.51.182 cdn.auth0.com
-95.182.120.241 cdn.oaistatic.com
-185.87.51.182 cdn.oaistatic.com
-95.182.120.241 chatgpt.com
-185.87.51.182 chatgpt.com
-95.182.120.241 files.oaiusercontent.com
-185.87.51.182 files.oaiusercontent.com
-95.182.120.241 ios.chat.openai.com
-185.87.51.182 ios.chat.openai.com
-95.182.120.241 operator.chatgpt.com
-185.87.51.182 operator.chatgpt.com
-95.182.120.241 platform.openai.com
-185.87.51.182 platform.openai.com
-95.182.120.241 sora.chatgpt.com
-185.87.51.182 sora.chatgpt.com
-95.182.120.241 sora.com
-185.87.51.182 sora.com
-95.182.120.241 tcr9i.chat.openai.com
-185.87.51.182 tcr9i.chat.openai.com
-95.182.120.241 videos.openai.com
-185.87.51.182 videos.openai.com
-95.182.120.241 webrtc.chatgpt.com
-185.87.51.182 webrtc.chatgpt.com
+ab.chatgpt.com
+android.chat.openai.com
+api.openai.com
+auth.openai.com
+auth0.openai.com
+cdn.auth0.com
+cdn.oaistatic.com
+chatgpt.com
+files.oaiusercontent.com
+ios.chat.openai.com
+operator.chatgpt.com
+platform.openai.com
+sora.chatgpt.com
+sora.com
+tcr9i.chat.openai.com
+videos.openai.com
+webrtc.chatgpt.com

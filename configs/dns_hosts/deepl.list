@@ -1,40 +1,20 @@
-95.182.120.241 api-free.deepl.com
-185.87.51.182 api-free.deepl.com
-95.182.120.241 auth.deepl.com
-185.87.51.182 auth.deepl.com
-95.182.120.241 backend.deepl.com
-185.87.51.182 backend.deepl.com
-95.182.120.241 clearance.deepl.com
-185.87.51.182 clearance.deepl.com
-95.182.120.241 deepl.com
-185.87.51.182 deepl.com
-95.182.120.241 dict.deepl.com
-185.87.51.182 dict.deepl.com
-95.182.120.241 errortracking.deepl.com
-185.87.51.182 errortracking.deepl.com
-95.182.120.241 experimentation-grpc.deepl.com
-185.87.51.182 experimentation-grpc.deepl.com
-95.182.120.241 experimentation.deepl.com
-185.87.51.182 experimentation.deepl.com
-95.182.120.241 ita-free.app.deepl.com
-185.87.51.182 ita-free.app.deepl.com
-95.182.120.241 ita-free.www.deepl.com
-185.87.51.182 ita-free.www.deepl.com
-95.182.120.241 login-wall.deepl.com
-185.87.51.182 login-wall.deepl.com
-95.182.120.241 oneshot-free.www.deepl.com
-185.87.51.182 oneshot-free.www.deepl.com
-95.182.120.241 ott.deepl.com
-185.87.51.182 ott.deepl.com
-95.182.120.241 s.deepl.com
-185.87.51.182 s.deepl.com
-95.182.120.241 shield.deepl.com
-185.87.51.182 shield.deepl.com
-95.182.120.241 w.deepl.com
-185.87.51.182 w.deepl.com
-95.182.120.241 write-free.www.deepl.com
-185.87.51.182 write-free.www.deepl.com
-95.182.120.241 www.deepl.com
-185.87.51.182 www.deepl.com
-95.182.120.241 www2.deepl.com
-185.87.51.182 www2.deepl.com
+api-free.deepl.com
+auth.deepl.com
+backend.deepl.com
+clearance.deepl.com
+deepl.com
+dict.deepl.com
+errortracking.deepl.com
+experimentation-grpc.deepl.com
+experimentation.deepl.com
+ita-free.app.deepl.com
+ita-free.www.deepl.com
+login-wall.deepl.com
+oneshot-free.www.deepl.com
+ott.deepl.com
+s.deepl.com
+shield.deepl.com
+w.deepl.com
+write-free.www.deepl.com
+www.deepl.com
+www2.deepl.com
