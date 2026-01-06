@@ -225,7 +225,7 @@ void File::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_arg
 				auto value = para.suffix().str();
 				utils::trim(value);
 
-				if (key.contains(parameter))
+				if (key == parameter)
 				{
 					str	   = std::regex_replace(str, std::regex{ value }, new_value);
 					stoped = true;
