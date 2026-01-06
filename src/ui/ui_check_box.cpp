@@ -1,4 +1,5 @@
 #include "ui_check_box.h"
+#include "utils_ultralight.hpp"
 
 CheckBox::CheckBox(pcstr name) : BaseElement(name)
 {
@@ -71,6 +72,5 @@ void CheckBox::setState(bool state)
 
 bool CheckBox::getState()
 {
-	FAST_LOCK_SHARED(Core::get().getTaskLockJS());
-	return _get_state({ name() }).ToBoolean();
+	return runCodeResult([this] { return _get_state({ name() }); });
 }

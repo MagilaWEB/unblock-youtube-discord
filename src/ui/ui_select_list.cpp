@@ -44,7 +44,6 @@ void SelectList::create(pcstr selector, Localization::Str title, Localization::S
 	runCode(
 		[this, selector, _title, _description, first]
 		{
-			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(
 				_create({ selector, name(), _title, _description, first }).ToBoolean() == true,
 				"Couldn't create a %s named [%s]",
@@ -65,7 +64,6 @@ void SelectList::createOption(JSValue value, Localization::Str text, bool select
 		{
 			if (!_created)
 				return;
-			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(_create_option({ name(), value, _text, select }).ToBoolean() == true, "Couldn't createOption a %s named [%s]", _type, name());
 		}
 	);
@@ -97,7 +95,7 @@ void SelectList::setSelectedOptionValue(JSValue value)
 
 JSValue SelectList::getSelectedOptionValue()
 {
-	return _get_value({ name() });
+	return runCodeResult([this] { return _get_value({ name() }); });
 }
 
 void SelectList::clear()
@@ -108,7 +106,6 @@ void SelectList::clear()
 			if (!_created)
 				return;
 
-			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(_clear({ name() }).ToBoolean() == true, "Couldn't clear a %s named [%s]", _type, name());
 		}
 	);

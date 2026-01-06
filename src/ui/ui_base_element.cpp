@@ -16,6 +16,30 @@ void BaseElement::runCode(const std::function<void()>& run_code)
 	run_code();
 }
 
+JSValue BaseElement::runCodeResult(const std::function<JSValue()>& run_code)
+{
+	if (Core::getThreadJsID() != GetCurrentThreadId())
+	{
+		std::atomic_bool wait{ true };
+		JSValue			 result;
+
+		Core::get().addTaskJS(
+			[run_code, &result, &wait]
+			{
+				result = run_code();
+				wait.store(false);
+			}
+		);
+
+		while (wait.load())
+			std::this_thread::yield();
+
+		return result;
+	}
+
+	return run_code();
+}
+
 BaseElement::BaseElement(pcstr name) : _name(name), _type("base_element")
 {
 	for (const auto& [_name_element, element] : _all_element)
@@ -58,7 +82,6 @@ void BaseElement::create(pcstr selector, Localization::Str title, bool first)
 	runCode(
 		[this, selector, _title, first]
 		{
-			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(_create({ selector, name(), _title, first }).ToBoolean() == true, "Couldn't create a %s named [%s]", _type, name());
 			_event_click[name()].clear();
 			_created = true;
@@ -89,7 +112,6 @@ void BaseElement::show()
 			if (!_created)
 				return;
 
-			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(_show({ name() }).ToBoolean() == true, "Couldn't remove a %s named [%s]", _type, name());
 		}
 	);
@@ -103,7 +125,6 @@ void BaseElement::hide()
 			if (!_created)
 				return;
 
-			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(_hide({ name() }).ToBoolean() == true, "Couldn't remove a %s named [%s]", _type, name());
 		}
 	);
@@ -123,7 +144,6 @@ void BaseElement::setTitle(Localization::Str title)
 			if (!_created)
 				return;
 
-			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(_set_title({ name(), _title }).ToBoolean() == true, "Couldn't setTitle a %s named [%s]", _type, name());
 		}
 	);

@@ -53,6 +53,7 @@ public:
 	pcstr name() const { return _name.c_str(); }
 
 	static void runCode(const std::function<void()>& run_code);
+	static JSValue runCodeResult(const std::function<JSValue()>& run_code);
 
 	void create(pcstr selector, Localization::Str title, bool first = false);
 	void remove();

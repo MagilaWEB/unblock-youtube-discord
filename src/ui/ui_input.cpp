@@ -43,7 +43,6 @@ void Input::create(pcstr selector, Types type, JSValue value, Localization::Str 
 			{
 				if (id == type)
 				{
-					RefPtr<JSContext> lock(_view->LockJSContext());
 					ASSERT_ARGS(
 						_create({ selector, name(), str, value, _title, _description, first }).ToBoolean() == true,
 						"Couldn't create a %s named [%s]",
@@ -73,8 +72,7 @@ void Input::addEventSubmit(std::function<bool(JSArgs)>&& callback)
 
 JSValue Input::getValue()
 {
-	RefPtr<JSContext> lock(_view->LockJSContext());
-	return _get_value({ name() });
+	return runCodeResult([this] { return _get_value({ name() }); });
 }
 
 void Input::setValue(JSValue value)
@@ -84,7 +82,6 @@ void Input::setValue(JSValue value)
 		{
 			if (!_created)
 				return;
-			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(_set_value({ name(), value }).ToBoolean() == true, "Couldn't setValue a %s named [%s]", _type, name());
 		}
 	);

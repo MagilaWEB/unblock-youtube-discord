@@ -57,7 +57,6 @@ void SecondaryWindow::create(Localization::Str title, Localization::Str descript
 	runCode(
 		[this, _title, _description]
 		{
-			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(_create({ name(), _title, _description }).ToBoolean() == true, "Couldn't create a %s named [%s]", _type, name());
 			_event_click[name()].clear();
 			_event_yes_no[name()].clear();
@@ -75,7 +74,6 @@ void SecondaryWindow::setType(Type type)
 			if (!_created)
 				return;
 
-			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(_set_type({ name(), static_cast<u8>(type) }).ToBoolean() == true, "Couldn't setType a %s named [%s]", _type, name());
 			_event_click[name()].clear();
 			_event_yes_no[name()].clear();
@@ -93,7 +91,6 @@ void SecondaryWindow::setDescription(Localization::Str description)
 			if (!_created)
 				return;
 
-			RefPtr<JSContext> lock(_view->LockJSContext());
 			ASSERT_ARGS(_set_description({ name(), _description }).ToBoolean() == true, "Couldn't setDescription a %s named [%s]", _type, name());
 		}
 	);
