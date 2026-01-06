@@ -29,9 +29,9 @@ public:
 	#define LIMIT_UPDATE(name_time, sec, code)              \
 		{                                                   \
 			[[clang::no_destroy]] static Timer name_time{}; \
-			if (name_time.GetElapsed_sec() > sec)           \
+			if (name_time.getElapsed_sec() > sec)           \
 			{                                               \
-				name_time.Start();                          \
+				name_time.start();                          \
 				code                                        \
 			}                                               \
 		}
@@ -39,9 +39,9 @@ public:
 	#define LIMIT_UPDATE_FPS(name_time, fps, code)            \
 		{                                                     \
 			[[clang::no_destroy]] static Timer name_time{};   \
-			if ((name_time.GetElapsed_ms()) >= (1'000 / fps)) \
+			if ((name_time.getElapsed_ms()) >= (1'000 / fps)) \
 			{                                                 \
-				name_time.Start();                            \
+				name_time.start();                            \
 				code                                          \
 			}                                                 \
 		}
@@ -49,9 +49,9 @@ public:
 	#define LIMIT_UPDATE(name_time, sec, code)    \
 		{                                         \
 			static Timer name_time{};             \
-			if (name_time.GetElapsed_sec() > sec) \
+			if (name_time.getElapsed_sec() > sec) \
 			{                                     \
-				name_time.Start();                \
+				name_time.start();                \
 				code                              \
 			}                                     \
 		}
@@ -59,9 +59,9 @@ public:
 	#define LIMIT_UPDATE_FPS(name_time, fps, code)            \
 		{                                                     \
 			static Timer name_time{};                         \
-			if ((name_time.GetElapsed_ms()) >= (1'000 / fps)) \
+			if ((name_time.getElapsed_ms()) >= (1'000 / fps)) \
 			{                                                 \
-				name_time.Start();                            \
+				name_time.start();                            \
 				code                                          \
 			}                                                 \
 		}
