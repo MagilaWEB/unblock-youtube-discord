@@ -165,7 +165,7 @@ void SecondaryWindow::addEventOk(std::function<bool(JSArgs)>&& callback)
 
 void SecondaryWindow::clearEventOk()
 {
-	_event_click[name()].clear();
+	runCode([this] { _event_click[name()].clear(); });
 }
 
 void SecondaryWindow::addEventYesNo(std::function<bool(JSArgs)>&& callback)
@@ -183,7 +183,7 @@ void SecondaryWindow::addEventYesNo(std::function<bool(JSArgs)>&& callback)
 
 void SecondaryWindow::clearEventYesNo()
 {
-	_event_yes_no[name()].clear();
+	runCode([this] { _event_yes_no[name()].clear(); });
 }
 
 void SecondaryWindow::addEventCancel(std::function<bool(JSArgs)>&& callback)
@@ -201,5 +201,5 @@ void SecondaryWindow::addEventCancel(std::function<bool(JSArgs)>&& callback)
 
 void SecondaryWindow::clearEventCancel()
 {
-	_event_cancel[name()].clear();
+	runCode([this] { _event_cancel[name()].clear(); });
 }
