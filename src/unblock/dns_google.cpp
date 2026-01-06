@@ -21,6 +21,7 @@ DNSHost::Google::Google(std::string test_domain)
 	curl_easy_setopt(_curl, CURLOPT_URL, _url.c_str());
 	curl_easy_setopt(_curl, CURLOPT_HTTPGET, 1L);
 	curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYPEER, 0L);
+	curl_easy_setopt(_curl, CURLOPT_TIMEOUT, 40L);
 	curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, WriteCallback);
 	curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &_stringBuffer);
 }
