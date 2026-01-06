@@ -158,10 +158,7 @@ void BaseElement::addEventClick(std::function<bool(JSArgs)>&& callback)
 				return;
 			auto& vector_event = _event_click[name()];
 			if (vector_event.empty())
-			{
-				RefPtr<JSContext> lock(_view->LockJSContext());
 				_add_event_click({ name() });
-			}
 
 			vector_event.push_back(callback);
 		}
