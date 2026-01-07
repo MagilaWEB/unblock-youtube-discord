@@ -119,6 +119,25 @@ void Ui::_settingEnableDnsHosts()
 		}
 	);
 
+	_start_update_dns_hosts->create("#setting section .common", "str_button_start_dns_hosts_update_title");
+
+	_start_update_dns_hosts->addEventClick(
+		[this](JSArgs)
+		{
+			Core::get().addTask(
+				[this]
+				{
+					_window_wait_update_dns->show();
+					_unblock->dnsHostsUpdate();
+					_unblock->dnsHosts(false);
+					_unblock->dnsHosts(true);
+					_window_wait_update_dns->hide();
+				}
+			);
+			return false;
+		}
+	);
+
 	_settingEnableDnsHostsUpdate();
 }
 
@@ -142,6 +161,11 @@ void Ui::_settingEnableDnsHostsUpdate()
 		const bool state = result.value();
 		_enable_dns_hosts->setState(state);
 
+		if (state)
+			_start_update_dns_hosts->show();
+		else
+			_start_update_dns_hosts->hide();
+
 		Core::get().addTask(
 			[this, state]
 			{
@@ -157,7 +181,10 @@ void Ui::_settingEnableDnsHostsUpdate()
 		);
 	}
 	else
+	{
+		_start_update_dns_hosts->hide();
 		_window_to_warn_enable_dns_hosts->show();
+	}
 }
 
 void Ui::_settingAccurateTesting()

@@ -99,6 +99,8 @@ str_window_wait_update_dns_description=🔄 Загрузка локальног�
 Идёт обновление системного файла hosts для обхода блокировок.
 Это может занять несколько минут.
 
+str_button_start_dns_hosts_update_title=🔄 Обновить локальный DNS
+
 // Setting titles blocks
 str_setting_common_title=⚙ Общие
 str_setting_unblock_title=🔓 Unblock

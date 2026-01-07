@@ -30,6 +30,7 @@ class Ui final : public utils::DefaultInit
 	CHECK_BOX(_testing_domains_startup);
 	CHECK_BOX(_accurate_testing);
 	CHECK_BOX(_enable_dns_hosts);
+	BUTTON(_start_update_dns_hosts);
 	INPUT(_max_time_wait_testing);
 	INPUT(_max_time_wait_accurate_testing);
 
