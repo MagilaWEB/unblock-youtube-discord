@@ -218,28 +218,23 @@ bool DomainTesting::isConnectionUrlVideo(const CurlDomain& domain) const
 		u32 count_connection{ 0U };
 
 		curl_easy_setopt(domain.curl, CURLOPT_URL, domain.url.c_str());
+		curl_easy_setopt(domain.curl, CURLOPT_HTTPGET, 1L);
+
 		if (_proxy)
 		{
 			curl_easy_setopt(domain.curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
 			curl_easy_setopt(domain.curl, CURLOPT_PROXY, _proxyIP.c_str());
 			curl_easy_setopt(domain.curl, CURLOPT_PORT, std::to_string(_proxyPORT).c_str());
 		}
-
-		curl_easy_setopt(domain.curl, CURLOPT_HEADER, 1L);
-		curl_easy_setopt(domain.curl, CURLOPT_HTTPGET, 1L);
-		curl_easy_setopt(
-			domain.curl,
-			CURLOPT_USERAGENT,
-			"Mozilla/5.0 ( Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 "
-			"YaBrowser/138.0.9197.153"
-		);
+		else
+			curl_easy_setopt(domain.curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTPS2);
 
 		curl_easy_setopt(domain.curl, CURLOPT_NOPROGRESS, 0L);
 		curl_easy_setopt(domain.curl, CURLOPT_XFERINFODATA, this);
 		curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
 
 		curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _accurate_test ? _max_wait_accurate_testing.load() : _max_wait_testing.load());
+		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _max_wait_testing.load());
 
 		while (count_connection++ < 4)
 		{
@@ -260,9 +255,8 @@ bool DomainTesting::isConnectionUrl(const CurlDomain& domain)
 {
 	if (domain.curl)
 	{
-		u32 count_connection{ 0U };
-
 		curl_easy_setopt(domain.curl, CURLOPT_URL, domain.url.c_str());
+		curl_easy_setopt(domain.curl, CURLOPT_HTTPGET, 1L);
 
 		if (_proxy)
 		{
@@ -270,103 +264,89 @@ bool DomainTesting::isConnectionUrl(const CurlDomain& domain)
 			curl_easy_setopt(domain.curl, CURLOPT_PROXY, _proxyIP.c_str());
 			curl_easy_setopt(domain.curl, CURLOPT_PORT, std::to_string(_proxyPORT).c_str());
 		}
+		else
+			curl_easy_setopt(domain.curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTPS2);
 
-		curl_easy_setopt(
-			domain.curl,
-			CURLOPT_USERAGENT,
-			"Mozilla/5.0 ( Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 "
-			"YaBrowser/138.0.9197.153"
-		);
-		curl_easy_setopt(domain.curl, CURLOPT_HEADER, 1L);
 		curl_easy_setopt(domain.curl, CURLOPT_NOPROGRESS, 0L);
 		curl_easy_setopt(domain.curl, CURLOPT_XFERINFODATA, this);
 		curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
 
 		curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _accurate_test ? _max_wait_accurate_testing.load() : _max_wait_testing.load());
+		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _max_wait_testing.load());
 
-		while (count_connection++ < 2)
+		u32 http_code{ 0U };
+
+		curl_easy_perform(domain.curl);
+		curl_easy_getinfo(domain.curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+		switch (http_code)
 		{
-			if (count_connection == 2)
-			{
-				curl_easy_setopt(domain.curl, CURLOPT_HTTPHEADER, 0L);
-				curl_easy_setopt(domain.curl, CURLOPT_HTTPGET, 1L);
-			}
-
-			u32 http_code{ 0U };
-
-			curl_easy_perform(domain.curl);
-			curl_easy_getinfo(domain.curl, CURLINFO_RESPONSE_CODE, &http_code);
-
-			switch (http_code)
-			{
-			case 200U:
-			{
-				return true;
-			}
-			case 201U:
-			{
-				return true;
-			}
-			case 202U:
-			{
-				return true;
-			}
-			case 203U:
-			{
-				return true;
-			}
-			case 204U:
-			{
-				return true;
-			}
-			case 301U:
-			{
-				return true;
-			}
-			case 302U:
-			{
-				return true;
-			}
-			case 303U:
-			{
-				return true;
-			}
-			case 304U:
-			{
-				return true;
-			}
-			case 400U:
-			{
-				return true;
-			}
-			case 401U:
-			{
-				return true;
-			}
-			case 403U:
-			{
-				return true;
-			}
-			case 404U:
-			{
-				return true;
-			}
-			case 405U:
-			{
-				return true;
-			}
-			case 520U:
-			{
-				return true;
-			}
-			case 530U:
-			{
-				return true;
-			}
-			default:
-				break;
-			}
+		case 200U:
+		{
+			return true;
+		}
+		case 201U:
+		{
+			return true;
+		}
+		case 202U:
+		{
+			return true;
+		}
+		case 203U:
+		{
+			return true;
+		}
+		case 204U:
+		{
+			return true;
+		}
+		case 301U:
+		{
+			return true;
+		}
+		case 302U:
+		{
+			return true;
+		}
+		case 303U:
+		{
+			return true;
+		}
+		case 304U:
+		{
+			return true;
+		}
+		case 400U:
+		{
+			return true;
+		}
+		case 401U:
+		{
+			return true;
+		}
+		case 403U:
+		{
+			return true;
+		}
+		case 404U:
+		{
+			return true;
+		}
+		case 405U:
+		{
+			return true;
+		}
+		case 520U:
+		{
+			return true;
+		}
+		case 530U:
+		{
+			return true;
+		}
+		default:
+			break;
 		}
 	}
 
@@ -399,10 +379,8 @@ void DomainTesting::_genericURLS(std::string base_name)
 			base_name += "_";
 
 		for (auto& name : _section_opt_service_names)
-		{
 			if (_loadFile(base_name + name))
-			_appendURLS();
-		}
+				_appendURLS();
 	}
 }
 
