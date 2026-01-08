@@ -81,6 +81,7 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(pcs
 		if (!state)
 		{
 			Debug::warning("Invalid test domain.");
+			_is_testing = false;
 			return;
 		}
 
