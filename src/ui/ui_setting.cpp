@@ -557,9 +557,10 @@ void Ui::_settingUnblockEnableManualSelectUpdate()
 
 		_buttonUpdate();
 
+		u32	  size{ 0 };
 		auto& fake_bin_list = _unblock->getFakeBinList();
-		for (u32 i = 0; i < fake_bin_list.size(); i++)
-			_unblock_select_fake_bin->createOption(i, fake_bin_list[i].key.c_str());
+		for (auto& [key, _] : fake_bin_list)
+			_unblock_select_fake_bin->createOption(size++, key.c_str());
 
 		set_default_select(_unblock_select_fake_bin, "fake_bin");
 

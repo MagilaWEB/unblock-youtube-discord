@@ -61,9 +61,9 @@ public:
 	std::string getNameFakeBin();
 
 	template<ValidStrategies Type>
-	const std::vector<std::string>&					getStrategiesList();
-	const std::vector<StrategiesDPI::FakeBinParam>& getFakeBinList();
-	std::list<Service>&								getConflictingServices();
+	const std::vector<std::string>&							  getStrategiesList();
+	const std::map<std::string, StrategiesDPI::FakeBinParam>& getFakeBinList();
+	std::list<Service>&										  getConflictingServices();
 
 	void startService(bool proxy = false);
 	void stopService(bool proxy = false);

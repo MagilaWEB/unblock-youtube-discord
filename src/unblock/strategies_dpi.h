@@ -11,16 +11,17 @@ class StrategiesDPI final : public StrategiesDPIBase
 public:
 	struct FakeBinParam
 	{
-		std::string key{};
+		bool		init{ false };
 		std::string file_clienthello{};
 		std::string file_initial{};
+		std::string domain;
 	};
 
 private:
-	std::string				  _fake_bind_key{};
-	std::vector<FakeBinParam> _fake_bin_params{};
-	std::list<std::string>	  _section_opt_service_names{};
-	std::string				  _service_blocklist_file{};
+	std::string							_fake_bind_key{};
+	std::map<std::string, FakeBinParam> _fake_bin_params{};
+	std::list<std::string>				_section_opt_service_names{};
+	std::string							_service_blocklist_file{};
 
 public:
 	StrategiesDPI();
@@ -35,8 +36,8 @@ public:
 	void removeOptionalStrategies(std::string name);
 	void clearOptionalStrategies();
 
-	std::string						 getKeyFakeBin() const;
-	const std::vector<FakeBinParam>& getFakeBinList() const;
+	std::string								   getKeyFakeBin() const;
+	const std::map<std::string, FakeBinParam>& getFakeBinList() const;
 
 private:
 	void _readFileStrategies(std::string section);
@@ -45,5 +46,5 @@ private:
 
 	std::optional<std::string> _getBlockList(std::string str) const;
 	std::optional<std::string> _getGameFilter(std::string str) const;
-	std::optional<std::string> _getFake(std::string str) const;
+	std::optional<std::string> _getFake(std::string str);
 };

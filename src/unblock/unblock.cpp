@@ -130,7 +130,7 @@ const std::vector<std::string>& Unblock::getStrategiesList()
 template UNBLOCK_API const std::vector<std::string>& Unblock::getStrategiesList<StrategiesDPI>();
 template UNBLOCK_API const std::vector<std::string>& Unblock::getStrategiesList<ProxyStrategiesDPI>();
 
-const std::vector<StrategiesDPI::FakeBinParam>& Unblock::getFakeBinList()
+const std::map<std::string, StrategiesDPI::FakeBinParam>& Unblock::getFakeBinList()
 {
 	return _strategies_dpi->getFakeBinList();
 }

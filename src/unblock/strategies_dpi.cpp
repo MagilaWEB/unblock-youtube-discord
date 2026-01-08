@@ -11,7 +11,20 @@ StrategiesDPI::StrategiesDPI()
 			const auto path_file = Core::get().binariesPath() / value;
 			ASSERT_ARGS(std::filesystem::exists(path_file), "The [%s] file does not exist!", path_file.string().c_str());
 
-			_fake_bin_params.push_back({ key, path_file.string() });
+			auto& fake			  = _fake_bin_params[key];
+			fake.file_clienthello = path_file.string();
+			fake.init			  = true;
+			return false;
+		}
+	);
+
+	_file_fake_bin_config->forLineParametersSection(
+		"FAKE_TLS_DOMAIN",
+		[this](std::string key, std::string value)
+		{
+			auto& fake	= _fake_bin_params[key];
+			fake.domain = value;
+			fake.init	= true;
 			return false;
 		}
 	);
@@ -23,13 +36,9 @@ StrategiesDPI::StrategiesDPI()
 			const auto path_file = Core::get().binariesPath() / value;
 			ASSERT_ARGS(std::filesystem::exists(path_file), "The [%s] file does not exist!", path_file.string().c_str());
 
-			auto it =
-				std::find_if(_fake_bin_params.begin(), _fake_bin_params.end(), [&key](const FakeBinParam& _it) { return _it.key.contains(key); });
-			if (it != _fake_bin_params.end())
-				(*it).file_initial = path_file.string();
-			else
-				_fake_bin_params.push_back({ key, {}, path_file.string() });
-
+			auto& fake		  = _fake_bin_params[key];
+			fake.file_initial = path_file.string();
+			fake.init		  = true;
 			return false;
 		}
 	);
@@ -42,15 +51,23 @@ std::string StrategiesDPI::getKeyFakeBin() const
 	return _fake_bind_key;
 }
 
-const std::vector<StrategiesDPI::FakeBinParam>& StrategiesDPI::getFakeBinList() const
+const std::map<std::string, StrategiesDPI::FakeBinParam>& StrategiesDPI::getFakeBinList() const
 {
 	return _fake_bin_params;
 }
 
 void StrategiesDPI::changeFakeKey(u32 index)
 {
-	const auto& strategy_file = _fake_bin_params[index];
-	changeFakeKey(strategy_file.key);
+	u32 it{ 0 };
+	for (auto& [key, data] : _fake_bin_params)
+	{
+		if (it == index)
+		{
+			changeFakeKey(key);
+			return;
+		}
+		it++;
+	}
 }
 
 void StrategiesDPI::changeFakeKey(std::string key)
@@ -63,9 +80,9 @@ void StrategiesDPI::changeFakeKey(std::string key)
 
 	InputConsole::textInfo("Выбран FakeBin [%s].", key.c_str());
 
-	auto it = std::find_if(_fake_bin_params.begin(), _fake_bin_params.end(), [&key](const FakeBinParam& _it) { return _it.key == key; });
+	auto& fake_bin = _fake_bin_params[key];
 
-	ASSERT_ARGS(it != _fake_bin_params.end(), "a key is missing for fake_bin %s", key.c_str());
+	ASSERT_ARGS(fake_bin.init, "a key is missing for fake_bin %s", key.c_str());
 
 	_fake_bind_key = key;
 }
@@ -184,7 +201,7 @@ void StrategiesDPI::_uploadStrategies()
 
 		std::erase_if(_strategy_dpi, [](std::string line) { return line.empty(); });
 
-		while ((_strategy_dpi.back().contains("--new")))
+		while (_strategy_dpi.back().contains("--new"))
 			_strategy_dpi.pop_back();
 
 #ifdef DEBUG
@@ -278,50 +295,105 @@ std::optional<std::string> StrategiesDPI::_getGameFilter(std::string str) const
 	return std::nullopt;
 }
 
-std::optional<std::string> StrategiesDPI::_getFake(std::string str) const
+std::optional<std::string> StrategiesDPI::_getFake(std::string str)
 {
 	if (_fake_bind_key.empty())
 		return std::nullopt;
 
-	auto it =
-		std::find_if(_fake_bin_params.begin(), _fake_bin_params.end(), [this](const FakeBinParam& _it) { return _it.key.contains(_fake_bind_key); });
+	auto& fake = _fake_bin_params[_fake_bind_key];
 
-	if (it != _fake_bin_params.end())
+	if (fake.init)
 	{
+		if (str.contains("%FAKE_TLS_DOMAIN%"))
+		{
+			if (fake.domain.empty())
+				return "--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com";
+
+			return "--dpi-desync-fake-tls-mod=rnd,dupsid,sni=" + fake.domain;
+		}
+
+		if (str.contains("%FAKE_HOST_DOMAIN%"))
+		{
+			if (fake.domain.empty())
+				return std::regex_replace(str, std::regex{ "%FAKE_HOST_DOMAIN%" }, "--dpi-desync-hostfakesplit-mod=host=www.google.com");
+
+			return std::regex_replace(str, std::regex{ "%FAKE_HOST_DOMAIN%" }, "--dpi-desync-hostfakesplit-mod=host=" + fake.domain);
+		}
+
 		if (str.contains("%FAKE_TLS%"))
-			return "--dpi-desync-fake-tls \"" + (*it).file_clienthello + "\"";
+		{
+			if (fake.file_clienthello.empty())
+				return "";
+
+			return "--dpi-desync-fake-tls \"" + fake.file_clienthello + "\"";
+		}
 
 		if (str.contains("%FAKE_QUIC%"))
-			return "--dpi-desync-fake-quic \"" + (*it).file_initial + "\"";
+		{
+			if (fake.file_initial.empty())
+				return "";
+
+			return "--dpi-desync-fake-quic \"" + fake.file_initial + "\"";
+		}
 
 		if (str.contains("%FAKE_DISCORD%"))
-			return "--dpi-desync-fake-discord \"" + (*it).file_initial + "\"";
+		{
+			if (fake.file_initial.empty())
+				return "";
+
+			return "--dpi-desync-fake-discord \"" + fake.file_initial + "\"";
+		}
 
 		if (str.contains("%FAKE_STUN%"))
-			return "--dpi-desync-fake-stun \"" + (*it).file_initial + "\"";
+		{
+			if (fake.file_initial.empty())
+				return "";
+
+			return "--dpi-desync-fake-stun \"" + fake.file_initial + "\"";
+		}
 
 		if (str.contains("%SEQOVL_PATTERN%"))
-			return "--dpi-desync-split-seqovl-pattern \"" + (*it).file_clienthello + "\"";
+		{
+			if (fake.file_clienthello.empty())
+				return "";
+
+			return "--dpi-desync-split-seqovl-pattern \"" + fake.file_clienthello + "\"";
+		}
 
 		if (str.contains("%FAKE_UNKNOWN%"))
-			return "--dpi-desync-fake-unknown-udp \"" + (*it).file_initial + "\"";
+		{
+			if (fake.file_initial.empty())
+				return "";
+
+			return "--dpi-desync-fake-unknown-udp \"" + fake.file_initial + "\"";
+		}
 
 		if (str.contains("%FAKE_CLIENT_HELLO%"))
-			return std::regex_replace(str, std::regex{ "%FAKE_CLIENT_HELLO%" }, (*it).file_clienthello);
+		{
+			if (fake.file_clienthello.empty())
+				return "";
+
+			return std::regex_replace(str, std::regex{ "%FAKE_CLIENT_HELLO%" }, fake.file_clienthello);
+		}
 
 		if (str.contains("%FAKE_INITIAL%"))
-			return std::regex_replace(str, std::regex{ "%FAKE_INITIAL%" }, (*it).file_initial);
+		{
+			if (fake.file_initial.empty())
+				return "";
+
+			return std::regex_replace(str, std::regex{ "%FAKE_INITIAL%" }, fake.file_initial);
+		}
 
 		return std::nullopt;
 	}
 	else
 	{
 		std::string list_key{};
-		for (auto& fake : _fake_bin_params)
+		for (auto& [key, _] : _fake_bin_params)
 			if (list_key.empty())
-				list_key = fake.key;
+				list_key = key;
 			else
-				list_key.append("," + fake.key);
+				list_key.append("," + key);
 
 		Debug::error("fake ключ [%s] не найден! Доступные ключи [%s].", _fake_bind_key.c_str(), list_key.c_str());
 	}
