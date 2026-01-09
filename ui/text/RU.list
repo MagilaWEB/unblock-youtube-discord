@@ -7,9 +7,9 @@ str_link_to_github=↗ GitHub
 str_link_to_telegram=↗ Telegram
 
 // BUTTON HOME
-str_b_start_unblock=▶ Запустить Unblock
-str_b_restart_unblock=🔄 Перезапустить Unblock
-str_b_stop_unblock=⏹ Остановить Unblock
+str_b_start_unblock=▶ Запустить Zapret
+str_b_restart_unblock=🔄 Перезапустить Zapret
+str_b_stop_unblock=⏹ Остановить Zapret
 str_b_start_proxy_dpi=▶ Запустить ProxyDPI
 str_b_restart_proxy_dpi=🔄 Перезапустить ProxyDPI
 str_b_stop_proxy_dpi=⏹ Остановить ProxyDPI
@@ -30,8 +30,8 @@ str_beginning_auto_selection=🔍 Начат авто-подбор конфиг�
 // BLOCK HOME
 str_h2_active_service=📊 Активные службы:
 
-str_h2_verified_domains=✅ Доступные домены (Unblock):
-str_h2_verified_domains_video=🎥 YouTube (Unblock):
+str_h2_verified_domains=✅ Доступные домены (Zapret):
+str_h2_verified_domains_video=🎥 YouTube (Zapret):
 
 str_h2_verified_proxy_domains=✅ Доступные домены (ProxyDPI):
 str_h2_verified_proxy_domains_video=🎥 YouTube (ProxyDPI):
@@ -61,8 +61,8 @@ str_window_configuration_selection_error=❌ Автоподбор не удал�
 • Ресурсы не отвечают
 • Нестабильное соединение
 Решение:
-• Включите точное тестирование
-• Или выберите конфиг вручную
+• Выберите конфиг вручную
+• Или воспользуйтесь VPN
 
 // Secondary Window config not found
 str_window_config_not_found_title=📭 Конфигурация не выбрана
@@ -115,25 +115,16 @@ str_checkbox_show_console_description=Открывает окно с логам�
 str_checkbox_testing_startup_title=🧪 Тестировать при запуске
 str_checkbox_testing_startup_description=Автоматическая проверка доступности сайтов.
 
-// Setting common Accurate testing
-str_checkbox_accurate_testing_title=🎯 Точное тестирование
-str_checkbox_accurate_testing_description=Повышает точность при нестабильном интернете.
-→ Увеличивает время проверки и изменяет алгоритм.
-
 // Setting common enable dns hosts
 str_checkbox_enable_dns_hosts_title=📁 Локальный DNS (hosts)
 str_checkbox_enable_dns_hosts_description=Использует файл hosts для обхода блокировок.
-
-// Setting common input max time wait accurate testing
-str_input_max_wait_accurate_testing_title=⏱ Таймаут точного теста (сек)
-str_input_max_wait_accurate_testing_description=Время ожидания ответа в точном режиме.
 
 // Setting common input max time wait testing
 str_input_max_wait_testing_title=⏱ Таймаут обычного теста (сек)
 str_input_max_wait_testing_description=Время ожидания ответа от сервера.
 
-// Setting checkbox unblock (winws/GoodBayDPI) enable
-str_unblock_enable_title=🔓 Включить Unblock
+// Setting checkbox zapret winws enable
+str_unblock_enable_title=🔓 Включить Zapret(winws)
 str_unblock_enable_description=Основной режим обхода блокировок.
 Можно использовать отдельно или с ProxyDPI.
 

@@ -234,28 +234,12 @@ void Unblock::testingDomainCancel(bool video)
 template UNBLOCK_API void Unblock::testingDomainCancel<StrategiesDPI>(bool);
 template UNBLOCK_API void Unblock::testingDomainCancel<ProxyStrategiesDPI>(bool);
 
-void Unblock::accurateTesting(bool state)
-{
-	_domain_testing->changeAccurateTest(state);
-	_domain_testing_video->changeAccurateTest(state);
-	_domain_testing_proxy->changeAccurateTest(state);
-	_domain_testing_proxy_video->changeAccurateTest(state);
-}
-
 void Unblock::maxWaitTesting(u32 second)
 {
 	_domain_testing->changeMaxWaitTesting(second);
 	_domain_testing_video->changeMaxWaitTesting(second);
 	_domain_testing_proxy->changeMaxWaitTesting(second);
 	_domain_testing_proxy_video->changeMaxWaitTesting(second);
-}
-
-void Unblock::maxWaitAccurateTesting(u32 second)
-{
-	_domain_testing->changeMaxWaitAccurateTesting(second);
-	_domain_testing_video->changeMaxWaitAccurateTesting(second);
-	_domain_testing_proxy->changeMaxWaitAccurateTesting(second);
-	_domain_testing_proxy_video->changeMaxWaitAccurateTesting(second);
 }
 
 bool Unblock::validDomain(bool proxy)

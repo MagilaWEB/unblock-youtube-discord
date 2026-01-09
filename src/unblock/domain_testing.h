@@ -19,10 +19,8 @@ class UNBLOCK_API DomainTesting final
 	std::atomic_uint _domain_ok{ 0 };
 	std::atomic_uint _domain_error{ 0 };
 	std::atomic_uint _max_wait_testing{ 5U };
-	std::atomic_uint _max_wait_accurate_testing{ 10U };
 	std::atomic_bool _is_testing{ false };
 	std::atomic_bool _cancel_testing{ false };
-	std::atomic_bool _accurate_test{ false };
 
 	std::string _proxyIP{ "127.0.0.1" };
 	u32			_proxyPORT{ 1'080 };
@@ -38,7 +36,6 @@ public:
 	void changeProxy(std::string ip, u32 port);
 	void changeAccurateTest(bool state);
 	void changeMaxWaitTesting(u32 second);
-	void changeMaxWaitAccurateTesting(u32 second);
 
 	void addOptionalStrategies(std::string name);
 	void removeOptionalStrategies(std::string name);
@@ -47,7 +44,6 @@ public:
 	void cancelTesting();
 
 	inline bool isTesting() { return _is_testing.load(); }
-	inline bool isAccurateTest() { return _accurate_test.load(); }
 	inline bool isCancelTesting() { return _cancel_testing.load(); }
 
 	u32	 successRate() const;

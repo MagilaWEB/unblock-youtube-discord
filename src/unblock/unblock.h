@@ -88,9 +88,7 @@ public:
 	template<ValidStrategies Type>
 	void testingDomainCancel(bool video = false);
 
-	void accurateTesting(bool state);
 	void maxWaitTesting(u32 second);
-	void maxWaitAccurateTesting(u32 second);
 
 	bool validDomain(bool proxy = false);
 

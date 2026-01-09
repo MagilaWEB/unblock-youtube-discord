@@ -28,11 +28,9 @@ class Ui final : public utils::DefaultInit
 #endif
 
 	CHECK_BOX(_testing_domains_startup);
-	CHECK_BOX(_accurate_testing);
 	CHECK_BOX(_enable_dns_hosts);
 	BUTTON(_start_update_dns_hosts);
 	INPUT(_max_time_wait_testing);
-	INPUT(_max_time_wait_accurate_testing);
 
 	// Setting Unblock
 	CHECK_BOX(_unblock_enable);
@@ -112,7 +110,6 @@ private:
 	void _settingEnableDnsHosts();
 	void _settingEnableDnsHostsUpdate();
 	void _settingDnsHostsUpdateInfoWindow();
-	void _settingAccurateTesting();
 
 	void _settingMaxTimeWait();
 	void _settingMaxTimeWaitUpdate();

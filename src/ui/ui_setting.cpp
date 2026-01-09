@@ -7,7 +7,6 @@ void Ui::_settingInit()
 {
 	_settingShowConsole();
 	_settingTestDomainsStartup();
-	_settingAccurateTesting();
 	_settingEnableDnsHosts();
 	_settingMaxTimeWait();
 
@@ -187,27 +186,6 @@ void Ui::_settingEnableDnsHostsUpdate()
 	}
 }
 
-void Ui::_settingAccurateTesting()
-{
-	_accurate_testing
-		->create("#setting section .common", "str_checkbox_accurate_testing_title", Localization::Str{ "str_checkbox_accurate_testing_description" });
-
-	auto result = _ui_base->userSetting()->parameterSection<bool>("TESTING", "accurate");
-	_accurate_testing->setState(result ? result.value() : false);
-
-	_unblock->accurateTesting(_accurate_testing->getState());
-
-	_accurate_testing->addEventClick(
-		[this](JSArgs args)
-		{
-			_ui_base->userSetting()->writeSectionParameter("TESTING", "accurate", JSToCPP(args[0]));
-			_unblock->accurateTesting(args[0].ToBoolean());
-			_settingMaxTimeWaitUpdate();
-			return false;
-		}
-	);
-}
-
 void Ui::_settingMaxTimeWait()
 {
 	_max_time_wait_testing
@@ -221,67 +199,24 @@ void Ui::_settingMaxTimeWait()
 		}
 	);
 
-	_max_time_wait_accurate_testing->create(
-		"#setting section .common",
-		Input::Types::number,
-		10,
-		"str_input_max_wait_accurate_testing_title",
-		"str_input_max_wait_accurate_testing_description"
-	);
-	_max_time_wait_accurate_testing->addEventSubmit(
-		[this](JSArgs args)
-		{
-			_ui_base->userSetting()->writeSectionParameter("TESTING", "max_time_wait_accurate_testing", JSToCPP(args[0]));
-			_settingMaxTimeWaitUpdate();
-			return false;
-		}
-	);
-
 	_settingMaxTimeWaitUpdate();
 }
 
 void Ui::_settingMaxTimeWaitUpdate()
 {
-	if (_accurate_testing->getState())
+	// get user setting
+	u32	 second = 5;
+	auto result = _ui_base->userSetting()->parameterSection<u32>("TESTING", "max_time_wait_testing");
+	if (result)
 	{
-		_max_time_wait_accurate_testing->show();
-
-		// get user setting
-		auto result = _ui_base->userSetting()->parameterSection<u32>("TESTING", "max_time_wait_accurate_testing");
-		if (result)
-			_max_time_wait_accurate_testing->setValue(result.value());
-
-		const u32 second = JSToCPP<u32>(_max_time_wait_accurate_testing->getValue());
+		second = result.value();
 		if (second > 0)
-			_unblock->maxWaitAccurateTesting(second);
+			_max_time_wait_testing->setValue(second);
 		else
-		{
-			_ui_base->userSetting()->writeSectionParameter("TESTING", "max_time_wait_accurate_testing", "10");
-			_settingMaxTimeWaitUpdate();
-		}
-
-		_max_time_wait_testing->hide();
+			_max_time_wait_testing->setValue(5);
 	}
-	else
-	{
-		_max_time_wait_testing->show();
 
-		// get user setting
-		auto result = _ui_base->userSetting()->parameterSection<u32>("TESTING", "max_time_wait_testing");
-		if (result)
-			_max_time_wait_testing->setValue(result.value());
-
-		const u32 second = JSToCPP<u32>(_max_time_wait_testing->getValue());
-		if (second > 0)
-			_unblock->maxWaitTesting(second);
-		else
-		{
-			_ui_base->userSetting()->writeSectionParameter("TESTING", "max_time_wait_testing", "5");
-			_settingMaxTimeWaitUpdate();
-		}
-
-		_max_time_wait_accurate_testing->hide();
-	}
+	_unblock->maxWaitTesting(second);
 }
 
 void Ui::_settingUnblockEnable()

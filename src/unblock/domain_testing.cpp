@@ -98,7 +98,7 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(pcs
 		_list_domain.end(),
 		[this, test_video, callback](const CurlDomain& domain)
 		{
-			if ((!_accurate_test) && errorRate() >= MAX_ERROR_CONECTION)
+			if (errorRate() >= MAX_ERROR_CONECTION)
 			{
 				_domain_error++;
 				return;
@@ -125,21 +125,10 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(pcs
 	Debug::info("Finish test domain.");
 }
 
-void DomainTesting::changeAccurateTest(bool state)
-{
-	_accurate_test = state;
-}
-
 void DomainTesting::changeMaxWaitTesting(u32 second)
 {
 	ASSERT_ARGS(second > 0, "The connection timeout cannot be equal to 0! This will provoke endless waiting.");
 	_max_wait_testing = second;
-}
-
-void DomainTesting::changeMaxWaitAccurateTesting(u32 second)
-{
-	ASSERT_ARGS(second > 0, "The connection timeout cannot be equal to 0! This will provoke endless waiting.");
-	_max_wait_accurate_testing = second;
 }
 
 void DomainTesting::addOptionalStrategies(std::string name)
@@ -195,12 +184,9 @@ static size_t progress_callback(void* clientp, curl_off_t /*dltotal*/, curl_off_
 		if (domain->isCancelTesting())
 			return CURLE_COULDNT_CONNECT;
 
-		if (!domain->isAccurateTest())
-		{
-			const u32 error_rate = domain->errorRate();
-			if (error_rate >= MAX_ERROR_CONECTION)
-				return CURLE_COULDNT_CONNECT;
-		}
+		const u32 error_rate = domain->errorRate();
+		if (error_rate >= MAX_ERROR_CONECTION)
+			return CURLE_COULDNT_CONNECT;
 	}
 
 	return CURLE_OK;
