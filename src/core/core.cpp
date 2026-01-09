@@ -136,6 +136,44 @@ std::filesystem::path Core::userPath() const
 	return _user_path;
 }
 
+std::vector<std::string> Core::exec(std::string cmd)
+{
+	if (std::unique_ptr<FILE, decltype(&_pclose)> pipe{ _popen(cmd.c_str(), "r"), _pclose })
+	{
+		std::array<char, 1'024>	 buffer{};
+		std::vector<std::string> result{};
+
+		while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr)
+			result.push_back(buffer.data());
+		return result;
+	}
+
+	throw std::runtime_error("popen() failed!");
+}
+
+void Core::exec_parallel(std::string cmd, std::function<bool(std::string)>&& callback)
+{
+	std::jthread(
+		[cmd, callback]
+		{
+			if (std::unique_ptr<FILE, decltype(&_pclose)> pipe{ _popen(cmd.c_str(), "r"), _pclose })
+			{
+				std::array<char, 1'024> buffer{};
+
+				while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr)
+				{
+					auto data = buffer.data();
+					if (callback(data))
+						break;
+
+					Debug::info("%s", data);
+				}
+			}
+		}
+	).detach();
+}
+
+
 void Core::addTask(std::function<void()>&& callback)
 {
 	FAST_LOCK(_task_lock);

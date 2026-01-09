@@ -39,6 +39,9 @@ public:
 	std::filesystem::path configsPath() const;
 	std::filesystem::path userPath() const;
 
+	std::vector<std::string> exec(std::string cmd);
+	void					 exec_parallel(std::string cmd, std::function<bool(std::string)>&& callback);
+
 	void addTask(std::function<void()>&& callback);
 
 	void taskComplete(std::function<void()>&& callback);
