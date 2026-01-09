@@ -11,7 +11,7 @@ concept ValidStrategies = std::same_as<T, StrategiesDPI> || std::same_as<T, Prox
 
 class UNBLOCK_API Unblock final
 {
-	Ptr<Service> _unblock{ "unblock", "winws.exe" };
+	Ptr<Service> _zapret{ "zapret", "winws.exe" };
 	Ptr<Service> _proxy_dpi{ "proxy_dpi", "ciadpi.exe" };
 	Ptr<Service> _win_divert{ "WinDivert" };
 
@@ -22,6 +22,11 @@ class UNBLOCK_API Unblock final
 	Ptr<StrategiesDPI>		_strategies_dpi;
 	Ptr<ProxyStrategiesDPI> _proxy_strategies_dpi;
 	Ptr<DNSHost>			_dns_hosts;
+
+#ifdef DEBUG
+	std::atomic_bool _zapret_dbg_run_end;
+	std::atomic_bool _zapret_dbg_run;
+#endif	  // DEBUG
 
 	ProxyData _proxy_data{};
 

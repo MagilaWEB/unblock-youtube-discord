@@ -2,7 +2,7 @@
 
 Unblock::Unblock()
 {
-	_unblock->open();
+	_zapret->open();
 	_proxy_dpi->open();
 	_win_divert->open();
 }
@@ -155,7 +155,7 @@ std::list<Service>& Unblock::getConflictingServices()
 			if (config.binary_path.contains("winws.exe") || config.binary_path.contains("goodbyedpi.exe")
 				|| config.binary_path.contains("ciadpi.exe"))
 			{
-				if (std::regex_match(name_service, std::regex{ _unblock->getName() }))
+				if (std::regex_match(name_service, std::regex{ _zapret->getName() }))
 					return;
 
 				if (std::regex_match(name_service, std::regex{ _proxy_dpi->getName() }))
@@ -271,12 +271,12 @@ bool Unblock::activeService(bool proxy)
 	if (proxy)
 		return _proxy_dpi->isRun();
 
-	return _unblock->isRun();
+	return _zapret->isRun();
 }
 
 void Unblock::checkStateServices(const std::function<void(pcstr, bool)>& callback)
 {
-	callback("Unblock (winws.exe)", _unblock->isRun());
+	callback("Zapret (winws.exe)", _zapret->isRun());
 	callback("ProxyDPI (BayDPI)", _proxy_dpi->isRun());
 	callback(_win_divert->getName().c_str(), _win_divert->isRun());
 }
@@ -301,7 +301,6 @@ float Unblock::dnsHostsUpdateProgress() const
 	return _dns_hosts->percentageCompletion();
 }
 
-
 bool Unblock::dnsHostsCheck() const
 {
 	return _dns_hosts->isHostsUser();
@@ -320,7 +319,17 @@ void Unblock::removeService(bool proxy)
 		return;
 	}
 
-	_unblock->remove();
+#ifdef DEBUG
+	if (_zapret_dbg_run.load())
+	{
+		_zapret_dbg_run_end.store(true);
+
+		while (_zapret_dbg_run.load())
+			std::this_thread::yield();
+	}
+#endif
+
+	_zapret->remove();
 	_win_divert->remove();
 }
 
@@ -332,14 +341,24 @@ void Unblock::stopService(bool proxy)
 		return;
 	}
 
-	_unblock->stop();
+#ifdef DEBUG
+	if (_zapret_dbg_run.load())
+	{
+		_zapret_dbg_run_end.store(true);
+
+		while (_zapret_dbg_run.load())
+			std::this_thread::yield();
+	}
+#endif
+
+	_zapret->stop();
 }
 
 void Unblock::startService(bool proxy)
 {
 	if (proxy)
 	{
-		auto & list = _proxy_strategies_dpi->getStrategy();
+		auto& list = _proxy_strategies_dpi->getStrategy();
 		if (!list.empty())
 		{
 			_proxy_dpi->remove();
@@ -352,16 +371,56 @@ void Unblock::startService(bool proxy)
 		return;
 	}
 
-	_unblock->remove();
+	_zapret->remove();
 
 	auto& list = _strategies_dpi->getStrategy();
 	if (!list.empty())
 	{
-		_unblock->setDescription("DPI программное обеспечение для обхода блокировки.");
-		_unblock->setArgs(list);
-		_unblock->create();
+		_zapret->setDescription("DPI программное обеспечение для обхода блокировки.");
+		_zapret->setArgs(list);
+		_zapret->create();
 
-		_unblock->start();
+		auto result_list = Core::get().exec("netsh interface tcp set global timestamps=enabled");
+		for (auto& line : result_list)
+			if (line.contains("OK"))
+				Debug::ok("netsh interface tcp set global timestamps == true!");
+
+#ifdef DEBUG
+		auto&		service_config = _zapret->getConfig();
+		auto&		path		   = service_config.binary_path;
+		std::string command		   = path;
+
+		command = std::regex_replace(command, std::regex{ "\"" }, "");
+		command = std::regex_replace(command, std::regex{ "--wf-tcp" }, "--debug --wf-tcp");
+
+		if (_zapret_dbg_run.load())
+		{
+			_zapret_dbg_run_end.store(true);
+
+			while (_zapret_dbg_run.load())
+				std::this_thread::yield();
+		}
+
+		Core::get().exec_parallel(
+			command,
+			[this](std::string)
+			{
+				if (_zapret_dbg_run_end.load())
+				{
+					_zapret_dbg_run_end.store(false);
+					_zapret_dbg_run.store(false);
+					return true;
+				}
+
+				if (!_zapret_dbg_run.load())
+					_zapret_dbg_run.store(true);
+
+				return false;
+			}
+		);
+#else
+		_zapret->start();
+#endif
 	}
 }
 

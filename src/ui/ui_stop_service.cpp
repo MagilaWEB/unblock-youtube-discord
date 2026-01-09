@@ -44,11 +44,7 @@ void Ui::_stoppingServices(StoppingService type)
 		{
 			_window_wait_stop_service->show();
 
-			if (type & StoppingService::eUnblock)
-				_unblock->removeService();
-
-			if (type & StoppingService::eProxyDpi)
-				_unblock->removeService(true);
+			_unblock->removeService(type & StoppingService::eProxyDpi);
 
 			_buttonUpdate();
 			_activeServiceUpdate();
