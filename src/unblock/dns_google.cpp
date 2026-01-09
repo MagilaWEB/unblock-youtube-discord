@@ -6,60 +6,37 @@ inline static const std::regex reg_period_comma_del{ "\\.\\," };
 inline static const std::regex reg_equally{ "\\:" };
 inline static const std::regex reg_comma_whitespace{ "\\.\\ " };
 
-static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp)
-{
-	userp->append(static_cast<char*>(contents), size * nmemb);
-	return size * nmemb;
-}
-
 DNSHost::Google::Google(std::string test_domain)
 {
-	_curl = curl_easy_init();
-
-	_url.append(_domain = test_domain);
-
-	curl_easy_setopt(_curl, CURLOPT_URL, _url.c_str());
-	curl_easy_setopt(_curl, CURLOPT_HTTPGET, 1L);
-	curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYPEER, 0L);
-	curl_easy_setopt(_curl, CURLOPT_TIMEOUT, 40L);
-	curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-	curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &_stringBuffer);
-}
-
-DNSHost::Google::~Google()
-{
-	if (_curl)
-		curl_easy_cleanup(_curl);
+	_url.append(test_domain);
+	_url.append("&edns_client_subnet=0.0.0.0/0");
+	http  = std::make_unique<HttpsLoad>(_url);
 }
 
 void DNSHost::Google::run()
 {
-	if (!_curl)
-		return;
+	http->run();
 
-	_code_result = static_cast<u32>(curl_easy_perform(_curl));
-	if (_code_result != CURLcode::CURLE_OK)
+	auto & lines = http->content();
+	for (auto& line : lines)
 	{
-		Debug::warning("Couldn't get domain data[%s].", _domain.c_str());
-		return;
+		auto stringBuffer = std::regex_replace(line, reg_symbols_del, "");
+		stringBuffer	  = std::regex_replace(stringBuffer, reg_period_comma_del, ",");
+		stringBuffer	  = std::regex_replace(stringBuffer, reg_comma_whitespace, " ");
+
+		std::stringstream stream{ stringBuffer };
+		std::string		  new_line;
+
+		std::string name{};
+		while (std::getline(stream, new_line, ','))
+			if (new_line.contains("Answer:name"))
+			{
+				static std::string answer_del{ "Answer:" };
+				_formatToMap(name, new_line.substr(answer_del.length(), new_line.length()));
+			}
+			else if (new_line.contains("data"))
+				_formatToMap(name, new_line);
 	}
-
-	auto stringBuffer = std::regex_replace(_stringBuffer, reg_symbols_del, "");
-	stringBuffer	  = std::regex_replace(stringBuffer, reg_period_comma_del, ",");
-	stringBuffer	  = std::regex_replace(stringBuffer, reg_comma_whitespace, " ");
-
-	std::stringstream stream{ stringBuffer };
-	std::string		  line;
-
-	std::string name{};
-	while (std::getline(stream, line, ','))
-		if (line.contains("Answer:name"))
-		{
-			static std::string answer_del{ "Answer:" };
-			_formatToMap(name, line.substr(answer_del.length(), line.length()));
-		}
-		else if (line.contains("data"))
-			_formatToMap(name, line);
 }
 
 const DNSHost::Google::MapDomainIP& DNSHost::Google::content() const

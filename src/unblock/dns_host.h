@@ -1,6 +1,5 @@
 #pragma once
-typedef void	  CURL;
-typedef long long curl_off_t;
+#include "http_load_content.h"
 
 inline static const std::regex reg_ipv4_pattern{ R"(^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$)" };
 inline static const std::regex reg_domain_regex{ R"(^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$)" };
@@ -33,20 +32,18 @@ public:
 
 		Google() = delete;
 		Google(std::string);
-		~Google();
+		~Google() = default;
 
 		void			   run();
 		const MapDomainIP& content() const;
 
-		void append(char*, size_t);
-
 	private:
-		CURL*		_curl{ nullptr };
-		std::string _url{ "https://dns.google/resolve?name=" };
-		std::string _domain{};
-		u32			_code_result{ 0 };
-		std::string _stringBuffer;
-		MapDomainIP _map_domains_ip{};
+		std::unique_ptr<HttpsLoad> http;
+		std::string				   _url{ "https://dns.google/resolve?name=" };
+		// std::string _domain{};
+		// u32			_code_result{ 0 };
+		// std::string _stringBuffer;
+		MapDomainIP				   _map_domains_ip{};
 
 		void _formatToMap(std::string&, std::string);
 	};
