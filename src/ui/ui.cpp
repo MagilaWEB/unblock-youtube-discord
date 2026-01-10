@@ -26,6 +26,9 @@ void Ui::initialize()
 	_window_wait_update_unblock->create(Localization::Str{ "str_please_wait" }, "str_window_wait_update_unblock");
 	_window_wait_update_unblock->setType(SecondaryWindow::Type::Wait);
 
+	_window_wait_check_update_unblock->create(Localization::Str{ "str_please_wait" }, "str_window_check_update_unblock");
+	_window_wait_check_update_unblock->setType(SecondaryWindow::Type::Wait);
+
 	_window_update_unblock->create(Localization::Str{ "str_warning" }, "");
 	_window_update_unblock->hide();
 
@@ -51,15 +54,25 @@ void Ui::initialize()
 		}
 	);
 
-	Core::get().addTask(
-		[this]
+	_enable_check_update_startup->create(
+		"#setting section .common",
+		"str_checkbox_check_update_app_startup_title",
+		Localization::Str{ "str_checkbox_check_update_app_startup_description" }
+	);
+
+	auto result = _ui_base->userSetting()->parameterSection<bool>("SUSTEM", "check_update_app_startup");
+	_enable_check_update_startup->setState(result ? result.value() : true);
+
+	if (_enable_check_update_startup->getState())
+		_checkAppUpdate();
+
+	_start_check_update_app->create("#setting section .common", "str_bottom_check_update_app_startup_title");
+
+	_start_check_update_app->addEventClick(
+		[this](JSArgs)
 		{
-			if (auto new_version = _unblock->checkUpdate())
-			{
-				static pcstr desc = Localization::Str{ "str_window_update_unblock" }();
-				_window_update_unblock->setDescription(utils::format(desc, new_version.value().c_str()).c_str());
-				_window_update_unblock->show();
-			}
+			_checkAppUpdate(true);
+			return false;
 		}
 	);
 
@@ -119,6 +132,31 @@ void Ui::_tcpGlobalChange(bool state)
 		system("netsh interface tcp set global timestamps=disabled");
 		_ui_base->userSetting()->writeSectionParameter("SUSTEM", "enable_tcp_global", "false");
 	}
+}
+
+void Ui::_checkAppUpdate(bool window_show)
+{
+	Core::get().addTask(
+		[this, window_show]
+		{
+			if (window_show)
+				_window_wait_check_update_unblock->show();
+
+			if (auto new_version = _unblock->checkUpdate())
+			{
+				if (window_show)
+					_window_wait_check_update_unblock->hide();
+
+				static pcstr desc = Localization::Str{ "str_window_update_unblock" }();
+				_window_update_unblock->setDescription(utils::format(desc, new_version.value().c_str()).c_str());
+				_window_update_unblock->show();
+				return;
+			}
+
+			if (window_show)
+				_window_wait_check_update_unblock->hide();
+		}
+	);
 }
 
 void Ui::_checkConflictService()

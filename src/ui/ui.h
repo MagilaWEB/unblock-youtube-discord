@@ -27,7 +27,8 @@ class Ui final : public utils::DefaultInit
 #ifndef DEBUG
 	CHECK_BOX(_show_console);
 #endif
-
+	CHECK_BOX(_enable_check_update_startup);
+	BUTTON(_start_check_update_app);
 	CHECK_BOX(_testing_domains_startup);
 	CHECK_BOX(_enable_dns_hosts);
 	BUTTON(_start_update_dns_hosts);
@@ -51,9 +52,6 @@ class Ui final : public utils::DefaultInit
 	CHECK_BOX(_proxy_manual);
 	SELECT_LIST(_proxy_select_config);
 
-	// Setting Proxy TOR
-	// CHECK_BOX(_tor_proxy_enable);
-
 	// Home
 	BUTTON(_start_unblock);
 	BUTTON(_stop_unblock);
@@ -71,6 +69,7 @@ class Ui final : public utils::DefaultInit
 
 	SECONDARY_WINDOW(_window_update_unblock);
 	SECONDARY_WINDOW(_window_wait_update_unblock);
+	SECONDARY_WINDOW(_window_wait_check_update_unblock);
 
 	SECONDARY_WINDOW(_window_warning_conflict_service);
 
@@ -106,6 +105,7 @@ public:
 	void jsUpdate();
 
 private:
+	void _checkAppUpdate(bool window_show = false);
 	void _checkConflictService();
 
 	void _settingInit();

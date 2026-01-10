@@ -36,6 +36,13 @@ str_h2_verified_domains_video=🎥 YouTube (Zapret):
 str_h2_verified_proxy_domains=✅ Доступные домены (ProxyDPI):
 str_h2_verified_proxy_domains_video=🎥 YouTube (ProxyDPI):
 
+// Check update app startup
+str_checkbox_check_update_app_startup_title=🔄 Проверять обновления при запуске
+str_checkbox_check_update_app_startup_description=Автоматически проверять наличие новой версии Unblock при каждом запуске приложения.
+
+// Check update
+str_bottom_check_update_app_startup_title=🔍 Проверить обновления
+
 // Secondary Window
 str_b_secondary_window_ok=✅ OK
 str_b_secondary_window_yes=✅ Да
@@ -71,6 +78,9 @@ str_window_update_unblock=🔄 Доступно обновление Unblock v%s
 
 str_window_wait_update_unblock=⏳ Идёт обновление Unblock...
 Не закрывайте приложение. После завершения оно перезапустится автоматически.
+
+str_window_check_update_unblock=🔍 Проверка обновлений...
+Ищем доступные обновления для Unblock.
 
 // Secondary Window config not found
 str_window_config_not_found_title=📭 Конфигурация не выбрана
