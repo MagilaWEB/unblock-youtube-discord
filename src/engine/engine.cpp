@@ -1,5 +1,7 @@
 #include "engine.h"
 #include "version.hpp"
+#include <corecrt_io.h>
+#include <fcntl.h>
 
 Engine& Engine::get()
 {
@@ -60,27 +62,27 @@ void Engine::console()
 	freopen_s(&stream, "CONOUT$", "w+", stdout);
 	freopen_s(&stream, "CONOUT$", "w+", stderr);
 
+	HANDLE handle_out = GetStdHandle(STD_OUTPUT_HANDLE);
+	int	   hCrt		  = _open_osfhandle(u64(handle_out), _O_TEXT);
+	FILE*  hf_out	  = _fdopen(hCrt, "w");
+	setvbuf(hf_out, NULL, _IONBF, 1);
+	*stdout = *hf_out;
+
+	HANDLE handle_in = GetStdHandle(STD_INPUT_HANDLE);
+	hCrt			 = _open_osfhandle(u64(handle_in), _O_TEXT);
+	FILE* hf_in		 = _fdopen(hCrt, "r");
+	setvbuf(hf_in, NULL, _IONBF, 128);
+	*stdin				 = *hf_in;
+
 	// Enable flags so we can color the output
-	HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 	DWORD  dwMode		 = 0;
-	GetConsoleMode(consoleHandle, &dwMode);
+	GetConsoleMode(handle_out, &dwMode);
 	dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-	SetConsoleMode(consoleHandle, dwMode);
+	SetConsoleMode(handle_out, dwMode);
 	SetConsoleTitle("Unblock Console");
 
-	CONSOLE_FONT_INFOEX fontInfo{};
-	fontInfo.cbSize = sizeof(fontInfo);
-
-	GetCurrentConsoleFontEx(consoleHandle, TRUE, &fontInfo);
-
-	wcscpy_s(fontInfo.FaceName, L"Lucida Console");
-	fontInfo.dwFontSize.Y = 15;
-	fontInfo.dwFontSize.X = 38;
-
-	SetCurrentConsoleFontEx(consoleHandle, TRUE, &fontInfo);
-
 	HWND  hwnd	= GetConsoleWindow();
-	HMENU hmenu = GetSystemMenu(hwnd, TRUE);
+	HMENU hmenu = GetSystemMenu(hwnd, FALSE);
 	EnableMenuItem(hmenu, SC_CLOSE, MF_GRAYED);
 
 	// Set UTF-8
