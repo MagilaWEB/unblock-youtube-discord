@@ -8,7 +8,7 @@ HttpsLoad::HttpsLoad(std::string url)
 	_url = url;
 
 	curl_easy_setopt(_curl, CURLOPT_URL, _url.c_str());
-	curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code_result);
+	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
 }
 
 HttpsLoad::~HttpsLoad()
@@ -39,6 +39,8 @@ std::vector<std::string> HttpsLoad::run()
 		Debug::warning("Couldn't get url[%s].", _url.c_str());
 		return {};
 	}
+
+	curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code_result);
 
 	std::vector<std::string> _line_content{};
 
@@ -71,7 +73,6 @@ void HttpsLoad::run_to_file(std::filesystem::path path)
 	std::fstream file;
 	file.open(path, std::ios::out | std::ios::binary);
 
-	curl_easy_setopt(_curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, write_file);
 	curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &file);
 
@@ -80,6 +81,8 @@ void HttpsLoad::run_to_file(std::filesystem::path path)
 		Debug::warning("Couldn't get url[%s].", _url.c_str());
 		return;
 	}
+
+	curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code_result);
 
 	file.close();
 }

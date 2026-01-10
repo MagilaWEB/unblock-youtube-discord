@@ -17,6 +17,9 @@ Ui::Ui(UiBase* ui_base) : _ui_base(ui_base)
 
 void Ui::initialize()
 {
+	if (_init)
+		return;
+
 	auto js_global = JSGlobalObject();
 	_updateCountStartStopButtonToCss = js_global["updateCountStartStopButtonToCss"];
 
@@ -60,6 +63,8 @@ void Ui::initialize()
 	_testingInit();
 
 	_footerElements();
+
+	_init = true;
 }
 
 void Ui::jsUpdate()

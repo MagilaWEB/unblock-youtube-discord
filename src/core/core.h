@@ -42,6 +42,8 @@ public:
 	std::vector<std::string> exec(std::string cmd);
 	void					 exec_parallel(std::string cmd, std::function<bool(std::string)>&& callback);
 
+	bool isVersionNewer(std::string version1, std::string version2);
+
 	void addTask(std::function<void()>&& callback);
 
 	void taskComplete(std::function<void()>&& callback);
@@ -54,4 +56,7 @@ public:
 
 	static void	 setThreadJsID(DWORD id);
 	static DWORD getThreadJsID();
+
+private:
+	std::tuple<u32, u32, u32> _parseSimpleVersion(const std::string& version);
 };

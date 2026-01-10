@@ -21,6 +21,7 @@ class Ui final : public utils::DefaultInit
 
 	std::atomic_bool _automatically_strategy_cancel{ false };
 	std::atomic_bool _proxy_click_state{ false };
+	bool			 _init{ false };
 
 	// Setting Common
 #ifndef DEBUG
@@ -51,7 +52,7 @@ class Ui final : public utils::DefaultInit
 	SELECT_LIST(_proxy_select_config);
 
 	// Setting Proxy TOR
-	//CHECK_BOX(_tor_proxy_enable);
+	// CHECK_BOX(_tor_proxy_enable);
 
 	// Home
 	BUTTON(_start_unblock);
@@ -93,7 +94,7 @@ class Ui final : public utils::DefaultInit
 
 	enum StoppingService : u32
 	{
-		eUnblock = (1 << 0),
+		eUnblock  = (1 << 0),
 		eProxyDpi = (1 << 1)
 	};
 
@@ -148,8 +149,6 @@ private:
 	void _settingProxyDPIInputPort();
 	void _settingProxyDPIInputPortUpdate();
 
-
-
 	// Testing
 	void _testingInit();
 	void _testingUpdate();
@@ -159,18 +158,17 @@ private:
 	void _activeServiceUpdate();
 	void _testingServiceDomains();
 
-
 	// Starting services
 	void _startInit();
 	void _startUnblock();
 	void _startProxy();
-	//void _startTorProxy();
+	// void _startTorProxy();
 
-	// Starting services base methods 
-	void _startServiceWindow();
-	void _clickStartService();
-	void _autoStart();
-	void _startServiceFromConfig();
+	// Starting services base methods
+	void	   _startServiceWindow();
+	void	   _clickStartService();
+	void	   _autoStart();
+	void	   _startServiceFromConfig();
 	JSFunction _updateCountStartStopButtonToCss;
 
 	// Starting services update button
@@ -179,7 +177,7 @@ private:
 	// Stopping services
 	void _stopInit();
 	void _stoppingServices(StoppingService type);
-	//void _stopTorProxy();
+	// void _stopTorProxy();
 
 	// base footer
 	void _footerElements();

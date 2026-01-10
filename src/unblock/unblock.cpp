@@ -246,13 +246,31 @@ void Unblock::maxWaitTesting(u32 second)
 
 std::optional<std::string> Unblock::checkUpdate()
 {
-	HttpsLoad version{ "https://raw.githubusercontent.com/MagilaWEB/unblock-youtube-discord/version.txt" };
+	HttpsLoad version{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest" };
 
 	auto lines = version.run();
 	if (version.codeResult() == 200)
-		if (!lines[0].empty())
-			if (std::stof(lines[0]) > std::stof(VERSION_STR))
-				return lines[0];
+	{
+		for (auto& line : lines)
+		{
+			static std::string version_mask{ "/MagilaWEB/unblock-youtube-discord/tree/v" };
+			size_t			   pos = line.find(version_mask);
+			if (pos != std::string::npos)
+			{
+				static std::string mask_end{ "\" data-tab-item=\"i0code-tab\"" };
+				size_t			   pos_end = line.find(mask_end);
+				if (pos_end != std::string::npos)
+				{
+					auto start_str = pos + version_mask.length();
+					auto str	   = line.substr(start_str, pos_end - start_str);
+					if (Core::get().isVersionNewer(str, VERSION_STR))
+						return str;
+
+					return {};
+				}
+			}
+		}
+	}
 
 	return {};
 }

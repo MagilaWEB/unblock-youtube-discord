@@ -173,6 +173,36 @@ void Core::exec_parallel(std::string cmd, std::function<bool(std::string)>&& cal
 	).detach();
 }
 
+std::tuple<u32, u32, u32> Core::_parseSimpleVersion(const std::string& version)
+{
+	std::stringstream ss(version);
+	std::string		  major, minor, patch;
+
+	std::getline(ss, major, '.');
+	std::getline(ss, minor, '.');
+	std::getline(ss, patch, '.');
+
+	return std::make_tuple(std::stoi(major), std::stoi(minor), patch.empty() ? 0 : std::stoi(patch));
+}
+
+bool Core::isVersionNewer(std::string version1, std::string version2)
+{
+	auto [major1, minor1, patch1] = _parseSimpleVersion(version1);
+	auto [major2, minor2, patch2] = _parseSimpleVersion(version2);
+
+	if (major1 > major2)
+		return true;
+	if (major1 < major2)
+		return false;
+
+	if (minor1 > minor2)
+		return true;
+	if (minor1 < minor2)
+		return false;
+
+	return patch1 > patch2;
+}
+
 
 void Core::addTask(std::function<void()>&& callback)
 {

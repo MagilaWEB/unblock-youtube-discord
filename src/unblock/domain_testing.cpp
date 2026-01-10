@@ -205,6 +205,7 @@ bool DomainTesting::isConnectionUrlVideo(const CurlDomain& domain) const
 
 		curl_easy_setopt(domain.curl, CURLOPT_URL, domain.url.c_str());
 		curl_easy_setopt(domain.curl, CURLOPT_HTTPGET, 1L);
+		curl_easy_setopt(domain.curl, CURLOPT_FOLLOWLOCATION, 1L);
 
 		if (_proxy)
 		{
@@ -243,6 +244,7 @@ bool DomainTesting::isConnectionUrl(const CurlDomain& domain)
 	{
 		curl_easy_setopt(domain.curl, CURLOPT_URL, domain.url.c_str());
 		curl_easy_setopt(domain.curl, CURLOPT_HTTPGET, 1L);
+		curl_easy_setopt(domain.curl, CURLOPT_FOLLOWLOCATION, 1L);
 
 		if (_proxy)
 		{
