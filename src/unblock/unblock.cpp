@@ -421,11 +421,6 @@ void Unblock::startService(bool proxy)
 		_zapret->setArgs(list);
 		_zapret->create();
 
-		auto result_list = Core::get().exec("netsh interface tcp set global timestamps=enabled");
-		for (auto& line : result_list)
-			if (line.contains("OK"))
-				Debug::ok("netsh interface tcp set global timestamps == true!");
-
 #ifdef DEBUG
 		auto&		service_config = _zapret->getConfig();
 		auto&		path		   = service_config.binary_path;

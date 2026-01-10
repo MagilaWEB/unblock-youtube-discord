@@ -103,6 +103,24 @@ void Ui::_footerElements()
 	);
 }
 
+void Ui::_tcpGlobalChange(bool state)
+{
+	if (state)
+	{
+		auto tcp_set_global = _ui_base->userSetting()->parameterSection<bool>("SUSTEM", "enable_tcp_global");
+		if ((!tcp_set_global) || (!tcp_set_global.value()))
+		{
+			system("netsh interface tcp set global timestamps=enabled");
+			_ui_base->userSetting()->writeSectionParameter("SUSTEM", "enable_tcp_global", "true");
+		}
+	}
+	else
+	{
+		system("netsh interface tcp set global timestamps=disabled");
+		_ui_base->userSetting()->writeSectionParameter("SUSTEM", "enable_tcp_global", "false");
+	}
+}
+
 void Ui::_checkConflictService()
 {
 	_window_warning_conflict_service->create(Localization::Str{ "str_warning" }, "");

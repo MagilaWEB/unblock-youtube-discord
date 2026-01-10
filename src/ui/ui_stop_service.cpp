@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "ui_base.h"
 
 #include "../unblock/unblock.h"
 
@@ -12,6 +13,7 @@ void Ui::_stopInit()
 		[this](JSArgs)
 		{
 			_stoppingServices(eUnblock);
+			_tcpGlobalChange(false);
 			return false;
 		}
 	);
@@ -31,6 +33,7 @@ void Ui::_stopInit()
 		{
 			_stoppingServices(StoppingService::eUnblock);
 			_stoppingServices(StoppingService::eProxyDpi);
+			_tcpGlobalChange(false);
 			return false;
 		}
 	);

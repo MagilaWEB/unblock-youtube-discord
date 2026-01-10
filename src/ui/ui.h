@@ -181,4 +181,6 @@ private:
 
 	// base footer
 	void _footerElements();
+
+	void _tcpGlobalChange(bool state);
 };

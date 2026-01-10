@@ -23,10 +23,8 @@ class UNBLOCK_API Unblock final
 	Ptr<ProxyStrategiesDPI> _proxy_strategies_dpi;
 	Ptr<DNSHost>			_dns_hosts;
 
-#ifdef DEBUG
 	std::atomic_bool _zapret_dbg_run_end;
 	std::atomic_bool _zapret_dbg_run;
-#endif	  // DEBUG
 
 	ProxyData _proxy_data{};
 

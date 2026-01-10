@@ -175,6 +175,8 @@ void Ui::_clickStartService()
 
 void Ui::_autoStart()
 {
+	_tcpGlobalChange(true);
+
 	auto errorAutomaticallyStrategy = [this]
 	{
 		const bool state =
@@ -277,6 +279,8 @@ void Ui::_startServiceFromConfig()
 			[this, config]
 			{
 				_window_wait_start_service->show();
+
+				_tcpGlobalChange(true);
 
 				if (_proxy_click_state)
 					_unblock->changeProxyStrategy(config.value().c_str());
