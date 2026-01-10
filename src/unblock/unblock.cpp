@@ -51,17 +51,12 @@ template UNBLOCK_API bool Unblock::automaticallyStrategy<ProxyStrategiesDPI>();
 
 void Unblock::changeStrategy(pcstr name_config, pcstr name_fake_bin)
 {
-	_strategy.type	   = 0;
-	_strategy.fake_bin = 0;
-
 	_strategies_dpi->changeFakeKey(name_fake_bin);
 	_strategies_dpi->changeStrategy(name_config);
 }
 
 void Unblock::changeProxyStrategy(pcstr name_config)
 {
-	_strategy.proxy_type = 0;
-
 	_proxy_strategies_dpi->changeStrategy(name_config);
 }
 
