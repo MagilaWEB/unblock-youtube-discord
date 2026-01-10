@@ -201,13 +201,17 @@ void StrategiesDPI::_uploadStrategies()
 
 		std::erase_if(_strategy_dpi, [](std::string line) { return line.empty(); });
 
+		if (_strategy_dpi.empty())
+		{
+			Debug::warning("strategy dpi empty");
+			return;
+		}
+
 		while (_strategy_dpi.back().contains("--new"))
 			_strategy_dpi.pop_back();
 
-#ifdef DEBUG
 		for (auto& line : _strategy_dpi)
 			Debug::ok("%s", line.c_str());
-#endif
 	}
 }
 
