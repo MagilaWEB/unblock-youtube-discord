@@ -53,10 +53,24 @@ FetchContent_Declare(
   SOURCE_DIR curl
 )
 
+FetchContent_Declare(
+  bit7z
+  URL https://github.com/rikyoz/bit7z/releases/download/v4.0.10/bit7z-v4.0.10-msvc2015_x64.7z
+  SOURCE_DIR bit7z
+)
+
+FetchContent_Declare(
+  7za
+  URL https://www.7-zip.org/a/7z2501-extra.7z
+  SOURCE_DIR 7za
+)
+
 # Build
 FetchContent_MakeAvailable(
     ultralight
     curl
+    bit7z
+    7za
 )
 
 # Include libcurl
@@ -81,6 +95,19 @@ set(ULTRALIGHT_INCLUDE ${ULTRALIGHT_DIR}/include)
 set(ULTRALIGHT_LIB ${ULTRALIGHT_DIR}/lib)
 set(ULTRALIGHT_BIN ${ULTRALIGHT_DIR}/bin)
 
+# Include bit7z
+set(BIT7Z_DIR ${CMAKE_BINARY_DIR}/bit7z)
+set(BIT7Z_INCLUDE ${BIT7Z_DIR}/include)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(BIT7Z_LIB ${BIT7Z_DIR}/lib/x64/Debug/bit7z.lib)
+else()
+    set(BIT7Z_LIB ${BIT7Z_DIR}/lib/x64/Release/bit7z.lib)
+endif()
+
+# Include bit7z
+set(7ZA_DIR ${CMAKE_BINARY_DIR}/7za)
+set(7ZA_BIN ${7ZA_DIR}/x64/7za.dll)
 # Build
 message(STATUS "COMPILER = ${CMAKE_CXX_COMPILER_ID}")
 

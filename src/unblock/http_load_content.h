@@ -1,19 +1,18 @@
 #pragma once
-typedef void	  CURL;
+typedef void CURL;
 
 class HttpsLoad
 {
-	CURL*				   _curl{ nullptr };
-	std::string			   _url{};
-	u32					   _code_result{ 0 };
-	std::string			   _stringBuffer;
-	std::list<std::string> _line_content{};
+	CURL*		_curl{ nullptr };
+	std::string _url{};
+	u32			_code_result{ 0 };
+	std::string _stringBuffer;
 
 public:
 	HttpsLoad() = delete;
 	HttpsLoad(std::string);
 	~HttpsLoad();
-	u32							  codeResult() const;
-	void						  run();
-	const std::list<std::string>& content() const;
+	u32						 codeResult() const;
+	std::vector<std::string> run();
+	void					 run_to_file(std::filesystem::path);
 };

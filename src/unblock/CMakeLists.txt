@@ -10,12 +10,16 @@ add_library(${NAME} SHARED ${src_h} ${src_hpp} ${src_cpp})
 target_precompile_headers(${NAME} PRIVATE pch.h)
 
 # Include files
-target_include_directories(${NAME} PRIVATE ${CURL_INCLUDE_DIR})
+target_include_directories(${NAME} PRIVATE
+        ${CURL_INCLUDE_DIR}
+        ${BIT7Z_INCLUDE}
+)
 
 # Link
 target_link_libraries(${NAME} PRIVATE
         core
         ${CURL_LIBRARY}
+        ${BIT7Z_LIB}
 )
 
 # Define EXPORTS when building the libraries

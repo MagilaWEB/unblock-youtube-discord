@@ -5,6 +5,9 @@
 
 void Ui::_settingInit()
 {
+	if (_unblock->checkUpdate())
+		_unblock->appUpdate();
+
 	_settingShowConsole();
 	_settingTestDomainsStartup();
 	_settingEnableDnsHosts();

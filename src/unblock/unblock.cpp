@@ -1,4 +1,6 @@
 #include "unblock.h"
+#include "../engine/version.hpp"
+#include <bit7z/bitfileextractor.hpp>
 
 Unblock::Unblock()
 {
@@ -240,6 +242,43 @@ void Unblock::maxWaitTesting(u32 second)
 	_domain_testing_video->changeMaxWaitTesting(second);
 	_domain_testing_proxy->changeMaxWaitTesting(second);
 	_domain_testing_proxy_video->changeMaxWaitTesting(second);
+}
+
+std::optional<std::string> Unblock::checkUpdate()
+{
+	HttpsLoad version{ "https://raw.githubusercontent.com/MagilaWEB/unblock-youtube-discord/version.txt" };
+
+	auto lines = version.run();
+	if (version.codeResult() == 200)
+		if (!lines[0].empty())
+			if (std::stof(lines[0]) > std::stof(VERSION_STR))
+				return lines[0];
+
+	return {};
+}
+
+void Unblock::appUpdate()
+{
+	auto path = Core::get().currentPath() / "update" / "new_unblock.7z";
+	HttpsLoad{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" }.run_to_file(path);
+
+	auto parent = path.parent_path();
+	try
+	{
+		static bit7z::Bit7zLibrary	   lib{ "7za.dll" };
+		static bit7z::BitFileExtractor extractor{ lib, bit7z::BitFormat::SevenZip };
+
+		extractor.extract(path.string(), parent.string());
+	}
+	catch (const bit7z::BitException& ex)
+	{
+		Debug::warning("%s", ex.what());
+	}
+
+	static std::string run_bat{ "start " };
+	run_bat.append((parent.parent_path() / "setup_update").string());
+
+	system(run_bat.c_str());
 }
 
 bool Unblock::validDomain(bool proxy)

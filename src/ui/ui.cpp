@@ -20,6 +20,36 @@ void Ui::initialize()
 	auto js_global = JSGlobalObject();
 	_updateCountStartStopButtonToCss = js_global["updateCountStartStopButtonToCss"];
 
+	_window_wait_update_unblock->create(Localization::Str{ "str_please_wait" }, "str_window_wait_update_unblock");
+	_window_wait_update_unblock->setType(SecondaryWindow::Type::Wait);
+
+	_window_update_unblock->create(Localization::Str{ "str_warning" }, "");
+	_window_update_unblock->hide();
+
+	_window_update_unblock->setType(SecondaryWindow::Type::YesNo);
+	_window_update_unblock->addEventYesNo(
+		[this](JSArgs args)
+		{
+			if (JSToCPP<bool>(args[0]))
+			{
+				_window_update_unblock->hide();
+				_window_wait_update_unblock->show();
+				_unblock->appUpdate();
+				_window_wait_update_unblock->hide();
+				_ui_base->OnClose(nullptr);
+			}
+
+			return false;
+		}
+	);
+
+	if (auto new_version = _unblock->checkUpdate())
+	{
+		static pcstr desc = Localization::Str{ "str_window_update_unblock" }();
+		_window_update_unblock->setDescription(utils::format(desc, new_version.value().c_str()).c_str());
+		_window_update_unblock->show();
+	}
+
 	_checkConflictService();
 
 	_settingInit();

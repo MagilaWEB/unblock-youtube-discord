@@ -15,9 +15,7 @@ DNSHost::Google::Google(std::string test_domain)
 
 void DNSHost::Google::run()
 {
-	http->run();
-
-	auto & lines = http->content();
+	auto lines = http->run();
 	for (auto& line : lines)
 	{
 		auto stringBuffer = std::regex_replace(line, reg_symbols_del, "");

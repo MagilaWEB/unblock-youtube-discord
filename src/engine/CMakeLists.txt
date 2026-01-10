@@ -63,4 +63,9 @@ if(CUPY_LIBS_DLL_TO_BIN)
                            COMMAND ${CMAKE_COMMAND} -E copy
                                ${ULTRALIGHT_BIN}/WebCore.dll $<TARGET_FILE_DIR:${NAME}>)
     endif()
+
+    add_custom_command(TARGET ${NAME} PRE_BUILD
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${7ZA_BIN} $<TARGET_FILE_DIR:${NAME}>)
+    
 endif()

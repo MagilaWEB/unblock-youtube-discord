@@ -30,15 +30,11 @@ DNSHost::DNSHost()
 	for (auto& entry : std::filesystem::directory_iterator(_dir_dns_hosts))
 		_list_dns_hosts_file_name.push_back(entry.path().stem().string());
 
-	HttpsLoad hosts{ "https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/hosts" };
-
-	hosts.run();
-
 	static const std::string start_line{ "# AMD" };
 	static const std::string end_line{ "# Xerox" };
 	bool					 run_service{ false };
 
-	auto& lines = hosts.content();
+	auto lines = HttpsLoad{ "https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/hosts" }.run();
 	for (auto& line : lines)
 	{
 		if ((!run_service) && line == start_line)
@@ -160,10 +156,7 @@ void DNSHost::update()
 		if (isHostsUser())
 			_file_hosts_user->clear();
 
-		HttpsLoad hosts{ "https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/hosts" };
-
-		hosts.run();
-		auto& lines = hosts.content();
+		auto lines = HttpsLoad{ "https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/hosts" }.run();
 		for (auto& line : lines)
 			_file_hosts_user->writeText(line);
 
