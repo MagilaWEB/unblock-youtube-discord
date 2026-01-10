@@ -29,7 +29,8 @@ void Ui::_stopInit()
 	_stop_service_all->addEventClick(
 		[this](JSArgs)
 		{
-			_stoppingServices(StoppingService(eUnblock | eProxyDpi));
+			_stoppingServices(StoppingService::eUnblock);
+			_stoppingServices(StoppingService::eProxyDpi);
 			return false;
 		}
 	);
