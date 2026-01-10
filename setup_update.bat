@@ -14,13 +14,14 @@ if %errorlevel% == 0 (
 
 :close_unblock
 
-@REM RD %CURRENT_DIR%\bin /S /Q
-@REM RD %CURRENT_DIR%\binaries /S /Q
-@REM RD %CURRENT_DIR%\configs /S /Q
-@REM RD %CURRENT_DIR%\ui /S /Q
+RD %CURRENT_DIR%\bin /S /Q
+RD %CURRENT_DIR%\binaries /S /Q
+RD %CURRENT_DIR%\configs /S /Q
+RD %CURRENT_DIR%\ui /S /Q
 
-@REM ROBOCOPY %CURRENT_DIR%update\unblock %CURRENT_DIR% /E /IS /IT /COPYALL /R:0 /W:0 /NP /NJH /NJS
+ROBOCOPY %CURRENT_DIR%update\unblock %CURRENT_DIR% /E /IS /IT /COPYALL /R:0 /W:0 /NP /NJH /NJS
 
-@REM RD %CURRENT_DIR%\update /S /Q
+RD %CURRENT_DIR%\update /S /Q
 
 start %CURRENT_DIR%bin\engine.exe
+exit
