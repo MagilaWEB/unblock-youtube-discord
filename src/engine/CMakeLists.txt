@@ -4,16 +4,21 @@ file(GLOB src_cpp "*.cpp")
 file(GLOB src_h "*.h")
 file(GLOB src_hpp "*.hpp")
 
-# Создаем глобальную pre-build команду
-add_custom_target(global_pre_build ALL
-    COMMAND ${CMAKE_COMMAND} -E echo "=== Global Pre-Build Cleanup ==="
-    COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    COMMAND ${CMAKE_COMMAND} -E echo "Cleanup complete"
-    COMMENT "Global pre-build cleanup"
-)
+if(CUPY_LIBS_DLL_TO_BIN)
+    add_custom_target(global_pre_build ALL
+        COMMAND ${CMAKE_COMMAND} -E echo "=== Global Pre-Build Cleanup ==="
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+        COMMAND ${CMAKE_COMMAND} -E echo "Cleanup complete"
+        COMMENT "Global pre-build cleanup"
+    )
+endif()
 
 add_executable(${NAME} ${src_h} ${src_hpp} ${src_cpp} engine.rc)
-add_dependencies(${target} global_pre_build)
+
+if(CUPY_LIBS_DLL_TO_BIN)
+    add_dependencies(${target} global_pre_build)
+endif()
+
 target_precompile_headers(${NAME} PRIVATE pch.h)
 
 # Include files
