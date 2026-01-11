@@ -34,6 +34,10 @@ class Ui final : public utils::DefaultInit
 	BUTTON(_start_update_dns_hosts);
 	INPUT(_max_time_wait_testing);
 
+	// Remove app
+	BUTTON(_remove_app);
+	SECONDARY_WINDOW(_window_remove_app);
+
 	// Setting Unblock
 	CHECK_BOX(_unblock_enable);
 	CHECK_BOX(_unblock_manual);
@@ -106,6 +110,9 @@ public:
 
 private:
 	void _checkConflictService();
+
+	void _removeApp();
+	void _removeAppRun();
 
 	// update
 	void _updateApp();

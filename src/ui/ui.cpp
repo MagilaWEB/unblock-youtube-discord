@@ -36,6 +36,8 @@ void Ui::initialize()
 
 	_footerElements();
 
+	_removeApp();
+
 	_init = true;
 }
 
@@ -112,7 +114,7 @@ void Ui::_checkConflictService()
 		_window_warning_conflict_service->addEventYesNo(
 			[this, &conflict_service](JSArgs args)
 			{
-				if (args[0].ToBoolean())
+				if (JSToCPP<bool>(args[0]))
 					for (auto& service : conflict_service)
 						service.remove();
 
