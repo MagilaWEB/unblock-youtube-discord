@@ -14,8 +14,17 @@ Engine& Engine::get()
 
 void Engine::initialize()
 {
+	_file_user_setting = std::make_shared<File>();
+	_file_user_setting->open({ Core::get().userPath() / "setting" }, ".config", true);
+
 #ifdef DEBUG
 	console();
+#else
+	auto result = _file_user_setting->parameterSection<bool>("SUSTEM", "show_console");
+	if (result && result.value())
+		console();
+	else
+		Debug::initLogFile();
 #endif
 
 	Localization::get().set("RU");
@@ -34,7 +43,13 @@ void Engine::initialize()
 
 	_app = App::Create({}, config);
 
-	_window = Window::Create(_app->main_monitor(), 1'100, 600, false, kWindowFlags_Titled | kWindowFlags_Borderless | kWindowFlags_Resizable);
+	_window = Window::Create(
+		_app->main_monitor(),
+		1'100,
+		600,
+		false,
+		kWindowFlags_Titled | kWindowFlags_Borderless | kWindowFlags_Resizable | kWindowFlags_Maximizable
+	);
 	_window->SetTitle(title.c_str());
 
 	_ui = std::make_unique<UiBase>(this);
@@ -72,10 +87,10 @@ void Engine::console()
 	hCrt			 = _open_osfhandle(u64(handle_in), _O_TEXT);
 	FILE* hf_in		 = _fdopen(hCrt, "r");
 	setvbuf(hf_in, NULL, _IONBF, 128);
-	*stdin				 = *hf_in;
+	*stdin = *hf_in;
 
 	// Enable flags so we can color the output
-	DWORD  dwMode		 = 0;
+	DWORD dwMode = 0;
 	GetConsoleMode(handle_out, &dwMode);
 	dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 	SetConsoleMode(handle_out, dwMode);
@@ -100,6 +115,11 @@ App* Engine::app()
 Window* Engine::window()
 {
 	return _window.get();
+}
+
+std::shared_ptr<File>& Engine::userConfig()
+{
+	return _file_user_setting;
 }
 
 void Engine::_finish()

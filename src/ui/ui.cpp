@@ -48,8 +48,11 @@ void Ui::initialize()
 						_ui_base->OnClose(nullptr);
 					}
 				);
+
+				return false;
 			}
 
+			_window_update_unblock->hide();
 			return false;
 		}
 	);

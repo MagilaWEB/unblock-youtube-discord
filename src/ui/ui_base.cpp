@@ -9,16 +9,6 @@ UiBase::UiBase(IEngineAPI* engine): _engine(engine)
 {
 	_ui = std::make_unique<Ui>(this);
 
-	_file_user_setting->open({ Core::get().userPath() / "setting" }, ".config", true);
-
-#ifndef DEBUG
-	auto result = _file_user_setting->parameterSection<bool>("SUSTEM", "show_console");
-	if (result && result.value())
-		_engine->console();
-	else
-		Debug::initLogFile();
-#endif
-
 	_overlay = Overlay::Create(_engine->window(), _engine->window()->width(), _engine->window()->height(), 0, 0);
 	_overlay->view()->LoadURL("file:///main.html");
 
@@ -133,9 +123,9 @@ void UiBase::OnClose(ultralight::Window* /*window*/)
 	_engine->app()->Quit();
 }
 
-const Ptr<File>& UiBase::userSetting()
+const std::shared_ptr<File>& UiBase::userSetting()
 {
-	return _file_user_setting;
+	return _engine->userConfig();
 }
 
 void UiBase::runTask(const JSObject& /*obj*/, const JSArgs& /*args*/)

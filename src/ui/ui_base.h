@@ -33,7 +33,7 @@ public:
 
 	void OnChangeCursor(View*, Cursor cursor) override { _engine->window()->SetCursor(cursor); }
 
-	const Ptr<File>& userSetting();
+	const std::shared_ptr<File>& userSetting();
 
 public:
 	void	runTask(const JSObject& obj, const JSArgs& args);
