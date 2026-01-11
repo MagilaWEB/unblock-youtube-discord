@@ -273,25 +273,70 @@ std::optional<std::string> Unblock::checkUpdate()
 void Unblock::appUpdate()
 {
 	auto path = Core::get().currentPath() / "update" / "new_unblock.7z";
-	HttpsLoad{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" }.run_to_file(path);
+	// HttpsLoad{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" }.run_to_file(path);
 
-	auto parent = path.parent_path();
-	try
-	{
-		static bit7z::Bit7zLibrary	   lib{ "7za.dll" };
-		static bit7z::BitFileExtractor extractor{ lib, bit7z::BitFormat::SevenZip };
+	// try
+	//{
+	//	static bit7z::Bit7zLibrary	   lib{ "7za.dll" };
+	//	static bit7z::BitFileExtractor extractor{ lib, bit7z::BitFormat::SevenZip };
 
-		extractor.extract(path.string(), parent.string());
-	}
-	catch (const bit7z::BitException& ex)
-	{
-		Debug::warning("%s", ex.what());
-	}
+	//	extractor.extract(path.string(), path.parent_path().string());
+	//}
+	// catch (const bit7z::BitException& ex)
+	//{
+	//	Debug::warning("%s", ex.what());
+	//}
 
-	static std::string run_bat{ "start " };
-	run_bat.append((parent.parent_path() / "setup_update").string());
+	constexpr static pcstr setup_update_script{ R"(
+ECHO off
+SET CURRENT_DIR=%~dp0
 
-	system(run_bat.c_str());
+goto wait_loop
+
+:wait_loop
+tasklist /fi "imagename eq engine.exe" /v | find /i "Unblock Version:" >nul
+if %errorlevel% == 0 (
+    timeout /t 1 /nobreak >nul
+    goto wait_loop
+) else (
+   goto close_unblock
+)
+
+:close_unblock
+
+RD %CURRENT_DIR%\bin /S /Q
+RD %CURRENT_DIR%\binaries /S /Q
+RD %CURRENT_DIR%\configs /S /Q
+RD %CURRENT_DIR%\ui /S /Q
+
+ROBOCOPY %CURRENT_DIR%update\unblock %CURRENT_DIR% /E /IS /IT /COPYALL /R:0 /W:0 /NP /NJH /NJS
+
+RD %CURRENT_DIR%\update /S /Q
+
+start %CURRENT_DIR%bin\engine.exe
+start cmd /c del "%CURRENT_DIR%setup_update.bat"&exit
+exit
+)" };
+
+	std::thread(
+		[]
+		{
+			std::string setup_bat_path{ (Core::get().currentPath() / "setup_update").string() + ".bat" };
+			std::string run_bat{ "start " + setup_bat_path };
+
+			std::fstream bat;
+			bat.open(setup_bat_path.c_str(), std::ios::out | std::ios::binary);
+			bat.clear();
+			bat << setup_update_script;
+			bat.close();
+
+			while (!bat.is_open())
+				bat.open(setup_bat_path.c_str(), std::ios::in);
+			bat.close();
+
+			system(run_bat.c_str());
+		}
+	).detach();
 }
 
 bool Unblock::validDomain(bool proxy)
