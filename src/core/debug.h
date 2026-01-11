@@ -75,17 +75,43 @@ public:
 	{
 		if (s_catch_exceptions)
 		{
+			std::set_terminate(
+				[]()
+				{
+					try
+					{
+						std::rethrow_exception(std::current_exception());
+					}
+					catch (const std::exception& E)
+					{
+						std::string exception_msg = utils::format("Exception caught!\n%s", E.what());
+						winApiWindowShow("str_error", exception_msg.c_str());
+						fatalErrorMessage(exception_msg);
+					}
+					catch (...)
+					{
+						winApiWindowShow("str_error", "Unhandled exception of unknown type...");
+						fatalErrorMessage("Unhandled exception of unknown type...");
+					}
+
+					std::abort();
+				}
+			);
+
 			try
 			{
 				fn(std::forward<Args>(args)...);
 			}
 			catch (std::exception& E)
 			{
-				fatalErrorMessage(utils::format("Exception caught!\n%s", E.what()));
+				std::string exception_msg = utils::format("Exception caught!\n%s", E.what());
+				winApiWindowShow("str_error", exception_msg.c_str());
+				fatalErrorMessage(exception_msg);
 				return -1;
 			}
 			catch (...)
 			{
+				winApiWindowShow("str_error", "Exception caught!\nUnknown exception...");
 				fatalErrorMessage("Exception caught!\nUnknown exception...");
 				return -1;
 			}
