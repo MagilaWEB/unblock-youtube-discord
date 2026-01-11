@@ -60,6 +60,16 @@ public:
 	static void initLogFile();
 	static void fatalErrorMessage(std::string message);
 
+	template<typename... Args>
+	static void winApiWindowShow(pcstr title, pcstr desc, Args&&... args)
+	{
+		Localization::Str text_lang_title{ title };
+		Localization::Str text_lang_desc{ desc };
+		pcstr			  desc_format = text_lang_desc();
+		std::string		  format	  = utils::format(desc_format, std::forward<Args>(args)...);
+		MessageBox(nullptr, TEXT(utils::UTF8_to_CP1251(format.c_str()).c_str()), TEXT(utils::UTF8_to_CP1251(text_lang_title()).c_str()), MB_OK);
+	}
+
 	template<typename Fn, typename... Args>
 	static int try_wrap(Fn&& fn, Args&&... args)
 	{

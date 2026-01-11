@@ -14,6 +14,14 @@ Engine& Engine::get()
 
 void Engine::initialize()
 {
+	Localization::get().set("RU");
+
+	if (_checkRunApp())
+	{
+		Debug::winApiWindowShow("str_warning", "str_warning_copy_application_running");
+		return;
+	}
+
 	_file_user_setting = std::make_shared<File>();
 	_file_user_setting->open({ Core::get().userPath() / "setting" }, ".config", true);
 
@@ -26,8 +34,6 @@ void Engine::initialize()
 	else
 		Debug::initLogFile();
 #endif
-
-	Localization::get().set("RU");
 
 	// assign a base ui folder to ultralight.
 	Platform::instance().set_file_system(GetPlatformFileSystem("./../ui/"));
@@ -58,7 +64,9 @@ void Engine::initialize()
 
 void Engine::run()
 {
-	_app->Run();
+	if (!_checkRunApp())
+		_app->Run();
+
 	_finish();
 }
 
@@ -120,6 +128,13 @@ Window* Engine::window()
 std::shared_ptr<File>& Engine::userConfig()
 {
 	return _file_user_setting;
+}
+
+bool Engine::_checkRunApp()
+{
+	static HANDLE mutex{ CreateMutex(nullptr, true, "MutexOfTheUnblockApplication") };
+	static bool	  app_run{ WaitForSingleObject(mutex, 0) != WAIT_OBJECT_0 };
+	return app_run;
 }
 
 void Engine::_finish()

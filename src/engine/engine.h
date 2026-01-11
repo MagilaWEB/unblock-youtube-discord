@@ -24,5 +24,6 @@ public:
 	std::shared_ptr<File>& userConfig() override;
 
 private:
+	bool _checkRunApp();
 	void _finish();
 };

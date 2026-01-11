@@ -24,6 +24,8 @@ str_please_wait=⏳ Подождите...
 str_warning=⚠ Внимание
 str_error=❌ Ошибка
 
+str_warning_copy_application_running=Unblock уже запущен. Повторный запуск невозможен.
+
 // Input console log info
 str_beginning_auto_selection=🔍 Начат авто-подбор конфигурации
 
