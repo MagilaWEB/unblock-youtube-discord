@@ -273,19 +273,19 @@ std::optional<std::string> Unblock::checkUpdate()
 void Unblock::appUpdate()
 {
 	auto path = Core::get().currentPath() / "update" / "new_unblock.7z";
-	// HttpsLoad{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" }.run_to_file(path);
+	HttpsLoad{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" }.run_to_file(path);
 
-	// try
-	//{
-	//	static bit7z::Bit7zLibrary	   lib{ "7za.dll" };
-	//	static bit7z::BitFileExtractor extractor{ lib, bit7z::BitFormat::SevenZip };
+	try
+	{
+		static bit7z::Bit7zLibrary	   lib{ "7za.dll" };
+		static bit7z::BitFileExtractor extractor{ lib, bit7z::BitFormat::SevenZip };
 
-	//	extractor.extract(path.string(), path.parent_path().string());
-	//}
-	// catch (const bit7z::BitException& ex)
-	//{
-	//	Debug::warning("%s", ex.what());
-	//}
+		extractor.extract(path.string(), path.parent_path().string());
+	}
+	catch (const bit7z::BitException& ex)
+	{
+		Debug::warning("%s", ex.what());
+	}
 
 	constexpr static pcstr setup_update_script{ R"(
 ECHO off
@@ -318,25 +318,20 @@ start cmd /c del "%CURRENT_DIR%setup_update.bat"&exit
 exit
 )" };
 
-	std::thread(
-		[]
-		{
-			std::string setup_bat_path{ (Core::get().currentPath() / "setup_update").string() + ".bat" };
-			std::string run_bat{ "start " + setup_bat_path };
+	std::string			   setup_bat_path{ (Core::get().currentPath() / "setup_update").string() + ".bat" };
+	std::string			   run_bat{ "start " + setup_bat_path };
 
-			std::fstream bat;
-			bat.open(setup_bat_path.c_str(), std::ios::out | std::ios::binary);
-			bat.clear();
-			bat << setup_update_script;
-			bat.close();
+	std::fstream bat;
+	bat.open(setup_bat_path.c_str(), std::ios::out | std::ios::binary);
+	bat.clear();
+	bat << setup_update_script;
+	bat.close();
 
-			while (!bat.is_open())
-				bat.open(setup_bat_path.c_str(), std::ios::in);
-			bat.close();
+	while (!bat.is_open())
+		bat.open(setup_bat_path.c_str(), std::ios::in);
+	bat.close();
 
-			system(run_bat.c_str());
-		}
-	).detach();
+	system(run_bat.c_str());
 }
 
 bool Unblock::validDomain(bool proxy)
