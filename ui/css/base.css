@@ -169,6 +169,10 @@ footer .button.show {
 	gap                  : 1%;
 }
 
+.common .button {
+	height: 2em;
+}
+
 .common .button button {
 	width           : 90%;
 	font-size       : 1em;
@@ -177,7 +181,6 @@ footer .button.show {
 	background-color: rgba(82, 82, 82, .5);
 	border          : solid 2px rgb(91, 91, 91);
 	border-radius   : 5px;
-	height          : 2em;
 }
 
 /* изменяем полоcу прокрутки */
