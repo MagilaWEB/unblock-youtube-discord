@@ -106,6 +106,8 @@ public:
 
 private:
 	void _checkAppUpdate(bool window_show = false);
+	void _updateApp();
+	void _updateAppWindow();
 	void _checkConflictService();
 
 	void _settingInit();
