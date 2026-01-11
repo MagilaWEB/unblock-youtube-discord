@@ -70,6 +70,7 @@ str_window_auto_start_wait_description=🔍 Подбор конфигураци�
 • Качество интернета
 • Доступность ресурсов
 • Уровень блокировок
+
 str_window_auto_start_wait_name_strategy_description=🧪 Тест конфигурации: %s
 str_window_configuration_selection_error=❌ Автоподбор не удался
 Причины:
@@ -106,6 +107,7 @@ str_window_continue_select_strategy_description=Выбрано:
 ├ Конфиг: [%s]
 └ Маскировка: [%s]
 Продолжить подбор?
+
 str_window_continue_select_strategy_proxy_description=Выбран конфиг: [%s]
 Продолжить подбор?
 
