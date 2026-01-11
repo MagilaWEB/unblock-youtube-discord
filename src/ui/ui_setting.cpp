@@ -53,7 +53,7 @@ void Ui::_settingTestDomainsStartup()
 		->create("#setting section .common", "str_checkbox_testing_startup_title", Localization::Str{ "str_checkbox_testing_startup_description" });
 
 	auto result = _ui_base->userSetting()->parameterSection<bool>("TESTING", "startup");
-	_testing_domains_startup->setState(result ? result.value() : true);
+	_testing_domains_startup->setState(result ? result.value() : false);
 
 	_testing_domains_startup->addEventClick(
 		[this](JSArgs args)
