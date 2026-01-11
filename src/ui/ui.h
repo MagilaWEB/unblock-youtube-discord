@@ -105,11 +105,14 @@ public:
 	void jsUpdate();
 
 private:
-	void _checkAppUpdate(bool window_show = false);
-	void _updateApp();
-	void _updateAppWindow();
 	void _checkConflictService();
 
+	// update
+	void _updateApp();
+	void _checkAppUpdate(bool window_show = false);
+	void _updateAppWindow();
+
+	// setting
 	void _settingInit();
 	void _settingShowConsole();
 	void _settingTestDomainsStartup();
@@ -164,7 +167,6 @@ private:
 	void _startInit();
 	void _startUnblock();
 	void _startProxy();
-	// void _startTorProxy();
 
 	// Starting services base methods
 	void	   _startServiceWindow();

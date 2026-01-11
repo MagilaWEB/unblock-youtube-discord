@@ -83,31 +83,6 @@ void Ui::_tcpGlobalChange(bool state)
 	}
 }
 
-void Ui::_checkAppUpdate(bool window_show)
-{
-	Core::get().addTask(
-		[this, window_show]
-		{
-			if (window_show)
-				_window_wait_check_update_unblock->show();
-
-			if (auto new_version = _unblock->checkUpdate())
-			{
-				if (window_show)
-					_window_wait_check_update_unblock->hide();
-
-				static pcstr desc = Localization::Str{ "str_window_update_unblock" }();
-				_window_update_unblock->setDescription(utils::format(desc, new_version.value().c_str()).c_str());
-				_window_update_unblock->show();
-				return;
-			}
-
-			if (window_show)
-				_window_wait_check_update_unblock->hide();
-		}
-	);
-}
-
 void Ui::_checkConflictService()
 {
 	_window_warning_conflict_service->create(Localization::Str{ "str_warning" }, "");

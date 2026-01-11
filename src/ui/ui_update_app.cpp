@@ -29,6 +29,31 @@ void Ui::_updateApp()
 	);
 }
 
+void Ui::_checkAppUpdate(bool window_show)
+{
+	Core::get().addTask(
+		[this, window_show]
+		{
+			if (window_show)
+				_window_wait_check_update_unblock->show();
+
+			if (auto new_version = _unblock->checkUpdate())
+			{
+				if (window_show)
+					_window_wait_check_update_unblock->hide();
+
+				static pcstr desc = Localization::Str{ "str_window_update_unblock" }();
+				_window_update_unblock->setDescription(utils::format(desc, new_version.value().c_str()).c_str());
+				_window_update_unblock->show();
+				return;
+			}
+
+			if (window_show)
+				_window_wait_check_update_unblock->hide();
+		}
+	);
+}
+
 void Ui::_updateAppWindow()
 {
 	_window_wait_update_unblock->create(Localization::Str{ "str_please_wait" }, "str_window_wait_update_unblock");
