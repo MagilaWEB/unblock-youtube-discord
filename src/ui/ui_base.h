@@ -36,6 +36,7 @@ public:
 	const std::shared_ptr<File>& userSetting();
 
 public:
+	void	console(bool show);
 	void	runTask(const JSObject& obj, const JSArgs& args);
 	JSValue langText(const JSObject& obj, const JSArgs& args);
 };

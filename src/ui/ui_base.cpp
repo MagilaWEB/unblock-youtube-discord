@@ -128,6 +128,11 @@ const std::shared_ptr<File>& UiBase::userSetting()
 	return _engine->userConfig();
 }
 
+void UiBase::console(bool show)
+{
+	show ? _engine->showConsole() : _engine->hideConsole();
+}
+
 void UiBase::runTask(const JSObject& /*obj*/, const JSArgs& /*args*/)
 {
 	auto& task = Core::get().getTaskJS();

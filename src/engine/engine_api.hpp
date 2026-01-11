@@ -16,8 +16,9 @@ protected:
 	virtual ~IEngineAPI()					 = default;
 
 public:
-	virtual void				   console()	= 0;
-	virtual std::shared_ptr<File>& userConfig() = 0;
-	virtual ultralight::App*	   app()		= 0;
-	virtual ultralight::Window*	   window()		= 0;
+	virtual void				   showConsole() = 0;
+	virtual void				   hideConsole() = 0;
+	virtual std::shared_ptr<File>& userConfig()	 = 0;
+	virtual ultralight::App*	   app()		 = 0;
+	virtual ultralight::Window*	   window()		 = 0;
 };

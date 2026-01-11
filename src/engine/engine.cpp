@@ -26,14 +26,14 @@ void Engine::initialize()
 	_file_user_setting->open({ Core::get().userPath() / "setting" }, ".config", true);
 
 #ifdef DEBUG
-	console();
+	showConsole();
 #else
 	auto result = _file_user_setting->parameterSection<bool>("SUSTEM", "show_console");
 	if (result && result.value())
-		console();
-	else
-		Debug::initLogFile();
+		showConsole();
 #endif
+
+	Debug::initLogFile();
 
 	// assign a base ui folder to ultralight.
 	Platform::instance().set_file_system(GetPlatformFileSystem("./../ui/"));
@@ -70,49 +70,72 @@ void Engine::run()
 	_finish();
 }
 
-void Engine::console()
+void Engine::showConsole()
 {
-	static bool show{ false };
-	if (show)
+	if (_consoleInput.is_open())
 		return;
 
-	show = true;
-	AllocConsole();
+	ASSERT(AllocConsole());
 	AttachConsole(ATTACH_PARENT_PROCESS);
 
-	FILE* stream;
-	freopen_s(&stream, "CONIN$", "r", stdin);
-	freopen_s(&stream, "CONOUT$", "w+", stdout);
-	freopen_s(&stream, "CONOUT$", "w+", stderr);
+	freopen_s(&_fp_console, "CONIN$", "r", stdin);
+	freopen_s(&_fp_console, "CONOUT$", "w", stdout);
+	freopen_s(&_fp_console, "CONOUT$", "w", stderr);
 
-	HANDLE handle_out = GetStdHandle(STD_OUTPUT_HANDLE);
-	int	   hCrt		  = _open_osfhandle(u64(handle_out), _O_TEXT);
-	FILE*  hf_out	  = _fdopen(hCrt, "w");
-	setvbuf(hf_out, NULL, _IONBF, 1);
-	*stdout = *hf_out;
+	_cinBuffer	= std::cin.rdbuf();
+	_coutBuffer = std::cout.rdbuf();
+	_cerrBuffer = std::cerr.rdbuf();
 
-	HANDLE handle_in = GetStdHandle(STD_INPUT_HANDLE);
-	hCrt			 = _open_osfhandle(u64(handle_in), _O_TEXT);
-	FILE* hf_in		 = _fdopen(hCrt, "r");
-	setvbuf(hf_in, NULL, _IONBF, 128);
-	*stdin = *hf_in;
+	_consoleInput.open("CONIN$", std::ios::in);
+	_consoleOutput.open("CONOUT$", std::ios::out);
+	_consoleError.open("CONOUT$", std::ios::out);
 
-	// Enable flags so we can color the output
-	DWORD dwMode = 0;
-	GetConsoleMode(handle_out, &dwMode);
-	dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-	SetConsoleMode(handle_out, dwMode);
-	SetConsoleTitle("Unblock Console");
+	std::cin.rdbuf(std::cin.rdbuf());
+	std::cout.rdbuf(std::cout.rdbuf());
+	std::cerr.rdbuf(std::cerr.rdbuf());
 
-	HWND  hwnd	= GetConsoleWindow();
-	HMENU hmenu = GetSystemMenu(hwnd, FALSE);
-	EnableMenuItem(hmenu, SC_CLOSE, MF_GRAYED);
+	std::ios::sync_with_stdio(true);
+
+	_hwnd_console = GetConsoleWindow();
+
+	// style color text cmd
+	if (auto handle_out = GetStdHandle(STD_OUTPUT_HANDLE))
+	{
+		DWORD dwMode{ 0 };
+		GetConsoleMode(handle_out, &dwMode);
+		dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+		SetConsoleMode(handle_out, dwMode);
+	}
+
+	// Blocking close
+	EnableMenuItem(GetSystemMenu(_hwnd_console, FALSE), SC_CLOSE, MF_GRAYED);
 
 	// Set UTF-8
+	SetConsoleTitle("Unblock Console");
 	SetConsoleCP(65'001);
 	SetConsoleOutputCP(65'001);
+}
 
-	Debug::initLogFile();
+void Engine::hideConsole()
+{
+	if (FreeConsole())
+	{
+		_consoleInput.close();
+		_consoleOutput.close();
+		_consoleError.close();
+
+		std::cin.rdbuf(_cinBuffer);
+		std::cout.rdbuf(_coutBuffer);
+		std::cerr.rdbuf(_cerrBuffer);
+
+		_cinBuffer	= nullptr;
+		_coutBuffer = nullptr;
+		_cerrBuffer = nullptr;
+
+		std::ios::sync_with_stdio(false);
+
+		PostMessage(_hwnd_console, WM_CLOSE, 0, 0);
+	}
 }
 
 App* Engine::app()
@@ -139,5 +162,6 @@ bool Engine::_checkRunApp()
 
 void Engine::_finish()
 {
+	hideConsole();
 	_window->set_listener(nullptr);
 }

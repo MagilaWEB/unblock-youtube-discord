@@ -38,6 +38,7 @@ void Ui::_settingShowConsole()
 		_show_console->addEventClick(
 			[this](JSArgs args)
 			{
+				_ui_base->console(JSToCPP<bool>(args[0]));
 				_ui_base->userSetting()->writeSectionParameter("SUSTEM", "show_console", JSToCPP(args[0]));
 				return false;
 			}
