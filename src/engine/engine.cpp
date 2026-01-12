@@ -163,5 +163,6 @@ bool Engine::_checkRunApp()
 void Engine::_finish()
 {
 	hideConsole();
-	_window->set_listener(nullptr);
+	if (_window)
+		_window->set_listener(nullptr);
 }

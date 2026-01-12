@@ -303,12 +303,14 @@ exit
 
 bool Unblock::appUpdate()
 {
-	auto path = Core::get().currentPath() / "update" / "new_unblock.7z";
+	auto	  path = Core::get().currentPath() / "update" / "new_unblock.7z";
 	HttpsLoad load_7z{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" };
-	if (load_7z.codeResult() != 200)
-		return false;
 
 	load_7z.run_to_file(path);
+
+	u32 code = load_7z.codeResult();
+	if (code != 200)
+		return false;
 
 	try
 	{
