@@ -58,14 +58,10 @@ void Core::parallel_run()
 
 				{
 					FAST_LOCK(_task_lock);
-
-					if (_task_run.empty())
+					while (!_task_buffer_parallel.empty() && !_quit_task)
 					{
-						while (!_task_buffer.empty() && !_quit_task)
-						{
-							_task_run.emplace_back(_task_buffer.front());
-							_task_buffer.pop_front();
-						}
+						_task_run.emplace_back(_task_buffer_parallel.front());
+						_task_buffer_parallel.pop_front();
 					}
 				}
 
@@ -81,6 +77,12 @@ void Core::parallel_run()
 				);
 
 				_task_run.clear();
+
+				while (!_task_buffer.empty() && !_quit_task)
+				{
+					_task_buffer.front()();
+					_task_buffer.pop_front();
+				}
 
 				_task_lock.EnterShared();
 				if (_task_buffer.empty())
@@ -203,11 +205,16 @@ bool Core::isVersionNewer(std::string version1, std::string version2)
 	return patch1 > patch2;
 }
 
-
 void Core::addTask(std::function<void()>&& callback)
 {
 	FAST_LOCK(_task_lock);
 	_task_buffer.emplace_back(callback);
+}
+
+void Core::addTaskParallel(std::function<void()>&& callback)
+{
+	FAST_LOCK(_task_lock);
+	_task_buffer_parallel.emplace_back(callback);
 }
 
 void Core::taskComplete(std::function<void()>&& callback)

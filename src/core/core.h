@@ -8,6 +8,7 @@ class CORE_API Core final
 	FastLock						  _task_complete_lock;
 	FastLock						  _task_lock_js;
 	std::deque<std::function<void()>> _task_buffer;
+	std::deque<std::function<void()>> _task_buffer_parallel;
 	std::deque<std::function<void()>> _task_complete;
 	std::list<std::function<void()>>  _task_run;
 	std::deque<std::function<void()>> _task_js;
@@ -45,6 +46,7 @@ public:
 	bool isVersionNewer(std::string version1, std::string version2);
 
 	void addTask(std::function<void()>&& callback);
+	void addTaskParallel(std::function<void()>&& callback);
 
 	void taskComplete(std::function<void()>&& callback);
 

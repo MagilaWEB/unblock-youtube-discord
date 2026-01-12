@@ -105,7 +105,7 @@ void Ui::_testingServiceDomains()
 
 	if (_unblock_enable->getState())
 	{
-		Core::get().addTask(
+		Core::get().addTaskParallel(
 			[this]
 			{ _unblock->testingDomain<StrategiesDPI>([this](pcstr url, bool state) { _list_domain->createLiSuccess(url, state); }, false, false); }
 		);
@@ -114,7 +114,7 @@ void Ui::_testingServiceDomains()
 		{
 			if (name.contains("youtube") && check_box->getState())
 			{
-				Core::get().addTask(
+				Core::get().addTaskParallel(
 					[this]
 					{
 						_unblock->testingDomain<StrategiesDPI>(
@@ -132,7 +132,7 @@ void Ui::_testingServiceDomains()
 
 	if (_proxy_enable->getState())
 	{
-		Core::get().addTask(
+		Core::get().addTaskParallel(
 			[this]
 			{
 				_unblock->testingDomain<ProxyStrategiesDPI>(
@@ -143,7 +143,7 @@ void Ui::_testingServiceDomains()
 			}
 		);
 
-		Core::get().addTask(
+		Core::get().addTaskParallel(
 			[this]
 			{
 				_unblock->testingDomain<ProxyStrategiesDPI>(
