@@ -89,7 +89,7 @@ public:
 	void maxWaitTesting(u32 second);
 
 	std::optional<std::string> checkUpdate();
-	void					   appUpdate();
+	bool					   appUpdate();
 
 	bool validDomain(bool proxy = false);
 

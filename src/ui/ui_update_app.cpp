@@ -62,6 +62,9 @@ void Ui::_updateAppWindow()
 	_window_wait_check_update_unblock->create(Localization::Str{ "str_please_wait" }, "str_window_check_update_unblock");
 	_window_wait_check_update_unblock->setType(SecondaryWindow::Type::Wait);
 
+	_window_error_update_unblock->create(Localization::Str{ "str_error" }, "str_window_error_update_unblock");
+	_window_error_update_unblock->setType(SecondaryWindow::Type::OK);
+
 	_window_update_unblock->create(Localization::Str{ "str_warning" }, "");
 	_window_update_unblock->hide();
 
@@ -76,9 +79,22 @@ void Ui::_updateAppWindow()
 					{
 						_window_update_unblock->hide();
 						_window_wait_update_unblock->show();
-						_unblock->appUpdate();
+						bool state = _unblock->appUpdate();
 						_window_wait_update_unblock->hide();
-						_ui_base->OnClose(nullptr);
+
+						if (state)
+							_ui_base->OnClose(nullptr);
+						else
+						{
+							_window_error_update_unblock->show();
+							_window_error_update_unblock->addEventOk(
+								[this](JSArgs)
+								{
+									_window_error_update_unblock->hide();
+									return true;
+								}
+							);
+						}
 					}
 				);
 

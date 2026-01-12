@@ -301,10 +301,14 @@ start cmd /c del "%CURRENT_DIR%setup_update.bat"&exit
 exit
 )" };
 
-void Unblock::appUpdate()
+bool Unblock::appUpdate()
 {
 	auto path = Core::get().currentPath() / "update" / "new_unblock.7z";
-	HttpsLoad{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" }.run_to_file(path);
+	HttpsLoad load_7z{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" };
+	if (load_7z.codeResult() != 200)
+		return false;
+
+	load_7z.run_to_file(path);
 
 	try
 	{
@@ -316,6 +320,7 @@ void Unblock::appUpdate()
 	catch (const bit7z::BitException& ex)
 	{
 		Debug::warning("%s", ex.what());
+		return false;
 	}
 
 	std::string setup_bat_path{ (Core::get().currentPath() / "setup_update").string() + ".bat" };
@@ -332,6 +337,7 @@ void Unblock::appUpdate()
 	bat.close();
 
 	system(run_bat.c_str());
+	return true;
 }
 
 bool Unblock::validDomain(bool proxy)

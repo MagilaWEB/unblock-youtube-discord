@@ -73,6 +73,7 @@ class Ui final : public utils::DefaultInit
 
 	SECONDARY_WINDOW(_window_update_unblock);
 	SECONDARY_WINDOW(_window_wait_update_unblock);
+	SECONDARY_WINDOW(_window_error_update_unblock);
 	SECONDARY_WINDOW(_window_wait_check_update_unblock);
 
 	SECONDARY_WINDOW(_window_warning_conflict_service);
