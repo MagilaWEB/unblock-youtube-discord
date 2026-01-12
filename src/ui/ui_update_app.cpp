@@ -57,10 +57,10 @@ void Ui::_checkAppUpdate(bool window_show)
 void Ui::_updateAppWindow()
 {
 	_window_wait_update_unblock->create(Localization::Str{ "str_please_wait" }, "str_window_wait_update_unblock");
-	_window_wait_update_unblock->setType(SecondaryWindow::Type::Wait);
+	_window_wait_update_unblock->setType(SecondaryWindow::Type::Info);
 
 	_window_wait_check_update_unblock->create(Localization::Str{ "str_please_wait" }, "str_window_check_update_unblock");
-	_window_wait_check_update_unblock->setType(SecondaryWindow::Type::Wait);
+	_window_wait_check_update_unblock->setType(SecondaryWindow::Type::Info);
 
 	_window_error_update_unblock->create(Localization::Str{ "str_error" }, "str_window_error_update_unblock");
 	_window_error_update_unblock->setType(SecondaryWindow::Type::OK);

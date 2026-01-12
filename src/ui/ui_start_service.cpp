@@ -101,7 +101,7 @@ void Ui::_startServiceWindow()
 	);
 
 	_window_wait_start_service->create(Localization::Str{ "str_please_wait" }, "str_window_service_start_wait_description");
-	_window_wait_start_service->setType(SecondaryWindow::Type::Wait);
+	_window_wait_start_service->setType(SecondaryWindow::Type::Info);
 
 	_window_configuration_selection_error->create(Localization::Str{ "str_error" }, "str_window_configuration_selection_error");
 	_window_configuration_selection_error->setType(SecondaryWindow::Type::OK);

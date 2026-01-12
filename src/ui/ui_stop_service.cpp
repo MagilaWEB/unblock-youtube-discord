@@ -6,7 +6,7 @@
 void Ui::_stopInit()
 {
 	_window_wait_stop_service->create(Localization::Str{ "str_please_wait" }, "str_window_service_stop_wait_description");
-	_window_wait_stop_service->setType(SecondaryWindow::Type::Wait);
+	_window_wait_stop_service->setType(SecondaryWindow::Type::Info);
 
 	_stop_unblock->create(".buttons_stop", "str_b_stop_unblock");
 	_stop_unblock->addEventClick(
