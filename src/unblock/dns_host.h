@@ -63,6 +63,7 @@ public:
 	float percentageCompletion() const;
 
 private:
+	void										_loadInfo();
 	std::optional<DNSHost::Google::MapDomainIP> _getIPGoogle(std::string domain);
 	void										_writeDomain(std::string domain);
 };

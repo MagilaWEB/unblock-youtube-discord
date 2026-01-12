@@ -30,6 +30,7 @@ DNSHost::DNSHost()
 
 const std::list<std::string>& DNSHost::listDnsFileName()
 {
+	_loadInfo();
 	return _list_dns_hosts_file_name;
 }
 
@@ -38,36 +39,7 @@ void DNSHost::enable()
 	if (_enable || !isHostsUser())
 		return;
 
-	static bool load{ false };
-	if (!load)
-	{
-		load = true;
-
-		for (auto& entry : std::filesystem::directory_iterator(_dir_dns_hosts))
-			_list_dns_hosts_file_name.push_back(entry.path().stem().string());
-
-		static const std::string start_line{ "# AMD" };
-		static const std::string end_line{ "# Xerox" };
-		bool					 run_service{ false };
-
-		auto lines = HttpsLoad{ "https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/hosts" }.run();
-		for (auto& line : lines)
-		{
-			if ((!run_service) && line == start_line)
-			{
-				run_service = true;
-				_list_dns_hosts_file_name.push_back(line.substr(2, line.length()));
-			}
-			else if (run_service && line.contains("# "))
-			{
-				_list_dns_hosts_file_name.push_back(line.substr(2, line.length()));
-				if (run_service && line == end_line)
-					run_service = false;
-			}
-
-			_file_hosts_user->writeText(line);
-		}
-	}
+	_loadInfo();
 
 	_enable = true;
 
@@ -189,6 +161,40 @@ void DNSHost::cancel()
 float DNSHost::percentageCompletion() const
 {
 	return (static_cast<float>(_size_iter.load()) / static_cast<float>(_list_domains.size())) * 100.f;
+}
+
+void DNSHost::_loadInfo()
+{
+	static bool load{ false };
+	if (!load)
+	{
+		load = true;
+
+		for (auto& entry : std::filesystem::directory_iterator(_dir_dns_hosts))
+			_list_dns_hosts_file_name.push_back(entry.path().stem().string());
+
+		static const std::string start_line{ "# AMD" };
+		static const std::string end_line{ "# Xerox" };
+		bool					 run_service{ false };
+
+		auto lines = HttpsLoad{ "https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/hosts" }.run();
+		for (auto& line : lines)
+		{
+			if ((!run_service) && line == start_line)
+			{
+				run_service = true;
+				_list_dns_hosts_file_name.push_back(line.substr(2, line.length()));
+			}
+			else if (run_service && line.contains("# "))
+			{
+				_list_dns_hosts_file_name.push_back(line.substr(2, line.length()));
+				if (run_service && line == end_line)
+					run_service = false;
+			}
+
+			_file_hosts_user->writeText(line);
+		}
+	}
 }
 
 std::optional<DNSHost::Google::MapDomainIP> DNSHost::_getIPGoogle(std::string domain)

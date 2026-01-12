@@ -66,19 +66,7 @@ void Ui::_settingTestDomainsStartup()
 
 void Ui::_settingEnableDnsHosts()
 {
-	Localization::Str window_description{ "str_window_to_warn_enable_dns_hosts_description" };
-	std::string		  description = window_description();
-
-	std::string str_list_name{};
-
-	auto& list_name = _unblock->dnsHostsListName();
-	for (auto& name : list_name)
-		str_list_name.append(name).append(", ");
-
-	str_list_name.pop_back();
-	str_list_name.pop_back();
-
-	_window_to_warn_enable_dns_hosts->create(Localization::Str{ "str_warning" }, utils::format(description.c_str(), str_list_name.c_str()).c_str());
+	_window_to_warn_enable_dns_hosts->create(Localization::Str{ "str_warning" }, "");
 
 	_window_to_warn_enable_dns_hosts->setType(SecondaryWindow::Type::YesNo);
 	_window_to_warn_enable_dns_hosts->addEventYesNo(
@@ -109,6 +97,28 @@ void Ui::_settingEnableDnsHosts()
 		{
 			if (JSToCPP<bool>(args[0]))
 			{
+				static Localization::Str window_description{ "str_window_to_warn_enable_dns_hosts_description" };
+				static std::string		 description = window_description();
+
+				static std::string str_list_name{};
+
+				Core::get().addTask(
+					[this]
+					{
+						if (str_list_name.empty())
+						{
+							auto& list_name = _unblock->dnsHostsListName();
+							for (auto& name : list_name)
+								str_list_name.append(name).append(", ");
+
+							str_list_name.pop_back();
+							str_list_name.pop_back();
+
+							_window_to_warn_enable_dns_hosts->setDescription(utils::format(description.c_str(), str_list_name.c_str()).c_str());
+						}
+					}
+				);
+
 				_window_to_warn_enable_dns_hosts->show();
 				return false;
 			}
