@@ -197,10 +197,17 @@ void Ui::_settingEnableDnsHostsUpdate()
 	}
 }
 
+constexpr static u32 base_second{ 8 };
+
 void Ui::_settingMaxTimeWait()
 {
-	_max_time_wait_testing
-		->create("#setting section .common", Input::Types::number, 5, "str_input_max_wait_testing_title", "str_input_max_wait_testing_description");
+	_max_time_wait_testing->create(
+		"#setting section .common",
+		Input::Types::number,
+		base_second,
+		"str_input_max_wait_testing_title",
+		"str_input_max_wait_testing_description"
+	);
 	_max_time_wait_testing->addEventSubmit(
 		[this](JSArgs args)
 		{
@@ -216,7 +223,7 @@ void Ui::_settingMaxTimeWait()
 void Ui::_settingMaxTimeWaitUpdate()
 {
 	// get user setting
-	u32	 second = 5;
+	u32	 second = base_second;
 	auto result = _ui_base->userSetting()->parameterSection<u32>("TESTING", "max_time_wait_testing");
 	if (result)
 	{
@@ -224,7 +231,7 @@ void Ui::_settingMaxTimeWaitUpdate()
 		if (second > 0)
 			_max_time_wait_testing->setValue(second);
 		else
-			_max_time_wait_testing->setValue(5);
+			_max_time_wait_testing->setValue(base_second);
 	}
 
 	_unblock->maxWaitTesting(second);
