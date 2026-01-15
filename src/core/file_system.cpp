@@ -267,6 +267,11 @@ bool File::isOpen() const
 	return _open_state;
 }
 
+bool File::empty() const
+{
+	return _line_string.empty() && _map_list_string.empty();
+}
+
 void File::open(std::filesystem::path file, pcstr expansion, bool no_default_patch)
 {
 	CRITICAL_SECTION_RAII(lock);

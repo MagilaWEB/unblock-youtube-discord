@@ -29,6 +29,7 @@ public:
 	size_t lineSize() const;
 
 	bool isOpen() const;
+	bool empty() const;
 	void open(path file, pcstr expansion, bool no_default_patch = false);
 	void clear();
 	void save();
