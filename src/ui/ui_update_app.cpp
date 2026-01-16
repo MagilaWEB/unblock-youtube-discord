@@ -15,6 +15,14 @@ void Ui::_updateApp()
 	auto result = _ui_base->userSetting()->parameterSection<bool>("SUSTEM", "check_update_app_startup");
 	_enable_check_update_startup->setState(result ? result.value() : true);
 
+	_enable_check_update_startup->addEventClick(
+		[this](JSArgs args)
+		{
+			_ui_base->userSetting()->writeSectionParameter("SUSTEM", "check_update_app_startup", JSToCPP(args[0]));
+			return false;
+		}
+	);
+
 	if (_enable_check_update_startup->getState())
 		_checkAppUpdate();
 
