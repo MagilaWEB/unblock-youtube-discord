@@ -38,7 +38,7 @@ public:
 		const MapDomainIP& content() const;
 
 	private:
-		std::unique_ptr<HttpsLoad> http;
+		std::unique_ptr<HttpsLoad> _http;
 		std::string				   _url{ "https://dns.google/resolve?name=" };
 		// std::string _domain{};
 		// u32			_code_result{ 0 };

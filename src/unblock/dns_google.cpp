@@ -10,12 +10,12 @@ DNSHost::Google::Google(std::string test_domain)
 {
 	_url.append(test_domain);
 	_url.append("&edns_client_subnet=0.0.0.0/0");
-	http  = std::make_unique<HttpsLoad>(_url);
+	_http = std::make_unique<HttpsLoad>(_url);
 }
 
 void DNSHost::Google::run()
 {
-	auto lines = http->run();
+	auto lines = _http->run();
 	for (auto& line : lines)
 	{
 		auto stringBuffer = std::regex_replace(line, reg_symbols_del, "");
