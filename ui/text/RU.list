@@ -165,9 +165,12 @@ str_unblock_enable_description=Основной режим обхода блок
 Можно использовать отдельно или с ProxyDPI.
 
 // Setting checkbox unblock enable services
-str_unblock_enable_discord_title=💬 Discord
+str_unblock_enable_discord_title=🎤 Discord
 str_unblock_enable_discord_description=Обход блокировки Discord.
 → Включайте вместе с Cloudflare.
+
+str_unblock_enable_messengers_title=💬 Мессенджеры
+str_unblock_enable_messengers_description=Обход блокировки популярных мессенджеров (Telegram, WhatsApp, Signal и др.).
 
 str_unblock_enable_cloudflare_title=☁ Cloudflare
 str_unblock_enable_cloudflare_description=Обход блокировок Cloudflare.
