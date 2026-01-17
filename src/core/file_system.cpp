@@ -13,7 +13,8 @@ void File::forLine(std::function<bool(std::string)> fn)
 	CRITICAL_SECTION_RAII(lock);
 	if (!isOpen())
 	{
-		Debug::warning("File [%s] not open!", _path_file.string().c_str());
+		if (info_debug)
+			Debug::warning("File [%s] not open!", _path_file.string().c_str());
 		return;
 	}
 
@@ -31,7 +32,8 @@ void File::forLineSection(pcstr section, std::function<bool(std::string&)> fn)
 
 	if (!isOpen())
 	{
-		Debug::warning("File [%s] not open!", _path_file.string().c_str());
+		if (info_debug)
+			Debug::warning("File [%s] not open!", _path_file.string().c_str());
 		return;
 	}
 
@@ -119,7 +121,8 @@ std::expected<TypeReturn, std::string> File::parameterSection(pcstr section, pcs
 
 	if (!isOpen())
 	{
-		Debug::warning("File [%s] not open!", _path_file.string().c_str());
+		if (info_debug)
+			Debug::warning("File [%s] not open!", _path_file.string().c_str());
 		return Debug::str_unexpected("Не удалось найти параметр [%s] в секции [%s] файл не был открыт!", parameter, section);
 	}
 
@@ -292,7 +295,8 @@ void File::open(std::filesystem::path file, pcstr expansion, bool no_default_pat
 
 	if (!_stream.is_open())
 	{
-		Debug::warning("File open fail [%s]!", _path_file.string().c_str());
+		if (info_debug)
+			Debug::warning("File open fail [%s]!", _path_file.string().c_str());
 		_open_state = false;
 		_stream.close();
 		return;

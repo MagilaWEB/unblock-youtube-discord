@@ -10,6 +10,7 @@ class CORE_API File final
 
 	using v_line_string = std::vector<std::string>;
 	using v_sections	= std::map<std::string, std::list<std::string>>;
+	bool info_debug{ true };
 
 	path		  _path_file{};
 	std::fstream  _stream;
@@ -21,6 +22,7 @@ class CORE_API File final
 
 public:
 	File() = default;
+	File(bool info_debug) : info_debug(info_debug) {}
 	~File();
 
 	std::string name() const;
