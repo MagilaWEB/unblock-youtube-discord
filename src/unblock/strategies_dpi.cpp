@@ -2,9 +2,9 @@
 
 StrategiesDPI::StrategiesDPI()
 {
-	_file_fake_bin_config->open(Core::get().configsPath() / "fake_bin", ".config", true);
+	_file_fake_bin_config.open(Core::get().configsPath() / "fake_bin", ".config", true);
 
-	_file_fake_bin_config->forLineParametersSection(
+	_file_fake_bin_config.forLineParametersSection(
 		"FAKE_TLS",
 		[this](std::string key, std::string value)
 		{
@@ -18,7 +18,7 @@ StrategiesDPI::StrategiesDPI()
 		}
 	);
 
-	_file_fake_bin_config->forLineParametersSection(
+	_file_fake_bin_config.forLineParametersSection(
 		"FAKE_TLS_DOMAIN",
 		[this](std::string key, std::string value)
 		{
@@ -29,7 +29,7 @@ StrategiesDPI::StrategiesDPI()
 		}
 	);
 
-	_file_fake_bin_config->forLineParametersSection(
+	_file_fake_bin_config.forLineParametersSection(
 		"FAKE_QUIC",
 		[this](std::string key, std::string value)
 		{
@@ -43,7 +43,7 @@ StrategiesDPI::StrategiesDPI()
 		}
 	);
 
-	_file_blacklist_all->open(Core::get().userPath() / "all_blacklist", ".list", true);
+	_file_fake_bin_config.close();
 }
 
 std::string StrategiesDPI::getKeyFakeBin() const
@@ -89,7 +89,7 @@ void StrategiesDPI::changeFakeKey(std::string key)
 
 void StrategiesDPI::changeFilteringTopLevelDomains(bool state)
 {
-	_filtering_top_level_domains = state;
+	_generator.filteringTopDomain(state);
 }
 
 void StrategiesDPI::changeDirVersion(std::string dir_version)
@@ -128,102 +128,51 @@ void StrategiesDPI::clearOptionalStrategies()
 	_section_opt_service_names.clear();
 }
 
-void StrategiesDPI::_readFileStrategies(std::string section)
-{
-	_file_strategy_dpi->forLineSection(
-		section.c_str(),
-		[this](std::string _str)
-		{
-#if __clang__
-			[[clang::no_destroy]]
-#endif
-			static std::string include_section{ "include_section>>" };
-			if (_str.starts_with(include_section))
-			{
-				std::string result = _str.substr(include_section.length(), _str.length());
-
-				_readFileStrategies(result);
-				return false;
-			}
-
-			_saveStrategies(_str);
-			return false;
-		}
-	);
-}
-
 void StrategiesDPI::_uploadStrategies()
 {
-	if (_file_strategy_dpi->isOpen())
+	_strategy_dpi.clear();
+
+	_generator.changeServiceList(_section_opt_service_names);
+	_generator.inFile(_file_strategy_dpi);
+
+	auto& map = _generator.mapFilters();
+
+	for (auto& line : map.at("START"))
+		_saveStrategies(line);
+
+	for (auto& [key, list] : map)
+		if (key != "START" && key != "END")
+			for (auto& line : list)
+				_saveStrategies(line);
+
+	for (auto& line : map.at("END"))
+		_saveStrategies(line);
+
+	for (auto& line : _strategy_dpi)
+		if (line.contains("=\""))
+			line = std::regex_replace(line, std::regex{ "\\=" }, " ");
+
+	std::erase_if(_strategy_dpi, [](std::string line) { return line.empty(); });
+
+	if (_strategy_dpi.empty())
 	{
-		_strategy_dpi.clear();
-		_file_blacklist_all->clear();
-
-		const std::string base_path_blacklist = (Core::get().configsPath() / "blacklist").string();
-
-		for (auto& name : _section_opt_service_names)
-		{
-			auto service_blocklist_file = base_path_blacklist + "\\" + name + ".list";
-
-			if (!std::filesystem::exists(service_blocklist_file))
-				continue;
-
-			File blacklist{};
-			blacklist.open(service_blocklist_file, "", true);
-
-			blacklist.forLine(
-				[this](std::string str)
-				{
-					_file_blacklist_all->writeText(str);
-					return false;
-				}
-			);
-		}
-
-		_file_blacklist_all->close();
-
-		_service_blocklist_file = _file_blacklist_all->getPath().string();
-		_readFileStrategies("START");
-
-		// Optional strategy sections for individual services.
-		for (auto& name : _section_opt_service_names)
-		{
-			_service_blocklist_file = base_path_blacklist + "\\" + name + ".list";
-			_readFileStrategies(name);
-		}
-
-		_service_blocklist_file = _file_blacklist_all->getPath().string();
-		_readFileStrategies("END");
-
-		for (auto& line : _strategy_dpi)
-			if (line.contains("=\""))
-				line = std::regex_replace(line, std::regex{ "\\=" }, " ");
-
-		std::erase_if(_strategy_dpi, [](std::string line) { return line.empty(); });
-
-		if (_strategy_dpi.empty())
-		{
-			Debug::warning("strategy dpi empty");
-			return;
-		}
-
-		while (_strategy_dpi.back().contains("--new"))
-			_strategy_dpi.pop_back();
-
-		for (auto& line : _strategy_dpi)
-			Debug::ok("%s", line.c_str());
+		Debug::warning("strategy dpi empty");
+		return;
 	}
+
+	while (_strategy_dpi.back().starts_with("--new"))
+		_strategy_dpi.pop_back();
+
+	for (auto& line : _strategy_dpi)
+		Debug::ok("%s", line.c_str());
 }
 
 void StrategiesDPI::_saveStrategies(std::string str)
 {
-	if (auto new_str = _getBlockList(str))
-	{
-		_strategy_dpi.push_back(new_str.value());
+	if (_ignoringLineStrategy(str))
 		return;
-	}
 
-	if (auto new_str = _getGameFilter(str))
+	if (auto new_str = _getAllPorts(str))
 	{
 		_strategy_dpi.push_back(new_str.value());
 		return;
@@ -238,63 +187,15 @@ void StrategiesDPI::_saveStrategies(std::string str)
 	StrategiesDPIBase::_saveStrategies(str);
 }
 
-std::optional<std::string> StrategiesDPI::_getBlockList(std::string str) const
+bool StrategiesDPI::_ignoringLineStrategy(std::string str)
 {
-	if (str.contains("%BLOCKLIST%"))
-	{
-		if (_filtering_top_level_domains)
-		{
-			auto path_file_top_level_domains = Core::get().configsPath() / "top_level_domains.list";
-			ASSERT_ARGS(
-				std::filesystem::exists(path_file_top_level_domains),
-				"The [%s] file does not exist!",
-				path_file_top_level_domains.string().c_str()
-			);
-			return "--hostlist \"" + (path_file_top_level_domains.string()) + "\"";
-		}
-
-		ASSERT_ARGS(std::filesystem::exists(_service_blocklist_file), "The [%s] file does not exist!", _service_blocklist_file.c_str());
-		return "--hostlist \"" + _service_blocklist_file + "\"";
-	}
-
-	if (str.contains("%DOMAINS-EXCLUDE%"))
-	{
-		auto path_file_domains_exclude = Core::get().configsPath() / "domains_exclude.list";
-		ASSERT_ARGS(std::filesystem::exists(path_file_domains_exclude), "The [%s] file does not exist!", path_file_domains_exclude.string().c_str());
-		return "--hostlist-exclude \"" + (path_file_domains_exclude.string()) + "\"";
-	}
-
-	if (str.contains("%IP-SETLIST%"))
-	{
-		if (std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), "game_mod") == _section_opt_service_names.end())
-			return "";
-
-		auto path_ip_set = Core::get().configsPath() / "ip-set-all.list";
-		ASSERT_ARGS(std::filesystem::exists(path_ip_set), "The [%s] file does not exist!", path_ip_set.string().c_str());
-		return "--ipset \"" + (path_ip_set.string()) + "\"";
-	}
-
-	if (str.contains("%IP-EXCLUDE%"))
-	{
-		auto path_ip_exclude = Core::get().configsPath() / "ip-exclude.list";
-		ASSERT_ARGS(std::filesystem::exists(path_ip_exclude), "The [%s] file does not exist!", path_ip_exclude.string().c_str());
-		return "--ipset-exclude \"" + (path_ip_exclude.string()) + "\"";
-	}
-
-	return std::nullopt;
+	return str.empty() || str.starts_with("//") || std::regex_match(str, std::regex{ "\n" });
 }
 
-std::optional<std::string> StrategiesDPI::_getGameFilter(std::string str) const
+std::optional<std::string> StrategiesDPI::_getAllPorts(std::string str) const
 {
-	if (str.contains("%GameFilter%"))
-	{
-		std::string ports{ "0" };
-		auto		it = std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), "game_mod");
-		if (it != _section_opt_service_names.end())
-			ports = "1024-65535";
-
-		return std::regex_replace(str, std::regex{ "%GameFilter%" }, ports);
-	}
+	if (str.contains("%AllPorts%"))
+		return std::regex_replace(str, std::regex{ "%AllPorts%" }, "1024-65535");
 
 	return std::nullopt;
 }

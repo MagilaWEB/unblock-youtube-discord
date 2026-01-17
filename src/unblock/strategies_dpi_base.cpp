@@ -1,5 +1,10 @@
 #include "strategies_dpi_base.h"
 
+StrategiesDPIBase::StrategiesDPIBase()
+{
+	_file_strategy_dpi = std::make_shared<File>();
+}
+
 void StrategiesDPIBase::changeStrategy(u32 index)
 {
 	const auto& strategy_file = _strategy_files_list[index];

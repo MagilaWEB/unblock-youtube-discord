@@ -4,7 +4,7 @@
 class StrategiesDPIBase
 {
 protected:
-	Ptr<File> _file_strategy_dpi;
+	std::shared_ptr<File> _file_strategy_dpi;
 
 	std::filesystem::path	 _patch_file;
 	std::filesystem::path	 _patch_dir_version{ "" };
@@ -12,7 +12,7 @@ protected:
 	std::vector<std::string> _strategy_dpi{};
 
 public:
-	StrategiesDPIBase()			 = default;
+	StrategiesDPIBase();
 	virtual ~StrategiesDPIBase() = default;
 
 	virtual void changeStrategy(u32 index = 1);

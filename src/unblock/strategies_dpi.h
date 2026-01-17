@@ -1,12 +1,11 @@
 #pragma once
 #include "strategies_dpi_base.h"
+#include "strategy_generator.h"
 
 class StrategiesDPI final : public StrategiesDPIBase
 {
-	Ptr<File> _file_fake_bin_config;
-	Ptr<File> _file_blacklist_all;
-
-	std::atomic_bool _filtering_top_level_domains{ false };
+	File			  _file_fake_bin_config;
+	StrategyGenerator _generator;
 
 public:
 	struct FakeBinParam
@@ -21,7 +20,6 @@ private:
 	std::string							_fake_bind_key{};
 	std::map<std::string, FakeBinParam> _fake_bin_params{};
 	std::list<std::string>				_section_opt_service_names{};
-	std::string							_service_blocklist_file{};
 
 public:
 	StrategiesDPI();
@@ -40,11 +38,10 @@ public:
 	const std::map<std::string, FakeBinParam>& getFakeBinList() const;
 
 private:
-	void _readFileStrategies(std::string section);
 	void _uploadStrategies() override;
 	void _saveStrategies(std::string str) override;
 
-	std::optional<std::string> _getBlockList(std::string str) const;
-	std::optional<std::string> _getGameFilter(std::string str) const;
+	bool					   _ignoringLineStrategy(std::string str);
+	std::optional<std::string> _getAllPorts(std::string str) const;
 	std::optional<std::string> _getFake(std::string str);
 };

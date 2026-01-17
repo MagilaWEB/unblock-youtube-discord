@@ -22,7 +22,7 @@ void Engine::initialize()
 		return;
 	}
 
-	_file_user_setting = std::make_shared<File>();
+	_file_user_setting = std::make_shared<File>(false);
 	_file_user_setting->open({ Core::get().userPath() / "setting" }, ".config", true);
 
 #ifdef DEBUG
