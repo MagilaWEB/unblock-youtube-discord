@@ -76,9 +76,9 @@ void Ui::_startServiceWindow()
 		[this](JSArgs)
 		{
 			if (_proxy_click_state)
-				_unblock->testingDomainCancel<ProxyStrategiesDPI>();
+				_unblock.testingDomainCancel<ProxyStrategiesDPI>();
 			else
-				_unblock->testingDomainCancel<StrategiesDPI>();
+				_unblock.testingDomainCancel<StrategiesDPI>();
 
 			_automatically_strategy_cancel = true;
 			return false;
@@ -115,7 +115,7 @@ void Ui::_buttonUpdate()
 		_stop_unblock->show();
 
 		if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
-			if (_unblock->activeService())
+			if (_unblock.activeService())
 				_start_unblock->setTitle("str_b_restart_unblock");
 			else
 				_start_unblock->setTitle("str_b_start_unblock");
@@ -134,7 +134,7 @@ void Ui::_buttonUpdate()
 		_stop_proxy_dpi->show();
 
 		if (_ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config_proxy"))
-			if (_unblock->activeService(true))
+			if (_unblock.activeService(true))
 				_start_proxy_dpi->setTitle("str_b_restart_proxy_dpi");
 			else
 				_start_proxy_dpi->setTitle("str_b_start_proxy_dpi");
@@ -180,7 +180,7 @@ void Ui::_autoStart()
 	auto errorAutomaticallyStrategy = [this]
 	{
 		const bool state =
-			_proxy_click_state ? _unblock->automaticallyStrategy<ProxyStrategiesDPI>() : _unblock->automaticallyStrategy<StrategiesDPI>();
+			_proxy_click_state ? _unblock.automaticallyStrategy<ProxyStrategiesDPI>() : _unblock.automaticallyStrategy<StrategiesDPI>();
 
 		if (!state)
 		{
@@ -209,14 +209,14 @@ void Ui::_autoStart()
 			{
 				if (_automatically_strategy_cancel)
 				{
-					_unblock->stopService(_proxy_click_state);
+					_unblock.stopService(_proxy_click_state);
 					break;
 				}
 
-				_unblock->startService(_proxy_click_state);
+				_unblock.startService(_proxy_click_state);
 
 				std::string _strategy_name =
-					_proxy_click_state ? _unblock->getNameStrategies<ProxyStrategiesDPI>() : _unblock->getNameStrategies<StrategiesDPI>();
+					_proxy_click_state ? _unblock.getNameStrategies<ProxyStrategiesDPI>() : _unblock.getNameStrategies<StrategiesDPI>();
 
 				Localization::Str desc_base{ "str_window_auto_start_wait_description" };
 				Localization::Str desc_base2{ "str_window_auto_start_wait_name_strategy_description" };
@@ -230,9 +230,9 @@ void Ui::_autoStart()
 
 				_window_auto_start_wait->setDescription(text_desc_base.c_str());
 
-				_proxy_click_state ? _unblock->testingDomain<ProxyStrategiesDPI>() : _unblock->testingDomain<StrategiesDPI>();
+				_proxy_click_state ? _unblock.testingDomain<ProxyStrategiesDPI>() : _unblock.testingDomain<StrategiesDPI>();
 
-				if (!_automatically_strategy_cancel && _unblock->validDomain(_proxy_click_state))
+				if (!_automatically_strategy_cancel && _unblock.validDomain(_proxy_click_state))
 				{
 #if __clang__
 					[[clang::no_destroy]]
@@ -247,7 +247,7 @@ void Ui::_autoStart()
 					}
 					else
 					{
-						std::string _fake_bin = _unblock->getNameFakeBin();
+						std::string _fake_bin = _unblock.getNameFakeBin();
 						_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", _strategy_name.c_str());
 						_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "fake_bin", _fake_bin.c_str());
 
@@ -283,13 +283,13 @@ void Ui::_startServiceFromConfig()
 				_tcpGlobalChange(true);
 
 				if (_proxy_click_state)
-					_unblock->changeProxyStrategy(config.value().c_str());
+					_unblock.changeProxyStrategy(config.value().c_str());
 				else if (auto fake_bin = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "fake_bin"))
-					_unblock->changeStrategy(config.value().c_str(), fake_bin.value().c_str());
+					_unblock.changeStrategy(config.value().c_str(), fake_bin.value().c_str());
 				else
 					Debug::error(fake_bin.error().c_str());
 
-				_unblock->startService(_proxy_click_state);
+				_unblock.startService(_proxy_click_state);
 				_buttonUpdate();
 				_activeServiceUpdate();
 				_proxy_click_state = false;

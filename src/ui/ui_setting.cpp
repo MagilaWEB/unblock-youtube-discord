@@ -85,7 +85,7 @@ void Ui::_settingEnableDnsHosts()
 	_window_wait_update_dns->addEventCancel(
 		[this](JSArgs)
 		{
-			_unblock->dnsHostsCancelUpdate();
+			_unblock.dnsHostsCancelUpdate();
 			return false;
 		}
 	);
@@ -107,7 +107,7 @@ void Ui::_settingEnableDnsHosts()
 					{
 						if (str_list_name.empty())
 						{
-							auto& list_name = _unblock->dnsHostsListName();
+							auto& list_name = _unblock.dnsHostsListName();
 							for (auto& name : list_name)
 								str_list_name.append(name).append(", ");
 
@@ -138,9 +138,9 @@ void Ui::_settingEnableDnsHosts()
 				[this]
 				{
 					_window_wait_update_dns->show();
-					_unblock->dnsHostsUpdate();
-					_unblock->dnsHosts(false);
-					_unblock->dnsHosts(true);
+					_unblock.dnsHostsUpdate();
+					_unblock.dnsHosts(false);
+					_unblock.dnsHosts(true);
 					_window_wait_update_dns->hide();
 				}
 			);
@@ -157,7 +157,7 @@ void Ui::_settingDnsHostsUpdateInfoWindow()
 		if (_window_wait_update_dns->isShow())
 		{
 			static std::string disc_text{ Localization::Str{ "str_window_wait_update_dns_description" }() };
-			float			   progress = _unblock->dnsHostsUpdateProgress();
+			float			   progress = _unblock.dnsHostsUpdateProgress();
 			_window_wait_update_dns->setDescription(utils::format(disc_text.c_str(), progress).c_str());
 		}
 	});
@@ -179,14 +179,14 @@ void Ui::_settingEnableDnsHostsUpdate()
 		Core::get().addTask(
 			[this, state]
 			{
-				if (state && (!_unblock->dnsHostsCheck()))
+				if (state && (!_unblock.dnsHostsCheck()))
 				{
 					_window_wait_update_dns->show();
-					_unblock->dnsHostsUpdate();
+					_unblock.dnsHostsUpdate();
 					_window_wait_update_dns->hide();
 				}
 
-				_unblock->dnsHosts(state);
+				_unblock.dnsHosts(state);
 			}
 		);
 	}
@@ -234,7 +234,7 @@ void Ui::_settingMaxTimeWaitUpdate()
 			_max_time_wait_testing->setValue(base_second);
 	}
 
-	_unblock->maxWaitTesting(second);
+	_unblock.maxWaitTesting(second);
 }
 
 void Ui::_settingUnblockEnable()
@@ -300,17 +300,17 @@ void Ui::_settingUnblockListEnableServicesUpdate()
 		if (result)
 		{
 			if (result.value())
-				_unblock->addOptionalStrategies(name);
+				_unblock.addOptionalStrategies(name);
 
 			check_box->setState(result.value());
 		}
 		else
 		{
-			auto state = _file_service_list->parameterSection<bool>("LIST", name.c_str());
+			auto state = _file_service_list.parameterSection<bool>("LIST", name.c_str());
 			if (state)
 			{
 				if (state.value())
-					_unblock->addOptionalStrategies(name);
+					_unblock.addOptionalStrategies(name);
 
 				check_box->setState(state.value());
 			}
@@ -319,9 +319,9 @@ void Ui::_settingUnblockListEnableServicesUpdate()
 		}
 
 		if (check_box->getState())
-			_unblock->addOptionalStrategies(name);
+			_unblock.addOptionalStrategies(name);
 		else
-			_unblock->removeOptionalStrategies(name);
+			_unblock.removeOptionalStrategies(name);
 	}
 }
 
@@ -337,7 +337,7 @@ void Ui::_settingUnblockFilteringTopLevelDomains()
 		[this](JSArgs args)
 		{
 			_ui_base->userSetting()->writeSectionParameter("UNBLOCK", "filtering_top_level_domains", JSToCPP(args[0]));
-			_unblock->changeFilteringTopLevelDomains(args[0].ToBoolean());
+			_unblock.changeFilteringTopLevelDomains(args[0].ToBoolean());
 			return false;
 		}
 	);
@@ -352,7 +352,7 @@ void Ui::_settingUnblockFilteringTopLevelDomainsUpdate()
 		_unblock_filtering_top_level_domains->show();
 		auto result = _ui_base->userSetting()->parameterSection<bool>("UNBLOCK", "filtering_top_level_domains");
 		_unblock_filtering_top_level_domains->setState(result ? result.value() : false);
-		_unblock->changeFilteringTopLevelDomains(_unblock_filtering_top_level_domains->getState());
+		_unblock.changeFilteringTopLevelDomains(_unblock_filtering_top_level_domains->getState());
 		return;
 	}
 
@@ -408,7 +408,7 @@ void Ui::_settingUnblockSelectStrategyVersionUpdate()
 		if (auto strategy_version = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "version_strategy"))
 			_unblock_select_version_strategy->setSelectedOptionValue(strategy_version.value().c_str());
 
-		_unblock->changeDirVersionStrategy(JSToCPP<std::string>(_unblock_select_version_strategy->getSelectedOptionValue()));
+		_unblock.changeDirVersionStrategy(JSToCPP<std::string>(_unblock_select_version_strategy->getSelectedOptionValue()));
 
 		strategy_dirs.clear();
 	}
@@ -487,7 +487,7 @@ void Ui::_settingUnblockEnableManualSelectUpdate()
 		_unblock_select_config->clear();
 		_unblock_select_fake_bin->clear();
 
-		auto& strategies_list = _unblock->getStrategiesList<StrategiesDPI>();
+		auto& strategies_list = _unblock.getStrategiesList<StrategiesDPI>();
 
 		if (strategies_list.empty())
 			return;
@@ -511,7 +511,7 @@ void Ui::_settingUnblockEnableManualSelectUpdate()
 		_buttonUpdate();
 
 		u32	  size{ 0 };
-		auto& fake_bin_list = _unblock->getFakeBinList();
+		auto& fake_bin_list = _unblock.getFakeBinList();
 		for (auto& [key, _] : fake_bin_list)
 			_unblock_select_fake_bin->createOption(size++, key.c_str());
 
@@ -601,7 +601,7 @@ void Ui::_settingProxyDPISelectConfigUpdate()
 	{
 		_proxy_select_config->show();
 
-		auto& strategies_list = _unblock->getStrategiesList<ProxyStrategiesDPI>();
+		auto& strategies_list = _unblock.getStrategiesList<ProxyStrategiesDPI>();
 		for (u32 i = 0; i < strategies_list.size(); i++)
 		{
 			auto& file_name = strategies_list[i];
@@ -647,7 +647,7 @@ void Ui::_settingProxyDPIInputIPUpdate()
 		if (auto ip = _ui_base->userSetting()->parameterSection<pcstr>("PROXY", "ip"))
 			_proxy_ip->setValue(ip.value());
 
-		_unblock->changeProxyIP(JSToCPP(_proxy_ip->getValue()));
+		_unblock.changeProxyIP(JSToCPP(_proxy_ip->getValue()));
 		return;
 	}
 
@@ -678,7 +678,7 @@ void Ui::_settingProxyDPIInputPortUpdate()
 		if (auto port = _ui_base->userSetting()->parameterSection<u32>("PROXY", "port"))
 			_proxy_port->setValue(port.value());
 
-		_unblock->changeProxyPort(JSToCPP<u32>(_proxy_port->getValue()));
+		_unblock.changeProxyPort(JSToCPP<u32>(_proxy_port->getValue()));
 		return;
 	}
 

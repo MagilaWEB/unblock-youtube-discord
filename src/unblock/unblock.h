@@ -11,20 +11,21 @@ concept ValidStrategies = std::same_as<T, StrategiesDPI> || std::same_as<T, Prox
 
 class UNBLOCK_API Unblock final
 {
-	Ptr<Service> _zapret{ "zapret", "winws.exe" };
-	Ptr<Service> _proxy_dpi{ "proxy_dpi", "ciadpi.exe" };
-	Ptr<Service> _win_divert{ "WinDivert" };
+	Service _zapret{ "zapret", "winws.exe" };
+	Service _proxy_dpi{ "proxy_dpi", "ciadpi.exe" };
+	Service _win_divert{ "WinDivert" };
 
-	Ptr<DomainTesting>		_domain_testing;
-	Ptr<DomainTesting>		_domain_testing_video;
-	Ptr<DomainTesting>		_domain_testing_proxy{ true };
-	Ptr<DomainTesting>		_domain_testing_proxy_video{ true };
-	Ptr<StrategiesDPI>		_strategies_dpi;
-	Ptr<ProxyStrategiesDPI> _proxy_strategies_dpi;
-	Ptr<DNSHost>			_dns_hosts;
+	DomainTesting	   _domain_testing;
+	DomainTesting	   _domain_testing_video;
+	DomainTesting	   _domain_testing_proxy{ true };
+	DomainTesting	   _domain_testing_proxy_video{ true };
+	StrategiesDPI	   _strategies_dpi;
+	ProxyStrategiesDPI _proxy_strategies_dpi;
+	DNSHost			   _dns_hosts;
 
-	std::atomic_bool _zapret_dbg_run_end;
-	std::atomic_bool _zapret_dbg_run;
+	std::list<std::string> _section_opt_service_names{};
+	std::atomic_bool	   _zapret_dbg_run_end;
+	std::atomic_bool	   _zapret_dbg_run;
 
 	ProxyData _proxy_data{};
 

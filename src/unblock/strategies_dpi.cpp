@@ -109,23 +109,9 @@ void StrategiesDPI::changeDirVersion(std::string dir_version)
 	_sortFiles();
 }
 
-void StrategiesDPI::addOptionalStrategies(std::string name)
+void StrategiesDPI::changeOptionalServices(std::list<std::string> list_service)
 {
-	auto it = std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), name);
-	if (it != _section_opt_service_names.end())
-		return;
-
-	_section_opt_service_names.emplace_back(name);
-}
-
-void StrategiesDPI::removeOptionalStrategies(std::string name)
-{
-	std::erase(_section_opt_service_names, name);
-}
-
-void StrategiesDPI::clearOptionalStrategies()
-{
-	_section_opt_service_names.clear();
+	_section_opt_service_names = list_service;
 }
 
 void StrategiesDPI::_uploadStrategies()

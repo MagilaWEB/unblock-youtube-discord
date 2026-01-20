@@ -4,9 +4,9 @@
 
 Unblock::Unblock()
 {
-	_zapret->open();
-	_proxy_dpi->open();
-	_win_divert->open();
+	_zapret.open();
+	_proxy_dpi.open();
+	_win_divert.open();
 }
 
 template<ValidStrategies Type>
@@ -14,27 +14,27 @@ bool Unblock::automaticallyStrategy()
 {
 	if constexpr (std::is_same_v<Type, ProxyStrategiesDPI>)
 	{
-		if (_strategy.proxy_type == _proxy_strategies_dpi->getStrategySize())
+		if (_strategy.proxy_type == _proxy_strategies_dpi.getStrategySize())
 		{
 			_strategy.proxy_type = 0;
 			return false;
 		}
 
-		_proxy_strategies_dpi->changeStrategy(_strategy.proxy_type);
+		_proxy_strategies_dpi.changeStrategy(_strategy.proxy_type);
 		_strategy.proxy_type++;
 	}
 	else
 	{
-		if (_strategy.type == _strategies_dpi->getStrategySize())
+		if (_strategy.type == _strategies_dpi.getStrategySize())
 		{
 			_strategy.type	   = 0;
 			_strategy.fake_bin = 0;
 			return false;
 		}
 
-		_strategies_dpi->changeFakeKey(_strategy.fake_bin);
-		_strategies_dpi->changeStrategy(_strategy.type);
-		const auto& fake_bin_list = _strategies_dpi->getFakeBinList();
+		_strategies_dpi.changeFakeKey(_strategy.fake_bin);
+		_strategies_dpi.changeStrategy(_strategy.type);
+		const auto& fake_bin_list = _strategies_dpi.getFakeBinList();
 		if (_strategy.fake_bin == (fake_bin_list.size() - 1))
 		{
 			_strategy.fake_bin = 0;
@@ -51,13 +51,13 @@ template UNBLOCK_API bool Unblock::automaticallyStrategy<ProxyStrategiesDPI>();
 
 void Unblock::changeStrategy(pcstr name_config, pcstr name_fake_bin)
 {
-	_strategies_dpi->changeFakeKey(name_fake_bin);
-	_strategies_dpi->changeStrategy(name_config);
+	_strategies_dpi.changeFakeKey(name_fake_bin);
+	_strategies_dpi.changeStrategy(name_config);
 }
 
 void Unblock::changeProxyStrategy(pcstr name_config)
 {
-	_proxy_strategies_dpi->changeStrategy(name_config);
+	_proxy_strategies_dpi.changeStrategy(name_config);
 }
 
 void Unblock::changeProxyIP(std::string ip)
@@ -74,62 +74,71 @@ void Unblock::changeProxyPort(u32 port)
 
 void Unblock::changeDirVersionStrategy(std::string dir_version)
 {
-	_strategies_dpi->changeDirVersion(dir_version);
+	_strategies_dpi.changeDirVersion(dir_version);
 }
 
 void Unblock::changeFilteringTopLevelDomains(bool state)
 {
-	_strategies_dpi->changeFilteringTopLevelDomains(state);
+	_strategies_dpi.changeFilteringTopLevelDomains(state);
 }
 
 void Unblock::addOptionalStrategies(std::string name)
 {
-	_strategies_dpi->addOptionalStrategies(name);
-	_domain_testing->addOptionalStrategies(name);
+	auto it = std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), name);
+	if (it != _section_opt_service_names.end())
+		return;
+
+	_section_opt_service_names.emplace_back(name);
+
+	_strategies_dpi.changeOptionalServices(_section_opt_service_names);
+	_domain_testing.changeOptionalServices(_section_opt_service_names);
 }
 
 void Unblock::removeOptionalStrategies(std::string name)
 {
-	_strategies_dpi->removeOptionalStrategies(name);
-	_domain_testing->removeOptionalStrategies(name);
+	std::erase(_section_opt_service_names, name);
+	_strategies_dpi.changeOptionalServices(_section_opt_service_names);
+	_domain_testing.changeOptionalServices(_section_opt_service_names);
 }
 
 void Unblock::clearOptionalStrategies()
 {
-	_strategies_dpi->clearOptionalStrategies();
-	_domain_testing->clearOptionalStrategies();
+	_section_opt_service_names.clear();
+
+	_strategies_dpi.changeOptionalServices({});
+	_domain_testing.changeOptionalServices({});
 }
 
 template<ValidStrategies Type>
 std::string Unblock::getNameStrategies()
 {
 	if constexpr (std::is_same_v<Type, StrategiesDPI>)
-		return _strategies_dpi->getStrategyFileName();
+		return _strategies_dpi.getStrategyFileName();
 	else
-		return _proxy_strategies_dpi->getStrategyFileName();
+		return _proxy_strategies_dpi.getStrategyFileName();
 }
 template UNBLOCK_API std::string Unblock::getNameStrategies<StrategiesDPI>();
 template UNBLOCK_API std::string Unblock::getNameStrategies<ProxyStrategiesDPI>();
 
 std::string Unblock::getNameFakeBin()
 {
-	return _strategies_dpi->getKeyFakeBin();
+	return _strategies_dpi.getKeyFakeBin();
 }
 
 template<ValidStrategies Type>
 const std::vector<std::string>& Unblock::getStrategiesList()
 {
 	if constexpr (std::is_same_v<Type, StrategiesDPI>)
-		return _strategies_dpi->getStrategyList();
+		return _strategies_dpi.getStrategyList();
 	else
-		return _proxy_strategies_dpi->getStrategyList();
+		return _proxy_strategies_dpi.getStrategyList();
 }
 template UNBLOCK_API const std::vector<std::string>& Unblock::getStrategiesList<StrategiesDPI>();
 template UNBLOCK_API const std::vector<std::string>& Unblock::getStrategiesList<ProxyStrategiesDPI>();
 
 const std::map<std::string, StrategiesDPI::FakeBinParam>& Unblock::getFakeBinList()
 {
-	return _strategies_dpi->getFakeBinList();
+	return _strategies_dpi.getFakeBinList();
 }
 
 std::list<Service>& Unblock::getConflictingServices()
@@ -152,13 +161,13 @@ std::list<Service>& Unblock::getConflictingServices()
 			if (config.binary_path.contains("winws.exe") || config.binary_path.contains("goodbyedpi.exe")
 				|| config.binary_path.contains("ciadpi.exe"))
 			{
-				if (std::regex_match(name_service, std::regex{ _zapret->getName() }))
+				if (std::regex_match(name_service, std::regex{ _zapret.getName() }))
 					return;
 
-				if (std::regex_match(name_service, std::regex{ _proxy_dpi->getName() }))
+				if (std::regex_match(name_service, std::regex{ _proxy_dpi.getName() }))
 					return;
 
-				if (std::regex_match(name_service, std::regex{ _win_divert->getName() }))
+				if (std::regex_match(name_service, std::regex{ _win_divert.getName() }))
 					return;
 
 				conflicting_service.emplace_back(Service{ name_service.c_str() });
@@ -175,13 +184,13 @@ std::list<Service>& Unblock::getConflictingServices()
 	DomainTesting* testing_video = nullptr;                \
 	if constexpr (std::is_same_v<Type, StrategiesDPI>)     \
 	{                                                      \
-		testing		  = _domain_testing.get();             \
-		testing_video = _domain_testing_video.get();       \
+		testing		  = &_domain_testing;             \
+		testing_video = &_domain_testing_video;       \
 	}                                                      \
 	else                                                   \
 	{                                                      \
-		testing		  = _domain_testing_proxy.get();       \
-		testing_video = _domain_testing_proxy_video.get(); \
+		testing		  = &_domain_testing_proxy;       \
+		testing_video = &_domain_testing_proxy_video; \
 	}
 
 template<ValidStrategies Type>
@@ -233,10 +242,10 @@ template UNBLOCK_API void Unblock::testingDomainCancel<ProxyStrategiesDPI>(bool)
 
 void Unblock::maxWaitTesting(u32 second)
 {
-	_domain_testing->changeMaxWaitTesting(second);
-	_domain_testing_video->changeMaxWaitTesting(second);
-	_domain_testing_proxy->changeMaxWaitTesting(second);
-	_domain_testing_proxy_video->changeMaxWaitTesting(second);
+	_domain_testing.changeMaxWaitTesting(second);
+	_domain_testing_video.changeMaxWaitTesting(second);
+	_domain_testing_proxy.changeMaxWaitTesting(second);
+	_domain_testing_proxy_video.changeMaxWaitTesting(second);
 }
 
 std::optional<std::string> Unblock::checkUpdate()
@@ -244,25 +253,26 @@ std::optional<std::string> Unblock::checkUpdate()
 	HttpsLoad version{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest" };
 
 	auto lines = version.run();
-	if (version.codeResult() == 200)
-	{
-		for (auto& line : lines)
-		{
-			static std::string version_mask{ "/MagilaWEB/unblock-youtube-discord/tree/v" };
-			size_t			   pos = line.find(version_mask);
-			if (pos != std::string::npos)
-			{
-				static std::string mask_end{ "\" data-tab-item=\"i0code-tab\"" };
-				size_t			   pos_end = line.find(mask_end);
-				if (pos_end != std::string::npos)
-				{
-					auto start_str = pos + version_mask.length();
-					auto str	   = line.substr(start_str, pos_end - start_str);
-					if (Core::get().isVersionNewer(str, VERSION_STR))
-						return str;
 
-					return {};
-				}
+	if (version.codeResult() != 200)
+		return {};
+
+	for (auto& line : lines)
+	{
+		static std::string version_mask{ "/MagilaWEB/unblock-youtube-discord/tree/v" };
+		size_t			   pos = line.find(version_mask);
+		if (pos != std::string::npos)
+		{
+			static std::string mask_end{ "\" data-tab-item=\"i0code-tab\"" };
+			size_t			   pos_end = line.find(mask_end);
+			if (pos_end != std::string::npos)
+			{
+				auto start_str = pos + version_mask.length();
+				auto str	   = line.substr(start_str, pos_end - start_str);
+				if (Core::get().isVersionNewer(str, VERSION_STR))
+					return str;
+
+				return {};
 			}
 		}
 	}
@@ -345,61 +355,61 @@ bool Unblock::appUpdate()
 bool Unblock::validDomain(bool proxy)
 {
 	if (proxy)
-		return _domain_testing_proxy->successRate() >= MAX_SUCCESS_CONECTION;
+		return _domain_testing_proxy.successRate() >= MAX_SUCCESS_CONECTION;
 
-	return _domain_testing->successRate() >= MAX_SUCCESS_CONECTION;
+	return _domain_testing.successRate() >= MAX_SUCCESS_CONECTION;
 }
 
 bool Unblock::activeService(bool proxy)
 {
 	if (proxy)
-		return _proxy_dpi->isRun();
+		return _proxy_dpi.isRun();
 
-	return _zapret->isRun();
+	return _zapret.isRun();
 }
 
 void Unblock::checkStateServices(const std::function<void(pcstr, bool)>& callback)
 {
-	callback("Zapret (winws.exe)", _zapret->isRun());
-	callback("ProxyDPI (BayDPI)", _proxy_dpi->isRun());
-	callback(_win_divert->getName().c_str(), _win_divert->isRun());
+	callback("Zapret (winws.exe)", _zapret.isRun());
+	callback("ProxyDPI (BayDPI)", _proxy_dpi.isRun());
+	callback(_win_divert.getName().c_str(), _win_divert.isRun());
 }
 
 void Unblock::dnsHosts(bool state)
 {
-	state ? _dns_hosts->enable() : _dns_hosts->disable();
+	state ? _dns_hosts.enable() : _dns_hosts.disable();
 }
 
 void Unblock::dnsHostsUpdate()
 {
-	_dns_hosts->update();
+	_dns_hosts.update();
 }
 
 void Unblock::dnsHostsCancelUpdate()
 {
-	_dns_hosts->cancel();
+	_dns_hosts.cancel();
 }
 
 float Unblock::dnsHostsUpdateProgress() const
 {
-	return _dns_hosts->percentageCompletion();
+	return _dns_hosts.percentageCompletion();
 }
 
 bool Unblock::dnsHostsCheck() const
 {
-	return _dns_hosts->isHostsUser();
+	return _dns_hosts.isHostsUser();
 }
 
 const std::list<std::string>& Unblock::dnsHostsListName()
 {
-	return _dns_hosts->listDnsFileName();
+	return _dns_hosts.listDnsFileName();
 }
 
 void Unblock::removeService(bool proxy)
 {
 	if (proxy)
 	{
-		_proxy_dpi->remove();
+		_proxy_dpi.remove();
 		return;
 	}
 
@@ -413,15 +423,15 @@ void Unblock::removeService(bool proxy)
 	}
 #endif
 
-	_zapret->remove();
-	_win_divert->remove();
+	_zapret.remove();
+	_win_divert.remove();
 }
 
 void Unblock::stopService(bool proxy)
 {
 	if (proxy)
 	{
-		_proxy_dpi->stop();
+		_proxy_dpi.stop();
 		return;
 	}
 
@@ -435,37 +445,37 @@ void Unblock::stopService(bool proxy)
 	}
 #endif
 
-	_zapret->stop();
+	_zapret.stop();
 }
 
 void Unblock::startService(bool proxy)
 {
 	if (proxy)
 	{
-		auto& list = _proxy_strategies_dpi->getStrategy();
+		auto& list = _proxy_strategies_dpi.getStrategy();
 		if (!list.empty())
 		{
-			_proxy_dpi->remove();
-			_proxy_dpi->setDescription("Proxy DPI программное обеспечение для обхода блокировки.");
-			_proxy_dpi->setArgs(list);
-			_proxy_dpi->create();
+			_proxy_dpi.remove();
+			_proxy_dpi.setDescription("Proxy DPI программное обеспечение для обхода блокировки.");
+			_proxy_dpi.setArgs(list);
+			_proxy_dpi.create();
 
-			_proxy_dpi->start();
+			_proxy_dpi.start();
 		}
 		return;
 	}
 
-	_zapret->remove();
+	_zapret.remove();
 
-	auto& list = _strategies_dpi->getStrategy();
+	auto& list = _strategies_dpi.getStrategy();
 	if (!list.empty())
 	{
-		_zapret->setDescription("DPI программное обеспечение для обхода блокировки.");
-		_zapret->setArgs(list);
-		_zapret->create();
+		_zapret.setDescription("DPI программное обеспечение для обхода блокировки.");
+		_zapret.setArgs(list);
+		_zapret.create();
 
 #ifdef DEBUG
-		auto&		service_config = _zapret->getConfig();
+		auto&		service_config = _zapret.getConfig();
 		auto&		path		   = service_config.binary_path;
 		std::string command		   = path;
 
@@ -498,14 +508,14 @@ void Unblock::startService(bool proxy)
 			}
 		);
 #else
-		_zapret->start();
+		_zapret.start();
 #endif
 	}
 }
 
 void Unblock::_updateProxyData()
 {
-	_proxy_strategies_dpi->changeProxyData(_proxy_data);
-	_domain_testing_proxy->changeProxy(_proxy_data.IP, _proxy_data.PORT);
-	_domain_testing_proxy_video->changeProxy(_proxy_data.IP, _proxy_data.PORT);
+	_proxy_strategies_dpi.changeProxyData(_proxy_data);
+	_domain_testing_proxy.changeProxy(_proxy_data.IP, _proxy_data.PORT);
+	_domain_testing_proxy_video.changeProxy(_proxy_data.IP, _proxy_data.PORT);
 }

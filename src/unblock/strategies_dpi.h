@@ -29,10 +29,7 @@ public:
 	void changeFakeKey(std::string key = "");
 	void changeFilteringTopLevelDomains(bool state);
 	void changeDirVersion(std::string dir_version) override;
-
-	void addOptionalStrategies(std::string name);
-	void removeOptionalStrategies(std::string name);
-	void clearOptionalStrategies();
+	void changeOptionalServices(std::list<std::string> list_service);
 
 	std::string								   getKeyFakeBin() const;
 	const std::map<std::string, FakeBinParam>& getFakeBinList() const;

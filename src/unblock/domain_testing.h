@@ -12,9 +12,9 @@ class UNBLOCK_API DomainTesting final
 		std::string url{};
 	};
 
-	Ptr<File>				 _file_test_domain;
-	std::list<CurlDomain>	 _list_domain{};
-	std::list<std::string>	 _section_opt_service_names{};
+	File				   _file_test_domain{ false };
+	std::list<CurlDomain>  _list_domain{};
+	std::list<std::string> _section_opt_service_names{};
 
 	std::atomic_uint _domain_ok{ 0 };
 	std::atomic_uint _domain_error{ 0 };
@@ -37,9 +37,7 @@ public:
 	void changeAccurateTest(bool state);
 	void changeMaxWaitTesting(u32 second);
 
-	void addOptionalStrategies(std::string name);
-	void removeOptionalStrategies(std::string name);
-	void clearOptionalStrategies();
+	void changeOptionalServices(std::list<std::string> list_services);
 
 	void cancelTesting();
 

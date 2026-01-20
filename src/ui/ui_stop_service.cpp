@@ -48,7 +48,7 @@ void Ui::_stoppingServices(StoppingService type)
 		{
 			_window_wait_stop_service->show();
 
-			_unblock->removeService(type & StoppingService::eProxyDpi);
+			_unblock.removeService(type & StoppingService::eProxyDpi);
 
 			_buttonUpdate();
 			_activeServiceUpdate();

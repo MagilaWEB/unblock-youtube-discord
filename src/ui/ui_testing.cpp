@@ -18,10 +18,10 @@ void Ui::_testingInit()
 	_start_testing->addEventClick(
 		[this](JSArgs)
 		{
-			if (_unblock->runTest<StrategiesDPI>() || _unblock->runTest<StrategiesDPI>(true))
+			if (_unblock.runTest<StrategiesDPI>() || _unblock.runTest<StrategiesDPI>(true))
 				return false;
 
-			if (_unblock->runTest<ProxyStrategiesDPI>() || _unblock->runTest<ProxyStrategiesDPI>(true))
+			if (_unblock.runTest<ProxyStrategiesDPI>() || _unblock.runTest<ProxyStrategiesDPI>(true))
 				return false;
 
 			_testingServiceDomains();
@@ -76,10 +76,10 @@ void Ui::_testingWindow()
 	_window_wait_testing->addEventCancel(
 		[this](JSArgs)
 		{
-			_unblock->testingDomainCancel<StrategiesDPI>();
-			_unblock->testingDomainCancel<StrategiesDPI>(true);
-			_unblock->testingDomainCancel<ProxyStrategiesDPI>();
-			_unblock->testingDomainCancel<ProxyStrategiesDPI>(true);
+			_unblock.testingDomainCancel<StrategiesDPI>();
+			_unblock.testingDomainCancel<StrategiesDPI>(true);
+			_unblock.testingDomainCancel<ProxyStrategiesDPI>();
+			_unblock.testingDomainCancel<ProxyStrategiesDPI>(true);
 			return false;
 		}
 	);
@@ -91,7 +91,7 @@ void Ui::_testingWindow()
 void Ui::_activeServiceUpdate()
 {
 	_active_service->clear();
-	_unblock->checkStateServices([this](pcstr name, bool state) { _active_service->createLiSuccess(name, state); });
+	_unblock.checkStateServices([this](pcstr name, bool state) { _active_service->createLiSuccess(name, state); });
 }
 
 void Ui::_testingServiceDomains()
@@ -107,7 +107,7 @@ void Ui::_testingServiceDomains()
 	{
 		Core::get().addTaskParallel(
 			[this]
-			{ _unblock->testingDomain<StrategiesDPI>([this](pcstr url, bool state) { _list_domain->createLiSuccess(url, state); }, false, false); }
+			{ _unblock.testingDomain<StrategiesDPI>([this](pcstr url, bool state) { _list_domain->createLiSuccess(url, state); }, false, false); }
 		);
 
 		for (auto& [name, check_box] : _unblock_list_enable_services)
@@ -117,7 +117,7 @@ void Ui::_testingServiceDomains()
 				Core::get().addTaskParallel(
 					[this]
 					{
-						_unblock->testingDomain<StrategiesDPI>(
+						_unblock.testingDomain<StrategiesDPI>(
 							[this](pcstr url, bool state) { _list_domain_video->createLiSuccess(url, state); },
 							true,
 							false
@@ -135,7 +135,7 @@ void Ui::_testingServiceDomains()
 		Core::get().addTaskParallel(
 			[this]
 			{
-				_unblock->testingDomain<ProxyStrategiesDPI>(
+				_unblock.testingDomain<ProxyStrategiesDPI>(
 					[this](pcstr url, bool state) { _list_proxy_domain->createLiSuccess(url, state); },
 					false,
 					false
@@ -146,7 +146,7 @@ void Ui::_testingServiceDomains()
 		Core::get().addTaskParallel(
 			[this]
 			{
-				_unblock->testingDomain<ProxyStrategiesDPI>(
+				_unblock.testingDomain<ProxyStrategiesDPI>(
 					[this](pcstr url, bool state) { _list_proxy_domain_video->createLiSuccess(url, state); },
 					true,
 					false

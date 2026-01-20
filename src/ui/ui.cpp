@@ -3,9 +3,9 @@
 
 Ui::Ui(UiBase* ui_base) : _ui_base(ui_base)
 {
-	_file_service_list->open({ Core::get().configsPath() / "service_setting" }, ".config", true);
+	_file_service_list.open({ Core::get().configsPath() / "service_setting" }, ".config", true);
 
-	_file_service_list->forLineParametersSection(
+	_file_service_list.forLineParametersSection(
 		"LIST",
 		[this](std::string key, std::string /*value*/)
 		{
@@ -94,7 +94,7 @@ void Ui::_checkConflictService()
 
 	std::string description = lang_disc();
 
-	auto& conflict_service = _unblock->getConflictingServices();
+	auto& conflict_service = _unblock.getConflictingServices();
 	if (!conflict_service.empty())
 	{
 #if __clang__

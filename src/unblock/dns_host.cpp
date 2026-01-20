@@ -8,21 +8,21 @@ DNSHost::DNSHost()
 	_host_backup = _etc / "hosts_backup";
 	_host_user	 = _etc / "hosts_user";
 
-	_file_hosts->open(_host, "", true);
-	_file_hosts_backup->open(_host_backup, "", true);
-	_file_hosts_user->open(_host_user, ".list", true);
+	_file_hosts.open(_host, "", true);
+	_file_hosts_backup.open(_host_backup, "", true);
+	_file_hosts_user.open(_host_user, ".list", true);
 
-	if (!_file_hosts_backup->isOpen())
+	if (!_file_hosts_backup.isOpen())
 	{
-		_file_hosts->forLine(
+		_file_hosts.forLine(
 			[this](std::string str)
 			{
-				_file_hosts_backup->writeText(str);
+				_file_hosts_backup.writeText(str);
 				return false;
 			}
 		);
 
-		_file_hosts_backup->close();
+		_file_hosts_backup.close();
 	}
 
 	_dir_dns_hosts = Core::get().configsPath() / "dns_hosts";
@@ -43,25 +43,25 @@ void DNSHost::enable()
 
 	_enable = true;
 
-	_file_hosts->clear();
+	_file_hosts.clear();
 
-	_file_hosts_backup->forLine(
+	_file_hosts_backup.forLine(
 		[this](std::string line)
 		{
-			_file_hosts->writeText(line);
+			_file_hosts.writeText(line);
 			return false;
 		}
 	);
 
-	_file_hosts_user->forLine(
+	_file_hosts_user.forLine(
 		[this](std::string line)
 		{
-			_file_hosts->writeText(line);
+			_file_hosts.writeText(line);
 			return false;
 		}
 	);
 
-	_file_hosts->save();
+	_file_hosts.save();
 }
 
 void DNSHost::disable()
@@ -71,17 +71,17 @@ void DNSHost::disable()
 
 	_enable = false;
 
-	_file_hosts->clear();
+	_file_hosts.clear();
 
-	_file_hosts_backup->forLine(
+	_file_hosts_backup.forLine(
 		[this](std::string line)
 		{
-			_file_hosts->writeText(line);
+			_file_hosts.writeText(line);
 			return false;
 		}
 	);
 
-	_file_hosts->save();
+	_file_hosts.save();
 }
 
 void DNSHost::update()
@@ -132,17 +132,17 @@ void DNSHost::update()
 	if (!_cancel_update.load())
 	{
 		if (isHostsUser())
-			_file_hosts_user->clear();
+			_file_hosts_user.clear();
 
 		auto lines = HttpsLoad{ "https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/hosts" }.run();
 		for (auto& line : lines)
-			_file_hosts_user->writeText(line);
+			_file_hosts_user.writeText(line);
 
 		for (auto& [domain, ip_list] : _map_list)
 			for (auto& ip : ip_list)
-				_file_hosts_user->writeText(ip + " " + domain);
+				_file_hosts_user.writeText(ip + " " + domain);
 
-		_file_hosts_user->save();
+		_file_hosts_user.save();
 	}
 
 	_size_iter.store(0);
@@ -150,7 +150,7 @@ void DNSHost::update()
 
 bool DNSHost::isHostsUser() const
 {
-	return _file_hosts_user->isOpen();
+	return _file_hosts_user.isOpen();
 }
 
 void DNSHost::cancel()
@@ -192,7 +192,7 @@ void DNSHost::_loadInfo()
 					run_service = false;
 			}
 
-			_file_hosts_user->writeText(line);
+			_file_hosts_user.writeText(line);
 		}
 	}
 }

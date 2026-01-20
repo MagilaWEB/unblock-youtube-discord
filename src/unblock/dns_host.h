@@ -12,9 +12,9 @@ class DNSHost final : public utils::DefaultInit
 	std::filesystem::path _host_user{};
 	std::filesystem::path _dir_dns_hosts{};
 
-	Ptr<File> _file_hosts;
-	Ptr<File> _file_hosts_backup;
-	Ptr<File> _file_hosts_user;
+	File _file_hosts;
+	File _file_hosts_backup;
+	File _file_hosts_user;
 
 	std::list<std::string>							_list_domains{};
 	std::list<std::string>							_list_dns_hosts_file_name{};

@@ -19,7 +19,7 @@ void DomainTesting::loadDomain(bool video)
 		if (!_loadFile(video ? "domain_video" : "all"))
 			return;
 
-		_file_test_domain->forLine(
+		_file_test_domain.forLine(
 			[this](std::string str)
 			{
 				if (str.empty())
@@ -131,23 +131,9 @@ void DomainTesting::changeMaxWaitTesting(u32 second)
 	_max_wait_testing = second;
 }
 
-void DomainTesting::addOptionalStrategies(std::string name)
+void DomainTesting::changeOptionalServices(std::list<std::string> list_services)
 {
-	auto it = std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), name);
-	if (it != _section_opt_service_names.end())
-		return;
-
-	_section_opt_service_names.emplace_back(name);
-}
-
-void DomainTesting::removeOptionalStrategies(std::string name)
-{
-	std::erase(_section_opt_service_names, name);
-}
-
-void DomainTesting::clearOptionalStrategies()
-{
-	_section_opt_service_names.clear();
+	_section_opt_service_names = list_services;
 }
 
 void DomainTesting::cancelTesting()
@@ -343,12 +329,8 @@ bool DomainTesting::isConnectionUrl(const CurlDomain& domain)
 
 bool DomainTesting::_loadFile(std::filesystem::path file)
 {
-	auto path = Core::get().configsPath() / "domain_test" / (file.string() + ".list");
-	if (!std::filesystem::exists(path))
-		return false;
-
-	_file_test_domain->open(path, "", true);
-	return true;
+	_file_test_domain.open(Core::get().configsPath() / "domain_test" / file.string(), ".list", true);
+	return _file_test_domain.isOpen() && !_file_test_domain.empty();
 }
 
 void DomainTesting::_genericURLS(std::string base_name)
@@ -374,8 +356,8 @@ void DomainTesting::_genericURLS(std::string base_name)
 
 void DomainTesting::_appendURLS()
 {
-	if (_file_test_domain->isOpen())
-		_file_test_domain->forLine(
+	if (_file_test_domain.isOpen())
+		_file_test_domain.forLine(
 			[this](std::string str)
 			{
 				if (str.empty())

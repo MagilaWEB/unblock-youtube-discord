@@ -12,8 +12,6 @@ class UI_API UiBase final : public WindowListener,
 {
 	std::unique_ptr<Ui> _ui;
 
-	Ptr<File> _file_user_setting;
-
 	IEngineAPI*		_engine;
 	RefPtr<Overlay> _overlay;
 

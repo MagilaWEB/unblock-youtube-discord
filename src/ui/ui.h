@@ -14,10 +14,10 @@ class Ui final : public utils::DefaultInit
 {
 	std::shared_ptr<UiBase> _ui_base{ nullptr };
 
-	Ptr<Unblock> _unblock;
+	Unblock _unblock;
 
 	// Setting
-	Ptr<File> _file_service_list;
+	File _file_service_list;
 
 	std::atomic_bool _automatically_strategy_cancel{ false };
 	std::atomic_bool _proxy_click_state{ false };

@@ -53,8 +53,10 @@ void Ui::_removeAppRun()
 {
 	_stoppingServices(StoppingService::eUnblock);
 	_stoppingServices(StoppingService::eProxyDpi);
+
 	_tcpGlobalChange(false);
-	_unblock->dnsHosts(false);
+
+	_unblock.dnsHosts(false);
 	_ui_base->console(false);
 
 	std::string del_bat_path{ (Core::get().currentPath() / "del_unblock").string() + ".bat" };

@@ -45,7 +45,7 @@ void Ui::_checkAppUpdate(bool window_show)
 			if (window_show)
 				_window_wait_check_update_unblock->show();
 
-			if (auto new_version = _unblock->checkUpdate())
+			if (auto new_version = _unblock.checkUpdate())
 			{
 				if (window_show)
 					_window_wait_check_update_unblock->hide();
@@ -87,7 +87,7 @@ void Ui::_updateAppWindow()
 					{
 						_window_update_unblock->hide();
 						_window_wait_update_unblock->show();
-						bool state = _unblock->appUpdate();
+						bool state = _unblock.appUpdate();
 						_window_wait_update_unblock->hide();
 
 						if (state)
