@@ -56,6 +56,11 @@ const std::map<std::string, StrategiesDPI::FakeBinParam>& StrategiesDPI::getFake
 	return _fake_bin_params;
 }
 
+void StrategiesDPI::serviceConfigFile(const std::shared_ptr<File>& config)
+{
+	_file_service_list = config;
+}
+
 void StrategiesDPI::changeFakeKey(u32 index)
 {
 	u32 it{ 0 };
@@ -158,12 +163,6 @@ void StrategiesDPI::_saveStrategies(std::string str)
 	if (_ignoringLineStrategy(str))
 		return;
 
-	if (auto new_str = _getAllPorts(str))
-	{
-		_strategy_dpi.push_back(new_str.value());
-		return;
-	}
-
 	if (auto new_str = _getFake(str))
 	{
 		_strategy_dpi.emplace_back(new_str.value());
@@ -171,6 +170,8 @@ void StrategiesDPI::_saveStrategies(std::string str)
 	}
 
 	StrategiesDPIBase::_saveStrategies(str);
+
+	_getAllPorts(_strategy_dpi.back());
 }
 
 bool StrategiesDPI::_ignoringLineStrategy(std::string str)
@@ -178,12 +179,42 @@ bool StrategiesDPI::_ignoringLineStrategy(std::string str)
 	return str.empty() || str.starts_with("//") || std::regex_match(str, std::regex{ "\n" });
 }
 
-std::optional<std::string> StrategiesDPI::_getAllPorts(std::string str) const
-{
-	if (str.contains("%AllPorts%"))
-		return std::regex_replace(str, std::regex{ "%AllPorts%" }, "1024-65535");
+inline static const std::regex reg_equally{ "\\:" };
 
-	return std::nullopt;
+void StrategiesDPI::_getAllPorts(std::string & str) const
+{
+	for (auto& name_service : _section_opt_service_names)
+	{
+		if (auto result = _file_service_list->parameterSection<std::string>("PORTS_LIST", name_service.c_str()))
+		{
+			std::smatch para;
+			if (std::regex_search(result.value(), para, reg_equally))
+			{
+				std::string target{ "%%" };
+				target.insert(1, para.prefix());
+
+				if (str.contains(target))
+					str = std::regex_replace(str, std::regex{ target }, para.suffix().str());
+			}
+		}
+	}
+
+#if __clang__
+	[[clang::no_destroy]]
+#endif
+	static std::regex port_vars(R"(%[^%]+%)");
+
+	str = std::regex_replace(str, port_vars, "");
+
+	size_t pos;
+	while ((pos = str.find("=,")) != std::string::npos)
+		str.replace(pos, 2, "=");
+
+	while ((pos = str.find(",,")) != std::string::npos)
+		str.replace(pos, 2, ",");
+
+	if (!str.empty() && str.back() == ',')
+		str.pop_back();
 }
 
 std::optional<std::string> StrategiesDPI::_getFake(std::string str)

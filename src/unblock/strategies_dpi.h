@@ -4,8 +4,9 @@
 
 class StrategiesDPI final : public StrategiesDPIBase
 {
-	File			  _file_fake_bin_config;
-	StrategyGenerator _generator;
+	File				  _file_fake_bin_config;
+	std::shared_ptr<File> _file_service_list;
+	StrategyGenerator	  _generator;
 
 public:
 	struct FakeBinParam
@@ -25,6 +26,8 @@ public:
 	StrategiesDPI();
 	~StrategiesDPI() override = default;
 
+	void serviceConfigFile(const std::shared_ptr<File>& config);
+
 	void changeFakeKey(u32 index = 1);
 	void changeFakeKey(std::string key = "");
 	void changeFilteringTopLevelDomains(bool state);
@@ -39,6 +42,6 @@ private:
 	void _saveStrategies(std::string str) override;
 
 	bool					   _ignoringLineStrategy(std::string str);
-	std::optional<std::string> _getAllPorts(std::string str) const;
+	void					   _getAllPorts(std::string& str) const;
 	std::optional<std::string> _getFake(std::string str);
 };

@@ -44,6 +44,8 @@ public:
 	template<ValidStrategies Type>
 	bool automaticallyStrategy();
 
+	void serviceConfigFile(const std::shared_ptr<File>& config);
+
 	void changeStrategy(pcstr name_config, pcstr name_fake_bin);
 	void changeProxyStrategy(pcstr name_config);
 	void changeFilteringTopLevelDomains(bool state = false);

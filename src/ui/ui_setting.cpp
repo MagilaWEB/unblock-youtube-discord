@@ -296,27 +296,22 @@ void Ui::_settingUnblockListEnableServicesUpdate()
 
 		std::string setting_name{ "enable_" + name };
 
-		auto result = _ui_base->userSetting()->parameterSection<bool>("UNBLOCK", setting_name.c_str());
-		if (result)
+		if (auto result = _ui_base->userSetting()->parameterSection<bool>("UNBLOCK", setting_name.c_str()))
 		{
 			if (result.value())
 				_unblock.addOptionalStrategies(name);
 
 			check_box->setState(result.value());
 		}
-		else
+		else if (auto state = _file_service_list->parameterSection<bool>("LIST", name.c_str()))
 		{
-			auto state = _file_service_list.parameterSection<bool>("LIST", name.c_str());
-			if (state)
-			{
-				if (state.value())
-					_unblock.addOptionalStrategies(name);
+			if (state.value())
+				_unblock.addOptionalStrategies(name);
 
-				check_box->setState(state.value());
-			}
-			else
-				Debug::warning(state.error().c_str());
+			check_box->setState(state.value());
 		}
+		else
+			Debug::warning(state.error().c_str());
 
 		if (check_box->getState())
 			_unblock.addOptionalStrategies(name);

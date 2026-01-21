@@ -49,6 +49,11 @@ bool Unblock::automaticallyStrategy()
 template UNBLOCK_API bool Unblock::automaticallyStrategy<StrategiesDPI>();
 template UNBLOCK_API bool Unblock::automaticallyStrategy<ProxyStrategiesDPI>();
 
+void Unblock::serviceConfigFile(const std::shared_ptr<File>& config)
+{
+	_strategies_dpi.serviceConfigFile(config);
+}
+
 void Unblock::changeStrategy(pcstr name_config, pcstr name_fake_bin)
 {
 	_strategies_dpi.changeFakeKey(name_fake_bin);
@@ -179,18 +184,18 @@ std::list<Service>& Unblock::getConflictingServices()
 	return conflicting_service;
 }
 
-#define CODE_TESTING_DOMAIN()                              \
-	DomainTesting* testing		 = nullptr;                \
-	DomainTesting* testing_video = nullptr;                \
-	if constexpr (std::is_same_v<Type, StrategiesDPI>)     \
-	{                                                      \
-		testing		  = &_domain_testing;             \
-		testing_video = &_domain_testing_video;       \
-	}                                                      \
-	else                                                   \
-	{                                                      \
-		testing		  = &_domain_testing_proxy;       \
-		testing_video = &_domain_testing_proxy_video; \
+#define CODE_TESTING_DOMAIN()                          \
+	DomainTesting* testing		 = nullptr;            \
+	DomainTesting* testing_video = nullptr;            \
+	if constexpr (std::is_same_v<Type, StrategiesDPI>) \
+	{                                                  \
+		testing		  = &_domain_testing;              \
+		testing_video = &_domain_testing_video;        \
+	}                                                  \
+	else                                               \
+	{                                                  \
+		testing		  = &_domain_testing_proxy;        \
+		testing_video = &_domain_testing_proxy_video;  \
 	}
 
 template<ValidStrategies Type>
@@ -413,7 +418,7 @@ void Unblock::removeService(bool proxy)
 		return;
 	}
 
-#ifdef DEBUG
+#if 0	// #ifdef DEBUG
 	if (_zapret_dbg_run.load())
 	{
 		_zapret_dbg_run_end.store(true);
@@ -435,7 +440,7 @@ void Unblock::stopService(bool proxy)
 		return;
 	}
 
-#ifdef DEBUG
+#if 0	// #ifdef DEBUG
 	if (_zapret_dbg_run.load())
 	{
 		_zapret_dbg_run_end.store(true);
@@ -474,7 +479,7 @@ void Unblock::startService(bool proxy)
 		_zapret.setArgs(list);
 		_zapret.create();
 
-#ifdef DEBUG
+#if 0	// #ifdef DEBUG
 		auto&		service_config = _zapret.getConfig();
 		auto&		path		   = service_config.binary_path;
 		std::string command		   = path;

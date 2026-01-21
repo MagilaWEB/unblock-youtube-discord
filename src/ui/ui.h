@@ -17,7 +17,7 @@ class Ui final : public utils::DefaultInit
 	Unblock _unblock;
 
 	// Setting
-	File _file_service_list;
+	std::shared_ptr<File> _file_service_list;
 
 	std::atomic_bool _automatically_strategy_cancel{ false };
 	std::atomic_bool _proxy_click_state{ false };

@@ -3,9 +3,10 @@
 
 Ui::Ui(UiBase* ui_base) : _ui_base(ui_base)
 {
-	_file_service_list.open({ Core::get().configsPath() / "service_setting" }, ".config", true);
+	_file_service_list = std::make_shared<File>();
+	_file_service_list->open({ Core::get().configsPath() / "service_setting" }, ".config", true);
 
-	_file_service_list.forLineParametersSection(
+	_file_service_list->forLineParametersSection(
 		"LIST",
 		[this](std::string key, std::string /*value*/)
 		{
@@ -13,6 +14,8 @@ Ui::Ui(UiBase* ui_base) : _ui_base(ui_base)
 			return false;
 		}
 	);
+
+	_unblock.serviceConfigFile(_file_service_list);
 }
 
 void Ui::initialize()
