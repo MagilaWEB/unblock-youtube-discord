@@ -41,6 +41,8 @@ public:
 	void forLineSection(pcstr section, std::function<bool(std::string&)> fn);
 	void forLineParametersSection(pcstr section, std::function<bool(std::string key, std::string value)> fn);
 
+	std::optional<u32> positionSection(pcstr section);
+
 	template<concepts::VallidALL TypeReturn>
 	std::expected<TypeReturn, std::string> parameterSection(pcstr section, pcstr paramert);
 

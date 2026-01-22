@@ -41,7 +41,6 @@ void File::forLineSection(pcstr section, std::function<bool(std::string&)> fn)
 	if (list_string.empty())
 	{
 		bool		start{ false };
-		bool		event{ true };
 		std::string name_section{ "[]" };
 		name_section.insert(1, section);
 		forLine(
@@ -60,20 +59,13 @@ void File::forLineSection(pcstr section, std::function<bool(std::string&)> fn)
 					return true;
 
 				if ((!str.empty()) && (!std::regex_match(str, std::regex{ "\n" })))
-				{
-					if (event)
-						event = !fn(str);
-
 					list_string.emplace_back(str);
-				}
 
 				return false;
 			}
 		);
 
 		_normalize();
-
-		return;
 	}
 
 	for (auto& str : list_string)
@@ -112,6 +104,33 @@ void File::forLineParametersSection(pcstr section, std::function<bool(std::strin
 			return false;
 		}
 	);
+}
+
+std::optional<u32> File::positionSection(pcstr section)
+{
+	u32			position{ 0 };
+	std::string name_section{ "[]" };
+	name_section.insert(1, section);
+
+	bool is_section{ false };
+
+	forLine(
+		[&](std::string str)
+		{
+			if (std::regex_match(str, r_section_name))
+			{
+				position++;
+				return is_section = str.contains(name_section);
+			}
+
+			return false;
+		}
+	);
+
+	if (!is_section)
+		return std::nullopt;
+
+	return position;
 }
 
 template<concepts::VallidALL TypeReturn>
