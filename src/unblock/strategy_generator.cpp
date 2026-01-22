@@ -112,14 +112,11 @@ void StrategyGenerator::_readFileFilters(std::string section)
 		section.c_str(),
 		[&](std::string str)
 		{
-			if (auto new_data = _getDataFile(str, section, start_end))
-			{
-				section_lines.push_back(new_data.value());
-				return false;
-			}
-
 			if (_useIn(str, section))
 				return false;
+
+			if (auto new_data = _getDataFile(str, section, start_end))
+				str = new_data.value();
 
 			section_lines.push_back(str);
 			return false;
