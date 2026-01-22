@@ -126,18 +126,31 @@ void StrategiesDPI::_uploadStrategies()
 	_generator.changeServiceList(_section_opt_service_names);
 	_generator.inFile(_file_strategy_dpi);
 
+	std::vector<std::pair<u32, std::list<std::string>>> sort_service_filters{};
+
 	auto& map = _generator.mapFilters();
-
-	for (auto& line : map.at("START"))
-		_saveStrategies(line);
-
 	for (auto& [key, list] : map)
-		if (key != "START" && key != "END")
-			for (auto& line : list)
-				_saveStrategies(line);
+	{
+		if (list.empty())
+			continue;
 
-	for (auto& line : map.at("END"))
-		_saveStrategies(line);
+		if (auto position = _file_strategy_dpi->positionSection(key.c_str()))
+		{
+			auto& new_list = sort_service_filters.emplace_back(position.value(), std::list<std::string>{});
+			for (auto& line : list)
+				new_list.second.push_back(line);
+		}
+	}
+
+	std::sort(
+		sort_service_filters.begin(),
+		sort_service_filters.end(),
+		[this](const auto& left, const auto& right) { return left.first < right.first; }
+	);
+
+	for (auto& pair : sort_service_filters)
+		for (auto& line : pair.second)
+			_saveStrategies(line);
 
 	for (auto& line : _strategy_dpi)
 		if (line.contains("=\""))
@@ -181,7 +194,7 @@ bool StrategiesDPI::_ignoringLineStrategy(std::string str)
 
 inline static const std::regex reg_equally{ "\\:" };
 
-void StrategiesDPI::_getAllPorts(std::string & str) const
+void StrategiesDPI::_getAllPorts(std::string& str) const
 {
 	for (auto& name_service : _section_opt_service_names)
 	{
