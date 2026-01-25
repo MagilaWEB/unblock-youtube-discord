@@ -38,16 +38,18 @@ void Engine::initialize()
 	// assign a base ui folder to ultralight.
 	Platform::instance().set_file_system(GetPlatformFileSystem("./../ui/"));
 
-	Config config{};
-	config.effect_quality = EffectQuality::Low;
-
 #if __clang__
 	[[clang::no_destroy]]
 #endif
 	static std::string title{ "Unblock " };
 	title.append("Version:").append(VERSION_STR);
 
-	_app = App::Create({}, config);
+	Config config{};
+	config.effect_quality = EffectQuality::Low;
+
+	Settings setting{};
+
+	_app = App::Create(setting, config);
 
 	_window = Window::Create(
 		_app->main_monitor(),
