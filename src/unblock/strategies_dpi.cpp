@@ -200,14 +200,34 @@ void StrategiesDPI::_getAllPorts(std::string& str) const
 	{
 		if (auto result = _file_service_list->parameterSection<std::string>("PORTS_LIST", name_service.c_str()))
 		{
-			std::smatch para;
-			if (std::regex_search(result.value(), para, reg_equally))
+			auto replace_target = [&str, &name_service](const std::string& _text)
 			{
-				std::string target{ "%%" };
-				target.insert(1, para.prefix());
+				std::smatch para;
+				if (std::regex_search(_text, para, reg_equally))
+				{
+					std::string target{ "%%" };
+					target.insert(1, para.prefix());
 
-				if (str.contains(target))
-					str = std::regex_replace(str, std::regex{ target }, para.suffix().str());
+					if (str.contains(target))
+						str = std::regex_replace(str, std::regex{ target }, para.suffix().str());
+				}
+				else
+					Debug::warning("_getAllPorts Separator not found : for [%s]", name_service.c_str());
+			};
+
+			std::string setting_service_string{ result.value() };
+			size_t position = 0;
+			while (position < setting_service_string.length())
+			{
+				size_t found = setting_service_string.find(">>", position);
+				if (found == std::string::npos)
+				{
+					replace_target(setting_service_string.substr(position));
+					break;
+				}
+
+				replace_target(setting_service_string.substr(position, found - position));
+				position = found + 2;
 			}
 		}
 	}
