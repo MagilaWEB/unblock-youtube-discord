@@ -191,8 +191,6 @@ void DNSHost::_loadInfo()
 				if (run_service && line == end_line)
 					run_service = false;
 			}
-
-			_file_hosts_user.writeText(line);
 		}
 	}
 }
