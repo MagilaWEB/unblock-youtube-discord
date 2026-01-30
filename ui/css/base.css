@@ -73,6 +73,7 @@ main article {
 	top       : 12em;
 	left      : 0;
 	width     : 100%;
+	min-width : 900px;
 	visibility: hidden;
 	opacity   : 0;
 	padding   : 0 .4em;
