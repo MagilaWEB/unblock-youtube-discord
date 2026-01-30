@@ -97,10 +97,21 @@ void Ui::_settingEnableDnsHosts()
 		{
 			if (JSToCPP<bool>(args[0]))
 			{
+#if __clang__
+				[[clang::no_destroy]]
+#endif
 				static Localization::Str window_description{ "str_window_to_warn_enable_dns_hosts_description" };
-				static std::string		 description = window_description();
-
+#if __clang__
+				[[clang::no_destroy]]
+#endif
+				static std::string description = window_description();
+#if __clang__
+				[[clang::no_destroy]]
+#endif
 				static std::string str_list_name{};
+
+				if (str_list_name.empty())
+					_window_wait_response_from_server->show();
 
 				Core::get().addTask(
 					[this]
@@ -110,6 +121,8 @@ void Ui::_settingEnableDnsHosts()
 							auto& list_name = _unblock.dnsHostsListName();
 							for (auto& name : list_name)
 								str_list_name.append(name).append(", ");
+
+							_window_wait_response_from_server->hide();
 
 							str_list_name.pop_back();
 							str_list_name.pop_back();
@@ -197,6 +210,9 @@ void Ui::_settingEnableDnsHostsUpdate()
 	}
 }
 
+#if __clang__
+[[clang::no_destroy]]
+#endif
 constexpr static u32 base_second{ 8 };
 
 void Ui::_settingMaxTimeWait()
@@ -381,6 +397,9 @@ void Ui::_settingUnblockSelectStrategyVersionUpdate()
 
 		_unblock_select_version_strategy->show();
 
+		#if __clang__
+		[[clang::no_destroy]]
+#endif
 		static std::vector<std::string> strategy_dirs{};
 
 		auto patch_dir = Core::get().configsPath() / "strategy";
@@ -392,6 +411,9 @@ void Ui::_settingUnblockSelectStrategyVersionUpdate()
 			strategy_dirs.end(),
 			[](const std::string& left, const std::string& right)
 			{
+#if __clang__
+				[[clang::no_destroy]]
+#endif
 				static std::regex reg{ "\\." };
 				return std::stoul(std::regex_replace(left, reg, "")) > std::stoul(std::regex_replace(right, reg, ""));
 			}

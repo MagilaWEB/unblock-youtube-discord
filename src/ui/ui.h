@@ -78,6 +78,7 @@ class Ui final : public utils::DefaultInit
 
 	SECONDARY_WINDOW(_window_warning_conflict_service);
 
+	SECONDARY_WINDOW(_window_wait_response_from_server);
 	SECONDARY_WINDOW(_window_wait_start_service);
 	SECONDARY_WINDOW(_window_wait_stop_service);
 	SECONDARY_WINDOW(_window_wait_testing);

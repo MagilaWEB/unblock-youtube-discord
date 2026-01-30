@@ -23,6 +23,8 @@ str_b_start_find_config_proxy=🔍 Подобрать конфиг ProxyDPI
 str_please_wait=⏳ Подождите...
 str_warning=⚠ Внимание
 str_error=❌ Ошибка
+str_window_wait_response_from_server_description=⏳ Ожидание ответа от сервера...
+Загрузка данных. Это может занять несколько секунд.
 
 str_warning_copy_application_running=Unblock уже запущен. Повторный запуск невозможен.
 
@@ -80,6 +82,11 @@ str_window_auto_start_wait_description=🔍 Подбор конфигураци�
 • Уровень блокировок
 
 str_window_auto_start_wait_name_strategy_description=🧪 Тест конфигурации: %s
+
+str_window_auto_start_wait_name_strategy_proxy_description=🧪 Тест конфигурации:
+├ Файл: [%s]
+└ Маскировка: [%s]
+
 str_window_configuration_selection_error=❌ Автоподбор не удался
 Причины:
 • Ресурсы не отвечают
@@ -93,7 +100,7 @@ str_window_update_unblock=🔄 Доступно обновление Unblock v%s
 Приложение будет автоматически обновлено и перезапущено.
 Вы хотите установить обновление сейчас?
 
-str_window_wait_update_unblock=⏳ Идёт обновление Unblock...
+str_window_wait_update_unblock=⏳ Выполняется обновление Unblock...
 Не закрывайте приложение. После завершения оно перезапустится автоматически.
 
 str_window_check_update_unblock=🔍 Проверка обновлений...
@@ -106,8 +113,17 @@ str_window_config_not_found_description=Первый запуск или кон�
 
 // Secondary Window config found
 str_window_config_found_title=📂 Найдена предыдущая конфигурация
-str_window_config_found_description=Обнаружены старые настройки.
-Запустить новый подбор?
+str_window_config_found_proxy_description=📂 Найдена предыдущая конфигурация: [%s]
+Запустить автоматический подбор новой конфигурации?
+Да — искать другой вариант
+Нет — использовать текущий
+
+str_window_config_found_description=📂 Найдена предыдущая конфигурация:
+├ Файл: [%s]
+└ Маскировка: [%s]
+Запустить автоматический подбор новой конфигурации?
+Да — искать другой вариант
+Нет — использовать текущий
 
 // Secondary Window continue select strategy
 str_window_continue_select_strategy_title=✅ Конфигурация подобрана
@@ -116,12 +132,15 @@ str_window_continue_select_strategy_description=Выбрано:
 └ Маскировка: [%s]
 Продолжить подбор?
 
-str_window_continue_select_strategy_proxy_description=Выбран конфиг: [%s]
-Продолжить подбор?
+str_window_continue_select_strategy_proxy_description=✅ Конфигурация подобрана: [%s]
+Рекомендуем проверить доступность сайтов самостоятельно.
+Если всё работает — нажмите «Нет», чтобы завершить подбор.
+Если нужен другой вариант — нажмите «Да», чтобы продолжить поиск.
 
 // Secondary Window warning to conflict service
 str_window_warning_conflict_service=⚠ Конфликтные службы: [%s]
-Удалить для работы Unblock?
+Рукомендуется удалить для коректной работы Unblock.
+Удалить?
 
 // Secondary Window Warning about the introduction into the system
 str_window_to_warn_enable_dns_hosts_description=⚙ Для работы нужен доступ к системному файлу hosts
@@ -144,8 +163,7 @@ str_setting_proxy_title=🔌 ProxyDPI
 
 // Setting common show console
 str_checkbox_show_console_title=📟 Показывать консоль
-str_checkbox_show_console_description=Открывает окно с логами работы.
-(Требует перезапуска приложения)
+str_checkbox_show_console_description=Открывает окно с логами работы Unblock.
 
 // Setting common testing on startup
 str_checkbox_testing_startup_title=🧪 Тестировать при запуске
@@ -170,10 +188,11 @@ str_unblock_enable_discord_description=Обход блокировки Discord.
 → Включайте вместе с Cloudflare.
 
 str_unblock_enable_messengers_title=💬 Мессенджеры
-str_unblock_enable_messengers_description=Обход блокировки популярных мессенджеров (Telegram, WhatsApp, Signal и др.).
+str_unblock_enable_messengers_description=Обход блокировки популярных мессенджеров (Telegram, Signal).
 
 str_unblock_enable_cloudflare_title=☁ Cloudflare
-str_unblock_enable_cloudflare_description=Обход блокировок Cloudflare.
+str_unblock_enable_cloudflare_description=Обход блокировок Cloudflare — защитного сервиса, который используют многие сайты.
+Включайте, если сайты с Cloudflare недоступны.
 
 str_unblock_enable_instagram_title=📸 Instagram
 str_unblock_enable_instagram_description=Обход блокировки Instagram.
@@ -197,7 +216,7 @@ str_unblock_enable_torproject_description=Обход блокировки Tor.
 
 // Setting checkbox unblock enable top_level_domains
 str_unblock_filtering_top_level_domains_title=🌐 Фильтровать по доменам верхнего уровня
-str_unblock_filtering_top_level_domains_description=Использует список доменов из top_level_domains.list.
+str_unblock_filtering_top_level_domains_description=Фильтрация трафика по доменным зонам (.com, .ru, .net и др.). Использует список доменов из top_level_domains.list.
 
 // Setting checkbox manual enable
 str_manual_title=✋ Ручной выбор конфигурации
@@ -205,9 +224,11 @@ str_manual_description=Включает ручной выбор → отключ
 
 // Setting manual config
 str_select_config_title=📂 Выбор конфигурации
-str_select_config_description=Конфигурация будет сохранена.
+str_select_config_description=Выберите файл стратегии для обхода блокировок.
+Настройки будут сохранены для последующих запусков.
 str_unblock_select_fake_bin_title=🎭 Маскировка ClientHello
-str_unblock_select_fake_bin_description=Выбор типа маскировки соединения.
+str_unblock_select_fake_bin_description=Выбор типа маскировки ClientHello.
+Это помогает обойти DPI, имитируя трафик популярных сайтов или сервисов.
 
 // Setting strategy version
 str_select_version_strategy_title=📚 Версия списка стратегий

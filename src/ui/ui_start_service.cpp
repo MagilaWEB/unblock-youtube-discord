@@ -55,7 +55,7 @@ void Ui::_startServiceWindow()
 		}
 	);
 
-	_window_config_found->create(Localization::Str{ "str_window_config_found_title" }, "str_window_config_found_description");
+	_window_config_found->create(Localization::Str{ "str_window_config_found_title" }, "");
 	_window_config_found->setType(SecondaryWindow::Type::YesNo);
 	_window_config_found->addEventYesNo(
 		[this](JSArgs args)
@@ -158,13 +158,25 @@ void Ui::_buttonUpdate()
 
 void Ui::_clickStartService()
 {
-	if (_ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", _proxy_click_state ? "config_proxy" : "config"))
+	if (auto config =
+			_ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", _proxy_click_state ? "config_proxy" : "config"))
 	{
 		if (_proxy_click_state ? _proxy_manual->getState() : _unblock_manual->getState())
 		{
 			_startServiceFromConfig();
 			return;
 		}
+
+		auto fake_bin = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "fake_bin");
+
+		if ((!_proxy_click_state) && fake_bin)
+			_window_config_found->setDescription(
+				utils::format(Localization::Str{ "str_window_config_found_description" }(), config.value().c_str(), fake_bin.value().c_str()).c_str()
+			);
+		else
+			_window_config_found->setDescription(
+				utils::format(Localization::Str{ "str_window_config_found_proxy_description" }(), config.value().c_str()).c_str()
+			);
 
 		_window_config_found->show();
 		return;
@@ -219,12 +231,24 @@ void Ui::_autoStart()
 					_proxy_click_state ? _unblock.getNameStrategies<ProxyStrategiesDPI>() : _unblock.getNameStrategies<StrategiesDPI>();
 
 				Localization::Str desc_base{ "str_window_auto_start_wait_description" };
-				Localization::Str desc_base2{ "str_window_auto_start_wait_name_strategy_description" };
 #if __clang__
 				[[clang::no_destroy]]
 #endif
 				static std::string text_desc_base;
-				text_desc_base = utils::format(desc_base2(), _strategy_name.c_str());
+
+				if (_proxy_click_state)
+					text_desc_base = utils::format(
+						Localization::Str{ "str_window_auto_start_wait_name_strategy_proxy_description" }(),
+						_strategy_name.c_str(),
+						_unblock.getNameFakeBin().c_str()
+					);
+				else
+					text_desc_base = utils::format(
+						Localization::Str{ "str_window_auto_start_wait_name_strategy_description" }(),
+						_strategy_name.c_str(),
+						_unblock.getNameFakeBin().c_str()
+					);
+
 				text_desc_base.insert(0, "\n");
 				text_desc_base.insert(0, desc_base());
 

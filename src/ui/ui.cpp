@@ -26,6 +26,9 @@ void Ui::initialize()
 	auto js_global					 = JSGlobalObject();
 	_updateCountStartStopButtonToCss = js_global["updateCountStartStopButtonToCss"];
 
+	_window_wait_response_from_server->create(Localization::Str{ "str_please_wait" }, "str_window_wait_response_from_server_description");
+	_window_wait_response_from_server->setType(SecondaryWindow::Type::Info);
+
 	_updateApp();
 
 	_checkConflictService();
