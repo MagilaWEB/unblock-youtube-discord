@@ -196,6 +196,32 @@ void Ui::_autoStart()
 
 		if (!state)
 		{
+			if (!_proxy_click_state)
+			{
+				auto strategy_dirs = _unblock.listVersionStrategy();
+
+				auto it = std::find(
+					strategy_dirs.begin(),
+					strategy_dirs.end(),
+					JSToCPP<std::string>(_unblock_select_version_strategy->getSelectedOptionValue())
+				);
+
+				if (it != strategy_dirs.end())
+				{
+					if (++it != strategy_dirs.end())
+					{
+						_unblock_select_version_strategy->setSelectedOptionValue((*it).c_str());
+						_unblock.changeDirVersionStrategy(*it);
+						_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy", (*it).c_str());
+						return true;
+					}
+				}
+
+				_unblock_select_version_strategy->setSelectedOptionValue(strategy_dirs.front().c_str());
+				_unblock.changeDirVersionStrategy(strategy_dirs.front());
+				_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy", strategy_dirs.front().c_str());
+			}
+
 			_window_configuration_selection_error->show();
 			_window_configuration_selection_error->addEventOk(
 				[this](JSArgs)

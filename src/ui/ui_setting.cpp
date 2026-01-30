@@ -397,27 +397,7 @@ void Ui::_settingUnblockSelectStrategyVersionUpdate()
 
 		_unblock_select_version_strategy->show();
 
-		#if __clang__
-		[[clang::no_destroy]]
-#endif
-		static std::vector<std::string> strategy_dirs{};
-
-		auto patch_dir = Core::get().configsPath() / "strategy";
-		for (auto& entry : std::filesystem::directory_iterator(patch_dir))
-			strategy_dirs.push_back(entry.path().filename().string());
-
-		std::sort(
-			strategy_dirs.begin(),
-			strategy_dirs.end(),
-			[](const std::string& left, const std::string& right)
-			{
-#if __clang__
-				[[clang::no_destroy]]
-#endif
-				static std::regex reg{ "\\." };
-				return std::stoul(std::regex_replace(left, reg, "")) > std::stoul(std::regex_replace(right, reg, ""));
-			}
-		);
+		auto strategy_dirs = _unblock.listVersionStrategy();
 
 		for (u32 i = 0; i < strategy_dirs.size(); i++)
 			_unblock_select_version_strategy->createOption(i, strategy_dirs[i].c_str());
@@ -426,8 +406,6 @@ void Ui::_settingUnblockSelectStrategyVersionUpdate()
 			_unblock_select_version_strategy->setSelectedOptionValue(strategy_version.value().c_str());
 
 		_unblock.changeDirVersionStrategy(JSToCPP<std::string>(_unblock_select_version_strategy->getSelectedOptionValue()));
-
-		strategy_dirs.clear();
 	}
 
 	_settingUnblockEnableManualSelectUpdate();

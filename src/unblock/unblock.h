@@ -77,6 +77,8 @@ public:
 	bool activeService(bool proxy = false);
 	void checkStateServices(const std::function<void(pcstr, bool)>& callback);
 
+	std::vector<std::string> listVersionStrategy();
+
 	void						  dnsHosts(bool state);
 	void						  dnsHostsUpdate();
 	void						  dnsHostsCancelUpdate();

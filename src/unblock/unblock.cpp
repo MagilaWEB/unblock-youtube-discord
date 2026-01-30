@@ -380,6 +380,30 @@ void Unblock::checkStateServices(const std::function<void(pcstr, bool)>& callbac
 	callback(_win_divert.getName().c_str(), _win_divert.isRun());
 }
 
+std::vector<std::string> Unblock::listVersionStrategy()
+{
+	std::vector<std::string> strategy_dirs{};
+
+	auto patch_dir = Core::get().configsPath() / "strategy";
+	for (auto& entry : std::filesystem::directory_iterator(patch_dir))
+		strategy_dirs.push_back(entry.path().filename().string());
+
+	std::sort(
+		strategy_dirs.begin(),
+		strategy_dirs.end(),
+		[](const std::string& left, const std::string& right)
+		{
+#if __clang__
+			[[clang::no_destroy]]
+#endif
+			static std::regex reg{ "\\." };
+			return std::stoul(std::regex_replace(left, reg, "")) > std::stoul(std::regex_replace(right, reg, ""));
+		}
+	);
+
+	return strategy_dirs;
+}
+
 void Unblock::dnsHosts(bool state)
 {
 	state ? _dns_hosts.enable() : _dns_hosts.disable();
