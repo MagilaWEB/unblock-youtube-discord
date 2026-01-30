@@ -90,11 +90,11 @@ str_window_auto_start_wait_description=🔍 Подбор конфигураци�
 • Доступность ресурсов
 • Уровень блокировок
 
-str_window_auto_start_wait_name_strategy_description=🧪 Тест конфигурации: %s
-
-str_window_auto_start_wait_name_strategy_proxy_description=🧪 Тест конфигурации:
+str_window_auto_start_wait_name_strategy_description=🧪 Тест конфигурации:
 ├ Файл: [%s]
 └ Маскировка: [%s]
+
+str_window_auto_start_wait_name_strategy_proxy_description=🧪 Тест конфигурации: %s
 
 str_window_configuration_selection_error=❌ Автоподбор не удался
 Причины:
