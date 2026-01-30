@@ -164,12 +164,11 @@ footer .button.show {
 }
 
 .common .button {
-	height: 2em;
+	height: 1.8em;
 }
 
 .common .button button {
 	width           : 90%;
-	font-size       : 1em;
 	color           : #aeaeae;
 	padding         : 0;
 	background-color: rgba(82, 82, 82, .5);
