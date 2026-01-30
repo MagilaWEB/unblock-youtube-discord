@@ -16,6 +16,7 @@ void Ui::_initShowInfoSetting()
 				Localization::Str{ "str_window_info_selected_service_setting" }(),
 				config ? config.value().c_str() : not_selected(),
 				fake_bin ? fake_bin.value().c_str() : not_selected(),
+				JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue()),
 				config_proxy ? config_proxy.value().c_str() : not_selected()
 			);
 

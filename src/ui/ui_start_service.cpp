@@ -170,9 +170,13 @@ void Ui::_clickStartService()
 		auto fake_bin = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "fake_bin");
 
 		if ((!_proxy_click_state) && fake_bin)
-			_window_config_found->setDescription(
-				utils::format(Localization::Str{ "str_window_config_found_description" }(), config.value().c_str(), fake_bin.value().c_str()).c_str()
-			);
+			_window_config_found->setDescription(utils::format(
+													 Localization::Str{ "str_window_config_found_description" }(),
+													 config.value().c_str(),
+													 JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue()),
+													 fake_bin.value().c_str()
+			)
+													 .c_str());
 		else
 			_window_config_found->setDescription(
 				utils::format(Localization::Str{ "str_window_config_found_proxy_description" }(), config.value().c_str()).c_str()
@@ -206,20 +210,23 @@ void Ui::_autoStart()
 					JSToCPP<std::string>(_unblock_select_version_strategy->getSelectedOptionValue())
 				);
 
+				auto save_version = [this](std::string version)
+				{
+					_unblock_select_version_strategy->setSelectedOptionValue(version.c_str());
+					_unblock.changeDirVersionStrategy(version);
+					_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy", version.c_str());
+				};
+
 				if (it != strategy_dirs.end())
 				{
 					if (++it != strategy_dirs.end())
 					{
-						_unblock_select_version_strategy->setSelectedOptionValue((*it).c_str());
-						_unblock.changeDirVersionStrategy(*it);
-						_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy", (*it).c_str());
+						save_version(*it);
 						return true;
 					}
 				}
 
-				_unblock_select_version_strategy->setSelectedOptionValue(strategy_dirs.front().c_str());
-				_unblock.changeDirVersionStrategy(strategy_dirs.front());
-				_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy", strategy_dirs.front().c_str());
+				save_version(strategy_dirs.front());
 			}
 
 			_window_configuration_selection_error->show();
@@ -272,6 +279,7 @@ void Ui::_autoStart()
 					text_desc_base = utils::format(
 						Localization::Str{ "str_window_auto_start_wait_name_strategy_description" }(),
 						_strategy_name.c_str(),
+						JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue()),
 						_unblock.getNameFakeBin().c_str()
 					);
 
@@ -284,16 +292,13 @@ void Ui::_autoStart()
 
 				if (!_automatically_strategy_cancel && _unblock.validDomain(_proxy_click_state))
 				{
-#if __clang__
-					[[clang::no_destroy]]
-#endif
-					static std::string text_desc;
+					std::string text_desc;
 
 					if (_proxy_click_state)
 					{
 						_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "config_proxy", _strategy_name.c_str());
-						Localization::Str desc{ "str_window_continue_select_strategy_proxy_description" };
-						text_desc = utils::format(desc(), _strategy_name.c_str());
+						text_desc =
+							utils::format(Localization::Str{ "str_window_continue_select_strategy_proxy_description" }(), _strategy_name.c_str());
 					}
 					else
 					{
@@ -301,8 +306,12 @@ void Ui::_autoStart()
 						_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", _strategy_name.c_str());
 						_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "fake_bin", _fake_bin.c_str());
 
-						Localization::Str desc{ "str_window_continue_select_strategy_description" };
-						text_desc = utils::format(desc(), _strategy_name.c_str(), _fake_bin.c_str());
+						text_desc = utils::format(
+							Localization::Str{ "str_window_continue_select_strategy_description" }(),
+							_strategy_name.c_str(),
+							JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue()),
+							_fake_bin.c_str()
+						);
 					}
 
 					_window_continue_select_strategy->setDescription(text_desc.c_str());
