@@ -165,6 +165,9 @@ float DNSHost::percentageCompletion() const
 
 void DNSHost::_loadInfo()
 {
+#if __clang__
+	[[clang::no_destroy]]
+#endif
 	static bool load{ false };
 	if (!load)
 	{
@@ -173,11 +176,31 @@ void DNSHost::_loadInfo()
 		for (auto& entry : std::filesystem::directory_iterator(_dir_dns_hosts))
 			_list_dns_hosts_file_name.push_back(entry.path().stem().string());
 
-		static const std::string start_line{ "# AMD" };
-		static const std::string end_line{ "# Xerox" };
-		bool					 run_service{ false };
+		File local_hosts{ false };
+		local_hosts.open(Core::get().configsPath() / "hosts", "");
 
-		auto lines = HttpsLoad{ "https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/hosts" }.run();
+		HttpsLoad hosts{ "https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/hosts" };
+		auto	  lines = hosts.run();
+		if (hosts.codeResult() != 200 || lines.empty())
+		{
+			local_hosts.forLine(
+				[&lines](std::string line)
+				{
+					lines.push_back(line);
+					return false;
+				}
+			);
+		}
+		else
+		{
+			local_hosts.clear();
+			for (auto& line : lines)
+				local_hosts.writeText(line);
+		}
+
+		const std::string start_line{ "# AMD" };
+		const std::string end_line{ "# Xerox" };
+		bool			  run_service{ false };
 		for (auto& line : lines)
 		{
 			if ((!run_service) && line == start_line)

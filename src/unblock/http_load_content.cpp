@@ -30,7 +30,7 @@ std::vector<std::string> HttpsLoad::run()
 
 	curl_easy_setopt(_curl, CURLOPT_HTTPGET, 1L);
 	curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYPEER, 0L);
-	curl_easy_setopt(_curl, CURLOPT_TIMEOUT, 40L);
+	curl_easy_setopt(_curl, CURLOPT_TIMEOUT, 10L);
 	curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, WriteCallback);
 	curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &_stringBuffer);
 
