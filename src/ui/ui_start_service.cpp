@@ -263,11 +263,7 @@ void Ui::_autoStart()
 				std::string _strategy_name =
 					_proxy_click_state ? _unblock.getNameStrategies<ProxyStrategiesDPI>() : _unblock.getNameStrategies<StrategiesDPI>();
 
-				Localization::Str desc_base{ "str_window_auto_start_wait_description" };
-#if __clang__
-				[[clang::no_destroy]]
-#endif
-				static std::string text_desc_base;
+				std::string text_desc_base;
 
 				if (_proxy_click_state)
 					text_desc_base = utils::format(
@@ -284,7 +280,7 @@ void Ui::_autoStart()
 					);
 
 				text_desc_base.insert(0, "\n");
-				text_desc_base.insert(0, desc_base());
+				text_desc_base.insert(0, Localization::Str{ "str_window_auto_start_wait_description" }());
 
 				_window_auto_start_wait->setDescription(text_desc_base.c_str());
 
