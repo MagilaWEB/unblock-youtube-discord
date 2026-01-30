@@ -29,6 +29,8 @@ void Ui::initialize()
 	_window_wait_response_from_server->create(Localization::Str{ "str_please_wait" }, "str_window_wait_response_from_server_description");
 	_window_wait_response_from_server->setType(SecondaryWindow::Type::Info);
 
+	_initShowInfoSetting();
+
 	_updateApp();
 
 	_checkConflictService();

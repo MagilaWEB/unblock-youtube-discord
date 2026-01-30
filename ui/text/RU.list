@@ -13,7 +13,7 @@ str_b_stop_unblock=⏹ Остановить Zapret
 str_b_start_proxy_dpi=▶ Запустить ProxyDPI
 str_b_restart_proxy_dpi=🔄 Перезапустить ProxyDPI
 str_b_stop_proxy_dpi=⏹ Остановить ProxyDPI
-str_b_stop_service_all=⏹ Остановить все
+str_b_stop_service_all=⏹ Остановить службы
 
 str_b_start_testing=🧪 Тестировать
 str_b_start_find_config=🔍 Подобрать конфиг
@@ -23,8 +23,17 @@ str_b_start_find_config_proxy=🔍 Подобрать конфиг ProxyDPI
 str_please_wait=⏳ Подождите...
 str_warning=⚠ Внимание
 str_error=❌ Ошибка
+str_info=ℹ Информация
+str_not_selected=◌ Не выбрано
+
 str_window_wait_response_from_server_description=⏳ Ожидание ответа от сервера...
 Загрузка данных. Это может занять несколько секунд.
+
+str_show_info_selected_service_setting=📋 Показать настройки
+str_window_info_selected_service_setting=📋 Текущие настройки:
+├ Zapret конфигурация: [%s]
+├ Zapret маскировка: [%s]
+└ BayDPI Proxy конфигурация: [%s]
 
 str_warning_copy_application_running=Unblock уже запущен. Повторный запуск невозможен.
 

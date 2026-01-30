@@ -63,6 +63,7 @@ class Ui final : public utils::DefaultInit
 	BUTTON(_stop_proxy_dpi);
 	BUTTON(_stop_service_all);
 	BUTTON(_start_testing);
+	BUTTON(_show_info_selected_service_setting);
 
 	UL_LIST(_active_service);
 
@@ -78,6 +79,7 @@ class Ui final : public utils::DefaultInit
 
 	SECONDARY_WINDOW(_window_warning_conflict_service);
 
+	SECONDARY_WINDOW(_window_info_selected_service_setting);
 	SECONDARY_WINDOW(_window_wait_response_from_server);
 	SECONDARY_WINDOW(_window_wait_start_service);
 	SECONDARY_WINDOW(_window_wait_stop_service);
@@ -115,6 +117,8 @@ private:
 
 	void _removeApp();
 	void _removeAppRun();
+
+	void _initShowInfoSetting();
 
 	// update
 	void _updateApp();
