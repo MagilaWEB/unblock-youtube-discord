@@ -3,7 +3,7 @@
 	position: relative;
 	left    : 0;
 	top     : 0;
-	height  : 3em;
+	height  : 2em;
 }
 
 .button.show {
@@ -18,8 +18,7 @@
 	text-align      : center;
 	border-radius   : 5px;
 	color           : white;
-	font-size       : 1.1em;
-	padding         : .5em;
+	padding         : .2em;
 	transition      : .3s;
 	background-color: rgba(82, 82, 82, .5);
 	border          : solid 2px rgb(91, 91, 91);
