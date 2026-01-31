@@ -5,7 +5,7 @@
 	left    : 0;
 	top     : 0;
 	width   : 90%;
-	margin  : 1em auto;
+	margin  : .9em auto;
 	height  : 2em;
 }
 
@@ -22,7 +22,7 @@
 	height          : 100%;
 	border-radius   : 5px;
 	color           : white;
-	font-size       : 1em;
+	font-size       : .9em;
 	transition      : .3s;
 	background-color: rgba(82, 82, 82, .5);
 	border          : solid 2px rgb(91, 91, 91);
