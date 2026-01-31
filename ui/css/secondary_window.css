@@ -35,13 +35,14 @@
 }
 
 .secondary_window .content .description {
-	margin     : .5em 0;
+	margin     : .4em 0;
+	padding    : 0 .3em;
 	border     : solid 3px rgb(100, 100, 100);
-	text-align : center;
-	font-size  : 1.5em;
+	text-align : left;
+	font-size  : 1.3em;
 	white-space: pre-line;
 	overflow   : auto;
-	max-height : 12em;
+	max-height : 13em;
 }
 
 .secondary_window .content .elements {
@@ -60,7 +61,7 @@
 
 .secondary_window .content .elements .button {
 	font-size: 1.2em;
-	width: 10em;
+	width    : 10em;
 }
 
 .secondary_window .content .elements .button button {
