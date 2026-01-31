@@ -34,7 +34,6 @@ public:
 	void test(bool test_video, bool base_test, std::function<void(pcstr url, bool state)>&& callback);
 
 	void changeProxy(std::string ip, u32 port);
-	void changeAccurateTest(bool state);
 	void changeMaxWaitTesting(u32 second);
 
 	void changeOptionalServices(std::list<std::string> list_services);
