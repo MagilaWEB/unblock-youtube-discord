@@ -312,7 +312,7 @@ ROBOCOPY %CURRENT_DIR%update\unblock %CURRENT_DIR% /E /IS /IT /COPYALL /R:0 /W:0
 RD %CURRENT_DIR%\update /S /Q
 
 start %CURRENT_DIR%bin\engine.exe
-start cmd /c del "%CURRENT_DIR%setup_update.bat"&exit
+start cmd /c del "%CURRENT_DIR%setup_update.bat"
 exit
 )" };
 

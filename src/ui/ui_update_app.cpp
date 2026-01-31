@@ -82,6 +82,8 @@ void Ui::_updateAppWindow()
 		{
 			if (JSToCPP<bool>(args[0]))
 			{
+				_ui_base->console(false);
+
 				Core::get().addTask(
 					[this]
 					{
