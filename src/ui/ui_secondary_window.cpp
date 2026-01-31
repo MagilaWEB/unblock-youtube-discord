@@ -8,7 +8,7 @@ SecondaryWindow::SecondaryWindow(pcstr name) : BaseElement(name)
 
 SecondaryWindow::~SecondaryWindow()
 {
-	auto it = std::find(_all_window.begin(), _all_window.end(), this);
+	auto it = std::ranges::find(_all_window, this);
 	if (it != _all_window.end())
 		_all_window.erase(it);
 

@@ -156,7 +156,7 @@ bool StrategyGenerator::_useIn(std::string str, std::string section)
 
 		if (_map_filters[result].empty())
 		{
-			if (std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), result) == _section_opt_service_names.end())
+			if (std::ranges::find(_section_opt_service_names, result) == _section_opt_service_names.end())
 			{
 				File blacklist{ false };
 				blacklist.open(_user_blacklist / result, ".list", true);

@@ -142,11 +142,7 @@ void StrategiesDPI::_uploadStrategies()
 		}
 	}
 
-	std::sort(
-		sort_service_filters.begin(),
-		sort_service_filters.end(),
-		[this](const auto& left, const auto& right) { return left.first < right.first; }
-	);
+	std::ranges::sort(sort_service_filters, [this](const auto& left, const auto& right) { return left.first < right.first; });
 
 	for (auto& pair : sort_service_filters)
 		for (auto& line : pair.second)
@@ -216,7 +212,7 @@ void StrategiesDPI::_getAllPorts(std::string& str) const
 			};
 
 			std::string setting_service_string{ result.value() };
-			size_t position = 0;
+			size_t		position = 0;
 			while (position < setting_service_string.length())
 			{
 				size_t found = setting_service_string.find(">>", position);

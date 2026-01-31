@@ -100,7 +100,7 @@ void DNSHost::update()
 			[this](std::string domain)
 			{
 				if (!domain.empty())
-					if (std::find(_list_domains.begin(), _list_domains.end(), domain) == _list_domains.end())
+					if (std::ranges::find(_list_domains, domain) == _list_domains.end())
 						_list_domains.push_back(domain);
 
 				return false;
@@ -246,7 +246,7 @@ void DNSHost::_writeDomain(std::string domain)
 			if (std::regex_match(ip, reg_ipv4_pattern))
 			{
 				auto& list = _map_list[key];
-				if (std::find(list.begin(), list.end(), ip) == list.end())
+				if (std::ranges::find(list, ip) == list.end())
 				{
 					CRITICAL_SECTION_RAII(_lock);
 					_map_list[key].emplace_back(ip);

@@ -19,7 +19,7 @@ void StrategiesDPIBase::changeStrategy(u32 index)
 
 void StrategiesDPIBase::changeStrategy(pcstr file)
 {
-	auto it_file = std::find(_strategy_files_list.begin(), _strategy_files_list.end(), file);
+	auto it_file = std::ranges::find(_strategy_files_list, file);
 	ASSERT_ARGS(it_file != _strategy_files_list.end(), "the file was not found");
 
 	std::string strategy_file{ *it_file };
@@ -116,9 +116,8 @@ std::optional<std::string> StrategiesDPIBase::_getPath(std::string str, std::str
 
 void StrategiesDPIBase::_sortFiles()
 {
-	std::sort(
-		_strategy_files_list.begin(),
-		_strategy_files_list.end(),
+	std::ranges::sort(
+		_strategy_files_list,
 		[](const std::string& left, const std::string& right)
 		{
 			std::smatch		  left_res;

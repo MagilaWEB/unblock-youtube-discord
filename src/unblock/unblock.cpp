@@ -89,7 +89,7 @@ void Unblock::changeFilteringTopLevelDomains(bool state)
 
 void Unblock::addOptionalStrategies(std::string name)
 {
-	auto it = std::find(_section_opt_service_names.begin(), _section_opt_service_names.end(), name);
+	auto it = std::ranges::find(_section_opt_service_names, name);
 	if (it != _section_opt_service_names.end())
 		return;
 
@@ -388,9 +388,8 @@ std::vector<std::string> Unblock::listVersionStrategy()
 	for (auto& entry : std::filesystem::directory_iterator(patch_dir))
 		strategy_dirs.push_back(entry.path().filename().string());
 
-	std::sort(
-		strategy_dirs.begin(),
-		strategy_dirs.end(),
+	std::ranges::sort(
+		strategy_dirs,
 		[](const std::string& left, const std::string& right)
 		{
 #if __clang__
@@ -442,7 +441,7 @@ void Unblock::removeService(bool proxy)
 		return;
 	}
 
-#if 0	// #ifdef DEBUG
+#if 0	 // #ifdef DEBUG
 	if (_zapret_dbg_run.load())
 	{
 		_zapret_dbg_run_end.store(true);
@@ -464,7 +463,7 @@ void Unblock::stopService(bool proxy)
 		return;
 	}
 
-#if 0	// #ifdef DEBUG
+#if 0	 // #ifdef DEBUG
 	if (_zapret_dbg_run.load())
 	{
 		_zapret_dbg_run_end.store(true);
@@ -503,7 +502,7 @@ void Unblock::startService(bool proxy)
 		_zapret.setArgs(list);
 		_zapret.create();
 
-#if 0	// #ifdef DEBUG
+#if 0	 // #ifdef DEBUG
 		auto&		service_config = _zapret.getConfig();
 		auto&		path		   = service_config.binary_path;
 		std::string command		   = path;

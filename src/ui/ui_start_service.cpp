@@ -204,11 +204,7 @@ void Ui::_autoStart()
 			{
 				auto strategy_dirs = _unblock.listVersionStrategy();
 
-				auto it = std::find(
-					strategy_dirs.begin(),
-					strategy_dirs.end(),
-					JSToCPP<std::string>(_unblock_select_version_strategy->getSelectedOptionValue())
-				);
+				auto it = std::ranges::find(strategy_dirs, JSToCPP<std::string>(_unblock_select_version_strategy->getSelectedOptionValue()));
 
 				auto save_version = [this](std::string version)
 				{
