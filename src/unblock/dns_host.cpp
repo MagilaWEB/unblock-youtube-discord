@@ -39,8 +39,6 @@ void DNSHost::enable()
 	if (_enable || !isHostsUser())
 		return;
 
-	_loadInfo();
-
 	_enable = true;
 
 	_file_hosts.clear();
