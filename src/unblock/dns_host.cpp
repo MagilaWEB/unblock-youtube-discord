@@ -134,9 +134,17 @@ void DNSHost::update()
 		if (isHostsUser())
 			_file_hosts_user.clear();
 
-		auto lines = HttpsLoad{ "https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/hosts" }.run();
-		for (auto& line : lines)
-			_file_hosts_user.writeText(line);
+		_loadInfo();
+
+		File local_hosts{ false };
+		local_hosts.open(Core::get().configsPath() / "hosts", "");
+		local_hosts.forLine(
+			[this](std::string line)
+			{
+				_file_hosts_user.writeText(line);
+				return false;
+			}
+		);
 
 		for (auto& [domain, ip_list] : _map_list)
 			for (auto& ip : ip_list)
