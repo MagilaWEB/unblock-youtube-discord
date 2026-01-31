@@ -52,6 +52,7 @@ void Ui::initialize()
 void Ui::jsUpdate()
 {
 	_settingDnsHostsUpdateInfoWindow();
+	_updateAppProgressWindowInfo();
 }
 
 void Ui::_footerElements()

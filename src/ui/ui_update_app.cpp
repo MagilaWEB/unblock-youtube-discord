@@ -116,3 +116,14 @@ void Ui::_updateAppWindow()
 		}
 	);
 }
+
+void Ui::_updateAppProgressWindowInfo()
+{
+	LIMIT_UPDATE(Description, .5f, {
+		if (_window_wait_update_unblock->isShow())
+		{
+			static pcstr disc_text{ Localization::Str{ "str_window_wait_update_unblock" }() };
+			_window_wait_update_unblock->setDescription(utils::format(disc_text, _unblock.appUpdateProgress()).c_str());
+		}
+	});
+}

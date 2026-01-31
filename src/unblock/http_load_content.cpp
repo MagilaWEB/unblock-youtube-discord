@@ -17,6 +17,14 @@ HttpsLoad::~HttpsLoad()
 		curl_easy_cleanup(_curl);
 }
 
+static int ProgressCallback(float* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t /*ultotal*/, curl_off_t /*ulnow*/)
+{
+	if (dltotal > 0)
+		*clientp = static_cast<float>(dlnow) / dltotal * 100.f;
+
+	return CURLE_OK;
+}
+
 static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp)
 {
 	userp->append(static_cast<char*>(contents), size * nmemb);
@@ -33,6 +41,9 @@ std::vector<std::string> HttpsLoad::run()
 	curl_easy_setopt(_curl, CURLOPT_TIMEOUT, 10L);
 	curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, WriteCallback);
 	curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &_stringBuffer);
+	curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 0L);
+	curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, ProgressCallback);
+	curl_easy_setopt(_curl, CURLOPT_XFERINFODATA, &_progress);
 
 	if (curl_easy_perform(_curl) != CURLcode::CURLE_OK)
 	{
@@ -75,6 +86,9 @@ void HttpsLoad::run_to_file(std::filesystem::path path)
 
 	curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, write_file);
 	curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &file);
+	curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 0L);
+	curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, ProgressCallback);
+	curl_easy_setopt(_curl, CURLOPT_XFERINFODATA, &_progress);
 
 	if (curl_easy_perform(_curl) != CURLcode::CURLE_OK)
 	{
@@ -90,4 +104,9 @@ void HttpsLoad::run_to_file(std::filesystem::path path)
 u32 HttpsLoad::codeResult() const
 {
 	return _code_result;
+}
+
+float HttpsLoad::progress() const
+{
+	return _progress;
 }

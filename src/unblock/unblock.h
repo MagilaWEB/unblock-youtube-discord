@@ -95,6 +95,7 @@ public:
 
 	std::optional<std::string> checkUpdate();
 	bool					   appUpdate();
+	float					   appUpdateProgress() const;
 
 	bool validDomain(bool proxy = false);
 

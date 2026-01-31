@@ -124,6 +124,7 @@ private:
 	void _updateApp();
 	void _checkAppUpdate(bool window_show = false);
 	void _updateAppWindow();
+	void _updateAppProgressWindowInfo();
 
 	// setting
 	void _settingInit();

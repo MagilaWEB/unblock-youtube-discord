@@ -316,10 +316,14 @@ start cmd /c del "%CURRENT_DIR%setup_update.bat"
 exit
 )" };
 
+#if __clang__
+[[clang::no_destroy]]
+#endif
+static HttpsLoad load_7z{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" };
+
 bool Unblock::appUpdate()
 {
-	auto	  path = Core::get().currentPath() / "update" / "new_unblock.7z";
-	HttpsLoad load_7z{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" };
+	auto path = Core::get().currentPath() / "update" / "new_unblock.7z";
 
 	load_7z.run_to_file(path);
 
@@ -329,7 +333,13 @@ bool Unblock::appUpdate()
 
 	try
 	{
-		static bit7z::Bit7zLibrary	   lib{ "7za.dll" };
+#if __clang__
+		[[clang::no_destroy]]
+#endif
+		static bit7z::Bit7zLibrary lib{ "7za.dll" };
+#if __clang__
+		[[clang::no_destroy]]
+#endif
 		static bit7z::BitFileExtractor extractor{ lib, bit7z::BitFormat::SevenZip };
 
 		extractor.extract(path.string(), path.parent_path().string());
@@ -355,6 +365,11 @@ bool Unblock::appUpdate()
 
 	system(run_bat.c_str());
 	return true;
+}
+
+float Unblock::appUpdateProgress() const
+{
+	return load_7z.progress();
 }
 
 bool Unblock::validDomain(bool proxy)
