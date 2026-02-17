@@ -287,6 +287,14 @@ std::optional<std::string> StrategiesDPI::_getFake(std::string str)
 			return "--dpi-desync-fake-quic \"" + fake.file_initial + "\"";
 		}
 
+		if (str.contains("%FAKE_HTTP%"))
+		{
+			if (fake.file_initial.empty())
+				return "";
+
+			return "--dpi-desync-fake-http \"" + fake.file_clienthello + "\"";
+		}
+
 		if (str.contains("%FAKE_DISCORD%"))
 		{
 			if (fake.file_initial.empty())
