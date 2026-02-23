@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <regex>
+#include <ranges>
 #include <vector>
 #include <deque>
 #include <map>

@@ -3,10 +3,12 @@
 
 inline static const std::regex reg_ipv4_pattern{ R"(^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$)" };
 inline static const std::regex reg_domain_regex{ R"(^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$)" };
+inline static const std::vector<unsigned char> data{ 0x0d, 0x33, 0x34, 0x3e, 0x35, 0x2d, 0x29, 0x75, 0x09, 0x23, 0x29, 0x2e, 0x3f, 0x37,
+													 0x69, 0x68, 0x75, 0x3e, 0x28, 0x33, 0x2c, 0x3f, 0x28, 0x29, 0x75, 0x3f, 0x2e, 0x39 };
 
 class DNSHost final : public utils::DefaultInit
 {
-	std::filesystem::path _etc{ std::filesystem::temp_directory_path().root_path() / "Windows" / "System32" / "drivers" / "etc" };
+	std::filesystem::path _etc{};
 	std::filesystem::path _host{};
 	std::filesystem::path _host_backup{};
 	std::filesystem::path _host_user{};
@@ -63,6 +65,7 @@ public:
 	float percentageCompletion() const;
 
 private:
+	std::string									_pathHostDir();
 	void										_loadInfo();
 	std::optional<DNSHost::Google::MapDomainIP> _getIPGoogle(std::string domain);
 	void										_writeDomain(std::string domain);

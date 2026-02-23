@@ -4,6 +4,15 @@
 
 DNSHost::DNSHost()
 {
+	_etc = std::filesystem::temp_directory_path().root_path();
+
+	std::string		  component;
+	std::stringstream ss{ _pathHostDir() };
+
+	while (std::getline(ss, component, '/'))
+		if (!component.empty())
+			_etc = _etc / component;
+
 	_host		 = _etc / "hosts";
 	_host_backup = _etc / "hosts_backup";
 	_host_user	 = _etc / "hosts_user";
@@ -167,6 +176,17 @@ void DNSHost::cancel()
 float DNSHost::percentageCompletion() const
 {
 	return (static_cast<float>(_size_iter.load()) / static_cast<float>(_list_domains.size())) * 100.f;
+}
+
+std::string DNSHost::_pathHostDir()
+{
+	static constexpr char XOR_KEY{ 0x5A };
+
+	std::string result;
+
+	std::transform(data.begin(), data.end(), std::back_inserter(result), [](unsigned char code) { return static_cast<char>(code ^ XOR_KEY); });
+
+	return result;
 }
 
 void DNSHost::_loadInfo()
