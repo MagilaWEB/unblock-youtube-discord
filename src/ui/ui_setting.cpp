@@ -12,7 +12,6 @@ void Ui::_settingInit()
 
 	_settingUnblockEnable();
 	_settingUnblockListEnableServices();
-	_settingUnblockFilteringTopLevelDomains();
 
 	_settingUnblockEnableManual();
 	_settingUnblockEnableManualSelect();
@@ -265,7 +264,6 @@ void Ui::_settingUnblockEnable()
 		{
 			_ui_base->userSetting()->writeSectionParameter("UNBLOCK", "enable", JSToCPP(args[0]));
 			_settingUnblockListEnableServicesUpdate();
-			_settingUnblockFilteringTopLevelDomainsUpdate();
 			_settingUnblockEnableManualUpdate();
 			_buttonUpdate();
 			_testingUpdate();
@@ -334,40 +332,6 @@ void Ui::_settingUnblockListEnableServicesUpdate()
 		else
 			_unblock.removeOptionalStrategies(name);
 	}
-}
-
-void Ui::_settingUnblockFilteringTopLevelDomains()
-{
-	_unblock_filtering_top_level_domains->create(
-		"#setting section .unblock",
-		"str_unblock_filtering_top_level_domains_title",
-		Localization::Str{ "str_unblock_filtering_top_level_domains_description" }
-	);
-
-	_unblock_filtering_top_level_domains->addEventClick(
-		[this](JSArgs args)
-		{
-			_ui_base->userSetting()->writeSectionParameter("UNBLOCK", "filtering_top_level_domains", JSToCPP(args[0]));
-			_unblock.changeFilteringTopLevelDomains(args[0].ToBoolean());
-			return false;
-		}
-	);
-
-	_settingUnblockFilteringTopLevelDomainsUpdate();
-}
-
-void Ui::_settingUnblockFilteringTopLevelDomainsUpdate()
-{
-	if (_unblock_enable->getState())
-	{
-		_unblock_filtering_top_level_domains->show();
-		auto result = _ui_base->userSetting()->parameterSection<bool>("UNBLOCK", "filtering_top_level_domains");
-		_unblock_filtering_top_level_domains->setState(result ? result.value() : false);
-		_unblock.changeFilteringTopLevelDomains(_unblock_filtering_top_level_domains->getState());
-		return;
-	}
-
-	_unblock_filtering_top_level_domains->hide();
 }
 
 void Ui::_settingUnblockSelectStrategyVersion()

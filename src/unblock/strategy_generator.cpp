@@ -36,11 +36,6 @@ void StrategyGenerator::changeServiceList(std::list<std::string> list)
 	_section_opt_service_names = list;
 }
 
-void StrategyGenerator::filteringTopDomain(bool state)
-{
-	_filtering_top_level_domains = state;
-}
-
 const StrategyGenerator::map_filters& StrategyGenerator::mapFilters()
 {
 	return _map_filters;
@@ -192,20 +187,6 @@ std::optional<std::string> StrategyGenerator::_getDataFile(std::string str, std:
 {
 	if (str.contains("%BLOCKLIST%"))
 	{
-		if (_filtering_top_level_domains && all)
-		{
-#if __clang__
-			[[clang::no_destroy]]
-#endif
-			static const auto path_file_top_level_domains = Core::get().configsPath() / "top_level_domains.list";
-			ASSERT_ARGS(
-				std::filesystem::exists(path_file_top_level_domains),
-				"The [%s] file does not exist!",
-				path_file_top_level_domains.string().c_str()
-			);
-			return "--hostlist \"" + (path_file_top_level_domains.string()) + "\"";
-		}
-
 		std::filesystem::path path = _user_blacklist / (all ? "all" : section) += ".list";
 		if (!std::filesystem::exists(path))
 			return "";

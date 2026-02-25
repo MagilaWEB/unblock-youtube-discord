@@ -82,11 +82,6 @@ void Unblock::changeDirVersionStrategy(std::string dir_version)
 	_strategies_dpi.changeDirVersion(dir_version);
 }
 
-void Unblock::changeFilteringTopLevelDomains(bool state)
-{
-	_strategies_dpi.changeFilteringTopLevelDomains(state);
-}
-
 void Unblock::addOptionalStrategies(std::string name)
 {
 	auto it = std::ranges::find(_section_opt_service_names, name);

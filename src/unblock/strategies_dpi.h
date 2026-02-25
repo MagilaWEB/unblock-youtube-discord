@@ -30,7 +30,6 @@ public:
 
 	void changeFakeKey(u32 index = 1);
 	void changeFakeKey(std::string key = "");
-	void changeFilteringTopLevelDomains(bool state);
 	void changeDirVersion(std::string dir_version) override;
 	void changeOptionalServices(std::list<std::string> list_service);
 

@@ -3,7 +3,6 @@ class StrategyGenerator final
 {
 	std::shared_ptr<File>  _file_strategy{};
 	std::list<std::string> _section_opt_service_names{};
-	bool				   _filtering_top_level_domains{ false };
 
 	inline static const std::filesystem::path _base_blacklist{ Core::get().configsPath() / "blacklist" };
 	inline static const std::filesystem::path _base_ip_set{ Core::get().configsPath() / "ip-set" };
@@ -22,7 +21,6 @@ public:
 
 	void inFile(std::shared_ptr<File>& strategy);
 	void changeServiceList(std::list<std::string>);
-	void filteringTopDomain(bool state);
 
 	const map_filters& mapFilters();
 

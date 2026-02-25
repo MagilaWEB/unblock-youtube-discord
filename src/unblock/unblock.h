@@ -48,7 +48,6 @@ public:
 
 	void changeStrategy(pcstr name_config, pcstr name_fake_bin);
 	void changeProxyStrategy(pcstr name_config);
-	void changeFilteringTopLevelDomains(bool state = false);
 
 	void changeProxyIP(std::string ip);
 	void changeProxyPort(u32 port);

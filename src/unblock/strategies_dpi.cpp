@@ -92,11 +92,6 @@ void StrategiesDPI::changeFakeKey(std::string key)
 	_fake_bind_key = key;
 }
 
-void StrategiesDPI::changeFilteringTopLevelDomains(bool state)
-{
-	_generator.filteringTopDomain(state);
-}
-
 void StrategiesDPI::changeDirVersion(std::string dir_version)
 {
 	StrategiesDPIBase::changeDirVersion(dir_version);
