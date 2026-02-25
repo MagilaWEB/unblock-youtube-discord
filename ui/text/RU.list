@@ -210,6 +210,9 @@ str_unblock_enable_cloudflare_description=Обход блокировок Cloudf
 str_unblock_enable_instagram_title=📸 Instagram
 str_unblock_enable_instagram_description=Обход блокировки Instagram.
 
+str_unblock_enable_facebook_title=📘 Facebook
+str_unblock_enable_facebook_description=Обход блокировки Facebook и связанных сервисов (Instagram, Messenger).
+
 str_unblock_enable_rutor_title=📥 Rutor.info
 str_unblock_enable_rutor_description=Обход блокировки торрент-трекера.
 
