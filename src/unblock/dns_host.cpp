@@ -167,7 +167,7 @@ void DNSHost::update()
 				if (std::regex_search(line, para, ip_domain_regex))
 				{
 					const std::string domain = para[2].str();
-					if (!domain.empty() && !_map_list[domain].empty())
+					if ((!domain.empty()) || (!_map_list[domain].empty()))
 						return false;
 
 					_file_hosts_user.writeText(line);
