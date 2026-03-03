@@ -127,6 +127,20 @@ void DNSHost::update()
 			if (_cancel_update.load())
 				return;
 
+			static const std::regex reg_equally{ R"(->)" };
+			std::smatch para;
+			if (std::regex_search(domain, para, reg_equally))
+			{
+				const std::string value = para.suffix().str();
+				if (!value.empty())
+				{
+					const std::string key = para.prefix().str();
+					_map_list[key].emplace_back(value);
+				}
+
+				return;
+			}
+
 			if (!_map_list[domain].empty())
 				return;
 
@@ -148,7 +162,17 @@ void DNSHost::update()
 		local_hosts.forLine(
 			[this](std::string line)
 			{
-				_file_hosts_user.writeText(line);
+				static const std::regex ip_domain_regex(R"(^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+([^\s]+))");
+				std::smatch				para;
+				if (std::regex_search(line, para, ip_domain_regex))
+				{
+					const std::string domain = para[2].str();
+					if (!domain.empty() && !_map_list[domain].empty())
+						return false;
+
+					_file_hosts_user.writeText(line);
+				}
+
 				return false;
 			}
 		);
@@ -261,6 +285,9 @@ std::optional<DNSHost::Google::MapDomainIP> DNSHost::_getIPGoogle(std::string do
 
 void DNSHost::_writeDomain(std::string domain)
 {
+	if (!_map_list[domain].empty())
+		return;
+
 	auto map_result = _getIPGoogle(domain);
 	if (!map_result)
 		return;
