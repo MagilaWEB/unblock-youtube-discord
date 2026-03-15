@@ -46,7 +46,7 @@ BaseElement::BaseElement(pcstr name) : _name(name), _type("base_element")
 	{
 		ASSERT_ARGS(
 			_name_element != _name,
-			"You can't create different independent elements with the same name, it will break the logic of the name:[%s] is already occupied!",
+			"You can't create different independent elements with the same name, it will break the logic of the name:[{}] is already occupied!",
 			this->name()
 		);
 	}
@@ -82,7 +82,7 @@ void BaseElement::create(pcstr selector, Localization::Str title, bool first)
 	runCode(
 		[this, selector, _title, first]
 		{
-			ASSERT_ARGS(_create({ selector, name(), _title, first }).ToBoolean() == true, "Couldn't create a %s named [%s]", _type, name());
+			ASSERT_ARGS(_create({ selector, name(), _title, first }).ToBoolean() == true, "Couldn't create a {} named [{}]", _type, name());
 			_event_click[name()].clear();
 			_created = true;
 		}
@@ -98,7 +98,7 @@ void BaseElement::remove()
 				return;
 
 			_created = false;
-			ASSERT_ARGS(_remove({ name() }).ToBoolean() == true, "Couldn't remove a %s named [%s]", _type, name());
+			ASSERT_ARGS(_remove({ name() }).ToBoolean() == true, "Couldn't remove a {} named [{}]", _type, name());
 			_event_click[name()].clear();
 		}
 	);
@@ -112,7 +112,7 @@ void BaseElement::show()
 			if (!_created)
 				return;
 
-			ASSERT_ARGS(_show({ name() }).ToBoolean() == true, "Couldn't remove a %s named [%s]", _type, name());
+			ASSERT_ARGS(_show({ name() }).ToBoolean() == true, "Couldn't remove a {} named [{}]", _type, name());
 		}
 	);
 }
@@ -125,7 +125,7 @@ void BaseElement::hide()
 			if (!_created)
 				return;
 
-			ASSERT_ARGS(_hide({ name() }).ToBoolean() == true, "Couldn't remove a %s named [%s]", _type, name());
+			ASSERT_ARGS(_hide({ name() }).ToBoolean() == true, "Couldn't remove a {} named [{}]", _type, name());
 		}
 	);
 }
@@ -144,7 +144,7 @@ void BaseElement::setTitle(Localization::Str title)
 			if (!_created)
 				return;
 
-			ASSERT_ARGS(_set_title({ name(), _title }).ToBoolean() == true, "Couldn't setTitle a %s named [%s]", _type, name());
+			ASSERT_ARGS(_set_title({ name(), _title }).ToBoolean() == true, "Couldn't setTitle a {} named [{}]", _type, name());
 		}
 	);
 }

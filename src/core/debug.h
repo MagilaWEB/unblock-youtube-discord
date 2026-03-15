@@ -1,6 +1,7 @@
-#pragma once
+﻿#pragma once
 
 #include <iostream>
+#include <stacktrace>
 #include "file_system.h"
 
 class CORE_API Debug
@@ -37,22 +38,26 @@ private:
 	[[nodiscard]] static pcstr get_prefix(MessageTypes type);
 
 	template<typename... Args>
-	static void msg(MessageTypes type, pcstr message, Args&&... args)
+	static void msg(MessageTypes type, std::string message, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
 
-		auto str	 = utils::format(message, std::forward<Args>(args)...);
-		auto log_str = utils::format("%d. %s%s", ++_console_line, get_prefix(type), str.c_str());
+		auto str = utils::format(message, args...);
+
+		const bool error_state = type >= MessageTypes::eError;
+		if (error_state)
+		{
+			std::string stacktrace	= "\n" + pretty_stacktrace();
+			str					   += stacktrace;
+		}
 
 		log.writeText(std::to_string(_console_line) + ". " + str);
 
-		((type >= MessageTypes::eError) ? std::cerr : std::cout) << log_str.c_str() << std::endl;
+		auto log_str = std::format("{}. {}{}", ++_console_line, get_prefix(type), str);
+		(error_state ? std::cerr : std::cout) << log_str.c_str() << std::endl;
 
 		if (type == MessageTypes::eFatal || (type == MessageTypes::eError && s_error_fatal))
-		{
-			log.close();
 			throw(exception(str.c_str()));
-		}
 	}
 
 public:
@@ -65,8 +70,14 @@ public:
 	{
 		Localization::Str text_lang_title{ title };
 		Localization::Str text_lang_desc{ desc };
-		pcstr			  desc_format = text_lang_desc();
-		std::string		  format	  = utils::format(desc_format, std::forward<Args>(args)...);
+		std::string		  desc_format = text_lang_desc();
+		std::string		  format;
+
+		if (desc != desc_format)
+			format = utils::format(desc_format, args...);
+		else
+			format = desc_format;
+
 		MessageBox(nullptr, TEXT(utils::UTF8_to_CP1251(format.c_str()).c_str()), TEXT(utils::UTF8_to_CP1251(text_lang_title()).c_str()), MB_OK);
 	}
 
@@ -84,17 +95,22 @@ public:
 					}
 					catch (const std::exception& E)
 					{
-						std::string exception_msg = utils::format("Exception caught!\n%s", E.what());
+						std::string exception_msg  = "Exception caught!\n";
+						exception_msg			  += E.what();
 						winApiWindowShow("str_error", exception_msg.c_str());
 						fatalErrorMessage(exception_msg);
 					}
 					catch (...)
 					{
-						winApiWindowShow("str_error", "Unhandled exception of unknown type...");
-						fatalErrorMessage("Unhandled exception of unknown type...");
+						std::string stacktrace = pretty_stacktrace();
+						std::string error_desc = "Unhandled exception of unknown type...\n" + stacktrace;
+						winApiWindowShow("str_error", error_desc.c_str());
+						fatalErrorMessage(error_desc.c_str());
 					}
 
 					std::abort();
+
+					log.close();
 				}
 			);
 
@@ -104,15 +120,18 @@ public:
 			}
 			catch (std::exception& E)
 			{
-				std::string exception_msg = utils::format("Exception caught!\n%s", E.what());
+				std::string exception_msg  = "Exception caught!\n";
+				exception_msg			  += E.what();
 				winApiWindowShow("str_error", exception_msg.c_str());
 				fatalErrorMessage(exception_msg);
 				return -1;
 			}
 			catch (...)
 			{
-				winApiWindowShow("str_error", "Exception caught!\nUnknown exception...");
-				fatalErrorMessage("Exception caught!\nUnknown exception...");
+				std::string stacktrace = pretty_stacktrace();
+				std::string error_desc = "Exception caught!\nUnknown exception...\n" + stacktrace;
+				winApiWindowShow("str_error", error_desc.c_str());
+				fatalErrorMessage(error_desc.c_str());
 				return -1;
 			}
 		}
@@ -123,89 +142,91 @@ public:
 	}
 
 	template<typename... Args>
-	__forceinline static std::unexpected<std::string> str_unexpected(pcstr fmt, Args&&... args)
+	__forceinline static std::unexpected<std::string> str_unexpected(std::string fmt, Args&&... args)
 	{
-		return std::unexpected(utils::format(fmt, std::forward<Args>(args)...));
+		return std::unexpected(std::vformat(fmt, std::make_format_args(args...)));
 	}
 
 	/** Send ok */
 	template<typename... Args>
-	static void print(pcstr message, Args&&... args)
+	static void print(std::string message, Args&&... args)
 	{
-		msg(MessageTypes::ePrint, message, std::forward<Args>(args)...);
+		msg(MessageTypes::ePrint, message, args...);
 	}
 
 	/** Send ok */
 	template<typename... Args>
-	static void ok(pcstr message, Args&&... args)
+	static void ok(std::string message, Args&&... args)
 	{
-		msg(MessageTypes::eOk, message, std::forward<Args>(args)...);
+		msg(MessageTypes::eOk, message, args...);
 	}
 
 	/** Send info */
 	template<typename... Args>
-	static void info(pcstr message, Args&&... args)
+	static void info(std::string message, Args&&... args)
 	{
-		msg(MessageTypes::eInfo, message, std::forward<Args>(args)...);
+		msg(MessageTypes::eInfo, message, args...);
 	}
 
 	/** Send warning */
 	template<typename... Args>
-	static void warning(pcstr message, Args&&... args)
+	static void warning(std::string message, Args&&... args)
 	{
-		msg(MessageTypes::eWarning, message, std::forward<Args>(args)...);
+		msg(MessageTypes::eWarning, message, args...);
 	}
 
 	/** Send please */
 	template<typename... Args>
-	static void please(pcstr message, Args&&... args)
+	static void please(std::string message, Args&&... args)
 	{
-		msg(MessageTypes::ePlease, message, std::forward<Args>(args)...);
+		msg(MessageTypes::ePlease, message, args...);
 	}
 
 	/** Display error message and exit in certain conditions */
 	template<typename... Args>
-	static void error(pcstr message, Args&&... args)
+	static void error(std::string message, Args&&... args)
 	{
-		msg(MessageTypes::eError, message, std::forward<Args>(args)...);
+		msg(MessageTypes::eError, message, args...);
 	}
 
 	/** Display error message and exit anyway */
 	template<typename... Args>
-	[[noreturn]] static void fatal(pcstr message, Args&&... args)
+	[[noreturn]] static void fatal(std::string message, Args&&... args)
 	{
-		msg(MessageTypes::eFatal, message, std::forward<Args>(args)...);
+		msg(MessageTypes::eFatal, message, args...);
 	}
 
 	/** Check condition and throw warning if it fails */
 	template<typename... Args>
-	static void check(bool condition, pcstr message, Args&&... args)
+	static void check(bool condition, std::string message, Args&&... args)
 	{
 		if (!condition)
-			warning(message, std::forward<Args>(args)...);
+			warning(message, args...);
 	}
 
 	/** Check condition and throw error if it fails */
 	template<typename... Args>
-	static void verify(bool condition, pcstr message, Args&&... args)
+	static void verify(bool condition, std::string message, Args&&... args)
 	{
 		if (!condition)
-			error(message, std::forward<Args>(args)...);
+			error(message, args...);
 	}
 
 	/** Check condition and fatal if it fails */
 	template<typename... Args>
-	static void _assert(bool condition, pcstr message, Args&&... args)
+	static void _assert(bool condition, std::string message, Args&&... args)
 	{
 		if (!condition)
-			fatal(message, std::forward<Args>(args)...);
+			fatal(message, args...);
 	}
+
+	static std::string pretty_stacktrace();
 };
 
 #define VERIFY(expr)                                                                            \
 	Debug::verify(                                                                              \
 		!!(expr),                                                                               \
-		"VERIFICATION FAILED!\n\tExpression: \t%s\n\tFile: \t%s\n\tLine: %d\n\tFunction: \t%s", \
+		"VERIFICATION FAILED!\n\tExpression: \t{}\n\tFile: \t{}\n\tLine: {}\n\tFunction: \t{}", \
 		#expr,                                                                                  \
 		__FILE__,                                                                               \
 		__LINE__,                                                                               \
@@ -215,7 +236,7 @@ public:
 #define ASSERT(expr)                                                                           \
 	Debug::_assert(                                                                            \
 		!!(expr),                                                                              \
-		"ASSERTION FAILED!\n\tExpression: \t%s\n\tFile: \t%s\n\tLine: \t%d\n\tFunction: \t%s", \
+		"ASSERTION FAILED!\n\tExpression: \t{}\n\tFile: \t{}\n\tLine: \t{}\n\tFunction: \t{}", \
 		#expr,                                                                                 \
 		__FILE__,                                                                              \
 		__LINE__,                                                                              \
@@ -225,7 +246,7 @@ public:
 #define ASSERT_ARGS(expr, msg, ...)                                                                                                     \
 	Debug::_assert(                                                                                                                     \
 		!!(expr),                                                                                                                       \
-		std::string{ "ASSERTION FAILED!\n\tExpression: \t%s\n\tFile: \t%s\n\tLine: \t%d\n\tFunction: \t%s\n\n\t" }.append(msg).c_str(), \
+		std::string{ "ASSERTION FAILED!\n\tExpression: \t{}\n\tFile: \t{}\n\tLine: \t{}\n\tFunction: \t{}\n\n\t" }.append(msg).c_str(), \
 		#expr,                                                                                                                          \
 		__FILE__,                                                                                                                       \
 		__LINE__,                                                                                                                       \

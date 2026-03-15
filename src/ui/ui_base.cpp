@@ -18,15 +18,18 @@ UiBase::UiBase(IEngineAPI* engine): _engine(engine)
 
 UiBase::~UiBase()
 {
-	_overlay->view()->set_load_listener(nullptr);
-	_overlay->view()->set_view_listener(nullptr);
+	if (_overlay)
+	{
+		_overlay->view()->set_load_listener(nullptr);
+		_overlay->view()->set_view_listener(nullptr);
+	}
 	_engine = nullptr;
 }
 
 #define LOGS(method)                                                                                        \
 	method(                                                                                                 \
-		"Java/Script\n\tsource:\t%d\n\ttype:\t%d\n\tmessage:\t%s\n\tline_number:\t%d\n\tcolumn_number:\t%d" \
-		"\n\tsource_id:\t%s\n\tnum_arguments:\t%d\n\t%s",                                                   \
+		"Java/Script\n\tsource:\t{}\n\ttype:\t{}\n\tmessage:\t{}\n\tline_number:\t{}\n\tcolumn_number:\t{}" \
+		"\n\tsource_id:\t{}\n\tnum_arguments:\t{}\n\t{}",                                                   \
 		static_cast<u32>(msg.source()),                                                                     \
 		static_cast<u32>(msg.type()),                                                                       \
 		msg.message().utf8().data(),                                                                        \

@@ -46,7 +46,7 @@ void Service::create()
 {
 	CRITICAL_SECTION_RAII(lock);
 
-	ASSERT_ARGS(!sc, "The service [%s] has already been found or created, it cannot be recreated!", _name.c_str());
+	ASSERT_ARGS(!sc, "The service [{}] has already been found or created, it cannot be recreated!", _name.c_str());
 
 	_initScManager();
 
@@ -96,7 +96,7 @@ void Service::create()
 		if (_time_limit.getElapsed_sec() > 5.f)
 		{
 			std::string message = std::system_category().message(static_cast<int>(err));
-			InputConsole::textError("не удаётся создать службу [%s], причина [%s].", _name.c_str(), message.c_str());
+			InputConsole::textError("не удаётся создать службу [{}], причина [{}].", _name.c_str(), message.c_str());
 			return;
 		}
 
@@ -105,7 +105,7 @@ void Service::create()
 
 	} while (true);
 
-	ASSERT_ARGS(sc, "Service could not be created [%s]!", _name.c_str());
+	ASSERT_ARGS(sc, "Service could not be created [{}]!", _name.c_str());
 }
 
 void Service::setArgs(std::vector<std::string> args)
@@ -123,11 +123,11 @@ void Service::start()
 
 	if (config.sc_status.dwCurrentState != SERVICE_STOPPED && config.sc_status.dwCurrentState != SERVICE_STOP_PENDING)
 	{
-		InputConsole::textError("служба [%s] не остановлена или в прогрессе остановки, запустить не возможно!", _name.c_str());
+		InputConsole::textError("служба [{}] не остановлена или в прогрессе остановки, запустить не возможно!", _name.c_str());
 		return;
 	}
 
-	InputConsole::textPlease("подождите окончания запуска службы [%s]", true, _name.c_str());
+	InputConsole::textPlease("подождите окончания запуска службы [{}]", true, _name.c_str());
 
 	std::vector<pcstr> args;
 	for (auto& arg : _args)
@@ -142,7 +142,7 @@ void Service::start()
 		// We try for 5 seconds, otherwise we interrupt.
 		if (_time_limit.getElapsed_sec() > 5.f)
 		{
-			InputConsole::textError("истекло время ожидания запуска службы [%s], процесс запуска прерван, причина не известна!", _name.c_str());
+			InputConsole::textError("истекло время ожидания запуска службы [{}], процесс запуска прерван, причина не известна!", _name.c_str());
 			return;
 		}
 
@@ -161,7 +161,7 @@ void Service::start()
 		SERVICE_RUNNING,
 		[this]
 		{
-			InputConsole::textError("истекло время ожидания запуска службы [%s], процесс будет остановлен!", _name.c_str());
+			InputConsole::textError("истекло время ожидания запуска службы [{}], процесс будет остановлен!", _name.c_str());
 			stop();
 		}
 	);
@@ -171,15 +171,15 @@ void Service::start()
 		SERVICE_RUNNING,
 		[this]
 		{
-			InputConsole::textError("истекло время ожидания запуска службы [%s], процесс будет остановлен!", _name.c_str());
+			InputConsole::textError("истекло время ожидания запуска службы [{}], процесс будет остановлен!", _name.c_str());
 			stop();
 		}
 	);
 
 	if (config.sc_status.dwCurrentState == SERVICE_RUNNING)
-		InputConsole::textOk("служба [%s] запущена.", _name.c_str());
+		InputConsole::textOk("служба [{}] запущена.", _name.c_str());
 	else
-		InputConsole::textWarning("служба [%s] была запущена но неожиданно сменила свой статус.", _name.c_str());
+		InputConsole::textWarning("служба [{}] была запущена но неожиданно сменила свой статус.", _name.c_str());
 }
 
 void Service::update()
@@ -282,13 +282,13 @@ void Service::stop()
 
 	if (config.sc_status.dwCurrentState != SERVICE_STOPPED)
 	{
-		InputConsole::textPlease("подождите окончания остановки службы [%s]", true, _name.c_str());
+		InputConsole::textPlease("подождите окончания остановки службы [{}]", true, _name.c_str());
 
 		auto service_stop = [this, &stopped]
 		{
 			stopped					= true;
 			const bool send_control = ControlService(sc, SERVICE_CONTROL_STOP, reinterpret_cast<LPSERVICE_STATUS>(&config.sc_status));
-			ASSERT_ARGS(send_control, "Failed to send a request to stop the service [%s]!", _name.c_str());
+			ASSERT_ARGS(send_control, "Failed to send a request to stop the service [{}]!", _name.c_str());
 		};
 
 		service_stop();
@@ -320,7 +320,7 @@ void Service::stop()
 	update();
 
 	if ((stopped && config.sc_status.dwCurrentState == SERVICE_STOPPED) || !sc)
-		InputConsole::textOk("служба [%s] остановлена.", _name.c_str());
+		InputConsole::textOk("служба [{}] остановлена.", _name.c_str());
 }
 
 void Service::remove()

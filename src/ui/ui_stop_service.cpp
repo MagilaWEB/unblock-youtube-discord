@@ -18,21 +18,11 @@ void Ui::_stopInit()
 		}
 	);
 
-	_stop_proxy_dpi->create(".buttons_stop", "str_b_stop_proxy_dpi");
-	_stop_proxy_dpi->addEventClick(
-		[this](JSArgs)
-		{
-			_stoppingServices(eProxyDpi);
-			return false;
-		}
-	);
-
 	_stop_service_all->create(".buttons_stop", "str_b_stop_service_all");
 	_stop_service_all->addEventClick(
 		[this](JSArgs)
 		{
 			_stoppingServices(StoppingService::eUnblock);
-			_stoppingServices(StoppingService::eProxyDpi);
 			_tcpGlobalChange(false);
 			return false;
 		}
@@ -41,14 +31,14 @@ void Ui::_stopInit()
 	_buttonUpdate();
 }
 
-void Ui::_stoppingServices(StoppingService type)
+void Ui::_stoppingServices(StoppingService /* type */)
 {
 	Core::get().addTask(
-		[this, type]
+		[this]
 		{
 			_window_wait_stop_service->show();
 
-			_unblock.removeService(type & StoppingService::eProxyDpi);
+			_unblock.removeService();
 
 			_buttonUpdate();
 			_activeServiceUpdate();

@@ -20,7 +20,6 @@ class Ui final : public utils::DefaultInit
 	std::shared_ptr<File> _file_service_list;
 
 	std::atomic_bool _automatically_strategy_cancel{ false };
-	std::atomic_bool _proxy_click_state{ false };
 	bool			 _init{ false };
 
 	// Setting Common
@@ -48,18 +47,9 @@ class Ui final : public utils::DefaultInit
 	// Setting Unblock list enable services
 	std::map<std::string, std::shared_ptr<CheckBox>> _unblock_list_enable_services{};
 
-	// Setting Proxy
-	CHECK_BOX(_proxy_enable);
-	INPUT(_proxy_port);
-	INPUT(_proxy_ip);
-	CHECK_BOX(_proxy_manual);
-	SELECT_LIST(_proxy_select_config);
-
 	// Home
 	BUTTON(_start_unblock);
 	BUTTON(_stop_unblock);
-	BUTTON(_start_proxy_dpi);
-	BUTTON(_stop_proxy_dpi);
 	BUTTON(_stop_service_all);
 	BUTTON(_start_testing);
 	BUTTON(_show_info_selected_service_setting);
@@ -68,8 +58,6 @@ class Ui final : public utils::DefaultInit
 
 	UL_LIST(_list_domain);
 	UL_LIST(_list_domain_video);
-	UL_LIST(_list_proxy_domain);
-	UL_LIST(_list_proxy_domain_video);
 
 	SECONDARY_WINDOW(_window_update_unblock);
 	SECONDARY_WINDOW(_window_wait_update_unblock);
@@ -101,7 +89,6 @@ class Ui final : public utils::DefaultInit
 	enum StoppingService : u32
 	{
 		eUnblock  = (1 << 0),
-		eProxyDpi = (1 << 1)
 	};
 
 public:
@@ -150,20 +137,6 @@ private:
 	void _settingUnblockEnableManualSelect();
 	void _settingUnblockEnableManualSelectUpdate();
 
-	void _settingProxyDPIEnable();
-
-	void _settingProxyDPIManualEnable();
-	void _settingProxyDPIManualEnableUpdate();
-
-	void _settingProxyDPISelectConfig();
-	void _settingProxyDPISelectConfigUpdate();
-
-	void _settingProxyDPIInputIP();
-	void _settingProxyDPIInputIPUpdate();
-
-	void _settingProxyDPIInputPort();
-	void _settingProxyDPIInputPortUpdate();
-
 	// Testing
 	void _testingInit();
 	void _testingUpdate();
@@ -176,7 +149,6 @@ private:
 	// Starting services
 	void _startInit();
 	void _startUnblock();
-	void _startProxy();
 
 	// Starting services base methods
 	void	   _startServiceWindow();

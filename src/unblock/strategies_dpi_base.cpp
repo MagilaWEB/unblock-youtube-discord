@@ -8,7 +8,7 @@ StrategiesDPIBase::StrategiesDPIBase()
 void StrategiesDPIBase::changeStrategy(u32 index)
 {
 	const auto& strategy_file = _strategy_files_list[index];
-	InputConsole::textInfo("Выбрана конфигурация [%s].", strategy_file.c_str());
+	InputConsole::textInfo("Выбрана конфигурация [{}].", strategy_file.c_str());
 
 	_file_strategy_dpi->open(_patch_file / strategy_file, "", true);
 
@@ -24,7 +24,7 @@ void StrategiesDPIBase::changeStrategy(pcstr file)
 
 	std::string strategy_file{ *it_file };
 
-	InputConsole::textInfo("Выбрана конфигурация [%s].", strategy_file.c_str());
+	InputConsole::textInfo("Выбрана конфигурация [{}].", strategy_file.c_str());
 
 	_file_strategy_dpi->open(_patch_file / strategy_file, "", true);
 

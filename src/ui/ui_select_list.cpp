@@ -46,7 +46,7 @@ void SelectList::create(pcstr selector, Localization::Str title, Localization::S
 		{
 			ASSERT_ARGS(
 				_create({ selector, name(), _title, _description, first }).ToBoolean() == true,
-				"Couldn't create a %s named [%s]",
+				"Couldn't create a {} named [{}]",
 				_type,
 				name()
 			);
@@ -64,7 +64,7 @@ void SelectList::createOption(JSValue value, Localization::Str text, bool select
 		{
 			if (!_created)
 				return;
-			ASSERT_ARGS(_create_option({ name(), value, _text, select }).ToBoolean() == true, "Couldn't createOption a %s named [%s]", _type, name());
+			ASSERT_ARGS(_create_option({ name(), value, _text, select }).ToBoolean() == true, "Couldn't createOption a {} named [{}]", _type, name());
 		}
 	);
 }
@@ -88,7 +88,7 @@ void SelectList::setSelectedOptionValue(JSValue value)
 		{
 			if (!_created)
 				return;
-			ASSERT_ARGS(_set_value({ name(), value }).ToBoolean() == true, "Couldn't setSelectedOptionValue a %s named [%s]", _type, name());
+			ASSERT_ARGS(_set_value({ name(), value }).ToBoolean() == true, "Couldn't setSelectedOptionValue a {} named [{}]", _type, name());
 		}
 	);
 }
@@ -106,7 +106,7 @@ void SelectList::clear()
 			if (!_created)
 				return;
 
-			ASSERT_ARGS(_clear({ name() }).ToBoolean() == true, "Couldn't clear a %s named [%s]", _type, name());
+			ASSERT_ARGS(_clear({ name() }).ToBoolean() == true, "Couldn't clear a {} named [{}]", _type, name());
 		}
 	);
 }

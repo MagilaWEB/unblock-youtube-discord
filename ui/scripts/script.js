@@ -35,7 +35,6 @@ if (!RUN_CPP) {
 	});
 
 	createButton(".buttons_start", "start_service", "Запустить службы");
-	createButton(".buttons_start", "start_service_proxy", "Запустить службы proxy");
 	createButton(".buttons_stop", "stop_service", "Остановить службы");
 
 	createListUl(".info_unblock", "success_domain", "Доступные домены:");
@@ -75,14 +74,6 @@ if (!RUN_CPP) {
 	createListUlLiAdd("setting", "Список Какойто текст 2");
 	createListUlLiAdd("setting", "Список Какойто текст 3");
 	createListUlLiAdd("setting", "Список Какойто текст 4");
-
-	// clearListUl("setting");
-
-	createCheckBox("#setting section .proxy", "test1", "Proxy DPI", "Какоето описание 1");
-
-	createInput("#setting section .proxy", "testInput1", "number", "1080", "Proxy DPI PORT", "Какоето описание импута 1");
-	createInput("#setting section .proxy", "testInput2", "ip", "127.0.0.1", "Proxy DPI IP", "Какоето описание импута 2");
-	createInput("#setting section .proxy", "testInput3", "text", "text", "text", "Какоето описание импута 3");
 
 	addInputEventSubmit("testInput1", false, new_value => {
 		console.log(new_value);

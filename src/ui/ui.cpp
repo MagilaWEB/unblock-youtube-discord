@@ -115,7 +115,7 @@ void Ui::_checkConflictService()
 			names_services.append(service.getName()).append(",");
 		names_services.pop_back();
 
-		description = utils::format(description.c_str(), names_services.c_str());
+		description = std::vformat(description, std::make_format_args(names_services));
 		_window_warning_conflict_service->setDescription(description.c_str());
 
 		_window_warning_conflict_service->show();

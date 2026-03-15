@@ -47,7 +47,7 @@ std::vector<std::string> HttpsLoad::run()
 
 	if (curl_easy_perform(_curl) != CURLcode::CURLE_OK)
 	{
-		Debug::warning("Couldn't get url[%s].", _url.c_str());
+		Debug::warning("Couldn't get url[{}].", _url.c_str());
 		return {};
 	}
 
@@ -92,7 +92,7 @@ void HttpsLoad::run_to_file(std::filesystem::path path)
 
 	if (curl_easy_perform(_curl) != CURLcode::CURLE_OK)
 	{
-		Debug::warning("Couldn't get url[%s].", _url.c_str());
+		Debug::warning("Couldn't get url[{}].", _url.c_str());
 		return;
 	}
 

@@ -44,7 +44,7 @@ void ListUl::createLi(Localization::Str text)
 	runCode(
 		[this, _text]
 		{
-			ASSERT_ARGS(_create_li({ name(), _text }).ToBoolean() == true, "Couldn't create_li a %s named [%s]", _type, name());
+			ASSERT_ARGS(_create_li({ name(), _text }).ToBoolean() == true, "Couldn't create_li a {} named [{}]", _type, name());
 		}
 	);
 }
@@ -61,7 +61,7 @@ void ListUl::createLiSuccess(Localization::Str text, bool state)
 		{
 			ASSERT_ARGS(
 				_create_li_success({ name(), _text, state }).ToBoolean() == true,
-				"Couldn't create_li_success a %s named [%s]",
+				"Couldn't create_li_success a {} named [{}]",
 				_type,
 				name()
 			);
@@ -76,7 +76,7 @@ void ListUl::addClass(pcstr name_class)
 		{
 			if (!_created)
 				return;
-			ASSERT_ARGS(_add_class({ name(), name_class }).ToBoolean() == true, "Couldn't addClass a %s named [%s]", _type, name());
+			ASSERT_ARGS(_add_class({ name(), name_class }).ToBoolean() == true, "Couldn't addClass a {} named [{}]", _type, name());
 		}
 	);
 }
@@ -88,7 +88,7 @@ void ListUl::removeClass(pcstr name_class)
 		{
 			if (!_created)
 				return;
-			ASSERT_ARGS(_remove_class({ name(), name_class }).ToBoolean() == true, "Couldn't removeClass a %s named [%s]", _type, name());
+			ASSERT_ARGS(_remove_class({ name(), name_class }).ToBoolean() == true, "Couldn't removeClass a {} named [{}]", _type, name());
 		}
 	);
 }
@@ -100,7 +100,7 @@ void ListUl::clear()
 		{
 			if (!_created)
 				return;
-			ASSERT_ARGS(_clear_li({ name() }).ToBoolean() == true, "Couldn't clear a %s named [%s]", _type, name());
+			ASSERT_ARGS(_clear_li({ name() }).ToBoolean() == true, "Couldn't clear a {} named [{}]", _type, name());
 		}
 	);
 }

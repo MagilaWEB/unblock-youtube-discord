@@ -15,7 +15,7 @@ void StrategyGenerator::inFile(std::shared_ptr<File>& strategy)
 
 	if (!_file_strategy->isOpen())
 	{
-		Debug::warning("file strategy not file [%s]", _file_strategy->getPath().string().c_str());
+		Debug::warning("file strategy not file [{}]", _file_strategy->getPath().string().c_str());
 		return;
 	}
 
@@ -208,7 +208,7 @@ std::optional<std::string> StrategyGenerator::_getDataFile(std::string str, std:
 		[[clang::no_destroy]]
 #endif
 		static const auto path_file_domains_exclude = Core::get().configsPath() / "domains_exclude.list";
-		ASSERT_ARGS(std::filesystem::exists(path_file_domains_exclude), "The [%s] file does not exist!", path_file_domains_exclude.string().c_str());
+		ASSERT_ARGS(std::filesystem::exists(path_file_domains_exclude), "The [{}] file does not exist!", path_file_domains_exclude.string().c_str());
 		return "--hostlist-exclude \"" + (path_file_domains_exclude.string()) + "\"";
 	}
 
@@ -218,7 +218,7 @@ std::optional<std::string> StrategyGenerator::_getDataFile(std::string str, std:
 		[[clang::no_destroy]]
 #endif
 		static const auto path_ip_exclude = Core::get().configsPath() / "ip-exclude.list";
-		ASSERT_ARGS(std::filesystem::exists(path_ip_exclude), "The [%s] file does not exist!", path_ip_exclude.string().c_str());
+		ASSERT_ARGS(std::filesystem::exists(path_ip_exclude), "The [{}] file does not exist!", path_ip_exclude.string().c_str());
 		return "--ipset-exclude \"" + (path_ip_exclude.string()) + "\"";
 	}
 

@@ -4,7 +4,7 @@ using namespace std::chrono;
 
 void InputConsole::pause(pcstr info)
 {
-	textPlease("%s Нажмите enter чтобы продолжить", true, info);
+	textPlease("{} Нажмите enter чтобы продолжить", true, info);
 
 	KEY(VK::ENTER, true);
 
@@ -103,7 +103,7 @@ u32 InputConsole::sendNum(std::list<u8> nums)
 			str_nums.append(std::to_string(send_num).append(", "));
 	}
 
-	textPlease("нажмите на один из вариантов [%s]", true, str_nums.c_str());
+	textPlease("нажмите на один из вариантов [{}]", true, str_nums.c_str());
 
 	while (true)
 	{
@@ -267,7 +267,7 @@ std::string InputConsole::textColor(pcstr text, ColorType type, bool reset_color
 		}
 	};
 
-	std::string mod_text = utils::format("%s%sm%s", "\033[", color(), text);
+	std::string mod_text = std::format("{}{}m{}", "\033[", color(), text);
 
 	if (reset_color)
 		mod_text.append("\033[0m");

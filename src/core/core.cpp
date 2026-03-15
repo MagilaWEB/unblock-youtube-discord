@@ -168,7 +168,7 @@ void Core::exec_parallel(std::string cmd, std::function<bool(std::string)>&& cal
 					if (callback(data))
 						break;
 
-					Debug::info("%s", data);
+					Debug::info("{}", data);
 				}
 			}
 		}

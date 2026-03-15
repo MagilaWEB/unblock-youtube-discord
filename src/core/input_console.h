@@ -40,7 +40,7 @@ public:
 	static void text(pcstr text, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
-		msg(text, "%s", ColorType::CYAN, true, std::forward<Args>(args)...);
+		msg(text, "{}", ColorType::CYAN, true, args...);
 		std::cout << std::endl;
 	}
 
@@ -48,7 +48,7 @@ public:
 	static void textOk(pcstr text, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
-		msg(text, "Успех: %s", ColorType::GREEN, true, std::forward<Args>(args)...);
+		msg(text, "Успех: {}", ColorType::GREEN, true, args...);
 		std::cout << std::endl;
 	}
 
@@ -56,7 +56,7 @@ public:
 	static void textInfo(pcstr text, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
-		msg(text, "Информация: %s", ColorType::YELLOW, true, std::forward<Args>(args)...);
+		msg(text, "Информация: {}", ColorType::YELLOW, true, args...);
 	}
 
 	template<typename... Args>
@@ -64,28 +64,28 @@ public:
 	{
 		CriticalSection::raii mt{ _lock };
 		std::cout << std::endl;
-		msg(text, "%s???", ColorType::DARK_GREEN, true, std::forward<Args>(args)...);
+		msg(text, "{}???", ColorType::DARK_GREEN, true, args...);
 	}
 
 	template<typename... Args>
 	static void textWarning(pcstr text, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
-		msg(text, "Предупреждение: %s", ColorType::ORANGE, true, std::forward<Args>(args)...);
+		msg(text, "Предупреждение: {}", ColorType::ORANGE, true, args...);
 	}
 
 	template<typename... Args>
 	static void textError(pcstr text, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
-		msg(text, "Ошибка: %s", ColorType::RED, true, std::forward<Args>(args)...);
+		msg(text, "Ошибка: {}", ColorType::RED, true, args...);
 	}
 
 	template<typename... Args>
 	static void textPlease(pcstr text, bool reset_color, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
-		msg(text, "Пожалуйста, %s:", ColorType::CYAN, reset_color, std::forward<Args>(args)...);
+		msg(text, "Пожалуйста, {}:", ColorType::CYAN, reset_color, args...);
 	}
 
 	static std::string textColor(pcstr text, ColorType type, bool reset_color = true);
@@ -97,9 +97,9 @@ private:
 	static void msg(pcstr text, pcstr prefix, ColorType type, bool reset_color, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
-		std::string			  mod_text = utils::format(prefix, utils::format(text, std::forward<Args>(args)...).c_str());
-		mod_text					   = textColor(mod_text.c_str(), type, reset_color);
-		Debug::print("%s", mod_text.c_str());
+		std::string			  mod_text = utils::format(prefix, utils::format(text, args...));
+		mod_text = textColor(mod_text.c_str(), type, reset_color);
+		Debug::print("{}", mod_text);
 	}
 
 	static bool _forbiddenCharacters(const std::string& text);

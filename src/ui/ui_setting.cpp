@@ -17,11 +17,6 @@ void Ui::_settingInit()
 	_settingUnblockEnableManualSelect();
 	_settingUnblockSelectStrategyVersion();
 
-	_settingProxyDPIEnable();
-	_settingProxyDPIInputIP();
-	_settingProxyDPIInputPort();
-	_settingProxyDPIManualEnable();
-	_settingProxyDPISelectConfig();
 }
 
 void Ui::_settingShowConsole()
@@ -126,7 +121,7 @@ void Ui::_settingEnableDnsHosts()
 							str_list_name.pop_back();
 							str_list_name.pop_back();
 
-							_window_to_warn_enable_dns_hosts->setDescription(utils::format(description.c_str(), str_list_name.c_str()).c_str());
+							_window_to_warn_enable_dns_hosts->setDescription(utils::format(description, str_list_name).c_str());
 						}
 					}
 				);
@@ -170,7 +165,7 @@ void Ui::_settingDnsHostsUpdateInfoWindow()
 		{
 			static std::string disc_text{ Localization::Str{ "str_window_wait_update_dns_description" }() };
 			float			   progress = _unblock.dnsHostsUpdateProgress();
-			_window_wait_update_dns->setDescription(utils::format(disc_text.c_str(), progress).c_str());
+			_window_wait_update_dns->setDescription(utils::format(disc_text, progress).c_str());
 		}
 	});
 }
@@ -446,7 +441,7 @@ void Ui::_settingUnblockEnableManualSelectUpdate()
 		_unblock_select_config->clear();
 		_unblock_select_fake_bin->clear();
 
-		auto& strategies_list = _unblock.getStrategiesList<StrategiesDPI>();
+		auto& strategies_list = _unblock.getStrategiesList();
 
 		if (strategies_list.empty())
 			return;
@@ -484,162 +479,4 @@ void Ui::_settingUnblockEnableManualSelectUpdate()
 
 	_unblock_select_config->clear();
 	_unblock_select_fake_bin->clear();
-}
-
-void Ui::_settingProxyDPIEnable()
-{
-	_proxy_enable->create("#setting section .proxy", "str_checkbox_proxy_enable_title", Localization::Str{ "str_checkbox_proxy_enable_description" });
-
-	auto result = _ui_base->userSetting()->parameterSection<bool>("PROXY", "enable");
-	_proxy_enable->setState(result ? result.value() : false);
-
-	_proxy_enable->addEventClick(
-		[this](JSArgs args)
-		{
-			_ui_base->userSetting()->writeSectionParameter("PROXY", "enable", JSToCPP(args[0]));
-			_settingProxyDPIInputIPUpdate();
-			_settingProxyDPIInputPortUpdate();
-			_settingProxyDPIManualEnableUpdate();
-			_settingProxyDPISelectConfigUpdate();
-			_buttonUpdate();
-			_testingUpdate();
-
-			return false;
-		}
-	);
-}
-
-void Ui::_settingProxyDPIManualEnable()
-{
-	_proxy_manual->create("#setting section .proxy", "str_manual_title", Localization::Str{ "str_manual_description" });
-
-	_proxy_manual->addEventClick(
-		[this](JSArgs args)
-		{
-			_ui_base->userSetting()->writeSectionParameter("PROXY", "manual", JSToCPP(args[0]));
-			_settingProxyDPIManualEnableUpdate();
-			_settingProxyDPISelectConfigUpdate();
-			return false;
-		}
-	);
-
-	_settingProxyDPIManualEnableUpdate();
-}
-
-void Ui::_settingProxyDPIManualEnableUpdate()
-{
-	if (_proxy_enable->getState())
-	{
-		_proxy_manual->show();
-		auto result = _ui_base->userSetting()->parameterSection<bool>("PROXY", "manual");
-		_proxy_manual->setState(result ? result.value() : false);
-		return;
-	}
-	_proxy_manual->hide();
-}
-
-void Ui::_settingProxyDPISelectConfig()
-{
-	_proxy_select_config->create("#setting section .proxy", "str_select_config_title", Localization::Str{ "str_select_config_description" });
-
-	_proxy_select_config->addEventChange(
-		[this](JSArgs args)
-		{
-			_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "config_proxy", JSToCPP(args[1]));
-			_settingProxyDPISelectConfigUpdate();
-			return false;
-		}
-	);
-
-	_settingProxyDPISelectConfigUpdate();
-}
-
-void Ui::_settingProxyDPISelectConfigUpdate()
-{
-	if (_proxy_enable->getState() && _proxy_manual->getState())
-	{
-		_proxy_select_config->show();
-
-		auto& strategies_list = _unblock.getStrategiesList<ProxyStrategiesDPI>();
-		for (u32 i = 0; i < strategies_list.size(); i++)
-		{
-			auto& file_name = strategies_list[i];
-			_proxy_select_config->createOption(i, file_name.c_str());
-		}
-
-		if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config_proxy"))
-			_proxy_select_config->setSelectedOptionValue(config.value().c_str());
-		else
-			_ui_base->userSetting()
-				->writeSectionParameter("REMEMBER_CONFIGURATION", "config_proxy", JSToCPP(_proxy_select_config->getSelectedOptionValue()));
-
-		_buttonUpdate();
-		return;
-	}
-	_proxy_select_config->hide();
-}
-
-void Ui::_settingProxyDPIInputIP()
-{
-	_proxy_ip->create("#setting section .proxy", Input::Types::ip, "127.0.0.1", "str_input_proxy_ip_title", "str_input_proxy_ip_description");
-	if (auto ip = _ui_base->userSetting()->parameterSection<pcstr>("PROXY", "ip"))
-		_proxy_ip->setValue(ip.value());
-
-	_proxy_ip->addEventSubmit(
-		[this](JSArgs args)
-		{
-			_ui_base->userSetting()->writeSectionParameter("PROXY", "ip", JSToCPP(args[0]));
-			_settingProxyDPIInputIPUpdate();
-			return false;
-		}
-	);
-
-	_settingProxyDPIInputIPUpdate();
-}
-
-void Ui::_settingProxyDPIInputIPUpdate()
-{
-	if (_proxy_enable->getState())
-	{
-		_proxy_ip->show();
-
-		if (auto ip = _ui_base->userSetting()->parameterSection<pcstr>("PROXY", "ip"))
-			_proxy_ip->setValue(ip.value());
-
-		_unblock.changeProxyIP(JSToCPP(_proxy_ip->getValue()));
-		return;
-	}
-
-	_proxy_ip->hide();
-}
-
-void Ui::_settingProxyDPIInputPort()
-{
-	_proxy_port->create("#setting section .proxy", Input::Types::number, "1080", "str_input_proxy_port_title", "str_input_proxy_port_description");
-
-	_proxy_port->addEventSubmit(
-		[this](JSArgs args)
-		{
-			_ui_base->userSetting()->writeSectionParameter("PROXY", "port", JSToCPP(args[0]));
-			_settingProxyDPIInputPortUpdate();
-			return false;
-		}
-	);
-
-	_settingProxyDPIInputPortUpdate();
-}
-
-void Ui::_settingProxyDPIInputPortUpdate()
-{
-	if (_proxy_enable->getState())
-	{
-		_proxy_port->show();
-		if (auto port = _ui_base->userSetting()->parameterSection<u32>("PROXY", "port"))
-			_proxy_port->setValue(port.value());
-
-		_unblock.changeProxyPort(JSToCPP<u32>(_proxy_port->getValue()));
-		return;
-	}
-
-	_proxy_port->hide();
 }

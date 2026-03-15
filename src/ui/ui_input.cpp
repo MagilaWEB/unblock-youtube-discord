@@ -45,7 +45,7 @@ void Input::create(pcstr selector, Types type, JSValue value, Localization::Str 
 				{
 					ASSERT_ARGS(
 						_create({ selector, name(), str, value, _title, _description, first }).ToBoolean() == true,
-						"Couldn't create a %s named [%s]",
+						"Couldn't create a {} named [{}]",
 						_type,
 						name()
 					);
@@ -82,7 +82,7 @@ void Input::setValue(JSValue value)
 		{
 			if (!_created)
 				return;
-			ASSERT_ARGS(_set_value({ name(), value }).ToBoolean() == true, "Couldn't setValue a %s named [%s]", _type, name());
+			ASSERT_ARGS(_set_value({ name(), value }).ToBoolean() == true, "Couldn't setValue a {} named [{}]", _type, name());
 		}
 	);
 }

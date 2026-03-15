@@ -14,7 +14,7 @@ void File::forLine(std::function<bool(std::string)> fn)
 	if (!isOpen())
 	{
 		if (info_debug)
-			Debug::warning("File [%s] not open!", _path_file.string().c_str());
+			Debug::warning("File [{}] not open!", _path_file.string().c_str());
 		return;
 	}
 
@@ -33,7 +33,7 @@ void File::forLineSection(pcstr section, std::function<bool(std::string&)> fn)
 	if (!isOpen())
 	{
 		if (info_debug)
-			Debug::warning("File [%s] not open!", _path_file.string().c_str());
+			Debug::warning("File [{}] not open!", _path_file.string().c_str());
 		return;
 	}
 
@@ -93,8 +93,8 @@ void File::forLineParametersSection(pcstr section, std::function<bool(std::strin
 			else
 			{
 				Debug::warning(
-					"when trying to get the keys and values in the [%s] file in the [%s] section The kneader is missing [=]! A string of the "
-					"following format [%s].",
+					"when trying to get the keys and values in the [{}] file in the [{}] section The kneader is missing [=]! A string of the "
+					"following format [{}].",
 					name().c_str(),
 					section,
 					str.c_str()
@@ -141,8 +141,8 @@ std::expected<TypeReturn, std::string> File::parameterSection(pcstr section, pcs
 	if (!isOpen())
 	{
 		if (info_debug)
-			Debug::warning("File [%s] not open!", _path_file.string().c_str());
-		return Debug::str_unexpected("Не удалось найти параметр [%s] в секции [%s] файл не был открыт!", parameter, section);
+			Debug::warning("File [{}] not open!", _path_file.string().c_str());
+		return Debug::str_unexpected("Не удалось найти параметр [{}] в секции [{}] файл не был открыт!", parameter, section);
 	}
 
 	std::optional<std::string> kay_value{ std::nullopt };
@@ -198,7 +198,7 @@ std::expected<TypeReturn, std::string> File::parameterSection(pcstr section, pcs
 		}
 	}
 
-	return Debug::str_unexpected("Не удалось найти параметр [%s] в секции [%s]!", parameter, section);
+	return Debug::str_unexpected("Не удалось найти параметр [{}] в секции [{}]!", parameter, section);
 }
 
 template CORE_API std::expected<std::string, std::string> File::parameterSection<std::string>(pcstr section, pcstr parameter);
@@ -315,7 +315,7 @@ void File::open(std::filesystem::path file, pcstr expansion, bool no_default_pat
 	if (!_stream.is_open())
 	{
 		if (info_debug)
-			Debug::warning("File open fail [%s]!", _path_file.string().c_str());
+			Debug::warning("File open fail [{}]!", _path_file.string().c_str());
 		_open_state = false;
 		_stream.close();
 		return;

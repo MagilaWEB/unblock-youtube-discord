@@ -48,7 +48,7 @@ void CheckBox::create(pcstr selector, Localization::Str title, Localization::Str
 		{
 			ASSERT_ARGS(
 				_create({ selector, name(), _title, _description, first }).ToBoolean() == true,
-				"Couldn't create a %s named [%s]",
+				"Couldn't create a {} named [{}]",
 				_type,
 				name()
 			);

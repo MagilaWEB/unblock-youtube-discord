@@ -7,18 +7,16 @@ void Ui::_initShowInfoSetting()
 	_show_info_selected_service_setting->addEventClick(
 		[this](JSArgs)
 		{
-			auto			  config	   = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config");
-			auto			  fake_bin	   = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "fake_bin");
-			auto			  config_proxy = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config_proxy");
-			Localization::Str not_selected{ "str_not_selected" };
+			auto		config		 = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config");
+			auto		fake_bin	 = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "fake_bin");
 
-			std::string description = utils::format(
-				Localization::Str{ "str_window_info_selected_service_setting" }(),
-				config ? config.value().c_str() : not_selected(),
-				fake_bin ? fake_bin.value().c_str() : not_selected(),
-				JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue()),
-				config_proxy ? config_proxy.value().c_str() : not_selected()
-			);
+			std::string not_selected = Localization::Str{ "str_not_selected" }();
+			std::string format_template = Localization::Str{ "str_window_info_selected_service_setting" }();
+			std::string config_str		= config ? config.value() : not_selected;
+			std::string fake_bin_str	= fake_bin ? fake_bin.value() : not_selected;
+			std::string version_str		= JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue());
+
+			std::string description = utils::format(format_template, config_str, fake_bin_str, version_str);
 
 			_window_info_selected_service_setting->setDescription(description.c_str());
 			_window_info_selected_service_setting->show();

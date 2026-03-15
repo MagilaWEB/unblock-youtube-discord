@@ -1,4 +1,4 @@
-#include "debug.h"
+﻿#include "debug.h"
 
 pcstr Debug::get_prefix(MessageTypes type)
 {
@@ -20,7 +20,7 @@ pcstr Debug::get_prefix(MessageTypes type)
 	case MessageTypes::eFatal:
 		return "\x1B[31m!FATAL: \033[0m";
 	default:
-		error("unexpected debug message type [%d]", type);
+		error("unexpected debug message type {}", static_cast<u32>(type));
 	}
 #else
 	switch (type)
@@ -38,7 +38,7 @@ pcstr Debug::get_prefix(MessageTypes type)
 	case MessageTypes::eFatal:
 		return "!FATAL: ";
 	default:
-		error("unexpected debug message type [%d]", type);
+		error("unexpected debug message type {}", static_cast<u32>(type));
 	}
 #endif
 	return "";
@@ -86,4 +86,37 @@ void Debug::fatalErrorMessage(std::string message)
 	log.writeText(std::to_string(++_console_line) + ". " + message);
 	log.close();
 	std::cerr << message << std::endl;
+}
+
+std::string Debug::pretty_stacktrace()
+{
+	auto		trace  = std::stacktrace::current(1);	 // пропускаем текущую функцию
+	std::string result = "🚨 Stacktrace (depth: " + std::to_string(trace.size()) + "):\n";
+
+	int frame_num = 0;
+	for (const auto& frame : trace)
+	{
+		std::string func = frame.description();
+		if (func.empty())
+			func = "???";
+
+		std::string file = frame.source_file();
+		int			line = frame.source_line();
+
+		std::string location;
+		if (!file.empty())
+		{
+			std::filesystem::path p(file);
+			location = std::format("{}:{}", p.filename().string(), line);
+		}
+		else
+			location = std::format("{:016x}", reinterpret_cast<uintptr_t>(frame.native_handle()));
+
+		const int func_width = 86;
+		if (func.length() > func_width)
+			func = func.substr(0, func_width - 3) + "...";
+
+		result += std::format("  #{:2} -> {:<{}} ({})\n", frame_num++, func, func_width, location);
+	}
+	return result;
 }

@@ -51,7 +51,7 @@ void Ui::_checkAppUpdate(bool window_show)
 					_window_wait_check_update_unblock->hide();
 
 				static pcstr desc = Localization::Str{ "str_window_update_unblock" }();
-				_window_update_unblock->setDescription(utils::format(desc, new_version.value().c_str()).c_str());
+				_window_update_unblock->setDescription(std::vformat(desc, std::make_format_args(new_version.value())).c_str());
 				_window_update_unblock->show();
 				return;
 			}
@@ -122,8 +122,9 @@ void Ui::_updateAppProgressWindowInfo()
 	LIMIT_UPDATE(Description, .5f, {
 		if (_window_wait_update_unblock->isShow())
 		{
-			static pcstr disc_text{ Localization::Str{ "str_window_wait_update_unblock" }() };
-			_window_wait_update_unblock->setDescription(utils::format(disc_text, _unblock.appUpdateProgress()).c_str());
+			static std::string disc_text{ Localization::Str{ "str_window_wait_update_unblock" }() };
+			float			   progress = _unblock.appUpdateProgress();
+			_window_wait_update_unblock->setDescription(utils::format(disc_text, progress).c_str());
 		}
 	});
 }

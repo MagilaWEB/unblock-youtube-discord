@@ -43,7 +43,7 @@ namespace ultralight
 			if (integer < 0)
 			{
 				Debug::warning(
-					"Could not be converted to an unsigned int because integer JS is less than 0, the current value [%d] is returned by default for "
+					"Could not be converted to an unsigned int because integer JS is less than 0, the current value [{}] is returned by default for "
 					"CPP 0.",
 					integer
 				);
@@ -55,7 +55,7 @@ namespace ultralight
 			{
 				Debug::warning(
 					"Failed to convert to unsigned int because integer JS is greater than the maximum value of the current CPP data type[% d],the "
-					"current value of JS is integer[%d], by default, CPP returns[%d].",
+					"current value of JS is integer[{}], by default, CPP returns[{}].",
 					max_integer,
 					integer,
 					max_integer
@@ -76,8 +76,8 @@ namespace ultralight
 			if (integer < min_integer)
 			{
 				Debug::warning(
-					"Couldn't convert to int because integer JS exceeds the minimum value of the current data type CPP [%d], the current value of JS "
-					"is integer [%d], by default CPP returns [%d].",
+					"Couldn't convert to int because integer JS exceeds the minimum value of the current data type CPP [{}], the current value of JS "
+					"is integer [{}], by default CPP returns [{}].",
 					min_integer,
 					integer,
 					min_integer
@@ -89,8 +89,8 @@ namespace ultralight
 			if (integer > max_integer)
 			{
 				Debug::warning(
-					"Failed to convert to int because integer JS is greater than the maximum value of the current CPP data type[%d],the "
-					"current value of JS is integer[%d], by default, CPP returns[%d].",
+					"Failed to convert to int because integer JS is greater than the maximum value of the current CPP data type[{}],the "
+					"current value of JS is integer[{}], by default, CPP returns[{}].",
 					max_integer,
 					integer,
 					max_integer
@@ -114,9 +114,9 @@ namespace ultralight
 			if (integer < min_integer)
 			{
 				Debug::warning(
-					"Couldn't convert to float because integer JS exceeds the minimum value of the current data type CPP [%f], the current value of "
+					"Couldn't convert to float because integer JS exceeds the minimum value of the current data type CPP [{}], the current value of "
 					"JS "
-					"is integer [%f], by default CPP returns [%f].",
+					"is integer [{}], by default CPP returns [{}].",
 					min_integer,
 					integer,
 					min_integer
@@ -128,8 +128,8 @@ namespace ultralight
 			if (integer > max_integer)
 			{
 				Debug::warning(
-					"Failed to convert to float because integer JS is greater than the maximum value of the current CPP data type[%f],the "
-					"current value of JS is integer[%f], by default, CPP returns[%f].",
+					"Failed to convert to float because integer JS is greater than the maximum value of the current CPP data type[{}],the "
+					"current value of JS is integer[{}], by default, CPP returns[{}].",
 					max_integer,
 					integer,
 					max_integer

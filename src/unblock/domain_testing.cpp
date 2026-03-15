@@ -69,7 +69,7 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(pcs
 					_domain_ok++;
 				else
 				{
-					InputConsole::textWarning("проблема доступа: %s", domain.url.c_str());
+					InputConsole::textWarning("проблема доступа: {}", domain.url.c_str());
 					_domain_error++;
 				}
 
@@ -113,7 +113,7 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(pcs
 			}
 			else
 			{
-				InputConsole::textWarning("проблема доступа: %s", domain.url.c_str());
+				InputConsole::textWarning("проблема доступа: {}", domain.url.c_str());
 				_domain_error++;
 			}
 
@@ -155,7 +155,7 @@ u32 DomainTesting::errorRate() const
 void DomainTesting::printTestInfo() const
 {
 	InputConsole::textInfo(
-		"Тестирование завершилось с результатом [%d] из [%d] общий успех [%d%%]",
+		"Тестирование завершилось с результатом [{}] из [{}] общий успех [{}%%]",
 		_domain_ok.load(),
 		_list_domain.size(),
 		successRate()

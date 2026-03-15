@@ -9,7 +9,7 @@ StrategiesDPI::StrategiesDPI()
 		[this](std::string key, std::string value)
 		{
 			const auto path_file = Core::get().binariesPath() / value;
-			ASSERT_ARGS(std::filesystem::exists(path_file), "The [%s] file does not exist!", path_file.string().c_str());
+			ASSERT_ARGS(std::filesystem::exists(path_file), "The [{}] file does not exist!", path_file.string().c_str());
 
 			auto& fake			  = _fake_bin_params[key];
 			fake.file_clienthello = path_file.string();
@@ -34,7 +34,7 @@ StrategiesDPI::StrategiesDPI()
 		[this](std::string key, std::string value)
 		{
 			const auto path_file = Core::get().binariesPath() / value;
-			ASSERT_ARGS(std::filesystem::exists(path_file), "The [%s] file does not exist!", path_file.string().c_str());
+			ASSERT_ARGS(std::filesystem::exists(path_file), "The [{}] file does not exist!", path_file.string().c_str());
 
 			auto& fake		  = _fake_bin_params[key];
 			fake.file_initial = path_file.string();
@@ -83,11 +83,11 @@ void StrategiesDPI::changeFakeKey(std::string key)
 		return;
 	}
 
-	InputConsole::textInfo("Выбран FakeBin [%s].", key.c_str());
+	InputConsole::textInfo("Выбран FakeBin [{}].", key.c_str());
 
 	auto& fake_bin = _fake_bin_params[key];
 
-	ASSERT_ARGS(fake_bin.init, "a key is missing for fake_bin %s", key.c_str());
+	ASSERT_ARGS(fake_bin.init, "a key is missing for fake_bin {}", key.c_str());
 
 	_fake_bind_key = key;
 }
@@ -159,7 +159,7 @@ void StrategiesDPI::_uploadStrategies()
 		_strategy_dpi.pop_back();
 
 	for (auto& line : _strategy_dpi)
-		Debug::ok("%s", line.c_str());
+		Debug::ok("{}", line.c_str());
 }
 
 void StrategiesDPI::_saveStrategies(std::string str)
@@ -203,7 +203,7 @@ void StrategiesDPI::_getAllPorts(std::string& str) const
 						str = std::regex_replace(str, std::regex{ target }, para.suffix().str());
 				}
 				else
-					Debug::warning("_getAllPorts Separator not found : for [%s]", name_service.c_str());
+					Debug::warning("_getAllPorts Separator not found : for [{}]", name_service.c_str());
 			};
 
 			std::string setting_service_string{ result.value() };
@@ -349,7 +349,7 @@ std::optional<std::string> StrategiesDPI::_getFake(std::string str)
 			else
 				list_key.append("," + key);
 
-		Debug::error("fake ключ [%s] не найден! Доступные ключи [%s].", _fake_bind_key.c_str(), list_key.c_str());
+		Debug::error("fake ключ [{}] не найден! Доступные ключи [{}].", _fake_bind_key.c_str(), list_key.c_str());
 	}
 
 	return std::nullopt;
