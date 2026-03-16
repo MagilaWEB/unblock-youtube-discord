@@ -57,7 +57,7 @@ public:
 	void stopService();
 	void removeService();
 	bool activeService();
-	void checkStateServices(const std::function<void(pcstr, bool)>& callback);
+	void checkStateServices(const std::function<void(std::string_view, bool)>& callback);
 
 	std::vector<std::string> listVersionStrategy();
 
@@ -68,7 +68,9 @@ public:
 	bool						  dnsHostsCheck() const;
 	const std::list<std::string>& dnsHostsListName();
 
-	void testingDomain(std::function<void(pcstr, bool)>&& callback = [](pcstr, bool) {}, bool video = false, bool base_test = true);
+	void testingDomain(
+		std::function<void(std::string_view, bool)>&& callback = [](std::string_view, bool) {}, bool video = false, bool base_test = true
+	);
 	void testingDomainCancel(bool video = false);
 
 	void maxWaitTesting(u32 second);

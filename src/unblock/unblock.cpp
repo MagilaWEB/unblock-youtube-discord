@@ -141,17 +141,16 @@ bool Unblock::runTest(bool video)
 	return _domain_testing.isTesting();
 }
 
-void Unblock::testingDomain(std::function<void(pcstr url, bool state)>&& callback, bool video, bool base_test)
+void Unblock::testingDomain(std::function<void(std::string_view url, bool state)>&& callback, bool video, bool base_test)
 {
-
 	if (video)
 	{
-		_domain_testing_video.test(video, base_test, [callback](pcstr url, bool state) { callback(url, state); });
+		_domain_testing_video.test(video, base_test, [callback](std::string_view url, bool state) { callback(url, state); });
 		_domain_testing_video.printTestInfo();
 		return;
 	}
 
-	_domain_testing.test(video, base_test, [callback](pcstr url, bool state) { callback(url, state); });
+	_domain_testing.test(video, base_test, [callback](std::string_view url, bool state) { callback(url, state); });
 	_domain_testing.printTestInfo();
 }
 
@@ -304,10 +303,10 @@ bool Unblock::activeService()
 	return _zapret.isRun();
 }
 
-void Unblock::checkStateServices(const std::function<void(pcstr, bool)>& callback)
+void Unblock::checkStateServices(const std::function<void(std::string_view, bool)>& callback)
 {
 	callback("Zapret (winws.exe)", _zapret.isRun());
-	callback(_win_divert.getName().c_str(), _win_divert.isRun());
+	callback(_win_divert.getName(), _win_divert.isRun());
 }
 
 std::vector<std::string> Unblock::listVersionStrategy()

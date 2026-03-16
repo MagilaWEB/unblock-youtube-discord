@@ -1,6 +1,6 @@
 #include "ui_select_list.h"
 
-SelectList::SelectList(pcstr name) : BaseElement(name)
+SelectList::SelectList(std::string_view name) : BaseElement(name)
 {
 	_type = "select_list";
 }
@@ -37,7 +37,7 @@ void SelectList::initialize()
 		global_js["CPPSelectEventChange"] = JS_EVENT(_event_click);
 }
 
-void SelectList::create(pcstr selector, Localization::Str title, Localization::Str description, bool first)
+void SelectList::create(std::string_view selector, Localization::Str title, Localization::Str description, bool first)
 {
 	String _title		= title();
 	String _description = description();
@@ -45,7 +45,7 @@ void SelectList::create(pcstr selector, Localization::Str title, Localization::S
 		[this, selector, _title, _description, first]
 		{
 			ASSERT_ARGS(
-				_create({ selector, name(), _title, _description, first }).ToBoolean() == true,
+				_create({ selector.data(), name(), _title, _description, first }).ToBoolean() == true,
 				"Couldn't create a {} named [{}]",
 				_type,
 				name()

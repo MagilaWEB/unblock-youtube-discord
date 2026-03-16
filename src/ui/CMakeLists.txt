@@ -6,7 +6,7 @@ file(GLOB src_hpp "*.hpp")
 #file(GLOB ${NAME}_src_modules "*.ixx")
 
 add_library(${NAME} SHARED ${src_h} ${src_hpp} ${src_cpp})
-#target_sources(${NAME} PUBLIC FILE_SET CXX_MODULES FILES ${src_modules})
+
 target_precompile_headers(${NAME} PRIVATE pch.h)
 
 # Include files

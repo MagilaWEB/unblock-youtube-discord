@@ -35,21 +35,18 @@ private:
 	inline static bool s_error_fatal{ debug };
 	inline static bool s_catch_exceptions{ !debug };
 
-	[[nodiscard]] static pcstr get_prefix(MessageTypes type);
+	[[nodiscard]] static std::string_view get_prefix(MessageTypes type);
 
 	template<typename... Args>
-	static void msg(MessageTypes type, std::string message, Args&&... args)
+	static void msg(MessageTypes type, std::string_view message, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
 
-		auto str = utils::format(message, args...);
+		std::string str = utils::format(message, args...);
 
 		const bool error_state = type >= MessageTypes::eError;
 		if (error_state)
-		{
-			std::string stacktrace	= "\n" + pretty_stacktrace();
-			str					   += stacktrace;
-		}
+			str.append("\n" + pretty_stacktrace());
 
 		log.writeText(std::to_string(_console_line) + ". " + str);
 
@@ -108,9 +105,8 @@ public:
 						fatalErrorMessage(error_desc.c_str());
 					}
 
-					std::abort();
-
 					log.close();
+					std::abort();
 				}
 			);
 
@@ -142,63 +138,63 @@ public:
 	}
 
 	template<typename... Args>
-	__forceinline static std::unexpected<std::string> str_unexpected(std::string fmt, Args&&... args)
+	__forceinline static std::unexpected<std::string> str_unexpected(std::string_view fmt, Args&&... args)
 	{
-		return std::unexpected(std::vformat(fmt, std::make_format_args(args...)));
+		return std::unexpected(utils::format(fmt, args...));
 	}
 
 	/** Send ok */
 	template<typename... Args>
-	static void print(std::string message, Args&&... args)
+	static void print(std::string_view message, Args&&... args)
 	{
 		msg(MessageTypes::ePrint, message, args...);
 	}
 
 	/** Send ok */
 	template<typename... Args>
-	static void ok(std::string message, Args&&... args)
+	static void ok(std::string_view message, Args&&... args)
 	{
 		msg(MessageTypes::eOk, message, args...);
 	}
 
 	/** Send info */
 	template<typename... Args>
-	static void info(std::string message, Args&&... args)
+	static void info(std::string_view message, Args&&... args)
 	{
 		msg(MessageTypes::eInfo, message, args...);
 	}
 
 	/** Send warning */
 	template<typename... Args>
-	static void warning(std::string message, Args&&... args)
+	static void warning(std::string_view message, Args&&... args)
 	{
 		msg(MessageTypes::eWarning, message, args...);
 	}
 
 	/** Send please */
 	template<typename... Args>
-	static void please(std::string message, Args&&... args)
+	static void please(std::string_view message, Args&&... args)
 	{
 		msg(MessageTypes::ePlease, message, args...);
 	}
 
 	/** Display error message and exit in certain conditions */
 	template<typename... Args>
-	static void error(std::string message, Args&&... args)
+	static void error(std::string_view message, Args&&... args)
 	{
 		msg(MessageTypes::eError, message, args...);
 	}
 
 	/** Display error message and exit anyway */
 	template<typename... Args>
-	[[noreturn]] static void fatal(std::string message, Args&&... args)
+	[[noreturn]] static void fatal(std::string_view message, Args&&... args)
 	{
 		msg(MessageTypes::eFatal, message, args...);
 	}
 
 	/** Check condition and throw warning if it fails */
 	template<typename... Args>
-	static void check(bool condition, std::string message, Args&&... args)
+	static void check(bool condition, std::string_view message, Args&&... args)
 	{
 		if (!condition)
 			warning(message, args...);
@@ -206,7 +202,7 @@ public:
 
 	/** Check condition and throw error if it fails */
 	template<typename... Args>
-	static void verify(bool condition, std::string message, Args&&... args)
+	static void verify(bool condition, std::string_view message, Args&&... args)
 	{
 		if (!condition)
 			error(message, args...);
@@ -214,7 +210,7 @@ public:
 
 	/** Check condition and fatal if it fails */
 	template<typename... Args>
-	static void _assert(bool condition, std::string message, Args&&... args)
+	static void _assert(bool condition, std::string_view message, Args&&... args)
 	{
 		if (!condition)
 			fatal(message, args...);

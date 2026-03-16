@@ -9,8 +9,8 @@ class CORE_API Service final
 
 	CriticalSection lock;
 
-	std::string				 _name{ "" };
-	std::string				 _description{ "" };
+	std::string_view		 _name{ "" };
+	std::string_view		 _description{ "" };
 	std::vector<std::string> _args;
 	Timer					 _time_limit{};
 	ULONGLONG				 _dw_start_time{ GetTickCount64() };
@@ -35,15 +35,15 @@ protected:
 
 public:
 	const std::filesystem::path file_name;
-	Service(const pcstr name) : _name(name), file_name(std::filesystem::path("")) {}
-	Service(const pcstr name, pcstr _file_name) : _name(name), file_name(std::filesystem::path(_file_name)) {}
+	Service(const std::string_view name) : _name(name), file_name(std::filesystem::path("")) {}
+	Service(const std::string_view name, std::string_view _file_name) : _name(name), file_name(std::filesystem::path(_file_name)) {}
 	Service(Service&&) = default;
 	~Service();
 
 	SC_HANDLE sc{ nullptr };
 
 	void		  setName(std::string new_name);
-	void		  setDescription(pcstr description);
+	void		  setDescription(std::string_view description);
 	std::string	  getName() const;
 	const Config& getConfig();
 

@@ -2,7 +2,7 @@
 
 using namespace std::chrono;
 
-void InputConsole::pause(pcstr info)
+void InputConsole::pause(std::string_view info)
 {
 	textPlease("{} Нажмите enter чтобы продолжить", true, info);
 
@@ -224,7 +224,7 @@ size_t InputConsole::selectFromList(const std::list<std::string>& list, std::fun
 	return select;
 }
 
-std::string InputConsole::textColor(pcstr text, ColorType type, bool reset_color)
+std::string InputConsole::textColor(std::string_view text, ColorType type, bool reset_color)
 {
 	auto color = [&type]
 	{

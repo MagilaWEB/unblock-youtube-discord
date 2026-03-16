@@ -1,11 +1,11 @@
 #include "utils.h"
 
-bool utils::IsUTF8(pcstr string)
+bool utils::IsUTF8(std::string_view string)
 {
-	if (!string)
+	if (string.empty())
 		return true;
 
-	const unsigned char* bytes = reinterpret_cast<const unsigned char*>(string);
+	const unsigned char* bytes = reinterpret_cast<const unsigned char*>(string.data());
 	u32					 num;
 	while (*bytes != 0x00)
 	{
@@ -44,16 +44,16 @@ bool utils::IsUTF8(pcstr string)
 	return true;
 }
 
-std::string utils::UTF8_to_CP1251(pcstr str)
+std::string utils::UTF8_to_CP1251(std::string_view str)
 {
 	if (IsUTF8(str))
 	{
-		const int len = static_cast<int>(strlen(str));
+		const int len = static_cast<int>(str.length());
 
 		static thread_local wchar_t cache_str[4'096];
 		RtlZeroMemory(&cache_str, sizeof(cache_str));
 
-		MultiByteToWideChar(CP_UTF8, 0, str, len + 1, cache_str, len + 1);
+		MultiByteToWideChar(CP_UTF8, 0, str.data(), len + 1, cache_str, len + 1);
 
 		static thread_local char cache_str_result[4'096];
 		RtlZeroMemory(&cache_str_result, sizeof(cache_str_result));
@@ -63,7 +63,7 @@ std::string utils::UTF8_to_CP1251(pcstr str)
 		return { cache_str_result };
 	}
 
-	return { str };
+	return { str.data() };
 }
 
 void utils::ltrim(std::string& str)

@@ -10,7 +10,7 @@ class ListUl final : public BaseElement
 	JSFunction _clear_li;
 
 public:
-	ListUl(pcstr name);
+	ListUl(std::string_view name);
 
 	void addEventClick(std::function<bool(JSArgs)>&& fn) = delete;
 
@@ -18,8 +18,8 @@ public:
 
 	void createLi(Localization::Str text);
 	void createLiSuccess(Localization::Str text, bool state = false);
-	void addClass(pcstr name_class);
-	void removeClass(pcstr name_class);
+	void addClass(std::string_view name_class);
+	void removeClass(std::string_view name_class);
 
 	void clear();
 };

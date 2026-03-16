@@ -1,6 +1,6 @@
 #include "ui_button.h"
 
-Button::Button(pcstr name) : BaseElement(name)
+Button::Button(std::string_view name) : BaseElement(name)
 {
 	_type = "button";
 }

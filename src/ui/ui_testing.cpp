@@ -72,7 +72,7 @@ void Ui::_testingWindow()
 void Ui::_activeServiceUpdate()
 {
 	_active_service->clear();
-	_unblock.checkStateServices([this](pcstr name, bool state) { _active_service->createLiSuccess(name, state); });
+	_unblock.checkStateServices([this](std::string_view name, bool state) { _active_service->createLiSuccess(name, state); });
 }
 
 void Ui::_testingServiceDomains()
@@ -85,8 +85,7 @@ void Ui::_testingServiceDomains()
 	if (_unblock_enable->getState())
 	{
 		Core::get().addTaskParallel(
-			[this]
-			{ _unblock.testingDomain([this](pcstr url, bool state) { _list_domain->createLiSuccess(url, state); }, false, false); }
+			[this] { _unblock.testingDomain([this](std::string_view url, bool state) { _list_domain->createLiSuccess(url, state); }, false, false); }
 		);
 
 		for (auto& [name, check_box] : _unblock_list_enable_services)
@@ -97,7 +96,7 @@ void Ui::_testingServiceDomains()
 					[this]
 					{
 						_unblock.testingDomain(
-							[this](pcstr url, bool state) { _list_domain_video->createLiSuccess(url, state); },
+							[this](std::string_view url, bool state) { _list_domain_video->createLiSuccess(url, state); },
 							true,
 							false
 						);

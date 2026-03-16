@@ -40,16 +40,15 @@ JSValue BaseElement::runCodeResult(const std::function<JSValue()>& run_code)
 	return run_code();
 }
 
-BaseElement::BaseElement(pcstr name) : _name(name), _type("base_element")
+BaseElement::BaseElement(std::string_view name) : _name(name.data()), _type("base_element")
 {
-	for (const auto& [_name_element, element] : _all_element)
-	{
-		ASSERT_ARGS(
-			_name_element != _name,
-			"You can't create different independent elements with the same name, it will break the logic of the name:[{}] is already occupied!",
-			this->name()
-		);
-	}
+	const auto find_element = std::ranges::find_if(_all_element, [this](const auto& _name_element) { return _name_element.first != _name; });
+
+	ASSERT_ARGS(
+		find_element != _all_element.end(),
+		"You can't create different independent elements with the same name, it will break the logic of the name:[{}] is already occupied!",
+		this->name()
+	);
 
 	_all_element[_name] = this;
 }
@@ -76,13 +75,13 @@ void BaseElement::release()
 	_view = nullptr;
 }
 
-void BaseElement::create(pcstr selector, Localization::Str title, bool first)
+void BaseElement::create(std::string_view selector, Localization::Str title, bool first)
 {
 	pcstr _title = title();
 	runCode(
 		[this, selector, _title, first]
 		{
-			ASSERT_ARGS(_create({ selector, name(), _title, first }).ToBoolean() == true, "Couldn't create a {} named [{}]", _type, name());
+			ASSERT_ARGS(_create({ selector.data(), name(), _title, first }).ToBoolean() == true, "Couldn't create a {} named [{}]", _type, name());
 			_event_click[name()].clear();
 			_created = true;
 		}

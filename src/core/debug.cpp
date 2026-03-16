@@ -1,6 +1,6 @@
 ﻿#include "debug.h"
 
-pcstr Debug::get_prefix(MessageTypes type)
+std::string_view Debug::get_prefix(MessageTypes type)
 {
 #ifdef WINDOWS
 	switch (type)
@@ -118,5 +118,6 @@ std::string Debug::pretty_stacktrace()
 
 		result += std::format("  #{:2} -> {:<{}} ({})\n", frame_num++, func, func_width, location);
 	}
+
 	return result;
 }

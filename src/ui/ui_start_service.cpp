@@ -268,7 +268,7 @@ void Ui::_startServiceFromConfig()
 				if (auto fake_bin = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "fake_bin"))
 					_unblock.changeStrategy(config.value().c_str(), fake_bin.value().c_str());
 				else
-					Debug::error(fake_bin.error().c_str());
+					Debug::error(fake_bin.error());
 
 				_unblock.startService();
 				_buttonUpdate();
@@ -278,5 +278,5 @@ void Ui::_startServiceFromConfig()
 		);
 	}
 	else
-		Debug::fatal(config.error().c_str());
+		Debug::fatal(config.error());
 }

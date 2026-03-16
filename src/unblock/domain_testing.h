@@ -31,7 +31,7 @@ public:
 
 	void loadDomain(bool video = false);
 
-	void test(bool test_video, bool base_test, std::function<void(pcstr url, bool state)>&& callback);
+	void test(bool test_video, bool base_test, std::function<void(std::string_view url, bool state)>&& callback);
 
 	void changeProxy(std::string ip, u32 port);
 	void changeMaxWaitTesting(u32 second);

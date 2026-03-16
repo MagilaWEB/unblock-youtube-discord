@@ -28,7 +28,7 @@ public:
 	InputConsole()	= default;
 	~InputConsole() = default;
 
-	static void		   pause(pcstr info = "");
+	static void		   pause(std::string_view info = "");
 	static std::string getString();
 	static u32		   getU32();
 	static u32		   sendNum(std::list<u8> nums);
@@ -37,7 +37,7 @@ public:
 	static size_t selectFromList(const std::list<std::string>& list, std::function<void(size_t select)>&& callback = [](u32) {});
 
 	template<typename... Args>
-	static void text(pcstr text, Args&&... args)
+	static void text(std::string_view text, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
 		msg(text, "{}", ColorType::CYAN, true, args...);
@@ -45,7 +45,7 @@ public:
 	}
 
 	template<typename... Args>
-	static void textOk(pcstr text, Args&&... args)
+	static void textOk(std::string_view text, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
 		msg(text, "Успех: {}", ColorType::GREEN, true, args...);
@@ -53,14 +53,14 @@ public:
 	}
 
 	template<typename... Args>
-	static void textInfo(pcstr text, Args&&... args)
+	static void textInfo(std::string_view text, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
 		msg(text, "Информация: {}", ColorType::YELLOW, true, args...);
 	}
 
 	template<typename... Args>
-	static void textAsk(pcstr text, Args&&... args)
+	static void textAsk(std::string_view text, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
 		std::cout << std::endl;
@@ -68,33 +68,33 @@ public:
 	}
 
 	template<typename... Args>
-	static void textWarning(pcstr text, Args&&... args)
+	static void textWarning(std::string_view text, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
 		msg(text, "Предупреждение: {}", ColorType::ORANGE, true, args...);
 	}
 
 	template<typename... Args>
-	static void textError(pcstr text, Args&&... args)
+	static void textError(std::string_view text, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
 		msg(text, "Ошибка: {}", ColorType::RED, true, args...);
 	}
 
 	template<typename... Args>
-	static void textPlease(pcstr text, bool reset_color, Args&&... args)
+	static void textPlease(std::string_view text, bool reset_color, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
 		msg(text, "Пожалуйста, {}:", ColorType::CYAN, reset_color, args...);
 	}
 
-	static std::string textColor(pcstr text, ColorType type, bool reset_color = true);
+	static std::string textColor(std::string_view text, ColorType type, bool reset_color = true);
 
 	static void clear();
 
 private:
 	template<typename... Args>
-	static void msg(pcstr text, pcstr prefix, ColorType type, bool reset_color, Args&&... args)
+	static void msg(std::string_view text, std::string_view prefix, ColorType type, bool reset_color, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
 		std::string			  mod_text = utils::format(prefix, utils::format(text, args...));

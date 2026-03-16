@@ -47,7 +47,7 @@ protected:
 
 public:
 	BaseElement() = delete;
-	BaseElement(pcstr name);
+	BaseElement(std::string_view name);
 	virtual ~BaseElement();
 
 	pcstr name() const { return _name.c_str(); }
@@ -55,7 +55,7 @@ public:
 	static void runCode(const std::function<void()>& run_code);
 	static JSValue runCodeResult(const std::function<JSValue()>& run_code);
 
-	void create(pcstr selector, Localization::Str title, bool first = false);
+	void create(std::string_view selector, Localization::Str title, bool first = false);
 	void remove();
 
 	virtual void show();

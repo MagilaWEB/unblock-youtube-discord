@@ -320,7 +320,7 @@ void Ui::_settingUnblockListEnableServicesUpdate()
 			check_box->setState(state.value());
 		}
 		else
-			Debug::warning(state.error().c_str());
+			Debug::warning(state.error());
 
 		if (check_box->getState())
 			_unblock.addOptionalStrategies(name);

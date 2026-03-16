@@ -15,11 +15,11 @@ jobs:
       matrix:
         os: [windows-latest]
         build_type: [Debug]
-        c_compiler: [clang-cl]
+        c_compiler: [clang++]
         include:
           - os: windows-latest
-            c_compiler: clang-cl
-            cpp_compiler: clang-cl
+            c_compiler: clang++
+            cpp_compiler: clang++
         exclude:
           - os: windows-latest
             c_compiler: gcc

@@ -7,13 +7,12 @@ class CheckBox final : public BaseElement
 	JSFunction _get_state;
 
 public:
-	CheckBox(pcstr name);
-	CheckBox(std::string name);
+	CheckBox(std::string_view name);
 
 	void initialize() override;
 
-	void create(pcstr selector, Localization::Str title, bool first = false) = delete;
-	void create(pcstr selector, Localization::Str title, Localization::Str description, bool first = false);
+	void create(std::string_view selector, Localization::Str title, bool first = false) = delete;
+	void create(std::string_view selector, Localization::Str title, Localization::Str description, bool first = false);
 	void setState(bool state);
 	bool getState();
 };

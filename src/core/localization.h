@@ -50,16 +50,18 @@ public:
 		}*/
 		Str() = delete;
 		Str(pcstr str_id) : _str_id(str_id) {}
+		Str(std::string str_id) : _str_id(str_id) {}
+		Str(std::string_view str_id) : _str_id(str_id.data()) {}
 
 		pcstr operator()()
 		{
-			if (_str_id)
+			if (!_str_id.empty())
 				return Localization::get().translate(_str_id);
 
 			return "warning: id text nullptr!";
 		}
 
-		pcstr _str_id;
+		std::string _str_id;
 	};
 
 public:
@@ -68,7 +70,7 @@ public:
 
 	static Localization& get();
 
-	void set(std::string lang_id);
+	void set(std::string_view lang_id);
 
-	pcstr translate(pcstr str_id);
+	pcstr translate(std::string_view str_id);
 };

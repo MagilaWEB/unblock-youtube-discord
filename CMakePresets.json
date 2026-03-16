@@ -16,10 +16,12 @@
         "CMAKE_C_COMPILER": "cl",
         "CMAKE_CXX_COMPILER": "cl"
       },
-      "toolset": "ClangCL",
       "vendor": {
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "hostOS": [ "Windows" ]
+          "hostOS": [ "Windows" ],
+          "intelliSenseMode": "windows-msvc-x64",
+          "enableMicrosoftCodeAnalysis": true,
+          "enableClangTidyCodeAnalysis": false
         }
       }
     },
@@ -32,23 +34,28 @@
       }
     },
     {
-      "name": "clang release",
-      "inherits": "release",
-      "displayName": "Ninja Clang-CL Release",
+      "name": "clang debug",
+      "inherits": "debug",
+      "displayName": "Ninja Clang Debug",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_C_COMPILER": "clang-cl",
-        "CMAKE_CXX_COMPILER": "clang-cl"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang++",
+        "CMAKE_CXX_COMPILER": "clang++"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "intelliSenseMode": "windows-clang-x64",
+          "enableMicrosoftCodeAnalysis": false,
+          "enableClangTidyCodeAnalysis": true
+        }
       }
     },
     {
-      "name": "clang debug",
-      "inherits": "debug",
-      "displayName": "Ninja Clang-CL Debug",
+      "name": "clang release",
+      "inherits": "clang debug",
+      "displayName": "Ninja Clang Release",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_C_COMPILER": "clang-cl",
-        "CMAKE_CXX_COMPILER": "clang-cl"
+        "CMAKE_BUILD_TYPE": "Release"
       }
     }
   ]

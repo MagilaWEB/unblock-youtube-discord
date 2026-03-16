@@ -27,14 +27,14 @@ public:
 	};
 
 public:
-	Input(pcstr name);
+	Input(std::string_view name);
 
-	void addEventClick(std::function<bool(JSArgs)>&& fn)					 = delete;
-	void create(pcstr selector, Localization::Str title, bool first = false) = delete;
+	void addEventClick(std::function<bool(JSArgs)>&& fn)								= delete;
+	void create(std::string_view selector, Localization::Str title, bool first = false) = delete;
 
 	void initialize() override;
 
-	void create(pcstr selector, Types type, JSValue value, Localization::Str title, Localization::Str description, bool first = false);
+	void create(std::string_view selector, Types type, JSValue value, Localization::Str title, Localization::Str description, bool first = false);
 	void addEventSubmit(std::function<bool(JSArgs)>&& callback);
 
 	void	setValue(JSValue value);

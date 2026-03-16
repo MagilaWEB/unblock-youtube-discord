@@ -1,6 +1,6 @@
 #include "ui_list_ul.h"
 
-ListUl::ListUl(pcstr name) : BaseElement(name)
+ListUl::ListUl(std::string_view name) : BaseElement(name)
 {
 	_type = "list_ul";
 }
@@ -69,26 +69,26 @@ void ListUl::createLiSuccess(Localization::Str text, bool state)
 	);
 }
 
-void ListUl::addClass(pcstr name_class)
+void ListUl::addClass(std::string_view name_class)
 {
 	runCode(
 		[this, name_class]
 		{
 			if (!_created)
 				return;
-			ASSERT_ARGS(_add_class({ name(), name_class }).ToBoolean() == true, "Couldn't addClass a {} named [{}]", _type, name());
+			ASSERT_ARGS(_add_class({ name(), name_class.data() }).ToBoolean() == true, "Couldn't addClass a {} named [{}]", _type, name());
 		}
 	);
 }
 
-void ListUl::removeClass(pcstr name_class)
+void ListUl::removeClass(std::string_view name_class)
 {
 	runCode(
 		[this, name_class]
 		{
 			if (!_created)
 				return;
-			ASSERT_ARGS(_remove_class({ name(), name_class }).ToBoolean() == true, "Couldn't removeClass a {} named [{}]", _type, name());
+			ASSERT_ARGS(_remove_class({ name(), name_class.data() }).ToBoolean() == true, "Couldn't removeClass a {} named [{}]", _type, name());
 		}
 	);
 }

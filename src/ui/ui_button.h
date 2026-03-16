@@ -4,7 +4,7 @@
 class Button final : public BaseElement
 {
 public:
-	Button(pcstr name);
+	Button(std::string_view name);
 
 	void initialize() override;
 };

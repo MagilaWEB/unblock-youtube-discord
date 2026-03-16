@@ -14,7 +14,7 @@ Localization& Localization::get()
 	return lang;
 }
 
-void Localization::set(std::string lang_id)
+void Localization::set(std::string_view lang_id)
 {
 	FAST_LOCK(_lock);
 	_string_list.clear();
@@ -52,18 +52,13 @@ void Localization::set(std::string lang_id)
 	);
 }
 
-pcstr Localization::translate(pcstr str_id)
+pcstr Localization::translate(std::string_view str_id)
 {
 	FAST_LOCK_SHARED(_lock);
 
-	if (str_id)
-	{
-		auto it = _string_list.find(str_id);
-		if (it != _string_list.end())
-			return it->second.c_str();
-	}
-	else
-		return "";
+	auto it = _string_list.find(str_id.data());
+	if (it != _string_list.end())
+		return it->second.c_str();
 
-	return str_id;
+	return str_id.data();
 }

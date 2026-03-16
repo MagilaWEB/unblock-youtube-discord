@@ -1,13 +1,9 @@
 #include "ui_check_box.h"
 #include "utils_ultralight.hpp"
 
-CheckBox::CheckBox(pcstr name) : BaseElement(name)
+CheckBox::CheckBox(std::string_view name) : BaseElement(name)
 {
 	_type = "check_box";
-}
-
-CheckBox::CheckBox(std::string name) : BaseElement(name.c_str())
-{
 }
 
 void CheckBox::initialize()
@@ -39,7 +35,7 @@ void CheckBox::initialize()
 		global_js["CPPCheckBoxEventClick"] = JS_EVENT(_event_click);
 }
 
-void CheckBox::create(pcstr selector, Localization::Str title, Localization::Str description, bool first)
+void CheckBox::create(std::string_view selector, Localization::Str title, Localization::Str description, bool first)
 {
 	String _title		= title();
 	String _description = description();
@@ -47,7 +43,7 @@ void CheckBox::create(pcstr selector, Localization::Str title, Localization::Str
 		[this, selector, _title, _description, first]
 		{
 			ASSERT_ARGS(
-				_create({ selector, name(), _title, _description, first }).ToBoolean() == true,
+				_create({ selector.data(), name(), _title, _description, first }).ToBoolean() == true,
 				"Couldn't create a {} named [{}]",
 				_type,
 				name()

@@ -26,7 +26,7 @@ void File::forLine(std::function<bool(std::string)> fn)
 			break;
 }
 
-void File::forLineSection(pcstr section, std::function<bool(std::string&)> fn)
+void File::forLineSection(std::string_view section, std::function<bool(std::string&)> fn)
 {
 	CRITICAL_SECTION_RAII(lock);
 
@@ -37,7 +37,7 @@ void File::forLineSection(pcstr section, std::function<bool(std::string&)> fn)
 		return;
 	}
 
-	auto& list_string = _map_list_string[section];
+	auto& list_string = _map_list_string[section.data()];
 	if (list_string.empty())
 	{
 		bool		start{ false };
@@ -73,7 +73,7 @@ void File::forLineSection(pcstr section, std::function<bool(std::string&)> fn)
 			break;
 }
 
-void File::forLineParametersSection(pcstr section, std::function<bool(std::string key, std::string value)> fn)
+void File::forLineParametersSection(std::string_view section, std::function<bool(std::string key, std::string value)> fn)
 {
 	CRITICAL_SECTION_RAII(lock);
 
@@ -106,7 +106,7 @@ void File::forLineParametersSection(pcstr section, std::function<bool(std::strin
 	);
 }
 
-std::optional<u32> File::positionSection(pcstr section)
+std::optional<u32> File::positionSection(std::string_view section)
 {
 	u32			position{ 0 };
 	std::string name_section{ "[]" };
@@ -134,7 +134,7 @@ std::optional<u32> File::positionSection(pcstr section)
 }
 
 template<concepts::VallidALL TypeReturn>
-std::expected<TypeReturn, std::string> File::parameterSection(pcstr section, pcstr parameter)
+std::expected<TypeReturn, std::string_view> File::parameterSection(std::string_view section, std::string_view parameter)
 {
 	CRITICAL_SECTION_RAII(lock);
 
@@ -201,17 +201,18 @@ std::expected<TypeReturn, std::string> File::parameterSection(pcstr section, pcs
 	return Debug::str_unexpected("Не удалось найти параметр [{}] в секции [{}]!", parameter, section);
 }
 
-template CORE_API std::expected<std::string, std::string> File::parameterSection<std::string>(pcstr section, pcstr parameter);
-template CORE_API std::expected<cpcstr, std::string> File::parameterSection<cpcstr>(pcstr section, pcstr parameter);
-template CORE_API std::expected<pcstr, std::string> File::parameterSection<pcstr>(pcstr section, pcstr parameter);
-template CORE_API std::expected<bool, std::string> File::parameterSection<bool>(pcstr section, pcstr parameter);
-template CORE_API std::expected<float, std::string> File::parameterSection<float>(pcstr section, pcstr parameter);
-template CORE_API std::expected<s32, std::string> File::parameterSection<s32>(pcstr section, pcstr parameter);
-template CORE_API std::expected<u8, std::string> File::parameterSection<u8>(pcstr section, pcstr parameter);
-template CORE_API std::expected<u32, std::string> File::parameterSection<u32>(pcstr section, pcstr parameter);
-template CORE_API std::expected<u64, std::string> File::parameterSection<u64>(pcstr section, pcstr parameter);
+template CORE_API std::expected<std::string, std::string_view>
+				  File::parameterSection<std::string>(std::string_view section, std::string_view parameter);
+template CORE_API std::expected<cpcstr, std::string_view> File::parameterSection<cpcstr>(std::string_view section, std::string_view parameter);
+template CORE_API std::expected<pcstr, std::string_view> File::parameterSection<pcstr>(std::string_view section, std::string_view parameter);
+template CORE_API std::expected<bool, std::string_view> File::parameterSection<bool>(std::string_view section, std::string_view parameter);
+template CORE_API std::expected<float, std::string_view> File::parameterSection<float>(std::string_view section, std::string_view parameter);
+template CORE_API std::expected<s32, std::string_view> File::parameterSection<s32>(std::string_view section, std::string_view parameter);
+template CORE_API std::expected<u8, std::string_view> File::parameterSection<u8>(std::string_view section, std::string_view parameter);
+template CORE_API std::expected<u32, std::string_view> File::parameterSection<u32>(std::string_view section, std::string_view parameter);
+template CORE_API std::expected<u64, std::string_view> File::parameterSection<u64>(std::string_view section, std::string_view parameter);
 
-void File::writeText(std::string str)
+void File::writeText(std::string_view str)
 {
 	CRITICAL_SECTION_RAII(lock);
 
@@ -223,7 +224,7 @@ void File::writeText(std::string str)
 	_line_string.emplace_back(str);
 }
 
-void File::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_argument)
+void File::writeSectionParameter(std::string_view section, std::string_view parameter, std::string_view value_argument)
 {
 	CRITICAL_SECTION_RAII(lock);
 
@@ -237,7 +238,7 @@ void File::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_arg
 
 	forLineSection(
 		section,
-		[this, &stoped, parameter, new_value](std::string& str)
+		[&stoped, parameter, new_value](std::string& str)
 		{
 			std::smatch para;
 			if (std::regex_search(str, para, reg_equally))
@@ -262,7 +263,7 @@ void File::writeSectionParameter(pcstr section, pcstr parameter, pcstr value_arg
 	if (stoped)
 		return;
 
-	std::string& str  = _map_list_string[section].emplace_back(std::string{ parameter });
+	std::string& str  = _map_list_string[section.data()].emplace_back(parameter);
 	str				 += "=";
 	str				 += new_value;
 
@@ -294,7 +295,7 @@ bool File::empty() const
 	return _line_string.empty() && _map_list_string.empty();
 }
 
-void File::open(std::filesystem::path file, pcstr expansion, bool no_default_patch)
+void File::open(std::filesystem::path file, std::string_view expansion, bool no_default_patch)
 {
 	CRITICAL_SECTION_RAII(lock);
 	_is_write = false;

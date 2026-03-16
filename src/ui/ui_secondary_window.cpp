@@ -1,6 +1,6 @@
 #include "ui_secondary_window.h"
 
-SecondaryWindow::SecondaryWindow(pcstr name) : BaseElement(name)
+SecondaryWindow::SecondaryWindow(std::string_view name) : BaseElement(name)
 {
 	_type = "secondary_window";
 	_all_window.push_back(this);

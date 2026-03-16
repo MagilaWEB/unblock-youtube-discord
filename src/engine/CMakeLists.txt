@@ -37,10 +37,18 @@ target_link_libraries(${NAME} PRIVATE
 # Define EXPORTS when building the libraries
 target_compile_definitions(${NAME} PRIVATE CONSOLE ENGINE_EXPORTS ${ALL_MACRO_CPP})
 # Tell MSVC to use main instead of WinMain for Windows subsystem executables
-set_target_properties(${NAME} PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup /MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\"")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set_target_properties(${NAME} PROPERTIES LINK_FLAGS "-Wl,/ENTRY:mainCRTStartup -Wl,/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\"")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+   set_target_properties(${NAME} PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup /MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\"")
+endif()
 
 # To hide console on startup
-target_link_options(${NAME} PRIVATE /SUBSYSTEM:WINDOWS)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_link_options(${NAME} PRIVATE "-Wl,/SUBSYSTEM:WINDOWS")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_link_options(${NAME} PRIVATE "/SUBSYSTEM:WINDOWS")
+endif()
 
 # Copy library binaries to the folder of the compiled project
 if(CUPY_LIBS_DLL_TO_BIN)

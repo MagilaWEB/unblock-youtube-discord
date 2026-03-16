@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.25)
 
 project(unblock_cpp LANGUAGES CXX VERSION 0)
 
+
+
 enable_testing()
 
 option(CUPY_LIBS_DLL_TO_BIN "CUPY_LIBS_DLL_TO_BIN" ON)
@@ -19,12 +21,11 @@ else (MSVC)
   set (LOG4CPLUS_WORKING_LOCALE_DEFAULT OFF)
 endif (MSVC)
 
-# Enable C++23/20
+# Enable C++23
 set(CMAKE_CXX_STANDARD 23)
-
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-#set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 
 # Set global output directories for all binaries
 set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
@@ -113,9 +114,9 @@ message(STATUS "COMPILER = ${CMAKE_CXX_COMPILER_ID}")
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 # Enforce Clang warnings
-    add_compile_options(-Wall -Wextra -Wpedantic)
+    add_compile_options(-Wall -Wextra -fmodules)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    add_compile_options(/utf-8 /W4)
+    add_compile_options(/utf-8 /W4 /experimental:module)
 endif()
 
 # Add submodules

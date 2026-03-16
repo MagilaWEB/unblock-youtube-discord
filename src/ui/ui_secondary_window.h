@@ -29,12 +29,12 @@ public:
 		Info = type_max<u8>
 	};
 	
-	SecondaryWindow(pcstr name);
+	SecondaryWindow(std::string_view name);
 	~SecondaryWindow() override;
 
 	void initialize() override;
 
-	void create(pcstr selector, Localization::Str title, bool first = false) = delete;
+	void create(std::string_view selector, Localization::Str title, bool first = false) = delete;
 	void addEventClick(std::function<bool(JSArgs)>&& callback) = delete;
 
 	void create(Localization::Str title, Localization::Str description);

@@ -1,6 +1,6 @@
 #include "ui_input.h"
 
-Input::Input(pcstr name) : BaseElement(name)
+Input::Input(std::string_view name) : BaseElement(name)
 {
 	_type = "input";
 }
@@ -31,7 +31,7 @@ void Input::initialize()
 		global_js["CPPInputEventSubmit"] = JS_EVENT(_event_click);
 }
 
-void Input::create(pcstr selector, Types type, JSValue value, Localization::Str title, Localization::Str description, bool first)
+void Input::create(std::string_view selector, Types type, JSValue value, Localization::Str title, Localization::Str description, bool first)
 {
 	String _title		= title();
 	String _description = description();
@@ -44,7 +44,7 @@ void Input::create(pcstr selector, Types type, JSValue value, Localization::Str 
 				if (id == type)
 				{
 					ASSERT_ARGS(
-						_create({ selector, name(), str, value, _title, _description, first }).ToBoolean() == true,
+						_create({ selector.data(), name(), str, value, _title, _description, first }).ToBoolean() == true,
 						"Couldn't create a {} named [{}]",
 						_type,
 						name()

@@ -9,14 +9,14 @@ class SelectList final : public BaseElement
 	JSFunction _clear;
 
 public:
-	SelectList(pcstr name);
+	SelectList(std::string_view name);
 
-	void addEventClick(std::function<bool(JSArgs)>&& callback)	 = delete;
-	void create(pcstr selector, Localization::Str title, bool first = false) = delete;
+	void addEventClick(std::function<bool(JSArgs)>&& callback)							= delete;
+	void create(std::string_view selector, Localization::Str title, bool first = false) = delete;
 
 	void initialize() override;
 
-	void create(pcstr selector, Localization::Str title, Localization::Str description, bool first = false);
+	void create(std::string_view selector, Localization::Str title, Localization::Str description, bool first = false);
 	void createOption(JSValue value, Localization::Str text, bool select = false);
 
 	void addEventChange(std::function<bool(JSArgs)>&& callback);

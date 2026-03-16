@@ -137,7 +137,7 @@ void StrategiesDPI::_uploadStrategies()
 		}
 	}
 
-	std::ranges::sort(sort_service_filters, [this](const auto& left, const auto& right) { return left.first < right.first; });
+	std::ranges::sort(sort_service_filters, [](const auto& left, const auto& right) { return left.first < right.first; });
 
 	for (auto& pair : sort_service_filters)
 		for (auto& line : pair.second)

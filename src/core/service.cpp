@@ -12,7 +12,7 @@ void Service::setName(std::string new_name)
 	_name = new_name;
 }
 
-void Service::setDescription(pcstr description)
+void Service::setDescription(std::string_view description)
 {
 	CRITICAL_SECTION_RAII(lock);
 
@@ -21,7 +21,7 @@ void Service::setDescription(pcstr description)
 
 std::string Service::getName() const
 {
-	return _name;
+	return _name.data();
 }
 
 const Service::Config& Service::getConfig()
@@ -46,7 +46,7 @@ void Service::create()
 {
 	CRITICAL_SECTION_RAII(lock);
 
-	ASSERT_ARGS(!sc, "The service [{}] has already been found or created, it cannot be recreated!", _name.c_str());
+	ASSERT_ARGS(!sc, "The service [{}] has already been found or created, it cannot be recreated!", _name);
 
 	_initScManager();
 
@@ -67,8 +67,8 @@ void Service::create()
 	{
 		sc = CreateService(
 			_sc_manager,
-			utils::UTF8_to_CP1251(_name.c_str()).c_str(),
-			utils::UTF8_to_CP1251(_description.c_str()).c_str(),
+			utils::UTF8_to_CP1251(_name).c_str(),
+			utils::UTF8_to_CP1251(_description).c_str(),
 			SC_MANAGER_ALL_ACCESS,
 			SERVICE_WIN32_OWN_PROCESS,
 			SERVICE_AUTO_START,
@@ -96,7 +96,7 @@ void Service::create()
 		if (_time_limit.getElapsed_sec() > 5.f)
 		{
 			std::string message = std::system_category().message(static_cast<int>(err));
-			InputConsole::textError("не удаётся создать службу [{}], причина [{}].", _name.c_str(), message.c_str());
+			InputConsole::textError("не удаётся создать службу [{}], причина [{}].", _name, message.c_str());
 			return;
 		}
 
@@ -105,7 +105,7 @@ void Service::create()
 
 	} while (true);
 
-	ASSERT_ARGS(sc, "Service could not be created [{}]!", _name.c_str());
+	ASSERT_ARGS(sc, "Service could not be created [{}]!", _name);
 }
 
 void Service::setArgs(std::vector<std::string> args)
@@ -123,11 +123,11 @@ void Service::start()
 
 	if (config.sc_status.dwCurrentState != SERVICE_STOPPED && config.sc_status.dwCurrentState != SERVICE_STOP_PENDING)
 	{
-		InputConsole::textError("служба [{}] не остановлена или в прогрессе остановки, запустить не возможно!", _name.c_str());
+		InputConsole::textError("служба [{}] не остановлена или в прогрессе остановки, запустить не возможно!", _name);
 		return;
 	}
 
-	InputConsole::textPlease("подождите окончания запуска службы [{}]", true, _name.c_str());
+	InputConsole::textPlease("подождите окончания запуска службы [{}]", true, _name);
 
 	std::vector<pcstr> args;
 	for (auto& arg : _args)
@@ -142,7 +142,7 @@ void Service::start()
 		// We try for 5 seconds, otherwise we interrupt.
 		if (_time_limit.getElapsed_sec() > 5.f)
 		{
-			InputConsole::textError("истекло время ожидания запуска службы [{}], процесс запуска прерван, причина не известна!", _name.c_str());
+			InputConsole::textError("истекло время ожидания запуска службы [{}], процесс запуска прерван, причина не известна!", _name);
 			return;
 		}
 
@@ -161,7 +161,7 @@ void Service::start()
 		SERVICE_RUNNING,
 		[this]
 		{
-			InputConsole::textError("истекло время ожидания запуска службы [{}], процесс будет остановлен!", _name.c_str());
+			InputConsole::textError("истекло время ожидания запуска службы [{}], процесс будет остановлен!", _name);
 			stop();
 		}
 	);
@@ -171,15 +171,15 @@ void Service::start()
 		SERVICE_RUNNING,
 		[this]
 		{
-			InputConsole::textError("истекло время ожидания запуска службы [{}], процесс будет остановлен!", _name.c_str());
+			InputConsole::textError("истекло время ожидания запуска службы [{}], процесс будет остановлен!", _name);
 			stop();
 		}
 	);
 
 	if (config.sc_status.dwCurrentState == SERVICE_RUNNING)
-		InputConsole::textOk("служба [{}] запущена.", _name.c_str());
+		InputConsole::textOk("служба [{}] запущена.", _name);
 	else
-		InputConsole::textWarning("служба [{}] была запущена но неожиданно сменила свой статус.", _name.c_str());
+		InputConsole::textWarning("служба [{}] была запущена но неожиданно сменила свой статус.", _name);
 }
 
 void Service::update()
@@ -255,7 +255,7 @@ void Service::open()
 			u32 it{ 0 };
 			do
 			{
-				sc = OpenService(_sc_manager, _name.c_str(), SC_MANAGER_ALL_ACCESS);
+				sc = OpenService(_sc_manager, _name.data(), SC_MANAGER_ALL_ACCESS);
 				if (sc)
 					break;
 
@@ -282,13 +282,13 @@ void Service::stop()
 
 	if (config.sc_status.dwCurrentState != SERVICE_STOPPED)
 	{
-		InputConsole::textPlease("подождите окончания остановки службы [{}]", true, _name.c_str());
+		InputConsole::textPlease("подождите окончания остановки службы [{}]", true, _name);
 
 		auto service_stop = [this, &stopped]
 		{
 			stopped					= true;
 			const bool send_control = ControlService(sc, SERVICE_CONTROL_STOP, reinterpret_cast<LPSERVICE_STATUS>(&config.sc_status));
-			ASSERT_ARGS(send_control, "Failed to send a request to stop the service [{}]!", _name.c_str());
+			ASSERT_ARGS(send_control, "Failed to send a request to stop the service [{}]!", _name);
 		};
 
 		service_stop();
@@ -320,7 +320,7 @@ void Service::stop()
 	update();
 
 	if ((stopped && config.sc_status.dwCurrentState == SERVICE_STOPPED) || !sc)
-		InputConsole::textOk("служба [{}] остановлена.", _name.c_str());
+		InputConsole::textOk("служба [{}] остановлена.", _name);
 }
 
 void Service::remove()

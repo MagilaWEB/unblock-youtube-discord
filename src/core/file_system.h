@@ -32,22 +32,22 @@ public:
 
 	bool isOpen() const;
 	bool empty() const;
-	void open(path file, pcstr expansion, bool no_default_patch = false);
+	void open(path file, std::string_view expansion, bool no_default_patch = false);
 	void clear();
 	void save();
 	void close();
 
 	void forLine(std::function<bool(std::string)> fn);
-	void forLineSection(pcstr section, std::function<bool(std::string&)> fn);
-	void forLineParametersSection(pcstr section, std::function<bool(std::string key, std::string value)> fn);
+	void forLineSection(std::string_view section, std::function<bool(std::string&)> fn);
+	void forLineParametersSection(std::string_view section, std::function<bool(std::string key, std::string value)> fn);
 
-	std::optional<u32> positionSection(pcstr section);
+	std::optional<u32> positionSection(std::string_view section);
 
 	template<concepts::VallidALL TypeReturn>
-	std::expected<TypeReturn, std::string> parameterSection(pcstr section, pcstr paramert);
+	std::expected<TypeReturn, std::string_view> parameterSection(std::string_view section, std::string_view paramert);
 
-	void writeText(std::string str);
-	void writeSectionParameter(pcstr section, pcstr paramert, pcstr value_argument);
+	void writeText(std::string_view str);
+	void writeSectionParameter(std::string_view section, std::string_view paramert, std::string_view value_argument);
 
 private:
 	void _normalize();

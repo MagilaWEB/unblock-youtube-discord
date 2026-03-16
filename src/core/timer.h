@@ -14,7 +14,7 @@ public:
 
 	void start();
 
-	virtual Duration getElapsedTime() const;
+	Duration getElapsedTime() const;
 
 	u64 getElapsed_ms() const;
 
