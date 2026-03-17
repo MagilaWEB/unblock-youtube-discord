@@ -155,7 +155,7 @@ u32 DomainTesting::errorRate() const
 void DomainTesting::printTestInfo() const
 {
 	InputConsole::textInfo(
-		"Тестирование завершилось с результатом [{}] из [{}] общий успех [{}%%]",
+		"Тестирование завершилось с результатом [{}] из [{}] общий успех [{}%]",
 		_domain_ok.load(),
 		_list_domain.size(),
 		successRate()

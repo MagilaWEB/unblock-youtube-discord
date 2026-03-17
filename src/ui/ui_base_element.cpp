@@ -42,10 +42,10 @@ JSValue BaseElement::runCodeResult(const std::function<JSValue()>& run_code)
 
 BaseElement::BaseElement(std::string_view name) : _name(name.data()), _type("base_element")
 {
-	const auto find_element = std::ranges::find_if(_all_element, [this](const auto& _name_element) { return _name_element.first != _name; });
+	const auto find_element = std::ranges::find_if(_all_element, [this](const auto& _name_element) { return _name_element.first == _name; });
 
 	ASSERT_ARGS(
-		find_element != _all_element.end(),
+		find_element == _all_element.end(),
 		"You can't create different independent elements with the same name, it will break the logic of the name:[{}] is already occupied!",
 		this->name()
 	);
