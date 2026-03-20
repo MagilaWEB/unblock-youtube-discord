@@ -96,9 +96,6 @@ const std::map<std::string, StrategiesDPI::FakeBinParam>& Unblock::getFakeBinLis
 
 std::list<Service>& Unblock::getConflictingServices()
 {
-#if __clang__
-	[[clang::no_destroy]]
-#endif
 	static std::list<Service> conflicting_service;
 
 	Service::allService(
@@ -107,31 +104,32 @@ std::list<Service>& Unblock::getConflictingServices()
 			if (name_service.empty())
 				return;
 
-			Service service{ name_service.c_str() };
+			Service service{ name_service };
 			service.open();
+
 			auto& config = service.getConfig();
 
-			if (config.binary_path.contains("winws.exe") || config.binary_path.contains("goodbyedpi.exe")
-				|| config.binary_path.contains("ciadpi.exe"))
+			constexpr static std::string_view services_conflict[]{ "winws.exe", "winws2.exe", "goodbyedpi.exe", "ciadpi.exe" };
+
+			for (auto& name_prosses : services_conflict)
 			{
-				if (std::regex_match(name_service, std::regex{ _zapret.getName() }))
-					return;
+				if (config.binary_path.contains(name_prosses))
+				{
+					if (std::regex_match(name_service, std::regex{ _zapret.getName() }))
+						continue;
 
-				if (std::regex_match(name_service, std::regex{ "ciadpi.exe" }))
-					return;
+					if (std::regex_match(name_service, std::regex{ _win_divert.getName() }))
+						continue;
 
-				if (std::regex_match(name_service, std::regex{ _win_divert.getName() }))
-					return;
-
-				conflicting_service.emplace_back(Service{ name_service.c_str() });
-				conflicting_service.back().open();
+					conflicting_service.emplace_back(Service{ name_service.c_str() });
+					conflicting_service.back().open();
+				}
 			}
 		}
 	);
 
 	return conflicting_service;
 }
-
 
 bool Unblock::runTest(bool video)
 {
@@ -156,7 +154,6 @@ void Unblock::testingDomain(std::function<void(std::string_view url, bool state)
 
 void Unblock::testingDomainCancel(bool video)
 {
-
 	if (video)
 	{
 		_domain_testing_video.cancelTesting();
@@ -364,7 +361,6 @@ const std::list<std::string>& Unblock::dnsHostsListName()
 
 void Unblock::removeService()
 {
-
 #if 0	 // #ifdef DEBUG
 	if (_zapret_dbg_run.load())
 	{
@@ -381,7 +377,6 @@ void Unblock::removeService()
 
 void Unblock::stopService()
 {
-
 #if 0	 // #ifdef DEBUG
 	if (_zapret_dbg_run.load())
 	{
