@@ -1,0 +1,265 @@
+// NAV
+str_h2_home=Home
+str_h2_setting=Settings
+
+// Footer BUTTON
+str_link_to_github=↗ GitHub
+str_link_to_telegram=↗ Telegram
+
+// BUTTON HOME
+str_b_start_unblock=▶ Start Zapret
+str_b_restart_unblock=🔄 Restart Zapret
+str_b_stop_unblock=⏹ Stop Zapret
+str_b_stop_service_all=⏹ Stop Services
+
+str_b_start_testing=🧪 Test
+str_b_start_find_config=🔍 Find Config
+
+// console text
+str_console_selected_config=Configuration selected [{}].
+str_console_not_find_fake_key=fake key [{}] not found! Available keys [{}].
+
+// services info
+str_service_zapret_description=DPI software for bypassing blocks.
+str_error_create_service=failed to create service [{}], reason [{}].
+str_error_stoping_service=service [{}] is not stopped or is stopping, cannot start!
+str_wait_startig_service=wait for service [{}] to start
+str_wait_stoping_service=wait for service [{}] to stop
+str_error_wait_time_start_service=timeout waiting for service [{}] to start, startup aborted, unknown reason!
+str_expired_wait_time_start_service=timeout waiting for service [{}] to start, process will be stopped!
+str_success_start_service=service [{}] started.
+str_success_stop_service=service [{}] stopped.
+str_warning_no_start_service=service [{}] was started but unexpectedly changed its status.
+
+// Warning/error url
+str_warning_url=access problem: {}
+str_result_url_testing=Testing completed with result [{}] out of [{}] total success [{}%]
+str_base_testing_url_success=Basic test successful, starting full test...
+
+// Common
+str_please_wait=⏳ Please wait...
+str_warning=⚠ Warning
+str_error=❌ Error
+str_info=ℹ Info
+str_not_selected=◌ Not selected
+
+str_window_wait_response_from_server_description=⏳ Waiting for server response...
+Loading data. This may take a few seconds.
+
+str_show_info_selected_service_setting=📋 Show settings
+str_window_info_selected_service_setting=📋 Current settings:
+├ Zapret2 config: [{}]
+├ Zapret2 spoofing: [{}]
+└ Zapret2 config version: [{}]
+
+str_warning_copy_application_running=Unblock is already running. Cannot start another instance.
+
+// Removing
+str_button_remove=🗑 Uninstall Unblock
+str_remove_app_description=🗑 Uninstall Unblock
+All Unblock services will be removed, system settings restored from backups, and settings reset.
+This action is irreversible. Are you sure you want to continue?
+
+// Input console log info
+str_beginning_auto_selection=🔍 Starting automatic configuration selection
+
+// BLOCK HOME
+str_h2_active_service=📊 Active services:
+
+str_h2_verified_domains=✅ Available domains (Zapret):
+str_h2_verified_domains_video=🎥 YouTube (Zapret):
+
+// Check update app startup
+str_checkbox_check_update_app_startup_title=🔄 Check for updates at startup
+str_checkbox_check_update_app_startup_description=Automatically check for new Unblock version every time the app starts.
+str_window_error_update_unblock=❌ Update error
+Could not check or download the update.
+Possible reasons:
+• No internet connection
+• Limited access to GitHub
+• Network issues
+
+Check your connection and try again.
+
+// Check update
+str_bottom_check_update_app_startup_title=🔍 Check for updates
+
+// Secondary Window
+str_b_secondary_window_ok=✅ OK
+str_b_secondary_window_yes=✅ Yes
+str_b_secondary_window_no=❌ No
+str_b_secondary_window_cancel=↩ Cancel
+
+// Secondary Window start\stop service
+str_window_service_start_wait_description=▶ Starting services...
+str_window_service_stop_wait_description=⏹ Stopping services...
+
+// Secondary Window Wait testing domain
+str_secondary_window_description_wait_domain=📡 Testing domains...
+
+// Secondary Window auto start wait
+str_window_auto_start_wait_description=🔍 Selecting configuration...
+Factors:
+• Internet quality
+• Resource availability
+• ISP blocking level
+
+str_window_auto_start_wait_name_strategy_description=🧪 Testing configuration:
+├ Config: [{}]
+├ Version: [{}]
+└ Spoofing: [{}]
+
+str_window_auto_start_wait_name_strategy_proxy_description=🧪 Testing configuration: {}
+
+str_window_configuration_selection_error=❌ Automatic selection failed
+Possible reasons:
+• Resources not responding
+• Unstable connection
+Solutions:
+• Choose config manually
+• Or use a VPN
+
+// Secondary Window info new update unblock
+str_window_update_unblock=🔄 Unblock update available v{}
+The application will be automatically updated and restarted.
+Do you want to install the update now?
+
+str_window_wait_update_unblock=⏳ Downloading Unblock update [{:.2f}%]...
+Do not close the application. It will restart automatically when finished.
+
+str_window_check_update_unblock=🔍 Checking for updates...
+Looking for available Unblock updates.
+
+// Secondary Window config not found
+str_window_config_not_found_title=📭 No configuration selected
+str_window_config_not_found_description=First launch or config deleted.
+→ Automatic selection will start.
+
+// Secondary Window config found
+str_window_config_found_title=📂 Previous configuration found
+str_window_config_found_proxy_description=📂 Previous configuration found: [{}]
+Start automatic selection of a new configuration?
+Yes — look for another option
+No — use current
+
+str_window_config_found_description=📂 Previous configuration found:
+├ Config: [{}]
+├ Version: [{}]
+└ Spoofing: [{}]
+Start automatic selection of a new configuration?
+Yes — look for another option
+No — use current
+
+// Secondary Window continue select strategy
+str_window_continue_select_strategy_title=✅ Configuration selected
+str_window_continue_select_strategy_description=Selected:
+├ Config: [{}]
+├ Version: [{}]
+└ Spoofing: [{}]
+Continue searching?
+
+str_window_continue_select_strategy_proxy_description=✅ Configuration selected: [{}]
+We recommend checking site availability yourself.
+If everything works — click «No» to finish selection.
+If you want a different option — click «Yes» to continue searching.
+
+// Secondary Window warning to conflict service
+str_window_warning_conflict_service=⚠ Conflicting services: [{}]
+Recommended to remove them for Unblock to work properly.
+Remove?
+
+// Secondary Window Warning about the introduction into the system
+str_window_to_warn_enable_dns_hosts_description=⚙ Unblock needs access to the system hosts file
+What this provides:
+• Bypass regional blocks
+• Bypass DNS filtering
+Safe: can be disabled in settings.
+Current services: [{}].
+
+str_window_wait_update_dns_description=🔄 Loading local DNS [{:.2f}%]... 
+Updating the system hosts file to bypass blocks.
+This may take several minutes.
+
+str_button_start_dns_hosts_update_title=🔄 Update local DNS
+
+// Setting titles blocks
+str_setting_common_title=⚙ General
+str_setting_unblock_title=🔓 Unblock
+
+// Setting common show console
+str_checkbox_show_console_title=📟 Show console
+str_checkbox_show_console_description=Opens a console window with Unblock logs.
+
+// Setting common testing on startup
+str_checkbox_testing_startup_title=🧪 Test at startup
+str_checkbox_testing_startup_description=Automatically check site availability at application start.
+
+// Setting common enable dns hosts
+str_checkbox_enable_dns_hosts_title=📁 Local DNS (hosts)
+str_checkbox_enable_dns_hosts_description=Uses the hosts file to bypass blocks.
+
+// Setting common input max time wait testing
+str_input_max_wait_testing_title=⏱ Timeout (seconds)
+str_input_max_wait_testing_description=Time to wait for server response.
+
+// Setting checkbox zapret winws enable
+str_unblock_enable_title=🔓 Enable Zapret (winws)
+str_unblock_enable_description=Primary bypass mode.
+
+// Setting checkbox unblock enable services
+str_unblock_enable_discord_title=🎤 Discord
+str_unblock_enable_discord_description=Bypass Discord blocking.
+→ Enable together with Cloudflare.
+
+str_unblock_enable_messengers_title=💬 Messengers
+str_unblock_enable_messengers_description=Bypass blocking for popular messengers (Telegram, Signal).
+
+str_unblock_enable_cloudflare_title=☁ Cloudflare
+str_unblock_enable_cloudflare_description=Bypass Cloudflare blocking — a protection service used by many websites.
+Enable if sites behind Cloudflare are unavailable.
+
+str_unblock_enable_instagram_title=📸 Instagram
+str_unblock_enable_instagram_description=Bypass Instagram blocking.
+
+str_unblock_enable_facebook_title=📘 Facebook
+str_unblock_enable_facebook_description=Bypass Facebook and related services (Instagram, Messenger).
+
+str_unblock_enable_rutor_title=📥 Rutor.info
+str_unblock_enable_rutor_description=Bypass torrent tracker blocking.
+
+str_unblock_enable_x.com_title=🐦 X.com
+str_unblock_enable_x.com_description=Bypass X (Twitter) blocking.
+
+str_unblock_enable_youtube_title=🎬 YouTube
+str_unblock_enable_youtube_description=Bypass YouTube blocking.
+
+str_unblock_enable_game_mod_title=🎮 Online games
+str_unblock_enable_game_mod_description=Mode for game servers.
+⚠ May trigger anti-cheat, break other services.
+Enable only if you experience issues in games.
+
+str_unblock_enable_torproject_title=🧅 Torproject
+str_unblock_enable_torproject_description=Bypass Tor blocking.
+
+// Setting checkbox unblock enable TLD
+str_unblock_enable_tld_title=🌐 TLD filtering mode
+str_unblock_enable_tld_description=TLD filtering:
+When enabled, blocking bypass is applied to all domain zones listed in configs\blacklist\tld.list (com, net, ua, and others).
+
+// Setting checkbox manual enable
+str_manual_title=✋ Manual configuration selection
+str_manual_description=Enables manual selection → disables auto‑selection.
+
+// Setting manual config
+str_select_config_title=📂 Select configuration
+str_select_config_description=Choose a strategy file for bypassing blocks.
+Settings will be saved for future launches.
+str_unblock_select_fake_bin_title=🎭 ClientHello spoofing
+str_unblock_select_fake_bin_description=Select the type of ClientHello spoofing.
+This helps bypass DPI by mimicking traffic of popular sites or services.
+
+// Setting strategy version
+str_select_version_strategy_title=📚 Strategy list version
+str_select_version_strategy_description=Choose strategy list for bypassing blocks:
+Current (recommended) – new, regularly updated strategies.
+Legacy – old strategies from previous Unblock versions.
