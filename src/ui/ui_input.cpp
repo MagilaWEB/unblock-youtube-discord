@@ -33,8 +33,8 @@ void Input::initialize()
 
 void Input::create(std::string_view selector, Types type, JSValue value, Localization::Str title, Localization::Str description, bool first)
 {
-	String _title		= title();
-	String _description = description();
+	auto _title		  = title();
+	auto _description = description();
 
 	runCode(
 		[this, selector, type, value, _title, _description, first]
@@ -44,7 +44,7 @@ void Input::create(std::string_view selector, Types type, JSValue value, Localiz
 				if (id == type)
 				{
 					ASSERT_ARGS(
-						_create({ selector.data(), name(), str, value, _title, _description, first }).ToBoolean() == true,
+						_create({ selector.data(), name(), str, value, _title.data(), _description.data(), first }).ToBoolean() == true,
 						"Couldn't create a {} named [{}]",
 						_type,
 						name()

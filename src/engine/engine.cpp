@@ -12,9 +12,23 @@ Engine& Engine::get()
 	return instance;
 }
 
+static std::string get_system_locale()
+{
+	std::array<wchar_t, LOCALE_NAME_MAX_LENGTH> buffer{};
+	int											chars = GetUserDefaultLocaleName(buffer.data(), static_cast<int>(buffer.size()));
+	if (chars == 0)
+		return "US";
+
+	int			size_needed = WideCharToMultiByte(CP_UTF8, 0, buffer.data(), chars - 1, nullptr, 0, nullptr, nullptr);
+	std::string result(size_needed, 0);
+
+	WideCharToMultiByte(CP_UTF8, 0, buffer.data(), chars - 1, result.data(), size_needed, nullptr, nullptr);
+	return result.substr(result.find_first_of("-") + 1, result.length());
+}
+
 void Engine::initialize()
 {
-	Localization::get().set("RU");
+	Localization::get().set(get_system_locale());
 
 	if (_checkRunApp())
 	{
@@ -38,12 +52,6 @@ void Engine::initialize()
 	// assign a base ui folder to ultralight.
 	Platform::instance().set_file_system(GetPlatformFileSystem("./../ui/"));
 
-#if __clang__
-	[[clang::no_destroy]]
-#endif
-	static std::string title{ "Unblock " };
-	title.append("Version:").append(VERSION_STR);
-
 	Config config{};
 	config.effect_quality = EffectQuality::Low;
 
@@ -58,6 +66,8 @@ void Engine::initialize()
 		false,
 		kWindowFlags_Titled | kWindowFlags_Borderless | kWindowFlags_Resizable | kWindowFlags_Maximizable
 	);
+
+	static std::string title{ "Unblock " + std::format("Version: {}", VERSION_STR) };
 	_window->SetTitle(title.c_str());
 
 	_ui = std::make_unique<UiBase>(this);

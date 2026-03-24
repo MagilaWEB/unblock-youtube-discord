@@ -56,7 +56,7 @@ void Service::create()
 	std::string args{ " " };
 
 	for (auto& arg : _args)
-		args = args.append(arg).append(" ");
+		args = args.append(arg + " ");
 
 	sc_path.append(args);
 
@@ -96,7 +96,7 @@ void Service::create()
 		if (_time_limit.getElapsed_sec() > 5.f)
 		{
 			std::string message = std::system_category().message(static_cast<int>(err));
-			InputConsole::textError("не удаётся создать службу [{}], причина [{}].", _name, message.c_str());
+			InputConsole::textError(Localization::Str{ "str_error_create_service" }(), _name, message.c_str());
 			return;
 		}
 
@@ -123,11 +123,11 @@ void Service::start()
 
 	if (config.sc_status.dwCurrentState != SERVICE_STOPPED && config.sc_status.dwCurrentState != SERVICE_STOP_PENDING)
 	{
-		InputConsole::textError("служба [{}] не остановлена или в прогрессе остановки, запустить не возможно!", _name);
+		InputConsole::textError(Localization::Str{ "str_error_stoping_service" }(), _name);
 		return;
 	}
 
-	InputConsole::textPlease("подождите окончания запуска службы [{}]", true, _name);
+	InputConsole::textPlease(Localization::Str{ "str_wait_startig_service" }(), true, _name);
 
 	std::vector<pcstr> args;
 	for (auto& arg : _args)
@@ -142,7 +142,7 @@ void Service::start()
 		// We try for 5 seconds, otherwise we interrupt.
 		if (_time_limit.getElapsed_sec() > 5.f)
 		{
-			InputConsole::textError("истекло время ожидания запуска службы [{}], процесс запуска прерван, причина не известна!", _name);
+			InputConsole::textError(Localization::Str{ "str_error_wait_time_start_service" }(), _name);
 			return;
 		}
 
@@ -161,7 +161,7 @@ void Service::start()
 		SERVICE_RUNNING,
 		[this]
 		{
-			InputConsole::textError("истекло время ожидания запуска службы [{}], процесс будет остановлен!", _name);
+			InputConsole::textError(Localization::Str{ "str_expired_wait_time_start_service" }(), _name);
 			stop();
 		}
 	);
@@ -171,15 +171,20 @@ void Service::start()
 		SERVICE_RUNNING,
 		[this]
 		{
-			InputConsole::textError("истекло время ожидания запуска службы [{}], процесс будет остановлен!", _name);
+			InputConsole::textError(Localization::Str{ "str_expired_wait_time_start_service" }(), _name);
 			stop();
 		}
 	);
 
+	using namespace std::chrono;
+	std::this_thread::sleep_for(30ms);
+
+	update();
+
 	if (config.sc_status.dwCurrentState == SERVICE_RUNNING)
-		InputConsole::textOk("служба [{}] запущена.", _name);
+		InputConsole::textOk(Localization::Str{ "str_success_start_service" }(), _name);
 	else
-		InputConsole::textWarning("служба [{}] была запущена но неожиданно сменила свой статус.", _name);
+		InputConsole::textWarning(Localization::Str{ "str_warning_no_start_service" }(), _name);
 }
 
 void Service::update()
@@ -282,7 +287,7 @@ void Service::stop()
 
 	if (config.sc_status.dwCurrentState != SERVICE_STOPPED)
 	{
-		InputConsole::textPlease("подождите окончания остановки службы [{}]", true, _name);
+		InputConsole::textPlease(Localization::Str{ "str_wait_stoping_service" }(), true, _name);
 
 		auto service_stop = [this, &stopped]
 		{
@@ -299,10 +304,7 @@ void Service::stop()
 			[this, service_stop]
 			{
 				service_stop();
-				_waitStatusService(SERVICE_RUNNING,
-					SERVICE_STOPPED,
-					service_stop
-				);
+				_waitStatusService(SERVICE_RUNNING, SERVICE_STOPPED, service_stop);
 			}
 		);
 
@@ -320,7 +322,7 @@ void Service::stop()
 	update();
 
 	if ((stopped && config.sc_status.dwCurrentState == SERVICE_STOPPED) || !sc)
-		InputConsole::textOk("служба [{}] остановлена.", _name);
+		InputConsole::textOk(Localization::Str{ "str_success_stop_service" }(), _name);
 }
 
 void Service::remove()

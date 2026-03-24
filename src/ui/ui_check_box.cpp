@@ -37,13 +37,13 @@ void CheckBox::initialize()
 
 void CheckBox::create(std::string_view selector, Localization::Str title, Localization::Str description, bool first)
 {
-	String _title		= title();
-	String _description = description();
+	auto _title		= title();
+	auto _description = description();
 	runCode(
 		[this, selector, _title, _description, first]
 		{
 			ASSERT_ARGS(
-				_create({ selector.data(), name(), _title, _description, first }).ToBoolean() == true,
+				_create({ selector.data(), name(), _title.data(), _description.data(), first }).ToBoolean() == true,
 				"Couldn't create a {} named [{}]",
 				_type,
 				name()

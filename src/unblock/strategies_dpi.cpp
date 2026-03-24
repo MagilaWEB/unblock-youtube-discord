@@ -6,12 +6,12 @@ StrategiesDPI::StrategiesDPI()
 
 	_file_fake_bin_config.forLineParametersSection(
 		"FAKE_TLS",
-		[this](std::string key, std::string value)
+		[this](std::string_view key, std::string_view value)
 		{
 			const auto path_file = Core::get().binariesPath() / value;
-			ASSERT_ARGS(std::filesystem::exists(path_file), "The [{}] file does not exist!", path_file.string().c_str());
+			ASSERT_ARGS(std::filesystem::exists(path_file), "The [{}] file does not exist!", path_file.string());
 
-			auto& fake			  = _fake_bin_params[key];
+			auto& fake			  = _fake_bin_params[key.data()];
 			fake.file_clienthello = path_file.string();
 			fake.init			  = true;
 			return false;
@@ -20,9 +20,9 @@ StrategiesDPI::StrategiesDPI()
 
 	_file_fake_bin_config.forLineParametersSection(
 		"FAKE_TLS_DOMAIN",
-		[this](std::string key, std::string value)
+		[this](std::string_view key, std::string_view value)
 		{
-			auto& fake	= _fake_bin_params[key];
+			auto& fake	= _fake_bin_params[key.data()];
 			fake.domain = value;
 			fake.init	= true;
 			return false;
@@ -31,12 +31,12 @@ StrategiesDPI::StrategiesDPI()
 
 	_file_fake_bin_config.forLineParametersSection(
 		"FAKE_QUIC",
-		[this](std::string key, std::string value)
+		[this](std::string_view key, std::string_view value)
 		{
 			const auto path_file = Core::get().binariesPath() / value;
-			ASSERT_ARGS(std::filesystem::exists(path_file), "The [{}] file does not exist!", path_file.string().c_str());
+			ASSERT_ARGS(std::filesystem::exists(path_file), "The [{}] file does not exist!", path_file.string());
 
-			auto& fake		  = _fake_bin_params[key];
+			auto& fake		  = _fake_bin_params[key.data()];
 			fake.file_initial = path_file.string();
 			fake.init		  = true;
 			return false;
@@ -75,7 +75,7 @@ void StrategiesDPI::changeFakeKey(u32 index)
 	}
 }
 
-void StrategiesDPI::changeFakeKey(std::string key)
+void StrategiesDPI::changeFakeKey(std::string_view key)
 {
 	if (key.empty())
 	{
@@ -83,16 +83,16 @@ void StrategiesDPI::changeFakeKey(std::string key)
 		return;
 	}
 
-	InputConsole::textInfo("Выбран FakeBin [{}].", key.c_str());
+	InputConsole::textInfo("Выбран FakeBin [{}].", key);
 
-	auto& fake_bin = _fake_bin_params[key];
+	auto& fake_bin = _fake_bin_params[key.data()];
 
-	ASSERT_ARGS(fake_bin.init, "a key is missing for fake_bin {}", key.c_str());
+	ASSERT_ARGS(fake_bin.init, "a key is missing for fake_bin {}", key);
 
 	_fake_bind_key = key;
 }
 
-void StrategiesDPI::changeDirVersion(std::string dir_version)
+void StrategiesDPI::changeDirVersion(std::string_view dir_version)
 {
 	StrategiesDPIBase::changeDirVersion(dir_version);
 
@@ -129,7 +129,7 @@ void StrategiesDPI::_uploadStrategies()
 		if (list.empty())
 			continue;
 
-		if (auto position = _file_strategy_dpi->positionSection(key.c_str()))
+		if (auto position = _file_strategy_dpi->positionSection(key))
 		{
 			auto& new_list = sort_service_filters.emplace_back(position.value(), std::list<std::string>{});
 			for (auto& line : list)
@@ -159,10 +159,10 @@ void StrategiesDPI::_uploadStrategies()
 		_strategy_dpi.pop_back();
 
 	for (auto& line : _strategy_dpi)
-		Debug::ok("{}", line.c_str());
+		Debug::ok("{}", line);
 }
 
-void StrategiesDPI::_saveStrategies(std::string str)
+void StrategiesDPI::_saveStrategies(std::string_view str)
 {
 	if (_ignoringLineStrategy(str))
 		return;
@@ -175,35 +175,52 @@ void StrategiesDPI::_saveStrategies(std::string str)
 
 	StrategiesDPIBase::_saveStrategies(str);
 
-	_getAllPorts(_strategy_dpi.back());
+	auto& string_back = _strategy_dpi.back();
+	_getAllPorts(string_back);
+	_normalizeStrategyString(string_back);
 }
 
-bool StrategiesDPI::_ignoringLineStrategy(std::string str)
+void StrategiesDPI::_normalizeStrategyString(std::string& str) const
 {
-	return str.empty() || str.starts_with("//") || std::regex_match(str, std::regex{ "\n" });
+	static std::regex port_vars(R"(%[^%]+%)");
+
+	str = std::regex_replace(str, port_vars, "");
+
+	size_t pos;
+	while ((pos = str.find("=,")) != std::string::npos)
+		str.replace(pos, 2, "=");
+
+	while ((pos = str.find(",,")) != std::string::npos)
+		str.replace(pos, 2, ",");
+
+	if (!str.empty() && str.back() == ',')
+		str.pop_back();
 }
 
-inline static const std::regex reg_equally{ "\\:" };
+bool StrategiesDPI::_ignoringLineStrategy(std::string_view str) const
+{
+	return str.empty() || str.starts_with("//") || std::regex_match(str.data(), std::regex{ "\n" });
+}
 
 void StrategiesDPI::_getAllPorts(std::string& str) const
 {
 	for (auto& name_service : _section_opt_service_names)
 	{
-		if (auto result = _file_service_list->parameterSection<std::string>("PORTS_LIST", name_service.c_str()))
+		if (auto result = _file_service_list->parameterSection<std::string>("PORTS_LIST", name_service))
 		{
 			auto replace_target = [&str, &name_service](const std::string& _text)
 			{
+				static const std::regex reg_equally{ "\\:" };
 				std::smatch para;
 				if (std::regex_search(_text, para, reg_equally))
 				{
-					std::string target{ "%%" };
-					target.insert(1, para.prefix());
+					std::string target{ std::format("%{}%", para.prefix().str()) };
 
 					if (str.contains(target))
 						str = std::regex_replace(str, std::regex{ target }, para.suffix().str());
 				}
 				else
-					Debug::warning("_getAllPorts Separator not found : for [{}]", name_service.c_str());
+					Debug::warning("_getAllPorts Separator not found : for [{}]", name_service);
 			};
 
 			std::string setting_service_string{ result.value() };
@@ -222,26 +239,9 @@ void StrategiesDPI::_getAllPorts(std::string& str) const
 			}
 		}
 	}
-
-#if __clang__
-	[[clang::no_destroy]]
-#endif
-	static std::regex port_vars(R"(%[^%]+%)");
-
-	str = std::regex_replace(str, port_vars, "");
-
-	size_t pos;
-	while ((pos = str.find("=,")) != std::string::npos)
-		str.replace(pos, 2, "=");
-
-	while ((pos = str.find(",,")) != std::string::npos)
-		str.replace(pos, 2, ",");
-
-	if (!str.empty() && str.back() == ',')
-		str.pop_back();
 }
 
-std::optional<std::string> StrategiesDPI::_getFake(std::string str)
+std::optional<std::string> StrategiesDPI::_getFake(std::string_view str)
 {
 	if (_fake_bind_key.empty())
 		return std::nullopt;
@@ -260,10 +260,11 @@ std::optional<std::string> StrategiesDPI::_getFake(std::string str)
 
 		if (str.contains("%FAKE_HOST_DOMAIN%"))
 		{
+			pcstr str_data = str.data();
 			if (fake.domain.empty())
-				return std::regex_replace(str, std::regex{ "%FAKE_HOST_DOMAIN%" }, "--dpi-desync-hostfakesplit-mod=host=www.google.com");
+				return std::regex_replace(str_data, std::regex{ "%FAKE_HOST_DOMAIN%" }, "--dpi-desync-hostfakesplit-mod=host=www.google.com");
 
-			return std::regex_replace(str, std::regex{ "%FAKE_HOST_DOMAIN%" }, "--dpi-desync-hostfakesplit-mod=host=" + fake.domain);
+			return std::regex_replace(str_data, std::regex{ "%FAKE_HOST_DOMAIN%" }, "--dpi-desync-hostfakesplit-mod=host=" + fake.domain);
 		}
 
 		if (str.contains("%FAKE_TLS%"))
@@ -327,7 +328,7 @@ std::optional<std::string> StrategiesDPI::_getFake(std::string str)
 			if (fake.file_clienthello.empty())
 				return "";
 
-			return std::regex_replace(str, std::regex{ "%FAKE_CLIENT_HELLO%" }, fake.file_clienthello);
+			return std::regex_replace(str.data(), std::regex{ "%FAKE_CLIENT_HELLO%" }, fake.file_clienthello);
 		}
 
 		if (str.contains("%FAKE_INITIAL%"))
@@ -335,7 +336,7 @@ std::optional<std::string> StrategiesDPI::_getFake(std::string str)
 			if (fake.file_initial.empty())
 				return "";
 
-			return std::regex_replace(str, std::regex{ "%FAKE_INITIAL%" }, fake.file_initial);
+			return std::regex_replace(str.data(), std::regex{ "%FAKE_INITIAL%" }, fake.file_initial);
 		}
 
 		return std::nullopt;
@@ -349,7 +350,7 @@ std::optional<std::string> StrategiesDPI::_getFake(std::string str)
 			else
 				list_key.append("," + key);
 
-		Debug::error("fake ключ [{}] не найден! Доступные ключи [{}].", _fake_bind_key.c_str(), list_key.c_str());
+		Debug::error(Localization::Str{ "str_console_not_find_fake_key" }(), _fake_bind_key, list_key);
 	}
 
 	return std::nullopt;

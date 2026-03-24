@@ -21,6 +21,9 @@ void Localization::set(std::string_view lang_id)
 
 	_lang_file_string->open(std::filesystem::path{ "ui" } / "text" / lang_id, ".list");
 
+	if (_lang_file_string->empty())
+		_lang_file_string->open(std::filesystem::path{ "ui" } / "text" / "US", ".list");
+
 	std::string key{};
 	_lang_file_string->forLine(
 		[&](std::string str)
@@ -43,8 +46,7 @@ void Localization::set(std::string_view lang_id)
 			else
 			{
 				auto& text	= _string_list[key];
-				text	   += "\n";
-				text	   += str;
+				text	   += "\n" + str;
 			}
 
 			return false;

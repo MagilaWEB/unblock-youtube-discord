@@ -2,6 +2,7 @@
 #include "ui_check_box.h"
 #include "ui_input.h"
 #include "ui_secondary_window.h"
+#include "utils_ultralight.hpp"
 
 using namespace ultralight;
 
@@ -77,11 +78,16 @@ void BaseElement::release()
 
 void BaseElement::create(std::string_view selector, Localization::Str title, bool first)
 {
-	pcstr _title = title();
+	auto _title = title();
 	runCode(
 		[this, selector, _title, first]
 		{
-			ASSERT_ARGS(_create({ selector.data(), name(), _title, first }).ToBoolean() == true, "Couldn't create a {} named [{}]", _type, name());
+			ASSERT_ARGS(
+				_create({ selector.data(), name(), _title.data(), first }).ToBoolean() == true,
+				"Couldn't create a {} named [{}]",
+				_type,
+				name()
+			);
 			_event_click[name()].clear();
 			_created = true;
 		}
@@ -136,14 +142,14 @@ bool BaseElement::isCreate() const
 
 void BaseElement::setTitle(Localization::Str title)
 {
-	pcstr _title = title();
+	auto _title = title();
 	runCode(
 		[this, _title]
 		{
 			if (!_created)
 				return;
 
-			ASSERT_ARGS(_set_title({ name(), _title }).ToBoolean() == true, "Couldn't setTitle a {} named [{}]", _type, name());
+			ASSERT_ARGS(_set_title({ name(), _title.data() }).ToBoolean() == true, "Couldn't setTitle a {} named [{}]", _type, name());
 		}
 	);
 }
@@ -166,8 +172,7 @@ void BaseElement::addEventClick(std::function<bool(JSArgs)>&& callback)
 
 bool BaseElement::eventCPP(const JSArgs& args, MapEvent& map_event)
 {
-	const String name	= static_cast<String>(args[0].ToString());
-	auto&		 events = map_event[name];
+	auto& events = map_event[JSToCPP<std::string>(static_cast<String>(args[0].ToString()))];
 	if (events.empty())
 		return true;
 

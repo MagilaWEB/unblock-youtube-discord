@@ -126,12 +126,11 @@ void Ui::_clickStartService()
 
 		if (auto fake_bin = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "fake_bin"))
 			_window_config_found->setDescription(utils::format(
-													 Localization::Str{ "str_window_config_found_description" }(),
-													 config.value(),
-													 JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue()),
-													 fake_bin.value()
-			)
-													 .c_str());
+				Localization::Str{ "str_window_config_found_description" }(),
+				config.value(),
+				JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue()),
+				fake_bin.value()
+			));
 		else
 			Debug::error("user.config not REMEMBER_CONFIGURATION parametr fake_bin");
 
@@ -158,9 +157,9 @@ void Ui::_autoStart()
 
 			auto save_version = [this](std::string version)
 			{
-				_unblock_select_version_strategy->setSelectedOptionValue(version.c_str());
+				_unblock_select_version_strategy->setSelectedOptionValue(version);
 				_unblock.changeDirVersionStrategy(version);
-				_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy", version.c_str());
+				_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy", version);
 			};
 
 			if (it != strategy_dirs.end())
@@ -218,15 +217,15 @@ void Ui::_autoStart()
 				text_desc_base.insert(0, "\n");
 				text_desc_base.insert(0, Localization::Str{ "str_window_auto_start_wait_description" }());
 
-				_window_auto_start_wait->setDescription(text_desc_base.c_str());
+				_window_auto_start_wait->setDescription(text_desc_base);
 
 				_unblock.testingDomain();
 
 				if (!_automatically_strategy_cancel && _unblock.validDomain())
 				{
 					std::string _fake_bin = _unblock.getNameFakeBin();
-					_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", _strategy_name.c_str());
-					_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "fake_bin", _fake_bin.c_str());
+					_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", _strategy_name);
+					_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "fake_bin", _fake_bin);
 
 					version_str = JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue());
 					fakebin_str = _unblock.getNameFakeBin();
@@ -238,7 +237,7 @@ void Ui::_autoStart()
 						fakebin_str
 					);
 
-					_window_continue_select_strategy->setDescription(text_desc.c_str());
+					_window_continue_select_strategy->setDescription(text_desc);
 					_window_continue_select_strategy->show();
 					break;
 				}
@@ -266,7 +265,7 @@ void Ui::_startServiceFromConfig()
 				_tcpGlobalChange(true);
 
 				if (auto fake_bin = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "fake_bin"))
-					_unblock.changeStrategy(config.value().c_str(), fake_bin.value().c_str());
+					_unblock.changeStrategy(config.value(), fake_bin.value());
 				else
 					Debug::error(fake_bin.error());
 

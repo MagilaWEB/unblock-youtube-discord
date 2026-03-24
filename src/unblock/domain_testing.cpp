@@ -36,7 +36,7 @@ void DomainTesting::loadDomain(bool video)
 	_genericURLS();
 }
 
-void DomainTesting::changeProxy(std::string ip, u32 port)
+void DomainTesting::changeProxy(std::string_view ip, u32 port)
 {
 	_proxyIP   = ip;
 	_proxyPORT = port;
@@ -69,7 +69,7 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(std
 					_domain_ok++;
 				else
 				{
-					InputConsole::textWarning("проблема доступа: {}", domain.url.c_str());
+					InputConsole::textWarning(Localization::Str{ "str_warning_url" }(), domain.url);
 					_domain_error++;
 				}
 
@@ -87,7 +87,7 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(std
 
 		_domain_error = _domain_ok = 0;
 
-		InputConsole::textOk("Базовое тестирование успешно, запуск полного тестирование...");
+		InputConsole::textOk(Localization::Str{ "str_base_testing_url_success" }());
 	}
 
 	loadDomain(test_video);
@@ -113,11 +113,11 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(std
 			}
 			else
 			{
-				InputConsole::textWarning("проблема доступа: {}", domain.url.c_str());
+				InputConsole::textWarning(Localization::Str{ "str_warning_url" }(), domain.url);
 				_domain_error++;
 			}
 
-			callback(domain.url.c_str(), state);
+			callback(domain.url, state);
 		}
 	);
 
@@ -154,12 +154,7 @@ u32 DomainTesting::errorRate() const
 
 void DomainTesting::printTestInfo() const
 {
-	InputConsole::textInfo(
-		"Тестирование завершилось с результатом [{}] из [{}] общий успех [{}%]",
-		_domain_ok.load(),
-		_list_domain.size(),
-		successRate()
-	);
+	InputConsole::textInfo(Localization::Str{ "str_result_url_testing" }(), _domain_ok.load(), _list_domain.size(), successRate());
 }
 
 static size_t progress_callback(void* clientp, curl_off_t /*dltotal*/, curl_off_t /*dlnow*/, curl_off_t /*ultotal*/, curl_off_t /*ulnow*/)

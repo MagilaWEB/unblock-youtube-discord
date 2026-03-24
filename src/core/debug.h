@@ -67,7 +67,7 @@ public:
 	{
 		Localization::Str text_lang_title{ title };
 		Localization::Str text_lang_desc{ desc };
-		std::string		  desc_format = text_lang_desc();
+		auto			  desc_format = text_lang_desc();
 		std::string		  format;
 
 		if (desc != desc_format)
@@ -239,13 +239,13 @@ public:
 		__FUNCTION__                                                                           \
 	)
 
-#define ASSERT_ARGS(expr, msg, ...)                                                                                                     \
-	Debug::_assert(                                                                                                                     \
-		!!(expr),                                                                                                                       \
-		std::string{ "ASSERTION FAILED!\n\tExpression: \t{}\n\tFile: \t{}\n\tLine: \t{}\n\tFunction: \t{}\n\n\t" }.append(msg).c_str(), \
-		#expr,                                                                                                                          \
-		__FILE__,                                                                                                                       \
-		__LINE__,                                                                                                                       \
-		__FUNCTION__,                                                                                                                   \
-		__VA_ARGS__                                                                                                                     \
+#define ASSERT_ARGS(expr, msg, ...)                                                                                             \
+	Debug::_assert(                                                                                                             \
+		!!(expr),                                                                                                               \
+		std::string{ "ASSERTION FAILED!\n\tExpression: \t{}\n\tFile: \t{}\n\tLine: \t{}\n\tFunction: \t{}\n\n\t" }.append(msg), \
+		#expr,                                                                                                                  \
+		__FILE__,                                                                                                               \
+		__LINE__,                                                                                                               \
+		__FUNCTION__,                                                                                                           \
+		__VA_ARGS__                                                                                                             \
 	)

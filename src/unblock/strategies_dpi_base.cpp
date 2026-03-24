@@ -8,7 +8,7 @@ StrategiesDPIBase::StrategiesDPIBase()
 void StrategiesDPIBase::changeStrategy(u32 index)
 {
 	const auto& strategy_file = _strategy_files_list[index];
-	InputConsole::textInfo("Выбрана конфигурация [{}].", strategy_file.c_str());
+	InputConsole::textInfo(Localization::Str{ "str_console_selected_config" }(), strategy_file);
 
 	_file_strategy_dpi->open(_patch_file / strategy_file, "", true);
 
@@ -17,14 +17,14 @@ void StrategiesDPIBase::changeStrategy(u32 index)
 	_file_strategy_dpi->close();
 }
 
-void StrategiesDPIBase::changeStrategy(pcstr file)
+void StrategiesDPIBase::changeStrategy(std::string_view file)
 {
 	auto it_file = std::ranges::find(_strategy_files_list, file);
 	ASSERT_ARGS(it_file != _strategy_files_list.end(), "the file was not found");
 
 	std::string strategy_file{ *it_file };
 
-	InputConsole::textInfo("Выбрана конфигурация [{}].", strategy_file.c_str());
+	InputConsole::textInfo(Localization::Str{ "str_console_selected_config" }(), strategy_file);
 
 	_file_strategy_dpi->open(_patch_file / strategy_file, "", true);
 
@@ -33,7 +33,7 @@ void StrategiesDPIBase::changeStrategy(pcstr file)
 	_file_strategy_dpi->close();
 }
 
-void StrategiesDPIBase::changeDirVersion(std::string dir_version)
+void StrategiesDPIBase::changeDirVersion(std::string_view dir_version)
 {
 	_patch_dir_version = dir_version;
 }
@@ -74,7 +74,7 @@ void StrategiesDPIBase::_uploadStrategies()
 	}
 }
 
-void StrategiesDPIBase::_saveStrategies(std::string str)
+void StrategiesDPIBase::_saveStrategies(std::string_view str)
 {
 	if (auto new_str = _getPath(str, "%ROOT%", Core::get().currentPath()))
 	{
@@ -100,16 +100,13 @@ void StrategiesDPIBase::_saveStrategies(std::string str)
 		return;
 	}
 
-	_strategy_dpi.push_back(str);
+	_strategy_dpi.emplace_back(str);
 }
 
-std::optional<std::string> StrategiesDPIBase::_getPath(std::string str, std::string prefix, std::filesystem::path path) const
+std::optional<std::string> StrategiesDPIBase::_getPath(std::string_view str, std::string_view prefix, std::filesystem::path path) const
 {
 	if (str.contains(prefix))
-	{
-		str = std::regex_replace(str, std::regex{ prefix }, path.string() + "\\");
-		return str;
-	}
+		return std::regex_replace(str.data(), std::regex{ prefix.data() }, path.string() + "\\");
 
 	return std::nullopt;
 }
@@ -122,7 +119,7 @@ void StrategiesDPIBase::_sortFiles()
 		{
 			std::smatch		  left_res;
 			std::smatch		  right_res;
-			static std::regex reg("\\d+");
+			static const std::regex reg("\\d+");
 			if (std::regex_search(left, left_res, reg) && std::regex_search(right, right_res, reg))
 				return std::stoul(left_res.str()) < std::stoul(right_res.str());
 

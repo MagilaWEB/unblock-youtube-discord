@@ -160,5 +160,5 @@ JSValue UiBase::langText(const JSObject& /*obj*/, const JSArgs& args)
 	}
 
 	const auto text_id = static_cast<String>(args[0].ToString());
-	return Localization::Str{ text_id.utf8().data() }();
+	return Localization::Str{ text_id.utf8().data() }().data();
 }

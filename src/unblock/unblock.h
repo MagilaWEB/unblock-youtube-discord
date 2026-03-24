@@ -1,6 +1,5 @@
 #pragma once
 #include "strategies_dpi.h"
-#include "proxy_strategies_dpi.h"
 #include "domain_testing.h"
 #include "dns_host.h"
 
@@ -37,11 +36,11 @@ public:
 
 	void serviceConfigFile(const std::shared_ptr<File>& config);
 
-	void changeStrategy(pcstr name_config, pcstr name_fake_bin);
-	void changeDirVersionStrategy(std::string dir_version);
+	void changeStrategy(std::string_view name_config, std::string_view name_fake_bin);
+	void changeDirVersionStrategy(std::string_view dir_version);
 
-	void addOptionalStrategies(std::string name);
-	void removeOptionalStrategies(std::string name);
+	void addOptionalStrategies(std::string_view name);
+	void removeOptionalStrategies(std::string_view name);
 	void clearOptionalStrategies();
 
 	bool runTest(bool video = false);

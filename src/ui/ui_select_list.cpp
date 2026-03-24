@@ -39,13 +39,13 @@ void SelectList::initialize()
 
 void SelectList::create(std::string_view selector, Localization::Str title, Localization::Str description, bool first)
 {
-	String _title		= title();
-	String _description = description();
+	auto _title		  = title();
+	auto _description = description();
 	runCode(
 		[this, selector, _title, _description, first]
 		{
 			ASSERT_ARGS(
-				_create({ selector.data(), name(), _title, _description, first }).ToBoolean() == true,
+				_create({ selector.data(), name(), _title.data(), _description.data(), first }).ToBoolean() == true,
 				"Couldn't create a {} named [{}]",
 				_type,
 				name()
@@ -58,13 +58,19 @@ void SelectList::create(std::string_view selector, Localization::Str title, Loca
 
 void SelectList::createOption(JSValue value, Localization::Str text, bool select)
 {
-	String _text = text();
+	auto _text = text();
 	runCode(
 		[this, value, _text, select]
 		{
 			if (!_created)
 				return;
-			ASSERT_ARGS(_create_option({ name(), value, _text, select }).ToBoolean() == true, "Couldn't createOption a {} named [{}]", _type, name());
+
+			ASSERT_ARGS(
+				_create_option({ name(), value, _text.data(), select }).ToBoolean() == true,
+				"Couldn't createOption a {} named [{}]",
+				_type,
+				name()
+			);
 		}
 	);
 }
@@ -81,14 +87,15 @@ void SelectList::addEventChange(std::function<bool(JSArgs)>&& callback)
 	);
 }
 
-void SelectList::setSelectedOptionValue(JSValue value)
+void SelectList::setSelectedOptionValue(std::string_view value)
 {
 	runCode(
 		[this, value]
 		{
 			if (!_created)
 				return;
-			ASSERT_ARGS(_set_value({ name(), value }).ToBoolean() == true, "Couldn't setSelectedOptionValue a {} named [{}]", _type, name());
+
+			ASSERT_ARGS(_set_value({ name(), value.data() }).ToBoolean() == true, "Couldn't setSelectedOptionValue a {} named [{}]", _type, name());
 		}
 	);
 }

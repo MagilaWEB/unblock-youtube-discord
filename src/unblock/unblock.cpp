@@ -36,18 +36,18 @@ void Unblock::serviceConfigFile(const std::shared_ptr<File>& config)
 	_strategies_dpi.serviceConfigFile(config);
 }
 
-void Unblock::changeStrategy(pcstr name_config, pcstr name_fake_bin)
+void Unblock::changeStrategy(std::string_view name_config, std::string_view name_fake_bin)
 {
 	_strategies_dpi.changeFakeKey(name_fake_bin);
 	_strategies_dpi.changeStrategy(name_config);
 }
 
-void Unblock::changeDirVersionStrategy(std::string dir_version)
+void Unblock::changeDirVersionStrategy(std::string_view dir_version)
 {
 	_strategies_dpi.changeDirVersion(dir_version);
 }
 
-void Unblock::addOptionalStrategies(std::string name)
+void Unblock::addOptionalStrategies(std::string_view name)
 {
 	auto it = std::ranges::find(_section_opt_service_names, name);
 	if (it != _section_opt_service_names.end())
@@ -59,7 +59,7 @@ void Unblock::addOptionalStrategies(std::string name)
 	_domain_testing.changeOptionalServices(_section_opt_service_names);
 }
 
-void Unblock::removeOptionalStrategies(std::string name)
+void Unblock::removeOptionalStrategies(std::string_view name)
 {
 	std::erase(_section_opt_service_names, name);
 	_strategies_dpi.changeOptionalServices(_section_opt_service_names);
@@ -121,7 +121,7 @@ std::list<Service>& Unblock::getConflictingServices()
 					if (std::regex_match(name_service, std::regex{ _win_divert.getName() }))
 						continue;
 
-					conflicting_service.emplace_back(Service{ name_service.c_str() });
+					conflicting_service.emplace_back(Service{ name_service });
 					conflicting_service.back().open();
 				}
 			}
@@ -182,11 +182,11 @@ std::optional<std::string> Unblock::checkUpdate()
 
 	for (auto& line : lines)
 	{
-		static std::string version_mask{ "/MagilaWEB/unblock-youtube-discord/tree/v" };
+		constexpr static std::string_view version_mask{ "/MagilaWEB/unblock-youtube-discord/tree/v" };
 		size_t			   pos = line.find(version_mask);
 		if (pos != std::string::npos)
 		{
-			static std::string mask_end{ "\" data-tab-item=\"i0code-tab\"" };
+			constexpr static std::string_view mask_end{ "\" data-tab-item=\"i0code-tab\"" };
 			size_t			   pos_end = line.find(mask_end);
 			if (pos_end != std::string::npos)
 			{
@@ -203,7 +203,7 @@ std::optional<std::string> Unblock::checkUpdate()
 	return {};
 }
 
-constexpr static pcstr setup_update_script{ R"(
+constexpr static std::string_view setup_update_script{ R"(
 ECHO off
 SET CURRENT_DIR=%~dp0
 
@@ -234,9 +234,6 @@ start cmd /c del "%CURRENT_DIR%setup_update.bat"
 exit
 )" };
 
-#if __clang__
-[[clang::no_destroy]]
-#endif
 static HttpsLoad load_7z{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" };
 
 bool Unblock::appUpdate()
@@ -251,13 +248,7 @@ bool Unblock::appUpdate()
 
 	try
 	{
-#if __clang__
-		[[clang::no_destroy]]
-#endif
 		static bit7z::Bit7zLibrary lib{ "7za.dll" };
-#if __clang__
-		[[clang::no_destroy]]
-#endif
 		static bit7z::BitFileExtractor extractor{ lib, bit7z::BitFormat::SevenZip };
 
 		extractor.extract(path.string(), path.parent_path().string());
@@ -318,9 +309,6 @@ std::vector<std::string> Unblock::listVersionStrategy()
 		strategy_dirs,
 		[](const std::string& left, const std::string& right)
 		{
-#if __clang__
-			[[clang::no_destroy]]
-#endif
 			static std::regex reg{ "\\." };
 			return std::stoul(std::regex_replace(left, reg, "")) > std::stoul(std::regex_replace(right, reg, ""));
 		}
@@ -361,7 +349,7 @@ const std::list<std::string>& Unblock::dnsHostsListName()
 
 void Unblock::removeService()
 {
-#if 0	 // #ifdef DEBUG
+#ifdef DEBUG_RUN_ZAPRET	   // #ifdef DEBUG
 	if (_zapret_dbg_run.load())
 	{
 		_zapret_dbg_run_end.store(true);
@@ -377,7 +365,7 @@ void Unblock::removeService()
 
 void Unblock::stopService()
 {
-#if 0	 // #ifdef DEBUG
+#ifdef DEBUG_RUN_ZAPRET	   // #ifdef DEBUG
 	if (_zapret_dbg_run.load())
 	{
 		_zapret_dbg_run_end.store(true);
@@ -397,11 +385,11 @@ void Unblock::startService()
 	auto& list = _strategies_dpi.getStrategy();
 	if (!list.empty())
 	{
-		_zapret.setDescription("DPI программное обеспечение для обхода блокировки.");
+		_zapret.setDescription(Localization::Str{ "str_service_zapret_description" }());
 		_zapret.setArgs(list);
 		_zapret.create();
 
-#if 0	 // #ifdef DEBUG
+#ifdef DEBUG_RUN_ZAPRET	 // #ifdef DEBUG
 		auto&		service_config = _zapret.getConfig();
 		auto&		path		   = service_config.binary_path;
 		std::string command		   = path;

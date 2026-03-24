@@ -114,9 +114,9 @@ message(STATUS "COMPILER = ${CMAKE_CXX_COMPILER_ID}")
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 # Enforce Clang warnings
-    add_compile_options(-Wall -Wextra -fmodules)
+    add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    add_compile_options(/utf-8 /W4 /experimental:module)
+    add_compile_options(/utf-8 /W4)
 endif()
 
 # Add submodules

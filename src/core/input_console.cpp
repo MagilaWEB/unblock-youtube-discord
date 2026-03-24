@@ -13,7 +13,7 @@ void InputConsole::pause(std::string_view info)
 
 std::string InputConsole::getString()
 {
-	std::string text_input{ "" };
+	std::string text_input{};
 
 	textPlease("введите текст и нажмите Enter", true);
 	std::cin.clear();
@@ -25,7 +25,7 @@ std::string InputConsole::getString()
 
 u32 InputConsole::getU32()
 {
-	std::string text_input{ "" };
+	std::string text_input{};
 	u32			count{ 0 };
 
 	textPlease("введите число и нажмите Enter (Только целочисленные значения)", true);
@@ -197,20 +197,20 @@ size_t InputConsole::selectFromList(const std::list<std::string>& list, std::fun
 			u32 it{ 0 };
 			for (const std::string& element : list)
 			{
-				std::string str{ };
+				std::string str{};
 				if (select == it)
 					str = ">> ";
 				else
 					str = "   ";
 
-				str_all.append(str).append(std::to_string(it)).append(": ").append(element).append("\n");
+				str_all.append(std::format("{}{}: {}\n", str, it, element));
 
 				it++;
 			}
 
 			textPlease("выберите один из вариантов", true);
 
-			text(str_all.c_str());
+			text(str_all);
 		}
 
 		if (KEY<bool>(VK::ENTER, false))

@@ -29,8 +29,8 @@ public:
 	void serviceConfigFile(const std::shared_ptr<File>& config);
 
 	void changeFakeKey(u32 index = 1);
-	void changeFakeKey(std::string key = "");
-	void changeDirVersion(std::string dir_version) override;
+	void changeFakeKey(std::string_view key = "");
+	void changeDirVersion(std::string_view dir_version) override;
 	void changeOptionalServices(std::list<std::string> list_service);
 
 	std::string								   getKeyFakeBin() const;
@@ -38,9 +38,10 @@ public:
 
 private:
 	void _uploadStrategies() override;
-	void _saveStrategies(std::string str) override;
+	void _saveStrategies(std::string_view str) override;
 
-	bool					   _ignoringLineStrategy(std::string str);
+	void					   _normalizeStrategyString(std::string& str) const;
+	bool					   _ignoringLineStrategy(std::string_view str) const;
 	void					   _getAllPorts(std::string& str) const;
-	std::optional<std::string> _getFake(std::string str);
+	std::optional<std::string> _getFake(std::string_view str);
 };

@@ -5,7 +5,7 @@
 class CORE_API Localization final
 {
 	FastLock						   _lock;
-	Ptr<File>					   _lang_file_string;
+	Ptr<File>						   _lang_file_string{ false };
 	std::map<std::string, std::string> _string_list;
 
 public:
@@ -53,7 +53,7 @@ public:
 		Str(std::string str_id) : _str_id(str_id) {}
 		Str(std::string_view str_id) : _str_id(str_id.data()) {}
 
-		pcstr operator()()
+		std::string_view operator()()
 		{
 			if (!_str_id.empty())
 				return Localization::get().translate(_str_id);

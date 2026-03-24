@@ -91,17 +91,8 @@ void Ui::_settingEnableDnsHosts()
 		{
 			if (JSToCPP<bool>(args[0]))
 			{
-#if __clang__
-				[[clang::no_destroy]]
-#endif
 				static Localization::Str window_description{ "str_window_to_warn_enable_dns_hosts_description" };
-#if __clang__
-				[[clang::no_destroy]]
-#endif
-				static std::string description = window_description();
-#if __clang__
-				[[clang::no_destroy]]
-#endif
+				static std::string_view description = window_description();
 				static std::string str_list_name{};
 
 				if (str_list_name.empty())
@@ -121,7 +112,7 @@ void Ui::_settingEnableDnsHosts()
 							str_list_name.pop_back();
 							str_list_name.pop_back();
 
-							_window_to_warn_enable_dns_hosts->setDescription(utils::format(description, str_list_name).c_str());
+							_window_to_warn_enable_dns_hosts->setDescription(utils::format(description, str_list_name));
 						}
 					}
 				);
@@ -165,7 +156,7 @@ void Ui::_settingDnsHostsUpdateInfoWindow()
 		{
 			static std::string disc_text{ Localization::Str{ "str_window_wait_update_dns_description" }() };
 			float			   progress = _unblock.dnsHostsUpdateProgress();
-			_window_wait_update_dns->setDescription(utils::format(disc_text, progress).c_str());
+			_window_wait_update_dns->setDescription(utils::format(disc_text, progress));
 		}
 	});
 }
@@ -273,14 +264,14 @@ void Ui::_settingUnblockListEnableServices()
 	{
 		check_box->create(
 			"#setting section .unblock",
-			std::string{ "str_unblock_enable_" + name + "_title" }.c_str(),
-			Localization::Str{ std::string{ "str_unblock_enable_" + name + "_description" }.c_str() }
+			std::string{ "str_unblock_enable_" + name + "_title" },
+			Localization::Str{ std::string{ "str_unblock_enable_" + name + "_description" } }
 		);
 
 		check_box->addEventClick(
 			[this, name](JSArgs args)
 			{
-				_ui_base->userSetting()->writeSectionParameter("UNBLOCK", (std::string{ "enable_" } + name).c_str(), JSToCPP(args[0]));
+				_ui_base->userSetting()->writeSectionParameter("UNBLOCK", (std::string{ "enable_" } + name), JSToCPP(args[0]));
 
 				_settingUnblockListEnableServicesUpdate();
 				return false;
@@ -305,14 +296,14 @@ void Ui::_settingUnblockListEnableServicesUpdate()
 
 		std::string setting_name{ "enable_" + name };
 
-		if (auto result = _ui_base->userSetting()->parameterSection<bool>("UNBLOCK", setting_name.c_str()))
+		if (auto result = _ui_base->userSetting()->parameterSection<bool>("UNBLOCK", setting_name))
 		{
 			if (result.value())
 				_unblock.addOptionalStrategies(name);
 
 			check_box->setState(result.value());
 		}
-		else if (auto state = _file_service_list->parameterSection<bool>("LIST", name.c_str()))
+		else if (auto state = _file_service_list->parameterSection<bool>("LIST", name))
 		{
 			if (state.value())
 				_unblock.addOptionalStrategies(name);
@@ -359,10 +350,10 @@ void Ui::_settingUnblockSelectStrategyVersionUpdate()
 		auto strategy_dirs = _unblock.listVersionStrategy();
 
 		for (u32 i = 0; i < strategy_dirs.size(); i++)
-			_unblock_select_version_strategy->createOption(i, strategy_dirs[i].c_str());
+			_unblock_select_version_strategy->createOption(i, strategy_dirs[i]);
 
 		if (auto strategy_version = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "version_strategy"))
-			_unblock_select_version_strategy->setSelectedOptionValue(strategy_version.value().c_str());
+			_unblock_select_version_strategy->setSelectedOptionValue(strategy_version.value());
 
 		_unblock.changeDirVersionStrategy(JSToCPP<std::string>(_unblock_select_version_strategy->getSelectedOptionValue()));
 	}
@@ -450,12 +441,12 @@ void Ui::_settingUnblockEnableManualSelectUpdate()
 		_unblock_select_fake_bin->show();
 
 		for (u32 i = 0; i < strategies_list.size(); i++)
-			_unblock_select_config->createOption(i, strategies_list[i].c_str());
+			_unblock_select_config->createOption(i, strategies_list[i]);
 
 		auto set_default_select = [this](Ptr<SelectList>& select, pcstr name)
 		{
 			if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", name))
-				select->setSelectedOptionValue(config.value().c_str());
+				select->setSelectedOptionValue(config.value());
 			else
 				_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", name, JSToCPP(select->getSelectedOptionValue()));
 		};
@@ -467,7 +458,7 @@ void Ui::_settingUnblockEnableManualSelectUpdate()
 		u32	  size{ 0 };
 		auto& fake_bin_list = _unblock.getFakeBinList();
 		for (auto& [key, _] : fake_bin_list)
-			_unblock_select_fake_bin->createOption(size++, key.c_str());
+			_unblock_select_fake_bin->createOption(size++, key);
 
 		set_default_select(_unblock_select_fake_bin, "fake_bin");
 

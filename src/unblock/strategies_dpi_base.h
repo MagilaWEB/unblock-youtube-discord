@@ -16,9 +16,9 @@ public:
 	virtual ~StrategiesDPIBase() = default;
 
 	virtual void changeStrategy(u32 index = 1);
-	virtual void changeStrategy(pcstr file);
+	virtual void changeStrategy(std::string_view file);
 
-	virtual void changeDirVersion(std::string dir_version);
+	virtual void changeDirVersion(std::string_view dir_version);
 
 	virtual std::string						getStrategyFileName() const;
 	virtual const std::vector<std::string>& getStrategyList() const;
@@ -28,9 +28,9 @@ public:
 
 protected:
 	virtual void _uploadStrategies();
-	virtual void _saveStrategies(std::string str);
+	virtual void _saveStrategies(std::string_view str);
 
-	virtual std::optional<std::string> _getPath(std::string str, std::string prefix, std::filesystem::path path) const;
+	virtual std::optional<std::string> _getPath(std::string_view str, std::string_view prefix, std::filesystem::path path) const;
 
 	void _sortFiles();
 };

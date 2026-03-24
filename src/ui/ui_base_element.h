@@ -39,7 +39,7 @@ protected:
 #endif
 	inline static std::map<std::string, BaseElement*> _all_element;
 
-	using MapEvent = std::map<String, std::vector<std::function<bool(JSArgs)>>>;
+	using MapEvent = std::map<std::string, std::vector<std::function<bool(JSArgs)>>>;
 #if __clang__
 	[[clang::no_destroy]]
 #endif

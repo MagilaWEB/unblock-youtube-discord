@@ -14,10 +14,6 @@ static void run(const std::string& command_line)
 	core.finish();
 }
 
-#ifdef __clang__
-	#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
-#endif
-
 int main(int argc, char** argv)
 {
 	std::string lp_cmd_line{};

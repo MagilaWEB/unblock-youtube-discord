@@ -21,7 +21,7 @@ public:
 
 	void addEventChange(std::function<bool(JSArgs)>&& callback);
 
-	void	setSelectedOptionValue(JSValue value);
+	void	setSelectedOptionValue(std::string_view value);
 	JSValue getSelectedOptionValue();
 
 	void clear();

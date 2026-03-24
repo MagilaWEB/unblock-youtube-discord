@@ -99,7 +99,7 @@ void Ui::_checkConflictService()
 	_window_warning_conflict_service->create(Localization::Str{ "str_warning" }, "");
 	_window_warning_conflict_service->setType(SecondaryWindow::Type::YesNo);
 
-	std::string description = Localization::Str{ "str_window_warning_conflict_service" }();
+	auto description = Localization::Str{ "str_window_warning_conflict_service" }();
 
 	auto& conflict_service = _unblock.getConflictingServices();
 	if (!conflict_service.empty())
@@ -109,8 +109,7 @@ void Ui::_checkConflictService()
 			names_services.append(service.getName()).append(",");
 		names_services.pop_back();
 
-		description = utils::format(description, names_services);
-		_window_warning_conflict_service->setDescription(description);
+		_window_warning_conflict_service->setDescription(utils::format(description, names_services));
 
 		_window_warning_conflict_service->show();
 

@@ -39,14 +39,10 @@ void ListUl::initialize()
 
 void ListUl::createLi(Localization::Str text)
 {
-	String _text = text();
+	auto _text = text();
 
-	runCode(
-		[this, _text]
-		{
-			ASSERT_ARGS(_create_li({ name(), _text }).ToBoolean() == true, "Couldn't create_li a {} named [{}]", _type, name());
-		}
-	);
+	runCode([this, _text]
+			{ ASSERT_ARGS(_create_li({ name(), _text.data() }).ToBoolean() == true, "Couldn't create_li a {} named [{}]", _type, name()); });
 }
 
 void ListUl::createLiSuccess(Localization::Str text, bool state)
@@ -54,13 +50,13 @@ void ListUl::createLiSuccess(Localization::Str text, bool state)
 	if (!_created)
 		return;
 
-	String _text = text();
+	auto _text = text();
 
 	runCode(
 		[this, _text, state]
 		{
 			ASSERT_ARGS(
-				_create_li_success({ name(), _text, state }).ToBoolean() == true,
+				_create_li_success({ name(), _text.data(), state }).ToBoolean() == true,
 				"Couldn't create_li_success a {} named [{}]",
 				_type,
 				name()

@@ -109,8 +109,7 @@ void File::forLineParametersSection(std::string_view section, std::function<bool
 std::optional<u32> File::positionSection(std::string_view section)
 {
 	u32			position{ 0 };
-	std::string name_section{ "[]" };
-	name_section.insert(1, section);
+	std::string name_section{ std::format("[{}]", section) };
 
 	bool is_section{ false };
 
@@ -233,12 +232,10 @@ void File::writeSectionParameter(std::string_view section, std::string_view para
 
 	_is_write = true;
 
-	bool		stoped{ false };
-	std::string new_value{ value_argument };
-
+	bool stoped{ false };
 	forLineSection(
 		section,
-		[&stoped, parameter, new_value](std::string& str)
+		[&stoped, parameter, value_argument](std::string& str)
 		{
 			std::smatch para;
 			if (std::regex_search(str, para, reg_equally))
@@ -250,7 +247,7 @@ void File::writeSectionParameter(std::string_view section, std::string_view para
 
 				if (key == parameter)
 				{
-					str	   = std::regex_replace(str, std::regex{ value }, new_value);
+					str	   = std::regex_replace(str, std::regex{ value }, value_argument.data());
 					stoped = true;
 					return true;
 				}
@@ -263,9 +260,8 @@ void File::writeSectionParameter(std::string_view section, std::string_view para
 	if (stoped)
 		return;
 
-	std::string& str  = _map_list_string[section.data()].emplace_back(parameter);
-	str				 += "=";
-	str				 += new_value;
+	std::string& str = _map_list_string[section.data()].emplace_back(parameter);
+	str				 = std::format("{}={}", str, value_argument);
 
 	_normalize();
 }
@@ -376,8 +372,7 @@ void File::_normalize()
 {
 	for (auto& [section, list_string] : _map_list_string)
 	{
-		std::string key{ "[]" };
-		key.insert(1, section);
+		std::string key{ std::format("[{}]", section) };
 
 		bool   is_section{ false };
 		size_t it = 0;

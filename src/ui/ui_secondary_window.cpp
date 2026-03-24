@@ -52,12 +52,17 @@ void SecondaryWindow::initialize()
 
 void SecondaryWindow::create(Localization::Str title, Localization::Str description)
 {
-	String _title		= title();
-	String _description = description();
+	auto _title		  = title();
+	auto _description = description();
 	runCode(
 		[this, _title, _description]
 		{
-			ASSERT_ARGS(_create({ name(), _title, _description }).ToBoolean() == true, "Couldn't create a {} named [{}]", _type, name());
+			ASSERT_ARGS(
+				_create({ name(), _title.data(), _description.data() }).ToBoolean() == true,
+				"Couldn't create a {} named [{}]",
+				_type,
+				name()
+			);
 			_event_click[name()].clear();
 			_event_yes_no[name()].clear();
 			_event_cancel[name()].clear();
@@ -84,7 +89,7 @@ void SecondaryWindow::setType(Type type)
 
 void SecondaryWindow::setDescription(Localization::Str description)
 {
-	String _description = description();
+	String _description = description().data();
 	runCode(
 		[this, _description]
 		{

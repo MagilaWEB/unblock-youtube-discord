@@ -15,7 +15,7 @@ void StrategyGenerator::inFile(std::shared_ptr<File>& strategy)
 
 	if (!_file_strategy->isOpen())
 	{
-		Debug::warning("file strategy not file [{}]", _file_strategy->getPath().string().c_str());
+		Debug::warning("file strategy not file [{}]", _file_strategy->getPath().string());
 		return;
 	}
 
@@ -94,17 +94,16 @@ void StrategyGenerator::_convertDataFiles()
 	}
 }
 
-void StrategyGenerator::_readFileFilters(std::string section)
+void StrategyGenerator::_readFileFilters(std::string_view section)
 {
 	const bool start_end = section == "START" || section == "END";
-
-	auto& section_lines = _map_filters[section];
+	auto&		section_lines = _map_filters[section.data()];
 
 	if (!section_lines.empty())
 		return;
 
 	_file_strategy->forLineSection(
-		section.c_str(),
+		section,
 		[&](std::string str)
 		{
 			if (_useIn(str, section))
@@ -119,12 +118,9 @@ void StrategyGenerator::_readFileFilters(std::string section)
 	);
 }
 
-bool StrategyGenerator::_useIn(std::string str, std::string section)
+bool StrategyGenerator::_useIn(std::string str, std::string_view section)
 {
-#if __clang__
-	[[clang::no_destroy]]
-#endif
-	static std::string use_in{ "use_in>>" };
+	constexpr static std::string_view use_in{ "use_in>>" };
 
 	if (str.starts_with(use_in))
 	{
@@ -183,7 +179,7 @@ bool StrategyGenerator::_useIn(std::string str, std::string section)
 	return false;
 }
 
-std::optional<std::string> StrategyGenerator::_getDataFile(std::string str, std::string section, bool all)
+std::optional<std::string> StrategyGenerator::_getDataFile(std::string str, std::string_view section, bool all)
 {
 	if (str.contains("%BLOCKLIST%"))
 	{
@@ -204,21 +200,15 @@ std::optional<std::string> StrategyGenerator::_getDataFile(std::string str, std:
 
 	if (str.contains("%DOMAINS-EXCLUDE%"))
 	{
-#if __clang__
-		[[clang::no_destroy]]
-#endif
 		static const auto path_file_domains_exclude = Core::get().configsPath() / "domains_exclude.list";
-		ASSERT_ARGS(std::filesystem::exists(path_file_domains_exclude), "The [{}] file does not exist!", path_file_domains_exclude.string().c_str());
+		ASSERT_ARGS(std::filesystem::exists(path_file_domains_exclude), "The [{}] file does not exist!", path_file_domains_exclude.string());
 		return "--hostlist-exclude \"" + (path_file_domains_exclude.string()) + "\"";
 	}
 
 	if (str.contains("%IP-EXCLUDE%"))
 	{
-#if __clang__
-		[[clang::no_destroy]]
-#endif
 		static const auto path_ip_exclude = Core::get().configsPath() / "ip-exclude.list";
-		ASSERT_ARGS(std::filesystem::exists(path_ip_exclude), "The [{}] file does not exist!", path_ip_exclude.string().c_str());
+		ASSERT_ARGS(std::filesystem::exists(path_ip_exclude), "The [{}] file does not exist!", path_ip_exclude.string());
 		return "--ipset-exclude \"" + (path_ip_exclude.string()) + "\"";
 	}
 
