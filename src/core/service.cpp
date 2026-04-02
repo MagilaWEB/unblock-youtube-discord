@@ -355,9 +355,6 @@ void Service::close()
 
 void Service::allService(std::function<void(std::string)>&& callback)
 {
-#if __clang__
-	[[clang::no_destroy]]
-#endif
 	static CriticalSection lock;
 
 	CRITICAL_SECTION_RAII(lock);

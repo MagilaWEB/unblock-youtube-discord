@@ -5,9 +5,6 @@
 
 Engine& Engine::get()
 {
-#if __clang__
-	[[clang::no_destroy]]
-#endif
 	static Engine instance;
 	return instance;
 }

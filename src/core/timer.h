@@ -25,45 +25,22 @@ public:
 	Time now() const { return Clock::now(); }
 };
 
-#if __clang__
-	#define LIMIT_UPDATE(name_time, sec, code)              \
-		{                                                   \
-			[[clang::no_destroy]] static Timer name_time{}; \
-			if (name_time.getElapsed_sec() > sec)           \
-			{                                               \
-				name_time.start();                          \
-				code                                        \
-			}                                               \
-		}
+#define LIMIT_UPDATE(name_time, sec, code)    \
+	{                                         \
+		static Timer name_time{};             \
+		if (name_time.getElapsed_sec() > sec) \
+		{                                     \
+			name_time.start();                \
+			code                              \
+		}                                     \
+	}
 
-	#define LIMIT_UPDATE_FPS(name_time, fps, code)            \
-		{                                                     \
-			[[clang::no_destroy]] static Timer name_time{};   \
-			if ((name_time.getElapsed_ms()) >= (1'000 / fps)) \
-			{                                                 \
-				name_time.start();                            \
-				code                                          \
-			}                                                 \
-		}
-#else
-	#define LIMIT_UPDATE(name_time, sec, code)    \
-		{                                         \
-			static Timer name_time{};             \
-			if (name_time.getElapsed_sec() > sec) \
-			{                                     \
-				name_time.start();                \
-				code                              \
-			}                                     \
-		}
-
-	#define LIMIT_UPDATE_FPS(name_time, fps, code)            \
-		{                                                     \
-			static Timer name_time{};                         \
-			if ((name_time.getElapsed_ms()) >= (1'000 / fps)) \
-			{                                                 \
-				name_time.start();                            \
-				code                                          \
-			}                                                 \
-		}
-
-#endif
+#define LIMIT_UPDATE_FPS(name_time, fps, code)            \
+	{                                                     \
+		static Timer name_time{};                         \
+		if ((name_time.getElapsed_ms()) >= (1'000 / fps)) \
+		{                                                 \
+			name_time.start();                            \
+			code                                          \
+		}                                                 \
+	}

@@ -69,13 +69,8 @@ void Debug::initLogFile()
 		if (log_backup.isOpen())
 			log_backup.clear();
 
-		log.forLine(
-			[](std::string str)
-			{
-				log_backup.writeText(str);
-				return false;
-			}
-		);
+		for (auto& line : log)
+			log_backup.writeText(line);
 
 		log.clear();
 	}
