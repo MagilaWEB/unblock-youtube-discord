@@ -6,6 +6,7 @@
 #else
 	#pragma warning(push)
 	#pragma warning(disable : 4'100)
+	#pragma warning(disable : 4'201)
 #endif
 
 #include <AppCore/AppCore.h>

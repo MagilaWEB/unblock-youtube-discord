@@ -215,9 +215,6 @@ std::string DNSHost::_pathHostDir()
 
 void DNSHost::_loadInfo()
 {
-#if __clang__
-	[[clang::no_destroy]]
-#endif
 	static bool load{ false };
 	if (!load)
 	{
@@ -233,13 +230,8 @@ void DNSHost::_loadInfo()
 		auto	  lines = hosts.run();
 		if (hosts.codeResult() != 200 || lines.empty())
 		{
-			local_hosts.forLine(
-				[&lines](std::string line)
-				{
-					lines.push_back(line);
-					return false;
-				}
-			);
+			for (auto& line : local_hosts)
+				lines.push_back(line);
 		}
 		else
 		{

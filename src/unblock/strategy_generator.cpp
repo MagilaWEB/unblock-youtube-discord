@@ -67,16 +67,13 @@ void StrategyGenerator::_convertDataFiles()
 
 			if (list.isOpen())
 			{
-				list.forLine(
-					[&file](std::string line)
-					{
-						if (line.empty() || line.starts_with("//") || std::regex_match(line, std::regex{ "\n" }))
-							return false;
+				for (auto& line : list)
+				{
+					if (line.empty() || line.starts_with("//") || std::regex_match(line, std::regex{ "\n" }))
+						continue;
 
-						file.writeText(line);
-						return false;
-					}
-				);
+					file.writeText(line);
+				}
 			}
 		};
 
@@ -136,13 +133,8 @@ bool StrategyGenerator::_useIn(std::string str, std::string_view section)
 			File to_list{ false };
 			to_list.open(path / result, ".list", true);
 
-			from_list.forLine(
-				[&to_list](std::string line)
-				{
-					to_list.writeText(line);
-					return false;
-				}
-			);
+			for (auto& line : to_list)
+				to_list.writeText(line);
 		};
 
 		if (_map_filters[result].empty())
