@@ -9,13 +9,13 @@ if (!RUN_CPP) {
 	createButton("footer", "link_to_github", "Follow on GitHub");
 
 	addButtonEventClick("link_to_github", () => {
-		 window.open("https://github.com/MagilaWEB/unblock-youtube-discord", '_blank');
+		window.open("https://github.com/MagilaWEB/unblock-youtube-discord", '_blank');
 	});
 
 	createButton("footer", "link_to_github2", "Follow on GitHub2");
 
 	addButtonEventClick("link_to_github2", () => {
-		 window.open("https://github.com/MagilaWEB/unblock-youtube-discord", '_blank');
+		window.open("https://github.com/MagilaWEB/unblock-youtube-discord", '_blank');
 	});
 
 	createSecondaryWindow("start_test_window", "Какое-то окно", "Описание окна");
@@ -67,13 +67,16 @@ if (!RUN_CPP) {
 
 	createCheckBox("#setting section .unblock", "unblock", "Включаем что то", "DA");
 
+	createButton("#setting section .unblock", "test", "Запустить тест");
+
 	createCheckBox("#setting section .unblock", "unblock2", "тут тоже", "Какоето описание (тут тоже)");
 
-	createListUl("#setting section .unblock", "setting");
-	createListUlLiAdd("setting", "Список Какойто текст 1");
-	createListUlLiAdd("setting", "Список Какойто текст 2");
-	createListUlLiAdd("setting", "Список Какойто текст 3");
-	createListUlLiAdd("setting", "Список Какойто текст 4");
+	createListSelect("#setting section .unblock", "unblock3", "Список выбора", "Какоето описание 2")
+	createSelectOption("unblock3", 1, "Элемент 1");
+	createSelectOption("unblock3", 2, "Элемент 2");
+	createSelectOption("unblock3", 3, "Элемент 3");
+	createSelectOption("unblock3", 4, "Элемент 4");
+	createSelectOption("unblock3", 5, "Элемент 5");
 
 	addInputEventSubmit("testInput1", false, new_value => {
 		console.log(new_value);

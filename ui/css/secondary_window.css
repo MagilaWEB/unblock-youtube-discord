@@ -3,46 +3,54 @@
 	visibility        : hidden;
 	top               : 0;
 	opacity           : 0;
-	z-index           : 20;
+	z-index           : 40;
 	width             : 100%;
 	height            : 100%;
-	transition        : visibility .5s, opacity .5s, transform .5s ease-in-out;
-	transform         : scale(0);
-	/* backdrop-filter: blur(5px); */
+	transform         : scale(0.92);
+	background-color  : rgba(0,0,0,0.42);
 }
 
 .secondary_window.show {
+	transition        : visibility .4s, opacity .4s, transform .4s cubic-bezier(0.23, 1, 0.32, 1);
 	visibility: visible;
 	opacity   : 1;
-	transform : scale(100%);
+	transform : scale(1);
 }
 
 .secondary_window .content {
 	position        : absolute;
 	top             : 50%;
-	left            : calc(30% / 2);
+	left            : 50%;
+	transform       : translate(-50%, -50%);
 	width           : 70%;
-	background-color: rgba(73, 73, 73, 0.8);
-	border          : solid 3px rgb(100, 100, 100);
-	border-radius   : 5px;
-	transform       : translateY(-50%);
+	max-width       : 680px;
+	background-color: rgba(28, 31, 46, 0.94);
+	border          : 1px solid rgba(255,255,255,0.12);
+	border-radius   : 8px;
+	box-shadow      : 0 26px 75px rgba(0,0,0,0.58);
+	padding         : 1.9em 2.2em;
 }
 
 .secondary_window .content .title {
-	margin    : 0 0 .3em 0;
-	text-align: center;
-	font-size : 2em;
+	margin      : 0 0 .7em 0;
+	text-align  : center;
+	font-size   : 2.08em;
+	font-weight : 600;
+	letter-spacing: -0.03em;
 }
 
 .secondary_window .content .description {
-	margin     : .4em 0;
-	padding    : 0 .3em;
-	border     : solid 3px rgb(100, 100, 100);
-	text-align : left;
-	font-size  : 1.3em;
-	white-space: pre-line;
-	overflow   : auto;
-	max-height : 13em;
+	margin      : .7em 0 1.3em;
+	padding     : .9em 1.1em;
+	border      : 1px solid rgba(255,255,255,0.09);
+	text-align  : left;
+	font-size   : 1.29em;
+	white-space : pre-line;
+	overflow    : auto;
+	max-height  : 13.8em;
+	line-height : 1.48;
+	border-radius: 11px;
+	background-color: rgba(25,28,42,0.65);
 }
 
 .secondary_window .content .elements {
@@ -51,19 +59,85 @@
 
 .secondary_window .content .horizontally .button {
 	display: inline-block;
-	margin : 0 3em;
+	margin : 0 2.4em;
 }
 
 .secondary_window .content .vertically .button {
 	display: block;
-	margin : 0 auto;
+	margin : 0.9em auto;
 }
 
 .secondary_window .content .elements .button {
-	font-size: 1.2em;
-	width    : 10em;
+	font-size: 1.23em;
+	width    : 11.2em;
 }
 
 .secondary_window .content .elements .button button {
 	width: 100%;
+	border-radius: 11px;
+}
+
+.secondary_window.show .content {
+    animation: 
+        borderGlow 4s ease-in-out 0.5s infinite;
+}
+
+.secondary_window.show .content .title {
+    animation: fadeSlideUp 0.4s ease-out 0.05s forwards,
+        gentleSway 4s ease-in-out 0.6s infinite;
+    opacity: 0;
+    transform: translateY(1em);
+}
+
+.secondary_window.show .content .description {
+    animation: fadeSlideUp 0.4s ease-out 0.15s forwards,
+        gentleBreathing 4s ease-in-out 0.5s infinite;
+    opacity: 0;
+    transform: translateY(1em);
+}
+
+.secondary_window.show .content .elements {
+    animation: fadeSlideUp 0.4s ease-out 0.25s forwards;
+    opacity: 0;
+    transform: translateY(1em);
+}
+
+@keyframes fadeSlideUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes borderGlow {
+    0%, 100% {
+        border-color: rgba(255,255,255,0.12);
+    }
+    50% {
+        border-color: rgba(255,255,255,0.35);
+    }
+}
+
+@keyframes gentleBreathing {
+    0% {
+        transform:  scale(1);
+        box-shadow: 0 26px 75px rgba(0,0,0,0.58);
+    }
+    50% {
+        transform: scale(1.01);
+        box-shadow: 0 28px 82px rgba(0,0,0,0.62), 0 0 0 1px rgba(255,255,255,0.03);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 26px 75px rgba(0,0,0,0.58);
+    }
+}
+
+@keyframes gentleSway {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
 }

@@ -1,179 +1,266 @@
 .input,
 .select_list {
-	display : none;
-	position: relative;
-	left    : 0;
-	top     : 0;
-	width   : 90%;
-	margin  : .9em auto;
-	height  : 2em;
+    display: none;
+    position: relative;
+    left: 0;
+    top: 0;
+    margin: .95em auto;
+    height: 2.1em;
 }
 
 .input.show,
 .select_list.show {
-	display: block;
+    display: block;
 }
 
 .input input,
 .select_list .label {
-	position        : absolute;
-	z-index         : 10;
-	width           : 14em;
-	height          : 100%;
-	border-radius   : 5px;
-	color           : white;
-	font-size       : .9em;
-	transition      : .3s;
-	background-color: rgba(82, 82, 82, .5);
-	border          : solid 2px rgb(91, 91, 91);
-	border-radius   : 5px;
+    position: absolute;
+    z-index: 10;
+    width: 14em;
+    height: 100%;
+    border-radius: 9px;
+    color: #f0f0f0;
+    font-size: 0.93em;
+    font-weight: 500;
+    padding: .3em;
+    transition: all .25s cubic-bezier(0.23, 1, 0.32, 1);
+    background-color: rgba(40, 44, 58, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.28);
+    text-align: center;
 }
 
 .input input {
-	width: 100%;
+    width: 100%;
 }
 
-.input input:hover {
-	cursor          : text;
-	background-color: #474747;
+.input input:hover,
+.input input:focus {
+    background-color: rgba(55, 60, 78, 0.92);
+    border-color: rgba(80, 150, 255, 0.75);
+    box-shadow: 0 0 0 3.5px rgba(60, 130, 255, 0.25);
 }
 
 .select_list {
-	background-color: rgba(82, 82, 82, .5);
-	border          : solid 2px rgb(91, 91, 91);
-	border-radius   : 5px;
+    background-color: rgba(40, 44, 58, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 9px;
 }
 
 .select_list .label {
-	color : #aeaeae;
-	cursor: pointer;
+    color: #d8d8d8;
+    cursor: pointer;
 }
 
 .select_list .label:focus {
-	color           : white;
-	background-color: rgba(82, 82, 82, 1);
+    color: white;
+    background-color: rgba(50, 55, 70, 0.92);
 }
 
 .select_list .select {
-	position        : absolute;
-	z-index         : 10;
-	visibility      : hidden;
-	opacity         : 0;
-	text-align      : center;
-	overflow        : auto;
-	top             : 101%;
-	width           : 14em;
-	background-color: rgba(82, 82, 82, .9);
-	border          : solid 2px rgb(91, 91, 91);
-	transition      : visibility 100ms, opacity 100ms;
+    position: absolute;
+    z-index: 10;
+    visibility: hidden;
+    opacity: 0;
+    text-align: center;
+    overflow: auto;
+    top: 102%;
+    width: 14em;
+    background-color: rgba(28, 31, 45, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 11px;
+    box-shadow: 0 14px 38px rgba(0, 0, 0, 0.48);
 }
 
 .select_list .select_active {
-	z-index   : 20;
-	visibility: visible;
-	opacity   : 1;
-	max-height: 15em;
-	height    : max-content;
+    z-index: 20;
+    visibility: visible;
+    opacity: 1;
+    max-height: 16em;
+    height: max-content;
+    transition: visibility 180ms, opacity 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .select_list .select .option {
-	cursor       : pointer;
-	width        : 100%;
-	border-bottom: solid 3px rgb(91, 91, 91);
-	padding      : .1em 1em;
-	transition   : background 100ms;
+    cursor: pointer;
+    width: 100%;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    padding: .38em 1.2em;
+    transition: background 140ms;
 }
 
 .select_list .select .option:last-child {
-	border-bottom: 0;
+    border-bottom: 0;
 }
 
 .select_list .select .option:hover {
-	background-color: #2d2d2d;
+    background-color: rgba(65, 72, 90, 0.8);
 }
 
 .check_box {
-	display         : none;
-	position        : relative;
-	width           : 90%;
-	margin          : 1em auto;
-	background-color: rgba(82, 82, 82, .5);
-	border          : solid 2px rgb(91, 91, 91);
-	border-radius   : 5px;
+    display: none;
+    position: relative;
+    margin: 1em 0;
+    background-color: rgba(32, 35, 50, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 11px;
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.35);
+    transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1),
+                background-color 0.2s ease,
+                box-shadow 0.2s ease,
+                border-color 0.2s ease;
 }
 
 .check_box.show {
-	display: block;
+    display: block;
+}
+
+.check_box:hover {
+    background-color: rgba(45, 50, 70, 0.88);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+    transform: translateY(-1px);
+}
+
+.check_box .check::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 2px;
+    width: calc(0.68em - 4px);
+    height: calc(0.68em - 4px);
+    background: #f0f0f0;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    transition: left 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1), background 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .check_box .check {
-	position     : absolute;
-	top          : .4em;
-	left         : 0;
-	width        : 2em;
-	height       : .6em;
-	background   : currentColor;
-	border-radius: 50px;
-	box-shadow   : 0 0 5px 0px rgba(0, 0, 0, 0.3);
+    position: absolute;
+    top: 0.45em;
+    left: 0.75em;
+    width: 2.15em;
+    height: 0.68em;
+    border-radius: 50px;
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.45);
+    transition: background 0.25s ease, box-shadow 0.2s ease;
+    background-color: rgba(55, 95, 145, 0.88);
+    border-color: rgba(100, 160, 220, 0.5);
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.2), 0 0 6px rgba(100, 160, 220, 0.6);
+}
+
+.check_box.checked .check::before {
+    left: calc(100% - (0.68em - 2px));
+    background: white;
 }
 
 .check_box .title,
 .select_list .title {
-	position  : relative;
-	text-align: center;
-	margin    : 0;
-	bottom    : 0;
-	left      : 2.5em;
-	width     : max-content;
-	height    : 1.5em;
+    position: relative;
+    text-align: left;
+    margin: 0;
+    bottom: 0;
+    left: 3.3em;
+    width: max-content;
+    height: 1.6em;
+    font-weight: 500;
 }
 
 .select_list .title {
-	top : .2em;
-	left: 15em;
+    left: 13.5em;
+    top: .2em;
 }
 
-.check_box .description,
-.input .description,
-.select_list .description {
-	z-index         : 20;
-	position        : fixed;
-	opacity         : 0;
-	visibility      : hidden;
-	width           : 30em;
-	margin-left     : 1em;
-	background-color: rgba(82, 82, 82, .8);
-	border          : solid 2px rgb(91, 91, 91);
-	border-radius   : 5px;
-	transition      : opacity 700ms;
+.info_description {
+    z-index: 30;
+    position: fixed;
+    opacity: 0;
+    visibility: hidden;
+    width: 30em;
+    padding: 0.1em 1em;
+    margin-left: 1em;
+    background-color: rgba(32, 35, 50, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    border-radius: 12px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+    transition: opacity 0.2s cubic-bezier(0.23, 1, 0.32, 1),
+                transform 0.25s cubic-bezier(0.34, 1.2, 0.64, 1),
+                filter 0.2s ease,
+                visibility 0s 0.25s;
+    transform: scale(0.85) rotate(-2deg);
+    filter: blur(16px);
+    transform-origin: top left;
+    pointer-events: none;
 }
 
-.check_box .description_active,
-.input .description_active,
-.select_list .description_active {
-	opacity   : 1;
-	visibility: inherit;
+.info_description.info_description_active {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1) rotate(0deg);
+    filter: blur(0);
+    transition: opacity 0.2s cubic-bezier(0.23, 1, 0.32, 1),
+                transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1),
+                filter 0.2s ease,
+                visibility 0s 0s;
+    animation: descriptionAppear 0.4s cubic-bezier(0.34, 1.2, 0.64, 1),
+               descriptionBreathing 4.5s ease-in-out 0.4s infinite;
+}
+
+@keyframes descriptionAppear {
+    0% {
+        transform: scale(0.7) rotate(-4deg);
+        opacity: 0;
+        filter: blur(18px);
+    }
+    60% {
+        transform: scale(1.04) rotate(1deg);
+        filter: blur(0);
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+
+@keyframes descriptionBreathing {
+    0% {
+        transform: scale(1) translateY(0) translateX(0);
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+        border-color: rgba(255, 255, 255, 0.11);
+    }
+    50% {
+        transform: scale(1.02) translateY(-2px) translateX(-0.5em);
+        box-shadow: 0 16px 42px rgba(0, 0, 0, 0.52);
+        border-color: rgba(255, 255, 255, 0.22);
+    }
+    100% {
+        transform: scale(1) translateY(0) translateX(0);
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+        border-color: rgba(255, 255, 255, 0.11);
+    }
 }
 
 .check_box .check label {
-	position        : absolute;
-	width           : 1em;
-	height          : 1em;
-	top             : -.2em;
-	left            : 0;
-	cursor          : pointer;
-	border-radius   : 50px;
-	background-color: #c0c0c0;
-	box-shadow      : 0 0 5px 0px rgba(0, 0, 0, 0.3);
-	transition      : .4s;
+    position: absolute;
+    width: 1.08em;
+    height: 1.08em;
+    top: -.23em;
+    left: 0;
+    cursor: pointer;
+    border-radius: 50%;
+    background-color: #d8d8d8;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    transition: all .38s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .check_box .check input[type="checkbox"] {
-	visibility: hidden;
+    visibility: hidden;
 }
 
 .check_box .check input[type="checkbox"]:checked+label {
-	left            : 1em;
-	background-color: #60ff26;
-
+    left: 1.07em;
+    background-color: #00e8a0;
+    box-shadow: 0 0 12px #00e8a0;
 }

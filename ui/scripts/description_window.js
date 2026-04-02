@@ -43,13 +43,13 @@ function showDescriptionWindow(element, description) {
 	element.addEventListener("mouseover", event => {
 		if (IsValidElement(event)) {
 			description.style.left = event.clientX;
-			description.classList.add("description_active");
+			description.classList.add("info_description_active");
 		}
 	});
 
 	element.addEventListener("mouseout", event => {
 		if (IsValidElement(event)) {
-			description.classList.remove("description_active");
+			description.classList.remove("info_description_active");
 		}
 	});
 }

@@ -257,7 +257,7 @@ function createInput(_selector, _name, _type, _value, _title, _description, _fir
 
 	const p_description = document.createElement("p");
 	p_description.append(_description);
-	p_description.classList.add("description");
+	p_description.classList.add("info_description");
 	document.body.appendChild(p_description);
 
 	showDescriptionWindow(div, p_description);
