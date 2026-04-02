@@ -150,7 +150,7 @@ function createCheckBox(_selector, _name, _title, _description, _first) {
 	const p_description = document.createElement("p");
 	p_description.append(_description);
 	p_description.classList.add("description");
-	div.appendChild(p_description);
+	document.body.appendChild(p_description);
 
 	showDescriptionWindow(div, p_description);
 
