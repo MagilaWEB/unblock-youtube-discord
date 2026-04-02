@@ -117,6 +117,7 @@ private:
 	void _settingTestDomainsStartup();
 	void _settingEnableDnsHosts();
 	void _settingEnableDnsHostsUpdate();
+	void _settingEnableDnsHostsWarningUser();
 	void _settingDnsHostsUpdateInfoWindow();
 
 	void _settingMaxTimeWait();

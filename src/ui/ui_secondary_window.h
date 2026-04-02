@@ -7,14 +7,7 @@ class SecondaryWindow final : public BaseElement
 	JSFunction _set_description;
 
 	inline static std::vector<SecondaryWindow*> _all_window;
-
-	#if __clang__
-	[[clang::no_destroy]]
-#endif
 	inline static MapEvent _event_yes_no;
-#if __clang__
-	[[clang::no_destroy]]
-#endif
 	inline static MapEvent _event_cancel;
 
 	std::atomic_bool _is_show{ false };

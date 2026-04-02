@@ -91,33 +91,7 @@ void Ui::_settingEnableDnsHosts()
 		{
 			if (JSToCPP<bool>(args[0]))
 			{
-				static Localization::Str window_description{ "str_window_to_warn_enable_dns_hosts_description" };
-				static std::string_view description = window_description();
-				static std::string str_list_name{};
-
-				if (str_list_name.empty())
-					_window_wait_response_from_server->show();
-
-				Core::get().addTask(
-					[this]
-					{
-						if (str_list_name.empty())
-						{
-							auto& list_name = _unblock.dnsHostsListName();
-							for (auto& name : list_name)
-								str_list_name.append(name).append(", ");
-
-							_window_wait_response_from_server->hide();
-
-							str_list_name.pop_back();
-							str_list_name.pop_back();
-
-							_window_to_warn_enable_dns_hosts->setDescription(utils::format(description, str_list_name));
-						}
-					}
-				);
-
-				_window_to_warn_enable_dns_hosts->show();
+				_settingEnableDnsHostsWarningUser();
 				return false;
 			}
 
@@ -191,13 +165,34 @@ void Ui::_settingEnableDnsHostsUpdate()
 	else
 	{
 		_start_update_dns_hosts->hide();
-		_window_to_warn_enable_dns_hosts->show();
+		_settingEnableDnsHostsWarningUser();
 	}
 }
 
-#if __clang__
-[[clang::no_destroy]]
-#endif
+void Ui::_settingEnableDnsHostsWarningUser()
+{
+	static std::string description{ Localization::Str{ "str_window_to_warn_enable_dns_hosts_description" }() };
+
+	Core::get().addTask(
+		[this]
+		{
+			_window_wait_response_from_server->show();
+			std::string str_list_name{};
+			auto&		list_name = _unblock.dnsHostsListName();
+			for (auto& name : list_name)
+				str_list_name.append(name).append(", ");
+
+			_window_wait_response_from_server->hide();
+
+			str_list_name.pop_back();
+			str_list_name.pop_back();
+
+			_window_to_warn_enable_dns_hosts->setDescription(utils::format(description, str_list_name));
+			_window_to_warn_enable_dns_hosts->show();
+		}
+	);
+}
+
 constexpr static u32 base_second{ 8 };
 
 void Ui::_settingMaxTimeWait()

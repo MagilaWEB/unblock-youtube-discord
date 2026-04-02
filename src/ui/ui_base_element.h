@@ -6,6 +6,7 @@
 #else
 	#pragma warning(push)
 	#pragma warning(disable : 4'100)
+	#pragma warning(disable : 4'201)
 #endif
 
 #include <AppCore/JSHelpers.h>
@@ -34,15 +35,9 @@ protected:
 	bool			  _created{ false };
 
 	inline static View* _view;
-#if __clang__
-	[[clang::no_destroy]]
-#endif
 	inline static std::map<std::string, BaseElement*> _all_element;
 
 	using MapEvent = std::map<std::string, std::vector<std::function<bool(JSArgs)>>>;
-#if __clang__
-	[[clang::no_destroy]]
-#endif
 	inline static MapEvent _event_click{};
 
 public:
