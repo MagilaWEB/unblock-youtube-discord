@@ -42,7 +42,6 @@ class Ui final : public utils::DefaultInit
 	CHECK_BOX(_unblock_manual);
 	SELECT_LIST(_unblock_select_version_strategy);
 	SELECT_LIST(_unblock_select_config);
-	SELECT_LIST(_unblock_select_fake_bin);
 
 	// Setting Unblock list enable services
 	std::map<std::string, std::shared_ptr<CheckBox>> _unblock_list_enable_services{};

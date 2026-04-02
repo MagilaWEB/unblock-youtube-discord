@@ -124,15 +124,11 @@ void Ui::_clickStartService()
 			return;
 		}
 
-		if (auto fake_bin = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "fake_bin"))
-			_window_config_found->setDescription(utils::format(
-				Localization::Str{ "str_window_config_found_description" }(),
-				config.value(),
-				JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue()),
-				fake_bin.value()
-			));
-		else
-			Debug::error("user.config not REMEMBER_CONFIGURATION parametr fake_bin");
+		_window_config_found->setDescription(utils::format(
+			Localization::Str{ "str_window_config_found_description" }(),
+			config.value(),
+			JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue())
+		));
 
 		_window_config_found->show();
 		return;
@@ -206,12 +202,10 @@ void Ui::_autoStart()
 
 				auto _strategy_name = _unblock.getNameStrategies();
 				auto version_str	= JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue());
-				auto fakebin_str	= _unblock.getNameFakeBin();
 				auto text_desc_base = utils::format(
 					Localization::Str{ "str_window_auto_start_wait_name_strategy_description" }(),
 					_strategy_name,
-					version_str,
-					fakebin_str
+					version_str
 				);
 
 				text_desc_base.insert(0, "\n");
@@ -223,18 +217,14 @@ void Ui::_autoStart()
 
 				if (!_automatically_strategy_cancel && _unblock.validDomain())
 				{
-					std::string _fake_bin = _unblock.getNameFakeBin();
 					_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", _strategy_name);
-					_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "fake_bin", _fake_bin);
 
 					version_str = JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue());
-					fakebin_str = _unblock.getNameFakeBin();
 
 					std::string text_desc = utils::format(
 						Localization::Str{ "str_window_continue_select_strategy_description" }(),
 						_strategy_name,
-						version_str,
-						fakebin_str
+						version_str
 					);
 
 					_window_continue_select_strategy->setDescription(text_desc);
@@ -264,10 +254,7 @@ void Ui::_startServiceFromConfig()
 
 				_tcpGlobalChange(true);
 
-				if (auto fake_bin = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "fake_bin"))
-					_unblock.changeStrategy(config.value(), fake_bin.value());
-				else
-					Debug::error(fake_bin.error());
+				_unblock.changeStrategy(config.value());
 
 				_unblock.startService();
 				_buttonUpdate();

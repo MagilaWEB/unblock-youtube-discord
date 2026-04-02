@@ -2,29 +2,18 @@
 
 StrategiesDPI::StrategiesDPI()
 {
+	_file_lua_init.open(Core::get().configsPath() / "lua_init", ".config", true);
 	_file_fake_bin_config.open(Core::get().configsPath() / "fake_bin", ".config", true);
 
 	_file_fake_bin_config.forLineParametersSection(
 		"FAKE_TLS",
 		[this](std::string_view key, std::string_view value)
 		{
-			const auto path_file = Core::get().binariesPath() / value;
+			const auto path_file = Core::get().binariesPath() / "fake" / value;
 			ASSERT_ARGS(std::filesystem::exists(path_file), "The [{}] file does not exist!", path_file.string());
 
-			auto& fake			  = _fake_bin_params[key.data()];
-			fake.file_clienthello = path_file.string();
-			fake.init			  = true;
-			return false;
-		}
-	);
-
-	_file_fake_bin_config.forLineParametersSection(
-		"FAKE_TLS_DOMAIN",
-		[this](std::string_view key, std::string_view value)
-		{
-			auto& fake	= _fake_bin_params[key.data()];
-			fake.domain = value;
-			fake.init	= true;
+			auto& fake = _fake_bin_params[key.data()];
+			fake.file  = path_file.string();
 			return false;
 		}
 	);
@@ -33,12 +22,11 @@ StrategiesDPI::StrategiesDPI()
 		"FAKE_QUIC",
 		[this](std::string_view key, std::string_view value)
 		{
-			const auto path_file = Core::get().binariesPath() / value;
+			const auto path_file = Core::get().binariesPath() / "fake" / value;
 			ASSERT_ARGS(std::filesystem::exists(path_file), "The [{}] file does not exist!", path_file.string());
 
-			auto& fake		  = _fake_bin_params[key.data()];
-			fake.file_initial = path_file.string();
-			fake.init		  = true;
+			auto& fake = _fake_bin_params[key.data()];
+			fake.file  = path_file.string();
 			return false;
 		}
 	);
@@ -46,50 +34,9 @@ StrategiesDPI::StrategiesDPI()
 	_file_fake_bin_config.close();
 }
 
-std::string StrategiesDPI::getKeyFakeBin() const
-{
-	return _fake_bind_key;
-}
-
-const std::map<std::string, StrategiesDPI::FakeBinParam>& StrategiesDPI::getFakeBinList() const
-{
-	return _fake_bin_params;
-}
-
 void StrategiesDPI::serviceConfigFile(const std::shared_ptr<File>& config)
 {
 	_file_service_list = config;
-}
-
-void StrategiesDPI::changeFakeKey(u32 index)
-{
-	u32 it{ 0 };
-	for (auto& [key, data] : _fake_bin_params)
-	{
-		if (it == index)
-		{
-			changeFakeKey(key);
-			return;
-		}
-		it++;
-	}
-}
-
-void StrategiesDPI::changeFakeKey(std::string_view key)
-{
-	if (key.empty())
-	{
-		_fake_bind_key = "";
-		return;
-	}
-
-	InputConsole::textInfo("Выбран FakeBin [{}].", key);
-
-	auto& fake_bin = _fake_bin_params[key.data()];
-
-	ASSERT_ARGS(fake_bin.init, "a key is missing for fake_bin {}", key);
-
-	_fake_bind_key = key;
 }
 
 void StrategiesDPI::changeDirVersion(std::string_view dir_version)
@@ -143,23 +90,14 @@ void StrategiesDPI::_uploadStrategies()
 		for (auto& line : pair.second)
 			_saveStrategies(line);
 
-	for (auto& line : _strategy_dpi)
-		if (line.contains("=\""))
-			line = std::regex_replace(line, std::regex{ "\\=" }, " ");
+	// for (auto& line : _strategy_dpi)
+	//	if (line.contains("=\""))
+	//		line = std::regex_replace(line, std::regex{ "\\=" }, " ");
 
-	std::erase_if(_strategy_dpi, [](std::string line) { return line.empty(); });
+	_init_lua_to_zapret();
+	_blob_init_to_zapret();
 
-	if (_strategy_dpi.empty())
-	{
-		Debug::warning("strategy dpi empty");
-		return;
-	}
-
-	while (_strategy_dpi.back().starts_with("--new"))
-		_strategy_dpi.pop_back();
-
-	for (auto& line : _strategy_dpi)
-		Debug::ok("{}", line);
+	_normalizeStrategyFinal();
 }
 
 void StrategiesDPI::_saveStrategies(std::string_view str)
@@ -167,25 +105,79 @@ void StrategiesDPI::_saveStrategies(std::string_view str)
 	if (_ignoringLineStrategy(str))
 		return;
 
-	if (auto new_str = _getFake(str))
-	{
-		_strategy_dpi.emplace_back(new_str.value());
-		return;
-	}
-
 	StrategiesDPIBase::_saveStrategies(str);
 
 	auto& string_back = _strategy_dpi.back();
 	_getAllPorts(string_back);
-	_normalizeStrategyString(string_back);
+}
+
+void StrategiesDPI::_init_lua_to_zapret()
+{
+	static const std::filesystem::path _lua_dir{ Core::get().binariesPath() / "lua" };
+
+	auto iter = [this] { return std::ranges::find(_strategy_dpi, "%INIT_LUA%"); };
+	if (iter() != _strategy_dpi.end())
+	{
+		for (auto& line : _file_lua_init)
+			_strategy_dpi.insert(iter(), "--lua-init=@\"" + (_lua_dir / line).string() + "\"");
+
+		_strategy_dpi.erase(iter());
+	}
+}
+
+void StrategiesDPI::_blob_init_to_zapret()
+{
+	auto iter = [this] { return std::ranges::find(_strategy_dpi, "%INIT_BLOB%"); };
+	if (iter() != _strategy_dpi.end())
+	{
+		for (auto& [key, data] : _fake_bin_params)
+			if (data.init)
+				data.init = false;
+
+		static const std::regex pattern(R"(:blob=([^:]+))");
+
+		auto& file_strategy = *_file_strategy_dpi;
+		for (auto& line : file_strategy)
+		{
+			for (auto& [key, data] : _fake_bin_params)
+			{
+				if (!data.init)
+				{
+					std::smatch match;
+					if (std::regex_search(line, match, pattern))
+						if (match[1].str() == key)
+							data.init = true;
+				}
+			}
+		}
+
+		for (auto& [key, data] : _fake_bin_params)
+			if (data.init)
+				_strategy_dpi.insert(iter(), "--blob=" + key + ":@\"" + data.file + "\"");
+
+		for (auto& line : file_strategy)
+		{
+			std::smatch match;
+			if (std::regex_search(line, match, pattern))
+			{
+				if (_fake_bin_params.find(match[1].str()) == _fake_bin_params.end())
+				{
+					Debug::warning(
+						"The blob {} key does not exist in unblock, register it in the fake_bin.config config or use the existing ones."
+						"The strategy string is [{}].",
+						match[1].str(),
+						line
+					);
+				}
+			}
+		}
+
+		_strategy_dpi.erase(iter());
+	}
 }
 
 void StrategiesDPI::_normalizeStrategyString(std::string& str) const
 {
-	static std::regex port_vars(R"(%[^%]+%)");
-
-	str = std::regex_replace(str, port_vars, "");
-
 	size_t pos;
 	while ((pos = str.find("=,")) != std::string::npos)
 		str.replace(pos, 2, "=");
@@ -195,6 +187,31 @@ void StrategiesDPI::_normalizeStrategyString(std::string& str) const
 
 	if (!str.empty() && str.back() == ',')
 		str.pop_back();
+}
+
+void StrategiesDPI::_normalizeStrategyFinal()
+{
+	for (auto& line : _strategy_dpi)
+	{
+		static std::regex port_vars(R"(%[^%]+%)");
+		line = std::regex_replace(line, port_vars, "");
+
+		_normalizeStrategyString(line);
+	}
+
+	std::erase_if(_strategy_dpi, [](std::string line) { return line.empty(); });
+
+	if (_strategy_dpi.empty())
+	{
+		Debug::error("strategy dpi empty");
+		return;
+	}
+
+	while (_strategy_dpi.back().starts_with("--new"))
+		_strategy_dpi.pop_back();
+
+	for (auto& line : _strategy_dpi)
+		Debug::ok("{}", line);
 }
 
 bool StrategiesDPI::_ignoringLineStrategy(std::string_view str) const
@@ -211,7 +228,7 @@ void StrategiesDPI::_getAllPorts(std::string& str) const
 			auto replace_target = [&str, &name_service](const std::string& _text)
 			{
 				static const std::regex reg_equally{ "\\:" };
-				std::smatch para;
+				std::smatch				para;
 				if (std::regex_search(_text, para, reg_equally))
 				{
 					std::string target{ std::format("%{}%", para.prefix().str()) };
@@ -239,119 +256,4 @@ void StrategiesDPI::_getAllPorts(std::string& str) const
 			}
 		}
 	}
-}
-
-std::optional<std::string> StrategiesDPI::_getFake(std::string_view str)
-{
-	if (_fake_bind_key.empty())
-		return std::nullopt;
-
-	auto& fake = _fake_bin_params[_fake_bind_key];
-
-	if (fake.init)
-	{
-		if (str.contains("%FAKE_TLS_DOMAIN%"))
-		{
-			if (fake.domain.empty())
-				return "--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com";
-
-			return "--dpi-desync-fake-tls-mod=rnd,dupsid,sni=" + fake.domain;
-		}
-
-		if (str.contains("%FAKE_HOST_DOMAIN%"))
-		{
-			pcstr str_data = str.data();
-			if (fake.domain.empty())
-				return std::regex_replace(str_data, std::regex{ "%FAKE_HOST_DOMAIN%" }, "--dpi-desync-hostfakesplit-mod=host=www.google.com");
-
-			return std::regex_replace(str_data, std::regex{ "%FAKE_HOST_DOMAIN%" }, "--dpi-desync-hostfakesplit-mod=host=" + fake.domain);
-		}
-
-		if (str.contains("%FAKE_TLS%"))
-		{
-			if (fake.file_clienthello.empty())
-				return "";
-
-			return "--dpi-desync-fake-tls \"" + fake.file_clienthello + "\"";
-		}
-
-		if (str.contains("%FAKE_QUIC%"))
-		{
-			if (fake.file_initial.empty())
-				return "";
-
-			return "--dpi-desync-fake-quic \"" + fake.file_initial + "\"";
-		}
-
-		if (str.contains("%FAKE_HTTP%"))
-		{
-			if (fake.file_initial.empty())
-				return "";
-
-			return "--dpi-desync-fake-http \"" + fake.file_clienthello + "\"";
-		}
-
-		if (str.contains("%FAKE_DISCORD%"))
-		{
-			if (fake.file_initial.empty())
-				return "";
-
-			return "--dpi-desync-fake-discord \"" + fake.file_initial + "\"";
-		}
-
-		if (str.contains("%FAKE_STUN%"))
-		{
-			if (fake.file_initial.empty())
-				return "";
-
-			return "--dpi-desync-fake-stun \"" + fake.file_initial + "\"";
-		}
-
-		if (str.contains("%SEQOVL_PATTERN%"))
-		{
-			if (fake.file_clienthello.empty())
-				return "";
-
-			return "--dpi-desync-split-seqovl-pattern \"" + fake.file_clienthello + "\"";
-		}
-
-		if (str.contains("%FAKE_UNKNOWN%"))
-		{
-			if (fake.file_initial.empty())
-				return "";
-
-			return "--dpi-desync-fake-unknown-udp \"" + fake.file_initial + "\"";
-		}
-
-		if (str.contains("%FAKE_CLIENT_HELLO%"))
-		{
-			if (fake.file_clienthello.empty())
-				return "";
-
-			return std::regex_replace(str.data(), std::regex{ "%FAKE_CLIENT_HELLO%" }, fake.file_clienthello);
-		}
-
-		if (str.contains("%FAKE_INITIAL%"))
-		{
-			if (fake.file_initial.empty())
-				return "";
-
-			return std::regex_replace(str.data(), std::regex{ "%FAKE_INITIAL%" }, fake.file_initial);
-		}
-
-		return std::nullopt;
-	}
-	else
-	{
-		std::string list_key{};
-		for (auto& [key, _] : _fake_bin_params)
-			if (list_key.empty())
-				list_key = key;
-			else
-				list_key.append("," + key);
-
-		Debug::error(Localization::Str{ "str_console_not_find_fake_key" }(), _fake_bind_key, list_key);
-	}
-
-	return std::nullopt;
 }

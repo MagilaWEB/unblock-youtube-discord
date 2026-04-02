@@ -5,20 +5,19 @@
 class StrategiesDPI final : public StrategiesDPIBase
 {
 	File				  _file_fake_bin_config;
+	File				  _file_lua_init;
 	std::shared_ptr<File> _file_service_list;
-	StrategyGenerator	  _generator;
+
+	StrategyGenerator _generator;
 
 public:
 	struct FakeBinParam
 	{
 		bool		init{ false };
-		std::string file_clienthello{};
-		std::string file_initial{};
-		std::string domain;
+		std::string file{};
 	};
 
 private:
-	std::string							_fake_bind_key{};
 	std::map<std::string, FakeBinParam> _fake_bin_params{};
 	std::list<std::string>				_section_opt_service_names{};
 
@@ -28,20 +27,17 @@ public:
 
 	void serviceConfigFile(const std::shared_ptr<File>& config);
 
-	void changeFakeKey(u32 index = 1);
-	void changeFakeKey(std::string_view key = "");
 	void changeDirVersion(std::string_view dir_version) override;
 	void changeOptionalServices(std::list<std::string> list_service);
-
-	std::string								   getKeyFakeBin() const;
-	const std::map<std::string, FakeBinParam>& getFakeBinList() const;
 
 private:
 	void _uploadStrategies() override;
 	void _saveStrategies(std::string_view str) override;
 
+	void					   _init_lua_to_zapret();
+	void					   _blob_init_to_zapret();
 	void					   _normalizeStrategyString(std::string& str) const;
+	void					   _normalizeStrategyFinal();
 	bool					   _ignoringLineStrategy(std::string_view str) const;
 	void					   _getAllPorts(std::string& str) const;
-	std::optional<std::string> _getFake(std::string_view str);
 };

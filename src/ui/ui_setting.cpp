@@ -393,28 +393,11 @@ void Ui::_settingUnblockEnableManualUpdate()
 
 void Ui::_settingUnblockEnableManualSelect()
 {
-	auto set_new_value = [this](Ptr<SelectList>& select, pcstr set_val, pcstr check_val, JSArgs args)
-	{
-		_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", set_val, JSToCPP(args[1]));
-
-		_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", check_val, JSToCPP(select->getSelectedOptionValue()));
-	};
-
 	_unblock_select_config->create("#setting section .unblock", "str_select_config_title", Localization::Str{ "str_select_config_description" });
 	_unblock_select_config->addEventChange(
-		[this, set_new_value](JSArgs args)
+		[this](JSArgs args)
 		{
-			set_new_value(_unblock_select_fake_bin, "config", "fake_bin", args);
-			return false;
-		}
-	);
-
-	_unblock_select_fake_bin
-		->create("#setting section .unblock", "str_unblock_select_fake_bin_title", Localization::Str{ "str_unblock_select_fake_bin_description" });
-	_unblock_select_fake_bin->addEventChange(
-		[this, set_new_value](JSArgs args)
-		{
-			set_new_value(_unblock_select_config, "fake_bin", "config", args);
+			_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", JSToCPP(args[1]));
 			return false;
 		}
 	);
@@ -424,13 +407,12 @@ void Ui::_settingUnblockEnableManualSelect()
 
 void Ui::_settingUnblockEnableManualSelectUpdate()
 {
-	if ((!_unblock_select_config->isCreate()) || (!_unblock_select_fake_bin->isCreate()))
+	if (!_unblock_select_config->isCreate())
 		return;
 
 	if (_unblock_enable->getState() && _unblock_manual->getState())
 	{
 		_unblock_select_config->clear();
-		_unblock_select_fake_bin->clear();
 
 		auto& strategies_list = _unblock.getStrategiesList();
 
@@ -438,36 +420,22 @@ void Ui::_settingUnblockEnableManualSelectUpdate()
 			return;
 
 		_unblock_select_config->show();
-		_unblock_select_fake_bin->show();
 
 		for (u32 i = 0; i < strategies_list.size(); i++)
 			_unblock_select_config->createOption(i, strategies_list[i]);
 
-		auto set_default_select = [this](Ptr<SelectList>& select, pcstr name)
-		{
-			if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", name))
-				select->setSelectedOptionValue(config.value());
-			else
-				_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", name, JSToCPP(select->getSelectedOptionValue()));
-		};
 
-		set_default_select(_unblock_select_config, "config");
+		if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
+			_unblock_select_config->setSelectedOptionValue(config.value());
+		else
+			_ui_base->userSetting()
+				->writeSectionParameter("REMEMBER_CONFIGURATION", "config", JSToCPP(_unblock_select_config->getSelectedOptionValue()));
 
 		_buttonUpdate();
-
-		u32	  size{ 0 };
-		auto& fake_bin_list = _unblock.getFakeBinList();
-		for (auto& [key, _] : fake_bin_list)
-			_unblock_select_fake_bin->createOption(size++, key);
-
-		set_default_select(_unblock_select_fake_bin, "fake_bin");
 
 		return;
 	}
 
 	_unblock_select_config->hide();
-	_unblock_select_fake_bin->hide();
-
 	_unblock_select_config->clear();
-	_unblock_select_fake_bin->clear();
 }

@@ -36,7 +36,7 @@ void Input::create(std::string_view selector, Types type, JSValue value, Localiz
 	auto _title		  = title();
 	auto _description = description();
 
-	runCode(
+	runCodeToJS(
 		[this, selector, type, value, _title, _description, first]
 		{
 			for (auto& [id, str] : convert_types)
@@ -44,7 +44,7 @@ void Input::create(std::string_view selector, Types type, JSValue value, Localiz
 				if (id == type)
 				{
 					ASSERT_ARGS(
-						_create({ selector.data(), name(), str, value, _title.data(), _description.data(), first }).ToBoolean() == true,
+						_create({ selector.data(), name(), str, value, _title.c_str(), _description.c_str(), first }).ToBoolean() == true,
 						"Couldn't create a {} named [{}]",
 						_type,
 						name()
@@ -60,7 +60,7 @@ void Input::create(std::string_view selector, Types type, JSValue value, Localiz
 
 void Input::addEventSubmit(std::function<bool(JSArgs)>&& callback)
 {
-	runCode(
+	runCodeToJS(
 		[this, callback]
 		{
 			if (!_created)
@@ -72,12 +72,12 @@ void Input::addEventSubmit(std::function<bool(JSArgs)>&& callback)
 
 JSValue Input::getValue()
 {
-	return runCodeResult([this] { return _get_value({ name() }); });
+	return runCodeToJSResult([this] { return _get_value({ name() }); });
 }
 
 void Input::setValue(JSValue value)
 {
-	runCode(
+	runCodeToJS(
 		[this, value]
 		{
 			if (!_created)

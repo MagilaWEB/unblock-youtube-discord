@@ -54,11 +54,11 @@ void SecondaryWindow::create(Localization::Str title, Localization::Str descript
 {
 	auto _title		  = title();
 	auto _description = description();
-	runCode(
+	runCodeToJS(
 		[this, _title, _description]
 		{
 			ASSERT_ARGS(
-				_create({ name(), _title.data(), _description.data() }).ToBoolean() == true,
+				_create({ name(), _title.c_str(), _description.c_str() }).ToBoolean() == true,
 				"Couldn't create a {} named [{}]",
 				_type,
 				name()
@@ -73,7 +73,7 @@ void SecondaryWindow::create(Localization::Str title, Localization::Str descript
 
 void SecondaryWindow::setType(Type type)
 {
-	runCode(
+	runCodeToJS(
 		[this, type]
 		{
 			if (!_created)
@@ -90,7 +90,7 @@ void SecondaryWindow::setType(Type type)
 void SecondaryWindow::setDescription(Localization::Str description)
 {
 	String _description = description().data();
-	runCode(
+	runCodeToJS(
 		[this, _description]
 		{
 			if (!_created)
@@ -157,7 +157,7 @@ bool SecondaryWindow::waitShow()
 
 void SecondaryWindow::addEventOk(std::function<bool(JSArgs)>&& callback)
 {
-	runCode(
+	runCodeToJS(
 		[this, callback]
 		{
 			if (!_created)
@@ -170,12 +170,12 @@ void SecondaryWindow::addEventOk(std::function<bool(JSArgs)>&& callback)
 
 void SecondaryWindow::clearEventOk()
 {
-	runCode([this] { _event_click[name()].clear(); });
+	runCodeToJS([this] { _event_click[name()].clear(); });
 }
 
 void SecondaryWindow::addEventYesNo(std::function<bool(JSArgs)>&& callback)
 {
-	runCode(
+	runCodeToJS(
 		[this, callback]
 		{
 			if (!_created)
@@ -188,12 +188,12 @@ void SecondaryWindow::addEventYesNo(std::function<bool(JSArgs)>&& callback)
 
 void SecondaryWindow::clearEventYesNo()
 {
-	runCode([this] { _event_yes_no[name()].clear(); });
+	runCodeToJS([this] { _event_yes_no[name()].clear(); });
 }
 
 void SecondaryWindow::addEventCancel(std::function<bool(JSArgs)>&& callback)
 {
-	runCode(
+	runCodeToJS(
 		[this, callback]
 		{
 			if (!_created)
@@ -206,5 +206,5 @@ void SecondaryWindow::addEventCancel(std::function<bool(JSArgs)>&& callback)
 
 void SecondaryWindow::clearEventCancel()
 {
-	runCode([this] { _event_cancel[name()].clear(); });
+	runCodeToJS([this] { _event_cancel[name()].clear(); });
 }

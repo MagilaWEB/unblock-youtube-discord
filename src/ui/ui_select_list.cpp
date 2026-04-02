@@ -41,11 +41,11 @@ void SelectList::create(std::string_view selector, Localization::Str title, Loca
 {
 	auto _title		  = title();
 	auto _description = description();
-	runCode(
+	runCodeToJS(
 		[this, selector, _title, _description, first]
 		{
 			ASSERT_ARGS(
-				_create({ selector.data(), name(), _title.data(), _description.data(), first }).ToBoolean() == true,
+				_create({ selector.data(), name(), _title.c_str(), _description.c_str(), first }).ToBoolean() == true,
 				"Couldn't create a {} named [{}]",
 				_type,
 				name()
@@ -59,14 +59,14 @@ void SelectList::create(std::string_view selector, Localization::Str title, Loca
 void SelectList::createOption(JSValue value, Localization::Str text, bool select)
 {
 	auto _text = text();
-	runCode(
+	runCodeToJS(
 		[this, value, _text, select]
 		{
 			if (!_created)
 				return;
 
 			ASSERT_ARGS(
-				_create_option({ name(), value, _text.data(), select }).ToBoolean() == true,
+				_create_option({ name(), value, _text.c_str(), select }).ToBoolean() == true,
 				"Couldn't createOption a {} named [{}]",
 				_type,
 				name()
@@ -77,7 +77,7 @@ void SelectList::createOption(JSValue value, Localization::Str text, bool select
 
 void SelectList::addEventChange(std::function<bool(JSArgs)>&& callback)
 {
-	runCode(
+	runCodeToJS(
 		[this, callback]
 		{
 			if (!_created)
@@ -89,7 +89,7 @@ void SelectList::addEventChange(std::function<bool(JSArgs)>&& callback)
 
 void SelectList::setSelectedOptionValue(std::string_view value)
 {
-	runCode(
+	runCodeToJS(
 		[this, value]
 		{
 			if (!_created)
@@ -102,12 +102,12 @@ void SelectList::setSelectedOptionValue(std::string_view value)
 
 JSValue SelectList::getSelectedOptionValue()
 {
-	return runCodeResult([this] { return _get_value({ name() }); });
+	return runCodeToJSResult([this] { return _get_value({ name() }); });
 }
 
 void SelectList::clear()
 {
-	runCode(
+	runCodeToJS(
 		[this]
 		{
 			if (!_created)

@@ -41,8 +41,8 @@ void ListUl::createLi(Localization::Str text)
 {
 	auto _text = text();
 
-	runCode([this, _text]
-			{ ASSERT_ARGS(_create_li({ name(), _text.data() }).ToBoolean() == true, "Couldn't create_li a {} named [{}]", _type, name()); });
+	runCodeToJS([this, _text]
+			{ ASSERT_ARGS(_create_li({ name(), _text.c_str() }).ToBoolean() == true, "Couldn't create_li a {} named [{}]", _type, name()); });
 }
 
 void ListUl::createLiSuccess(Localization::Str text, bool state)
@@ -52,11 +52,11 @@ void ListUl::createLiSuccess(Localization::Str text, bool state)
 
 	auto _text = text();
 
-	runCode(
+	runCodeToJS(
 		[this, _text, state]
 		{
 			ASSERT_ARGS(
-				_create_li_success({ name(), _text.data(), state }).ToBoolean() == true,
+				_create_li_success({ name(), _text.c_str(), state }).ToBoolean() == true,
 				"Couldn't create_li_success a {} named [{}]",
 				_type,
 				name()
@@ -67,7 +67,7 @@ void ListUl::createLiSuccess(Localization::Str text, bool state)
 
 void ListUl::addClass(std::string_view name_class)
 {
-	runCode(
+	runCodeToJS(
 		[this, name_class]
 		{
 			if (!_created)
@@ -79,7 +79,7 @@ void ListUl::addClass(std::string_view name_class)
 
 void ListUl::removeClass(std::string_view name_class)
 {
-	runCode(
+	runCodeToJS(
 		[this, name_class]
 		{
 			if (!_created)
@@ -91,7 +91,7 @@ void ListUl::removeClass(std::string_view name_class)
 
 void ListUl::clear()
 {
-	runCode(
+	runCodeToJS(
 		[this]
 		{
 			if (!_created)

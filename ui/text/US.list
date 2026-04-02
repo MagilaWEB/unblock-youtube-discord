@@ -49,7 +49,6 @@ Loading data. This may take a few seconds.
 str_show_info_selected_service_setting=📋 Show settings
 str_window_info_selected_service_setting=📋 Current settings:
 ├ Zapret2 config: [{}]
-├ Zapret2 spoofing: [{}]
 └ Zapret2 config version: [{}]
 
 str_warning_copy_application_running=Unblock is already running. Cannot start another instance.

@@ -42,7 +42,7 @@ void DomainTesting::changeProxy(std::string_view ip, u32 port)
 	_proxyPORT = port;
 }
 
-void DomainTesting::test(bool test_video, bool base_test, std::function<void(std::string_view url, bool state)>&& callback)
+void DomainTesting::test(bool test_video, bool base_test, std::function<void(std::string url, bool state)>&& callback)
 {
 	Debug::info("Start test domain.");
 

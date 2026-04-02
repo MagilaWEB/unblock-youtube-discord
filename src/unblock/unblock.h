@@ -7,7 +7,7 @@
 
 class UNBLOCK_API Unblock final
 {
-	Service _zapret{ "zapret", "winws.exe" };
+	Service _zapret{ "zapret2", "winws2.exe" };
 	Service _win_divert{ "WinDivert" };
 
 	DomainTesting	   _domain_testing;
@@ -21,13 +21,7 @@ class UNBLOCK_API Unblock final
 	std::atomic_bool	   _zapret_dbg_run_end;
 	std::atomic_bool	   _zapret_dbg_run;
 
-	struct StrategyType
-	{
-		u32 type{ 0 };
-		u32 fake_bin{ 0 };
-	};
-
-	StrategyType _strategy{};
+	u32 _strategy{};
 
 public:
 	Unblock();
@@ -36,7 +30,7 @@ public:
 
 	void serviceConfigFile(const std::shared_ptr<File>& config);
 
-	void changeStrategy(std::string_view name_config, std::string_view name_fake_bin);
+	void changeStrategy(std::string_view name_config);
 	void changeDirVersionStrategy(std::string_view dir_version);
 
 	void addOptionalStrategies(std::string_view name);
@@ -46,10 +40,8 @@ public:
 	bool runTest(bool video = false);
 
 	std::string getNameStrategies();
-	std::string getNameFakeBin();
 
 	const std::vector<std::string>&							  getStrategiesList();
-	const std::map<std::string, StrategiesDPI::FakeBinParam>& getFakeBinList();
 	std::list<Service>&										  getConflictingServices();
 
 	void startService();

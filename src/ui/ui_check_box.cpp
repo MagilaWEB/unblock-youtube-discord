@@ -39,11 +39,11 @@ void CheckBox::create(std::string_view selector, Localization::Str title, Locali
 {
 	auto _title		= title();
 	auto _description = description();
-	runCode(
+	runCodeToJS(
 		[this, selector, _title, _description, first]
 		{
 			ASSERT_ARGS(
-				_create({ selector.data(), name(), _title.data(), _description.data(), first }).ToBoolean() == true,
+				_create({ selector.data(), name(), _title.c_str(), _description.c_str(), first }).ToBoolean() == true,
 				"Couldn't create a {} named [{}]",
 				_type,
 				name()
@@ -56,7 +56,7 @@ void CheckBox::create(std::string_view selector, Localization::Str title, Locali
 
 void CheckBox::setState(bool state)
 {
-	runCode(
+	runCodeToJS(
 		[this, state]
 		{
 			if (!_created)
@@ -68,5 +68,5 @@ void CheckBox::setState(bool state)
 
 bool CheckBox::getState()
 {
-	return runCodeResult([this] { return _get_state({ name() }); });
+	return runCodeToJSResult([this] { return _get_state({ name() }); });
 }

@@ -10,23 +10,13 @@ Unblock::Unblock()
 
 bool Unblock::automaticallyStrategy()
 {
-	if (_strategy.type == _strategies_dpi.getStrategySize())
+	if (_strategy == _strategies_dpi.getStrategySize())
 	{
-		_strategy.type	   = 0;
-		_strategy.fake_bin = 0;
+		_strategy = 0;
 		return false;
 	}
 
-	_strategies_dpi.changeFakeKey(_strategy.fake_bin);
-	_strategies_dpi.changeStrategy(_strategy.type);
-	const auto& fake_bin_list = _strategies_dpi.getFakeBinList();
-	if (_strategy.fake_bin == (fake_bin_list.size() - 1))
-	{
-		_strategy.fake_bin = 0;
-		_strategy.type++;
-	}
-	else
-		_strategy.fake_bin++;
+	_strategies_dpi.changeStrategy(_strategy++);
 
 	return true;
 }
@@ -36,9 +26,8 @@ void Unblock::serviceConfigFile(const std::shared_ptr<File>& config)
 	_strategies_dpi.serviceConfigFile(config);
 }
 
-void Unblock::changeStrategy(std::string_view name_config, std::string_view name_fake_bin)
+void Unblock::changeStrategy(std::string_view name_config)
 {
-	_strategies_dpi.changeFakeKey(name_fake_bin);
 	_strategies_dpi.changeStrategy(name_config);
 }
 
@@ -79,19 +68,9 @@ std::string Unblock::getNameStrategies()
 	return _strategies_dpi.getStrategyFileName();
 }
 
-std::string Unblock::getNameFakeBin()
-{
-	return _strategies_dpi.getKeyFakeBin();
-}
-
 const std::vector<std::string>& Unblock::getStrategiesList()
 {
 	return _strategies_dpi.getStrategyList();
-}
-
-const std::map<std::string, StrategiesDPI::FakeBinParam>& Unblock::getFakeBinList()
-{
-	return _strategies_dpi.getFakeBinList();
 }
 
 std::list<Service>& Unblock::getConflictingServices()
@@ -183,11 +162,11 @@ std::optional<std::string> Unblock::checkUpdate()
 	for (auto& line : lines)
 	{
 		constexpr static std::string_view version_mask{ "/MagilaWEB/unblock-youtube-discord/tree/v" };
-		size_t			   pos = line.find(version_mask);
+		size_t							  pos = line.find(version_mask);
 		if (pos != std::string::npos)
 		{
 			constexpr static std::string_view mask_end{ "\" data-tab-item=\"i0code-tab\"" };
-			size_t			   pos_end = line.find(mask_end);
+			size_t							  pos_end = line.find(mask_end);
 			if (pos_end != std::string::npos)
 			{
 				auto start_str = pos + version_mask.length();
@@ -248,7 +227,7 @@ bool Unblock::appUpdate()
 
 	try
 	{
-		static bit7z::Bit7zLibrary lib{ "7za.dll" };
+		static bit7z::Bit7zLibrary	   lib{ "7za.dll" };
 		static bit7z::BitFileExtractor extractor{ lib, bit7z::BitFormat::SevenZip };
 
 		extractor.extract(path.string(), path.parent_path().string());
@@ -293,7 +272,7 @@ bool Unblock::activeService()
 
 void Unblock::checkStateServices(const std::function<void(std::string_view, bool)>& callback)
 {
-	callback("Zapret (winws.exe)", _zapret.isRun());
+	callback("Zapret2 (winws2.exe)", _zapret.isRun());
 	callback(_win_divert.getName(), _win_divert.isRun());
 }
 
@@ -389,13 +368,13 @@ void Unblock::startService()
 		_zapret.setArgs(list);
 		_zapret.create();
 
-#ifdef DEBUG_RUN_ZAPRET	 // #ifdef DEBUG
+#ifdef DEBUG_RUN_ZAPRET	   // #ifdef DEBUG
 		auto&		service_config = _zapret.getConfig();
 		auto&		path		   = service_config.binary_path;
 		std::string command		   = path;
 
 		command = std::regex_replace(command, std::regex{ "\"" }, "");
-		command = std::regex_replace(command, std::regex{ "--wf-tcp" }, "--debug --wf-tcp");
+		command = std::regex_replace(command, std::regex{ "--wf-tcp-in" }, "--debug --wf-tcp-in");
 
 		if (_zapret_dbg_run.load())
 		{
@@ -407,7 +386,7 @@ void Unblock::startService()
 
 		Core::get().exec_parallel(
 			command,
-			[this](std::string)
+			[this](std::string str)
 			{
 				if (_zapret_dbg_run_end.load())
 				{
@@ -418,6 +397,12 @@ void Unblock::startService()
 
 				if (!_zapret_dbg_run.load())
 					_zapret_dbg_run.store(true);
+
+				if (str == "EXIT")
+				{
+					_zapret_dbg_run.store(false);
+					_zapret_dbg_run_end.store(false);
+				}
 
 				return false;
 			}

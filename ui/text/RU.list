@@ -49,7 +49,6 @@ str_window_wait_response_from_server_description=⏳ Ожидание ответ
 str_show_info_selected_service_setting=📋 Показать настройки
 str_window_info_selected_service_setting=📋 Текущие настройки:
 ├ Zapret2 конфигурация: [{}]
-├ Zapret2 маскировка: [{}]
 └ Zapret2 конфиг версия: [{}]
 
 str_warning_copy_application_running=Unblock уже запущен. Повторный запуск невозможен.

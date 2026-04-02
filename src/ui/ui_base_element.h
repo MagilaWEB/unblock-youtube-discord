@@ -52,8 +52,8 @@ public:
 
 	pcstr name() const { return _name.c_str(); }
 
-	static void runCode(const std::function<void()>& run_code);
-	static JSValue runCodeResult(const std::function<JSValue()>& run_code);
+	static void	   runCodeToJS(const std::function<void()>& run_code);
+	static JSValue runCodeToJSResult(const std::function<JSValue()>& run_code);
 
 	void create(std::string_view selector, Localization::Str title, bool first = false);
 	void remove();

@@ -187,7 +187,7 @@ std::optional<std::string> StrategyGenerator::_getDataFile(std::string str, std:
 		if (!std::filesystem::exists(path))
 			return "";
 
-		return "--hostlist \"" + path.string() + "\"";
+		return "--hostlist=\"" + path.string() + "\"";
 	}
 
 	if (str.contains("%IP-SETLIST%"))
@@ -195,21 +195,21 @@ std::optional<std::string> StrategyGenerator::_getDataFile(std::string str, std:
 		std::filesystem::path path = _user_ip_set / (all ? "all" : section) += ".list";
 		if (!std::filesystem::exists(path))
 			return "";
-		return "--ipset \"" + path.string() + "\"";
+		return "--ipset=\"" + path.string() + "\"";
 	}
 
 	if (str.contains("%DOMAINS-EXCLUDE%"))
 	{
 		static const auto path_file_domains_exclude = Core::get().configsPath() / "domains_exclude.list";
 		ASSERT_ARGS(std::filesystem::exists(path_file_domains_exclude), "The [{}] file does not exist!", path_file_domains_exclude.string());
-		return "--hostlist-exclude \"" + (path_file_domains_exclude.string()) + "\"";
+		return "--hostlist-exclude=\"" + (path_file_domains_exclude.string()) + "\"";
 	}
 
 	if (str.contains("%IP-EXCLUDE%"))
 	{
 		static const auto path_ip_exclude = Core::get().configsPath() / "ip-exclude.list";
 		ASSERT_ARGS(std::filesystem::exists(path_ip_exclude), "The [{}] file does not exist!", path_ip_exclude.string());
-		return "--ipset-exclude \"" + (path_ip_exclude.string()) + "\"";
+		return "--ipset-exclude=\"" + (path_ip_exclude.string()) + "\"";
 	}
 
 	return std::nullopt;

@@ -6,7 +6,7 @@
 
 using namespace ultralight;
 
-void BaseElement::runCode(const std::function<void()>& run_code)
+void BaseElement::runCodeToJS(const std::function<void()>& run_code)
 {
 	if (Core::getThreadJsID() != GetCurrentThreadId())
 	{
@@ -17,7 +17,7 @@ void BaseElement::runCode(const std::function<void()>& run_code)
 	run_code();
 }
 
-JSValue BaseElement::runCodeResult(const std::function<JSValue()>& run_code)
+JSValue BaseElement::runCodeToJSResult(const std::function<JSValue()>& run_code)
 {
 	if (Core::getThreadJsID() != GetCurrentThreadId())
 	{
@@ -79,11 +79,11 @@ void BaseElement::release()
 void BaseElement::create(std::string_view selector, Localization::Str title, bool first)
 {
 	auto _title = title();
-	runCode(
+	runCodeToJS(
 		[this, selector, _title, first]
 		{
 			ASSERT_ARGS(
-				_create({ selector.data(), name(), _title.data(), first }).ToBoolean() == true,
+				_create({ selector.data(), name(), _title.c_str(), first }).ToBoolean() == true,
 				"Couldn't create a {} named [{}]",
 				_type,
 				name()
@@ -96,7 +96,7 @@ void BaseElement::create(std::string_view selector, Localization::Str title, boo
 
 void BaseElement::remove()
 {
-	runCode(
+	runCodeToJS(
 		[this]
 		{
 			if (!_created)
@@ -111,7 +111,7 @@ void BaseElement::remove()
 
 void BaseElement::show()
 {
-	runCode(
+	runCodeToJS(
 		[this]
 		{
 			if (!_created)
@@ -124,7 +124,7 @@ void BaseElement::show()
 
 void BaseElement::hide()
 {
-	runCode(
+	runCodeToJS(
 		[this]
 		{
 			if (!_created)
@@ -143,7 +143,7 @@ bool BaseElement::isCreate() const
 void BaseElement::setTitle(Localization::Str title)
 {
 	auto _title = title();
-	runCode(
+	runCodeToJS(
 		[this, _title]
 		{
 			if (!_created)
@@ -156,7 +156,7 @@ void BaseElement::setTitle(Localization::Str title)
 
 void BaseElement::addEventClick(std::function<bool(JSArgs)>&& callback)
 {
-	runCode(
+	runCodeToJS(
 		[this, callback]
 		{
 			if (!_created)
