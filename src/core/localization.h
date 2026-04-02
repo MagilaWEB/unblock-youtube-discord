@@ -53,7 +53,7 @@ public:
 		Str(std::string str_id) : _str_id(str_id) {}
 		Str(std::string_view str_id) : _str_id(str_id.data()) {}
 
-		std::string_view operator()()
+		std::string operator()()
 		{
 			if (!_str_id.empty())
 				return Localization::get().translate(_str_id);
