@@ -37,6 +37,9 @@ public:
 	void save();
 	void close();
 
+	inline auto begin() { return _line_string.begin(); }
+	inline auto end() { return _line_string.end(); }
+
 	void forLine(std::function<bool(std::string)> fn);
 	void forLineSection(std::string_view section, std::function<bool(std::string&)> fn);
 	void forLineParametersSection(std::string_view section, std::function<bool(std::string key, std::string value)> fn);
@@ -44,10 +47,10 @@ public:
 	std::optional<u32> positionSection(std::string_view section);
 
 	template<concepts::VallidALL TypeReturn>
-	std::expected<TypeReturn, std::string_view> parameterSection(std::string_view section, std::string_view paramert);
+	std::expected<TypeReturn, std::string> parameterSection(std::string_view section, std::string paramert);
 
 	void writeText(std::string_view str);
-	void writeSectionParameter(std::string_view section, std::string_view paramert, std::string_view value_argument);
+	void writeSectionParameter(std::string_view section, std::string paramert, std::string value_argument);
 
 private:
 	void _normalize();
