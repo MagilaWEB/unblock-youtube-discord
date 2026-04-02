@@ -105,8 +105,7 @@ Factors:
 
 str_window_auto_start_wait_name_strategy_description=🧪 Testing configuration:
 ├ Config: [{}]
-├ Version: [{}]
-└ Spoofing: [{}]
+└ Version: [{}]
 
 str_window_auto_start_wait_name_strategy_proxy_description=🧪 Testing configuration: {}
 
@@ -143,8 +142,7 @@ No — use current
 
 str_window_config_found_description=📂 Previous configuration found:
 ├ Config: [{}]
-├ Version: [{}]
-└ Spoofing: [{}]
+└ Version: [{}]
 Start automatic selection of a new configuration?
 Yes — look for another option
 No — use current
@@ -153,8 +151,7 @@ No — use current
 str_window_continue_select_strategy_title=✅ Configuration selected
 str_window_continue_select_strategy_description=Selected:
 ├ Config: [{}]
-├ Version: [{}]
-└ Spoofing: [{}]
+└ Version: [{}]
 Continue searching?
 
 str_window_continue_select_strategy_proxy_description=✅ Configuration selected: [{}]
