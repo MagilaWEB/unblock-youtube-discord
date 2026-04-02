@@ -171,6 +171,8 @@ void Core::exec_parallel(std::string cmd, std::function<bool(std::string)>&& cal
 					Debug::info("{}", data);
 				}
 			}
+
+			callback("EXIT");
 		}
 	).detach();
 }
