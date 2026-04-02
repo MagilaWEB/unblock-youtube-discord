@@ -35,7 +35,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)  # .lib/.a
 set(EXPORTED_LIBRARIES_DIRECTORY ${CMAKE_BINARY_DIR}/_deps)
 
 # Macros for all project solutions (except libraries)
-set(ALL_MACRO_CPP )
+set(ALL_MACRO_CPP ) #DEBUG_RUN_ZAPRET
 
 # Cmake includes
 include(FetchContent)
@@ -43,7 +43,7 @@ include(FetchContent)
 # Load GitHub ultralight-sdk
 FetchContent_Declare(
   ultralight
-  URL https://github.com/MagilaWEB/ultralight-sdk/releases/download/v1.4.1_dev/ultralight-sdk.7z
+  URL https://github.com/MagilaWEB/ultralight-sdk/releases/download/v1.4.1_dev_new/ultralight-sdk.7z
   SOURCE_DIR ultralight
 )
 
