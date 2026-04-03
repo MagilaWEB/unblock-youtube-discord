@@ -8,6 +8,9 @@ if(CUPY_LIBS_DLL_TO_BIN)
     add_custom_target(global_pre_build ALL
         COMMAND ${CMAKE_COMMAND} -E echo "=== Global Pre-Build Cleanup ==="
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_SOURCE_DIR}/binaries/winws2.exe
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_SOURCE_DIR}/binaries/cygwin1.dll
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_SOURCE_DIR}/binaries/lua
         COMMAND ${CMAKE_COMMAND} -E echo "Cleanup complete"
         COMMENT "Global pre-build cleanup"
     )
@@ -92,5 +95,11 @@ if(CUPY_LIBS_DLL_TO_BIN)
                            COMMAND ${CMAKE_COMMAND} -E copy
                                ${DXVK_BIN}/dxgi.dll $<TARGET_FILE_DIR:${NAME}>
                            COMMAND ${CMAKE_COMMAND} -E copy
-                               ${DXVK_BIN}/d3d11.dll $<TARGET_FILE_DIR:${NAME}>)
+                               ${DXVK_BIN}/d3d11.dll $<TARGET_FILE_DIR:${NAME}>
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${ZAPRET2_BIN}/winws2.exe ${CMAKE_SOURCE_DIR}/binaries
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${ZAPRET2_BIN}/cygwin1.dll ${CMAKE_SOURCE_DIR}/binaries
+                           COMMAND ${CMAKE_COMMAND} -E copy_directory 
+                               ${ZAPRET2_LUA}/ ${CMAKE_SOURCE_DIR}/binaries/lua)
 endif()
