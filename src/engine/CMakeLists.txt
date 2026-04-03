@@ -88,5 +88,9 @@ if(CUPY_LIBS_DLL_TO_BIN)
 
     add_custom_command(TARGET ${NAME} PRE_BUILD
                            COMMAND ${CMAKE_COMMAND} -E copy
-                               ${7ZA_BIN} $<TARGET_FILE_DIR:${NAME}>)
+                               ${7ZA_BIN} $<TARGET_FILE_DIR:${NAME}>
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${DXVK_BIN}/dxgi.dll $<TARGET_FILE_DIR:${NAME}>
+                           COMMAND ${CMAKE_COMMAND} -E copy
+                               ${DXVK_BIN}/d3d11.dll $<TARGET_FILE_DIR:${NAME}>)
 endif()

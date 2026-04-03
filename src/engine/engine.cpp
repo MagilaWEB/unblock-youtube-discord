@@ -50,18 +50,21 @@ void Engine::initialize()
 	Platform::instance().set_file_system(GetPlatformFileSystem("./../ui/"));
 
 	Config config{};
-	config.effect_quality = EffectQuality::Low;
+	config.effect_quality = EffectQuality::Medium;
+	config.face_winding	  = FaceWinding::Clockwise;
 
 	Settings setting{};
 
 	_app = App::Create(setting, config);
 
+	const int screenWidth = GetSystemMetrics(SM_CXSCREEN)/1440;
+
 	_window = Window::Create(
 		_app->main_monitor(),
-		1'100,
-		600,
+		1'100 * screenWidth,
+		1'100 * screenWidth,
 		false,
-		kWindowFlags_Titled | kWindowFlags_Borderless | kWindowFlags_Resizable | kWindowFlags_Maximizable
+		kWindowFlags_Titled | kWindowFlags_Borderless | kWindowFlags_Maximizable
 	);
 
 	static std::string title{ "Unblock " + std::format("Version: {}", VERSION_STR) };

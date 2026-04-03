@@ -47,6 +47,12 @@ FetchContent_Declare(
   SOURCE_DIR ultralight
 )
 
+FetchContent_Declare(
+  DXVK
+  URL https://github.com/doitsujin/dxvk/releases/download/v2.7.1/dxvk-2.7.1.tar.gz
+  SOURCE_DIR dxvk
+)
+
 # Load GitHub curl binaries
 FetchContent_Declare(
   curl
@@ -69,6 +75,7 @@ FetchContent_Declare(
 # Build
 FetchContent_MakeAvailable(
     ultralight
+    DXVK
     curl
     bit7z
     7za
@@ -95,6 +102,10 @@ set(ULTRALIGHT_DIR ${CMAKE_BINARY_DIR}/ultralight)
 set(ULTRALIGHT_INCLUDE ${ULTRALIGHT_DIR}/include)
 set(ULTRALIGHT_LIB ${ULTRALIGHT_DIR}/lib)
 set(ULTRALIGHT_BIN ${ULTRALIGHT_DIR}/bin)
+
+# bin DXVK 
+set(DXVK_DIR ${CMAKE_BINARY_DIR}/dxvk)
+set(DXVK_BIN ${DXVK_DIR}/x64)
 
 # Include bit7z
 set(BIT7Z_DIR ${CMAKE_BINARY_DIR}/bit7z)
