@@ -8,8 +8,6 @@ if(CUPY_LIBS_DLL_TO_BIN)
     add_custom_target(global_pre_build ALL
         COMMAND ${CMAKE_COMMAND} -E echo "=== Global Pre-Build Cleanup ==="
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/winws2.exe || ${CMAKE_COMMAND} -E echo "Warning: failed to remove winws2.exe (maybe in use)"
-        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/cygwin1.dll || ${CMAKE_COMMAND} -E echo "Warning: failed to remove cygwin1.dll (maybe in use)"
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_SOURCE_DIR}/binaries/lua
         COMMAND ${CMAKE_COMMAND} -E echo "Cleanup complete"
         COMMENT "Global pre-build cleanup"
