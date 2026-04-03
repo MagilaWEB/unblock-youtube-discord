@@ -103,13 +103,11 @@ main article .header_title {
     padding         : 0.6em 1em;
     position        : relative;
     background-color: rgba(32, 35, 50, 0.75);
-    border-radius   : 16px 16px 0 0;
+    border-radius   : 6px 6px 0 0;
     border          : 1px solid rgba(255, 255, 255, 0.09);
-    border-bottom   : none;
-    box-shadow      : 0 -4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+    border-bottom             : 3px solid rgba(255, 255, 255, 0.09);
     margin-bottom   : -1px;
     z-index         : 2;
-    border-bottom             : 3px solid rgba(255, 255, 255, 0.09);
     opacity         : 0;
     transform       : translateY(12px) scale(0.98);
     filter          : blur(17px);

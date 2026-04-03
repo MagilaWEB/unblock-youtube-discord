@@ -42,7 +42,6 @@ function showDescriptionWindow(element, description) {
 
 	element.addEventListener("mouseover", event => {
 		if (IsValidElement(event)) {
-			description.style.left = event.clientX;
 			description.classList.add("info_description_active");
 		}
 	});
@@ -50,6 +49,7 @@ function showDescriptionWindow(element, description) {
 	element.addEventListener("mouseout", event => {
 		if (IsValidElement(event)) {
 			description.classList.remove("info_description_active");
+			description.style.left = -1000;
 		}
 	});
 }

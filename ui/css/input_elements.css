@@ -176,6 +176,7 @@
 .info_description {
     z-index: 30;
     position: fixed;
+    left: -100%;
     opacity: 0;
     visibility: hidden;
     width: 30em;
