@@ -44,16 +44,16 @@ bool utils::IsUTF8(std::string_view string)
 	return true;
 }
 
-std::string utils::UTF8_to_CP1251(std::string_view str)
+std::string utils::UTF8_to_CP1251(std::string_view utf8_str)
 {
-	if (IsUTF8(str))
+	if (IsUTF8(utf8_str))
 	{
-		const int len = static_cast<int>(str.length());
+		const int len = static_cast<int>(utf8_str.length());
 
 		static thread_local wchar_t cache_str[4'096];
 		RtlZeroMemory(&cache_str, sizeof(cache_str));
 
-		MultiByteToWideChar(CP_UTF8, 0, str.data(), len + 1, cache_str, len + 1);
+		MultiByteToWideChar(CP_UTF8, 0, utf8_str.data(), len + 1, cache_str, len + 1);
 
 		static thread_local char cache_str_result[4'096];
 		RtlZeroMemory(&cache_str_result, sizeof(cache_str_result));
@@ -63,7 +63,32 @@ std::string utils::UTF8_to_CP1251(std::string_view str)
 		return { cache_str_result };
 	}
 
-	return { str.data() };
+	return { utf8_str.data() };
+}
+
+std::wstring utils::UTF8_to_UTF16(std::string_view utf8_str)
+{
+	if (utf8_str.empty())
+		return std::wstring();
+
+	int size_needed = MultiByteToWideChar(CP_UTF8, 0, utf8_str.data(), static_cast<int>(utf8_str.size()), nullptr, 0);
+
+	if (size_needed <= 0)
+	{
+		Debug::warning("UTF8_to_UTF16 Couldn't convert");
+		return std::wstring();
+	}
+
+	std::vector<wchar_t> buffer(size_needed + 1);
+	int					 result = MultiByteToWideChar(CP_UTF8, 0, utf8_str.data(), static_cast<int>(utf8_str.size()), buffer.data(), size_needed);
+
+	if (size_needed <= 0)
+	{
+		Debug::warning("UTF8_to_UTF16 Couldn't convert");
+		return std::wstring();
+	}
+
+	return std::wstring(buffer.data(), result);
 }
 
 void utils::ltrim(std::string& str)

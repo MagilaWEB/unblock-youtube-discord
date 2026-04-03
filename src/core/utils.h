@@ -18,7 +18,8 @@ namespace utils
 	}
 
 	CORE_API bool IsUTF8(std::string_view string);
-	CORE_API std::string UTF8_to_CP1251(std::string_view str);
+	CORE_API std::string UTF8_to_CP1251(std::string_view utf8_str);
+	CORE_API std::wstring UTF8_to_UTF16(std::string_view utf8_str);
 
 	CORE_API void ltrim(std::string& str);
 	CORE_API void rtrim(std::string& str);

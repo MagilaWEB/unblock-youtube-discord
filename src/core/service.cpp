@@ -60,20 +60,24 @@ void Service::create()
 
 	sc_path.append(args);
 
-	ASSERT_ARGS(sc_path.length() <= 4'128, "The maximum line size for the service path is 4127!");
+	ASSERT_ARGS(sc_path.length() <= 32'767, "The maximum line size for the service path is 32'767!");
 
 	_time_limit.start();
 	do
 	{
-		sc = CreateService(
+		std::wstring wname	  = utils::UTF8_to_UTF16(_name);
+		std::wstring wdesc	  = utils::UTF8_to_UTF16(_description);
+		std::wstring wsc_path = utils::UTF8_to_UTF16(sc_path);
+
+		sc = CreateServiceW(
 			_sc_manager,
-			utils::UTF8_to_CP1251(_name).c_str(),
-			utils::UTF8_to_CP1251(_description).c_str(),
+			wname.c_str(),
+			wdesc.c_str(),
 			SC_MANAGER_ALL_ACCESS,
 			SERVICE_WIN32_OWN_PROCESS,
 			SERVICE_AUTO_START,
 			SERVICE_ERROR_NORMAL,
-			utils::UTF8_to_CP1251(sc_path.c_str()).c_str(),
+			wsc_path.c_str(),
 			nullptr,
 			nullptr,
 			nullptr,
