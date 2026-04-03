@@ -39,6 +39,12 @@ function eventClick(element) {
 				active_teg_a.removeAttribute("id");
 
 			element.id = "active";
+			setTimeout(() => {
+				const rect = hash.getBoundingClientRect();
+				const scrollTop = window.scrollY || window.pageYOffset;
+				const targetY = rect.top + scrollTop - 30;
+				window.scrollTo({ top: targetY, behavior: 'smooth' });
+			}, 0);
 		}
 	})
 }

@@ -7,7 +7,7 @@
     border-radius   : 13px;
     box-shadow      : 0 8px 28px rgba(0, 0, 0, 0.38);
     opacity         : 0;
-    filter:blur(7px);
+    filter:blur(17px);
     visibility      : hidden;
 }
 
@@ -30,7 +30,7 @@ main article.active .block {
 }
 
 main article.active .block:nth-child(1) {
-    animation-delay: 0s;
+    animation-delay: 0.05s;
 }
 
 main article.active .block:nth-child(2) {
@@ -62,6 +62,12 @@ main article.active .block:nth-child(n+7) {
     border-color    : rgba(255, 255, 255, 0.22);
     box-shadow      : 0 14px 38px rgba(0, 0, 0, 0.48);
     transform       : scale(1.1);
+}
+
+.block:active {
+    transform       : translateY(1px) scale(0.99);
+    transition-duration: 0.08s;
+    box-shadow      : 0 6px 20px rgba(0,0,0,0.42);
 }
 
 .block h2 {
