@@ -6,20 +6,7 @@ StrategiesDPI::StrategiesDPI()
 	_file_fake_bin_config.open(Core::get().configsPath() / "fake_bin", ".config", true);
 
 	_file_fake_bin_config.forLineParametersSection(
-		"FAKE_TLS",
-		[this](std::string_view key, std::string_view value)
-		{
-			const auto path_file = Core::get().binariesPath() / "fake" / value;
-			ASSERT_ARGS(std::filesystem::exists(path_file), "The [{}] file does not exist!", path_file.string());
-
-			auto& fake = _fake_bin_params[key.data()];
-			fake.file  = path_file.string();
-			return false;
-		}
-	);
-
-	_file_fake_bin_config.forLineParametersSection(
-		"FAKE_QUIC",
+		"FAKE",
 		[this](std::string_view key, std::string_view value)
 		{
 			const auto path_file = Core::get().binariesPath() / "fake" / value;
@@ -160,14 +147,27 @@ void StrategiesDPI::_blob_init_to_zapret()
 			std::smatch match;
 			if (std::regex_search(line, match, pattern))
 			{
-				if (_fake_bin_params.find(match[1].str()) == _fake_bin_params.end())
+				constexpr std::string_view fake_default[]{ "fake_default_tls", "fake_default_http", "fake_default_udp" };
+				auto					   key_fake = match[1].str();
+
+				if (*std::ranges::find(fake_default, key_fake) != key_fake)
 				{
-					Debug::warning(
-						"The blob {} key does not exist in unblock, register it in the fake_bin.config config or use the existing ones."
-						"The strategy string is [{}].",
-						match[1].str(),
-						line
-					);
+					if (_fake_bin_params.find(key_fake) == _fake_bin_params.end())
+					{
+						auto find_blob_base = std::format("--blob={}", key_fake);
+						auto is_it =
+							std::ranges::find_if(_strategy_dpi, [match, &find_blob_base](std::string line) { return line.contains(find_blob_base); });
+
+						if (is_it == _strategy_dpi.end())
+						{
+							Debug::warning(
+								"The blob {} key does not exist in unblock, register it in the fake_bin.config config or use the existing ones."
+								"The strategy string is [{}].",
+								match[1].str(),
+								line
+							);
+						}
+					}
 				}
 			}
 		}
