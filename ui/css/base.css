@@ -59,8 +59,7 @@ h2 {
     background-color: rgba(35, 38, 52, 0.82);
     border          : 1px solid rgba(255, 255, 255, 0.11);
     border-radius   : 0 0 6px 6px;
-  
-    box-shadow      : 0 4px 16px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 .text_version .text {
@@ -101,7 +100,7 @@ main article .header_title {
     background-color: rgba(32, 35, 50, 0.75);
     border-radius   : 6px 6px 0 0;
     border          : 1px solid rgba(255, 255, 255, 0.09);
-    border-bottom             : 3px solid rgba(255, 255, 255, 0.09);
+    border-bottom   : 3px solid rgba(255, 255, 255, 0.09);
     margin-bottom   : -1px;
     z-index         : 2;
     opacity         : 0;
@@ -110,18 +109,19 @@ main article .header_title {
 }
 
 main article.active .header_title {
-    animation       : headerReveal 0.45s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    animation: headerReveal 0.45s cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }
 
 @keyframes headerReveal {
     to {
-        opacity: 1;
+        opacity  : 1;
         transform: translateY(0) scale(1);
-        filter: blur(0);
+        filter   : blur(0);
     }
 }
 
-.block:nth-child(1), .block:nth-child(2) {
+.block:nth-child(1),
+.block:nth-child(2) {
     border-top-left-radius : 0;
     border-top-right-radius: 0;
     margin-top             : 0;
@@ -137,10 +137,10 @@ footer {
     background-color: rgba(25, 28, 42, 0.82);
     height          : 4.3em;
     border-top      : 1px solid rgba(255, 255, 255, 0.08);
-    transition      : bottom 0.38s cubic-bezier(0.34, 1.2, 0.64, 1), 
-                      box-shadow 0.3s ease,
-                      border-color 0.2s ease;
-    box-shadow      : 0 -6px 28px rgba(0, 0, 0, 0.5);
+    transition      : bottom 0.38s cubic-bezier(0.34, 1.2, 0.64, 1),
+        box-shadow 0.3s ease,
+        border-color 0.2s ease;
+    box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.5);
 }
 
 footer:hover {
@@ -150,35 +150,38 @@ footer:hover {
 }
 
 footer::after {
-    content         : ". . .";
-    position        : absolute;
-    left            : 0;
-    top             : -0.7em;
-    text-align      : center;
-    font-weight     : 700;
-    font-size       : 1.5em;
-    width           : 100%;
-    height          : 2em;
-    opacity         : 0.7;
-    letter-spacing  : 0.1em;
-    transition      : opacity 0.2s ease, text-shadow 0.2s ease;
-    animation       : dotsPulse 2s ease-in-out infinite;
+    content       : ". . .";
+    position      : absolute;
+    left          : 0;
+    top           : -0.7em;
+    text-align    : center;
+    font-weight   : 700;
+    font-size     : 1.5em;
+    width         : 100%;
+    height        : 2em;
+    opacity       : 0.7;
+    letter-spacing: 0.1em;
+    transition    : opacity 0.2s ease, text-shadow 0.2s ease;
+    animation     : dotsPulse 2s ease-in-out infinite;
 }
 
 footer:hover::after {
-    opacity         : 1;
-    text-shadow     : 0 0 8px rgba(255, 255, 255, 0.5);
-    animation       : dotsPulse 1.2s ease-in-out infinite, dotsGlow 1.8s infinite alternate;
+    opacity    : 1;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    animation  : dotsPulse 1.2s ease-in-out infinite, dotsGlow 1.8s infinite alternate;
 }
 
 @keyframes dotsPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translateY(0) scale(1);
-        opacity: 0.7;
+        opacity  : 0.7;
     }
+
     50% {
         transform: translateY(-2px) scale(1.05);
-        opacity: 1;
+        opacity  : 1;
     }
 }
 
@@ -186,42 +189,43 @@ footer:hover::after {
     from {
         text-shadow: 0 0 0 rgba(255, 255, 255, 0);
     }
+
     to {
         text-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
     }
 }
 
 footer .button.show {
-    margin          : auto;
-    width           : 30vw;
-    opacity         : 0;
-    transform       : scale(0.85) translateY(12px);
-    filter          : blur(5px);
-    
-    transition      : opacity 0.25s cubic-bezier(0.23, 1, 0.32, 1),
-                      transform 0.3s cubic-bezier(0.23, 1, 0.32, 1),
-                      filter 0.25s ease;
+    margin   : auto;
+    width    : 30vw;
+    opacity  : 0;
+    transform: scale(0.85) translateY(12px);
+    filter   : blur(5px);
+
+    transition: opacity 0.25s cubic-bezier(0.23, 1, 0.32, 1),
+        transform 0.3s cubic-bezier(0.23, 1, 0.32, 1),
+        filter 0.25s ease;
 }
 
 footer:hover .button.show {
-    opacity         : 1;
-    transform       : scale(1) translateY(0);
-    filter          : blur(0);
+    opacity  : 1;
+    transform: scale(1) translateY(0);
+    filter   : blur(0);
 }
 
 footer .button.show button {
-    transition      : transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1),
-                      box-shadow 0.2s, border-color 0.2s;
+    transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1),
+        box-shadow 0.2s, border-color 0.2s;
 }
 
 footer:hover .button.show button:hover {
-    transform       : scale(1.02);
-    box-shadow      : 0 8px 20px rgba(0, 0, 0, 0.5);
-    border-color    : rgba(255, 255, 255, 0.35);
+    transform   : scale(1.02);
+    box-shadow  : 0 8px 20px rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 255, 255, 0.35);
 }
 
 footer .button.show button:active {
-    transform       : scale(0.98);
+    transform: scale(0.98);
 }
 
 .info_unblock {
@@ -259,12 +263,12 @@ footer .button.show button:active {
 .buttons_start,
 .buttons_stop {
     position        : relative;
-    top:4vw;
+    top             : 4vw;
     background-color: rgba(25, 28, 42, 0.65);
     backdrop-filter : blur(20px);
     border-radius   : 24px;
     border          : 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow      : 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+    box-shadow      : 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     padding         : 1vw 1.2vw;
     opacity         : 0;
     transform       : translateY(10px) scale(0.98);
@@ -272,39 +276,44 @@ footer .button.show button:active {
     animation       : buttonsPanelReveal 0.5s cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }
 
-.buttons_start { animation-delay: 0.05s; }
-.buttons_stop  { animation-delay: 0.1s; }
+.buttons_start {
+    animation-delay: 0.05s;
+}
+
+.buttons_stop {
+    animation-delay: 0.1s;
+}
 
 @keyframes buttonsPanelReveal {
     to {
-        opacity: 1;
+        opacity  : 1;
         transform: translateY(0) scale(1);
-        filter: blur(0);
+        filter   : blur(0);
     }
 }
 
 .buttons_start .button,
 .buttons_stop .button {
-    opacity     : 0;
-    transform   : scale(0.85) translateY(8px);
-    filter      : blur(3px);
-    animation   : buttonReveal 0.35s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    opacity  : 0;
+    transform: scale(0.85) translateY(8px);
+    filter   : blur(3px);
+    animation: buttonReveal 0.35s cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }
 
 @keyframes buttonReveal {
     to {
-        opacity: 1;
+        opacity  : 1;
         transform: scale(1) translateY(0);
-        filter: blur(0);
+        filter   : blur(0);
     }
 }
 
 .buttons_start .button button,
 .buttons_stop .button button {
-    transition      : transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1),
-                      box-shadow 0.2s ease,
-                      background-color 0.2s,
-                      border-color 0.2s;
+    transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1),
+        box-shadow 0.2s ease,
+        background-color 0.2s,
+        border-color 0.2s;
 }
 
 .buttons_start .button button:hover,
@@ -317,15 +326,15 @@ footer .button.show button:active {
 
 .buttons_start .button button:active,
 .buttons_stop .button button:active {
-    transform       : scale(0.98);
+    transform          : scale(0.98);
     transition-duration: 0.08s;
 }
 
 .buttons_start:hover,
 .buttons_stop:hover {
-    border-color    : rgba(255, 255, 255, 0.25);
-    box-shadow      : 0 12px 32px rgba(0, 0, 0, 0.5);
-    transition      : border-color 0.2s, box-shadow 0.2s;
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow  : 0 12px 32px rgba(0, 0, 0, 0.5);
+    transition  : border-color 0.2s, box-shadow 0.2s;
 }
 
 #setting section {
@@ -334,8 +343,7 @@ footer .button.show button:active {
     gap                  : 1.2%;
 }
 
-#setting .block 
-{
+#setting .block {
     padding: 0 4.5%;
 }
 
@@ -366,7 +374,7 @@ footer .button.show button:active {
 
 ::selection {
     background-color: rgba(115, 135, 155, 0.7);
-    color: #ffffff;
+    color           : #ffffff;
 }
 
 ::-webkit-scrollbar {

@@ -5,25 +5,25 @@
     left                      : -.5em;
     color                     : #f0f0f0;
     background-color          : rgba(32, 35, 50, 0.80);
-    border                    : 1px solid rgba(255,255,255,0.10);
+    border                    : 1px solid rgba(255, 255, 255, 0.10);
     border-bottom-right-radius: 6px;
-    box-shadow                : 5px 5px 24px rgba(0,0,0,0.45);
+    box-shadow                : 5px 5px 24px rgba(0, 0, 0, 0.45);
     padding                   : .3vw;
 }
 
 .nav:hover {
-    background-color          : rgba(45, 50, 70, 0.88);
-    box-shadow                : 8px 8px 32px rgba(0,0,0,0.55);
-    border-color              : rgba(255,255,255,0.20);
+    background-color: rgba(45, 50, 70, 0.88);
+    box-shadow      : 8px 8px 32px rgba(0, 0, 0, 0.55);
+    border-color    : rgba(255, 255, 255, 0.20);
 }
 
 .nav ul {
     padding: 0 1vw 0;
-    margin: 0;
+    margin : 0;
 }
 
 .nav li {
-    display: inline;
+    display : inline;
     position: relative;
 }
 
@@ -64,7 +64,7 @@
 .nav li a:hover {
     color      : #ffffff;
     transform  : translateY(-1px);
-    text-shadow: 0 0 6px rgba(255,255,255,0.4);
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
 }
 
 .nav li a:hover::before {
@@ -74,7 +74,7 @@
 .nav li #active {
     font-weight: 700;
     color      : #ffffff;
-    text-shadow: 0 0 4px rgba(255,255,255,0.3);
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
     position   : relative;
 }
 
@@ -91,12 +91,15 @@
 }
 
 @keyframes activePulse {
-    0%, 100% {
-        opacity: 0.4;
+
+    0%,
+    100% {
+        opacity  : 0.4;
         transform: scaleX(0.8);
     }
+
     50% {
-        opacity: 1;
+        opacity  : 1;
         transform: scaleX(1);
     }
 }

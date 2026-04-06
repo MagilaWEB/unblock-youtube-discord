@@ -1,17 +1,17 @@
 .secondary_window {
-	position          : fixed;
-	visibility        : hidden;
-	top               : 0;
-	opacity           : 0;
-	z-index           : 40;
-	width             : 100%;
-	height            : 100%;
-	transform         : scale(0.92);
-	background-color  : rgba(0,0,0,0.42);
+	position        : fixed;
+	visibility      : hidden;
+	top             : 0;
+	opacity         : 0;
+	z-index         : 40;
+	width           : 100%;
+	height          : 100%;
+	transform       : scale(0.92);
+	background-color: rgba(0, 0, 0, 0.42);
 }
 
 .secondary_window.show {
-	transition        : visibility .4s, opacity .4s, transform .4s cubic-bezier(0.23, 1, 0.32, 1);
+	transition: visibility .4s, opacity .4s, transform .4s cubic-bezier(0.23, 1, 0.32, 1);
 	visibility: visible;
 	opacity   : 1;
 	transform : scale(1);
@@ -24,31 +24,31 @@
 	transform       : translate(-50%, -50%);
 	width           : 80%;
 	background-color: rgba(28, 31, 46, 0.94);
-	border          : 1px solid rgba(255,255,255,0.12);
+	border          : 1px solid rgba(255, 255, 255, 0.12);
 	border-radius   : 8px;
-	box-shadow      : 0 2vw 3vw rgba(0,0,0,0.7);
+	box-shadow      : 0 2vw 3vw rgba(0, 0, 0, 0.7);
 	padding         : 1.9vw 2.2vw;
 }
 
 .secondary_window .content .title {
-	margin      : 0 0 1vw 0;
-	text-align  : center;
-	padding: 1vw 0;
-	font-size   : 4.08vw;
-	font-weight : 600;
+	margin        : 0 0 1vw 0;
+	text-align    : center;
+	padding       : 1vw 0;
+	font-size     : 4.08vw;
+	font-weight   : 600;
 	letter-spacing: -0.03vw;
 }
 
 .secondary_window .content .description {
-	margin      : 1.7vw 0 1.3vw;
-	padding     : .9vw 1.1vw;
-	border      : 1px solid rgba(255,255,255,0.1);
-	text-align  : left;
-	font-size   : 2vw;
-	white-space : pre-line;
-	overflow    : auto;
-	max-height  : 14em;
-	line-height : 3vw;
+	margin       : 1.7vw 0 1.3vw;
+	padding      : .9vw 1.1vw;
+	border       : 1px solid rgba(255, 255, 255, 0.1);
+	text-align   : left;
+	font-size    : 2vw;
+	white-space  : pre-line;
+	overflow     : auto;
+	max-height   : 14em;
+	line-height  : 3vw;
 	border-radius: 6px;
 }
 
@@ -67,75 +67,83 @@
 }
 
 .secondary_window .content .elements .button {
-	width    : 17.2vw;
+	width: 17.2vw;
 }
 
 .secondary_window .content .elements .button button {
-	width: 100%;
+	width        : 100%;
 	border-radius: 6px;
 }
 
 .secondary_window.show .content {
-    animation: 
-        borderGlow 4s ease-in-out 0.5s infinite;
+	animation:
+		borderGlow 4s ease-in-out 0.5s infinite;
 }
 
 .secondary_window.show .content .title {
-    animation: fadeSlideUp 0.4s ease-out 0.05s forwards,
-        gentleSway 4s ease-in-out 0.6s infinite;
-    opacity: 0;
-    transform: translateY(3vw);
+	animation: fadeSlideUp 0.4s ease-out 0.05s forwards,
+		gentleSway 4s ease-in-out 0.6s infinite;
+	opacity  : 0;
+	transform: translateY(3vw);
 }
 
 .secondary_window.show .content .description {
-    animation: fadeSlideUp 0.4s ease-out 0.15s forwards,
-        gentleBreathing 4s ease-in-out 0.5s infinite;
-    opacity: 0;
-    transform: translateY(3vw);
+	animation: fadeSlideUp 0.4s ease-out 0.15s forwards,
+		gentleBreathing 4s ease-in-out 0.5s infinite;
+	opacity  : 0;
+	transform: translateY(3vw);
 }
 
 .secondary_window.show .content .elements {
-    animation: fadeSlideUp 0.4s ease-out 0.25s forwards;
-    opacity: 0;
-    transform: translateY(3vw);
+	animation: fadeSlideUp 0.4s ease-out 0.25s forwards;
+	opacity  : 0;
+	transform: translateY(3vw);
 }
 
 @keyframes fadeSlideUp {
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+	to {
+		opacity  : 1;
+		transform: translateY(0);
+	}
 }
 
 @keyframes borderGlow {
-    0%, 100% {
-        border-color: rgba(255,255,255,0.12);
-    }
-    50% {
-        border-color: rgba(255,255,255,0.35);
-    }
+
+	0%,
+	100% {
+		border-color: rgba(255, 255, 255, 0.12);
+	}
+
+	50% {
+		border-color: rgba(255, 255, 255, 0.35);
+	}
 }
 
 @keyframes gentleBreathing {
-    0% {
-        transform:  scale(1);
-        box-shadow: 0 26px 75px rgba(0,0,0,0.58);
-    }
-    50% {
-        transform: scale(1.02);
-        box-shadow: 0 28px 82px rgba(0,0,0,0.62), 0 0 0 1px rgba(255,255,255,0.03);
-    }
-    100% {
-        transform: scale(1);
-        box-shadow: 0 26px 75px rgba(0,0,0,0.58);
-    }
+	0% {
+		transform : scale(1);
+		box-shadow: 0 26px 75px rgba(0, 0, 0, 0.58);
+	}
+
+	50% {
+		transform : scale(1.02);
+		box-shadow: 0 28px 82px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(255, 255, 255, 0.03);
+	}
+
+	100% {
+		transform : scale(1);
+		box-shadow: 0 26px 75px rgba(0, 0, 0, 0.58);
+	}
 }
 
 @keyframes gentleSway {
-    0%, 100% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.05);
-    }
+
+	0%,
+	100% {
+		transform: scale(1);
+	}
+
+	50% {
+		transform: scale(1.05);
+	}
 }

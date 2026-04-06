@@ -7,7 +7,7 @@
     border-radius   : 13px;
     box-shadow      : 0 8px 28px rgba(0, 0, 0, 0.38);
     opacity         : 0;
-    filter:blur(17px);
+    filter          : blur(17px);
     visibility      : hidden;
 }
 
@@ -23,8 +23,8 @@ main article.active .block {
 
 @keyframes blockReveal {
     to {
-        opacity: 1;
-        filter: blur(0);
+        opacity  : 1;
+        filter   : blur(0);
         transform: translateY(0) scale(1);
     }
 }
@@ -65,9 +65,9 @@ main article.active .block:nth-child(n+7) {
 }
 
 .block:active {
-    transform       : translateY(1px) scale(0.99);
+    transform          : translateY(1px) scale(0.99);
     transition-duration: 0.08s;
-    box-shadow      : 0 6px 20px rgba(0,0,0,0.42);
+    box-shadow         : 0 6px 20px rgba(0, 0, 0, 0.42);
 }
 
 .block h2 {
