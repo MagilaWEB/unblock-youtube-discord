@@ -172,6 +172,7 @@
     position        : fixed;
     left            : -100%;
     opacity         : 0;
+    font-size       : 1.7vw;
     visibility      : hidden;
     width           : 40vw;
     padding         : 0.1vw 1vw;
