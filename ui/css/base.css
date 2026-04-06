@@ -13,7 +13,6 @@ body {
     padding         : 0;
     width           : 100%;
     height          : 100%;
-    min-width       : 900px;
     background-color: #0d0e14;
 }
 
@@ -36,17 +35,15 @@ body {
 }
 
 h1 {
-    font-size     : 2em;
-    line-height   : 1.1em;
-    font-weight   : 600;
-    letter-spacing: -0.025em;
+    line-height   : 1.1vw;
+    letter-spacing: -0.025vw;
 }
 
 h2 {
-    font-size     : 1.35em;
-    line-height   : 1.1em;
+    font-size     : 2vw;
+    line-height   : 1.1vw;
     font-weight   : 500;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.01vw;
 }
 
 .blur {
@@ -56,19 +53,19 @@ h2 {
 .text_version {
     z-index         : 30;
     position        : fixed;
-    top             : -.5em;
-    right           : .5em;
-    padding         : .4em .7em;
+    top             : -.5vw;
+    right           : .5vw;
+    padding         : .4vw .7vw;
     background-color: rgba(35, 38, 52, 0.82);
     border          : 1px solid rgba(255, 255, 255, 0.11);
-    border-radius   : 0 0 14px 14px;
+    border-radius   : 0 0 6px 6px;
   
     box-shadow      : 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 .text_version .text {
     margin     : 0;
-    font-size  : 0.81em;
+    font-size  : 1.5vw;
     font-weight: 500;
 }
 
@@ -78,13 +75,12 @@ main {
 
 main article {
     position  : absolute;
-    top       : 15em;
+    top       : 20vw;
     left      : 0;
     width     : 100%;
-    min-width : 900px;
     visibility: hidden;
     opacity   : 0;
-    padding   : 0 .4em;
+    padding   : 0 1.4vw;
 }
 
 main article.active {
@@ -96,11 +92,11 @@ main article.active {
 
 main article .header_title {
     margin          : 0 0 1.2em 0;
-    font-size       : 2.2em;
+    font-size       : 2.5vw;
     font-weight     : 600;
-    letter-spacing  : -0.02em;
+    letter-spacing  : -0.02vw;
     text-align      : right;
-    padding         : 0.6em 1em;
+    padding         : 1.6vw 2vw;
     position        : relative;
     background-color: rgba(32, 35, 50, 0.75);
     border-radius   : 6px 6px 0 0;
@@ -136,7 +132,7 @@ footer {
     display         : flex;
     align-items     : center;
     bottom          : -3em;
-    padding-top     : 1.1em;
+    padding-top     : 1.1vw;
     width           : 100%;
     background-color: rgba(25, 28, 42, 0.82);
     height          : 4.3em;
@@ -197,7 +193,7 @@ footer:hover::after {
 
 footer .button.show {
     margin          : auto;
-    width           : 14em;
+    width           : 30vw;
     opacity         : 0;
     transform       : scale(0.85) translateY(12px);
     filter          : blur(5px);
@@ -235,20 +231,19 @@ footer .button.show button:active {
 }
 
 .info_unblock .block ul {
-    height: 21em;
+    height: 25vw;
 }
 
 .buttons_start,
 .buttons_stop {
     display       : grid;
-    grid-auto-rows: 2.1em;
-    gap           : .4%;
-    margin        : 0 1em;
-    margin-bottom : 1.2em;
+    grid-auto-rows: 3.1vw;
+    gap           : .5vw;
+    margin        : 0 1vw;
+    margin-bottom : 1.2vw;
 }
 
 .buttons_start {
-    padding-top          : 4em;
     grid-template-columns: repeat(clamp(1, var(--js-buttons-start-count, 4), 4), 1fr);
 }
 
@@ -264,13 +259,13 @@ footer .button.show button:active {
 .buttons_start,
 .buttons_stop {
     position        : relative;
-    top:4em;
+    top:4vw;
     background-color: rgba(25, 28, 42, 0.65);
     backdrop-filter : blur(20px);
     border-radius   : 24px;
     border          : 1px solid rgba(255, 255, 255, 0.12);
     box-shadow      : 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255,255,255,0.05);
-    padding         : 1em 1.2em;
+    padding         : 1vw 1.2vw;
     opacity         : 0;
     transform       : translateY(10px) scale(0.98);
     filter          : blur(3px);
@@ -344,9 +339,6 @@ footer .button.show button:active {
     padding: 0 4.5%;
 }
 
-.common .button {
-    height: 1.9em;
-}
 
 .common .button button {
     width           : 90%;

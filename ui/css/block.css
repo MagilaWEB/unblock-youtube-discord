@@ -71,7 +71,7 @@ main article.active .block:nth-child(n+7) {
 }
 
 .block h2 {
-    margin        : .4em .7em;
+    margin        : 1.4vw 1.7vw;
     font-weight   : 600;
-    letter-spacing: -0.015em;
+    letter-spacing: -0.015vw;
 }

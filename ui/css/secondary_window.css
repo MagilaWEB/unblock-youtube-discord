@@ -22,35 +22,34 @@
 	top             : 50%;
 	left            : 50%;
 	transform       : translate(-50%, -50%);
-	width           : 70%;
-	max-width       : 680px;
+	width           : 80%;
 	background-color: rgba(28, 31, 46, 0.94);
 	border          : 1px solid rgba(255,255,255,0.12);
 	border-radius   : 8px;
-	box-shadow      : 0 26px 75px rgba(0,0,0,0.58);
-	padding         : 1.9em 2.2em;
+	box-shadow      : 0 2vw 3vw rgba(0,0,0,0.7);
+	padding         : 1.9vw 2.2vw;
 }
 
 .secondary_window .content .title {
-	margin      : 0 0 .7em 0;
+	margin      : 0 0 1vw 0;
 	text-align  : center;
-	font-size   : 2.08em;
+	padding: 1vw 0;
+	font-size   : 4.08vw;
 	font-weight : 600;
-	letter-spacing: -0.03em;
+	letter-spacing: -0.03vw;
 }
 
 .secondary_window .content .description {
-	margin      : .7em 0 1.3em;
-	padding     : .9em 1.1em;
-	border      : 1px solid rgba(255,255,255,0.09);
+	margin      : 1.7vw 0 1.3vw;
+	padding     : .9vw 1.1vw;
+	border      : 1px solid rgba(255,255,255,0.1);
 	text-align  : left;
-	font-size   : 1.29em;
+	font-size   : 2vw;
 	white-space : pre-line;
 	overflow    : auto;
-	max-height  : 13.8em;
-	line-height : 1.48;
-	border-radius: 11px;
-	background-color: rgba(25,28,42,0.65);
+	max-height  : 14em;
+	line-height : 3vw;
+	border-radius: 6px;
 }
 
 .secondary_window .content .elements {
@@ -59,22 +58,21 @@
 
 .secondary_window .content .horizontally .button {
 	display: inline-block;
-	margin : 0 2.4em;
+	margin : 0 2.4vw;
 }
 
 .secondary_window .content .vertically .button {
 	display: block;
-	margin : 0.9em auto;
+	margin : 0.9vw auto;
 }
 
 .secondary_window .content .elements .button {
-	font-size: 1.23em;
-	width    : 11.2em;
+	width    : 17.2vw;
 }
 
 .secondary_window .content .elements .button button {
 	width: 100%;
-	border-radius: 11px;
+	border-radius: 6px;
 }
 
 .secondary_window.show .content {
@@ -86,20 +84,20 @@
     animation: fadeSlideUp 0.4s ease-out 0.05s forwards,
         gentleSway 4s ease-in-out 0.6s infinite;
     opacity: 0;
-    transform: translateY(1em);
+    transform: translateY(3vw);
 }
 
 .secondary_window.show .content .description {
     animation: fadeSlideUp 0.4s ease-out 0.15s forwards,
         gentleBreathing 4s ease-in-out 0.5s infinite;
     opacity: 0;
-    transform: translateY(1em);
+    transform: translateY(3vw);
 }
 
 .secondary_window.show .content .elements {
     animation: fadeSlideUp 0.4s ease-out 0.25s forwards;
     opacity: 0;
-    transform: translateY(1em);
+    transform: translateY(3vw);
 }
 
 @keyframes fadeSlideUp {
@@ -124,7 +122,7 @@
         box-shadow: 0 26px 75px rgba(0,0,0,0.58);
     }
     50% {
-        transform: scale(1.01);
+        transform: scale(1.02);
         box-shadow: 0 28px 82px rgba(0,0,0,0.62), 0 0 0 1px rgba(255,255,255,0.03);
     }
     100% {

@@ -6,9 +6,9 @@
     color                     : #f0f0f0;
     background-color          : rgba(32, 35, 50, 0.80);
     border                    : 1px solid rgba(255,255,255,0.10);
-    border-bottom-right-radius: 16px;
+    border-bottom-right-radius: 6px;
     box-shadow                : 5px 5px 24px rgba(0,0,0,0.45);
-    padding                   : .3em .5em;
+    padding                   : .3vw;
 }
 
 .nav:hover {
@@ -18,7 +18,7 @@
 }
 
 .nav ul {
-    padding: 0 1em 0;
+    padding: 0 1vw 0;
     margin: 0;
 }
 
@@ -40,10 +40,10 @@
 
 .nav li a {
     color          : #e8e8e8;
-    font-size      : 1em;
+    font-size      : 2vw;
     text-decoration: none;
     font-weight    : 500;
-    padding        : 0.2em 0.4em;
+    padding        : 0.2vw 0.4vw;
     display        : inline-block;
     transition     : color 0.2s ease, transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1), text-shadow 0.2s ease;
     position       : relative;

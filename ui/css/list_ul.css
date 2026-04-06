@@ -9,6 +9,7 @@
 
 .list_ul ul {
     margin: 0;
+    padding: 0 1vw;
     max-height: 20em;
     overflow: auto;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -17,7 +18,8 @@
 
 .list_ul ul li {
     position: relative;
-    padding-left: 1.4em;
+    font-size: 1.3vw;
+    padding-left: 1.5vw;
     list-style-type: none;
 }
 
@@ -30,11 +32,9 @@
 .list_ul ul .li_success::after {
     color: #00e676;
     content: '\2713';
-    font-size: 1.12em;
 }
 
 .list_ul ul .li_fail::after {
     color: #ff5252;
     content: '\2717';
-    font-size: 1.08em;
 }
