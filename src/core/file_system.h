@@ -32,6 +32,7 @@ public:
 
 	bool isOpen() const;
 	bool empty() const;
+	void open();
 	void open(path file, std::string_view expansion, bool no_default_patch = false);
 	void clear();
 	void save();

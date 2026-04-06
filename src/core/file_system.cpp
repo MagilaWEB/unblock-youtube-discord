@@ -287,6 +287,11 @@ bool File::empty() const
 	return _line_string.empty() && _map_list_string.empty();
 }
 
+void File::open()
+{
+	open(_path_file, "", true);
+}
+
 void File::open(std::filesystem::path file, std::string_view expansion, bool no_default_patch)
 {
 	CRITICAL_SECTION_RAII(lock);
