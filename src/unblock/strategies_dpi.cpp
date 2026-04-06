@@ -121,7 +121,7 @@ void StrategiesDPI::_blob_init_to_zapret()
 			if (data.init)
 				data.init = false;
 
-		static const std::regex pattern(R"(:blob=([^:]+))");
+		static const std::regex pattern(R"(:blob=([^:]+)|:seqovl_pattern=([^:]+))");
 
 		auto& file_strategy = *_file_strategy_dpi;
 		for (auto& line : file_strategy)
@@ -132,8 +132,9 @@ void StrategiesDPI::_blob_init_to_zapret()
 				{
 					std::smatch match;
 					if (std::regex_search(line, match, pattern))
-						if (match[1].str() == key)
-							data.init = true;
+						for (auto i : std::ranges::iota_view(1U, match.size()))
+							if (match[i].str() == key)
+								data.init = true;
 				}
 			}
 		}
@@ -148,24 +149,29 @@ void StrategiesDPI::_blob_init_to_zapret()
 			if (std::regex_search(line, match, pattern))
 			{
 				constexpr std::string_view fake_default[]{ "fake_default_tls", "fake_default_http", "fake_default_udp" };
-				auto					   key_fake = match[1].str();
-
-				if (*std::ranges::find(fake_default, key_fake) != key_fake)
+				for (auto i : std::ranges::iota_view(1U, match.size()))
 				{
-					if (_fake_bin_params.find(key_fake) == _fake_bin_params.end())
-					{
-						auto find_blob_base = std::format("--blob={}", key_fake);
-						auto is_it =
-							std::ranges::find_if(_strategy_dpi, [match, &find_blob_base](std::string line) { return line.contains(find_blob_base); });
+					auto key_fake = match[i].str();
 
-						if (is_it == _strategy_dpi.end())
+					if (*std::ranges::find(fake_default, key_fake) != key_fake)
+					{
+						if (_fake_bin_params.find(key_fake) == _fake_bin_params.end())
 						{
-							Debug::warning(
-								"The blob {} key does not exist in unblock, register it in the fake_bin.config config or use the existing ones."
-								"The strategy string is [{}].",
-								match[1].str(),
-								line
-							);
+							auto find_blob_base = std::format("--blob={}", key_fake);
+							auto is_it			= std::ranges::find_if(
+								 _strategy_dpi,
+								 [match, &find_blob_base](std::string line) { return line.contains(find_blob_base); }
+							 );
+
+							if (is_it == _strategy_dpi.end())
+							{
+								Debug::warning(
+									"The blob {} key does not exist in unblock, register it in the fake_bin.config config or use the existing ones."
+									"The strategy string is [{}].",
+									key_fake,
+									line
+								);
+							}
 						}
 					}
 				}
