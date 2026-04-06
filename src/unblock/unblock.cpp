@@ -8,6 +8,15 @@ Unblock::Unblock()
 	_win_divert.open();
 }
 
+bool Unblock::testUrl(std::string_view str_url)
+{
+	HttpsLoad url{ str_url };
+
+	url.run();
+
+	return url.codeResult() == 200;
+}
+
 bool Unblock::automaticallyStrategy()
 {
 	if (_strategy == _strategies_dpi.getStrategySize())
@@ -142,12 +151,12 @@ void Unblock::testingDomainCancel(bool video)
 	_domain_testing.cancelTesting();
 }
 
-void Unblock::maxWaitTesting(u32 second)
+void Unblock::changeMaxConnectionAttempts(u32 count)
 {
-	_domain_testing.changeMaxWaitTesting(second);
-	_domain_testing_video.changeMaxWaitTesting(second);
-	_domain_testing_proxy.changeMaxWaitTesting(second);
-	_domain_testing_proxy_video.changeMaxWaitTesting(second);
+	_domain_testing.changeMaxConnectionAttempts(count);
+	_domain_testing_video.changeMaxConnectionAttempts(count);
+	_domain_testing_proxy.changeMaxConnectionAttempts(count);
+	_domain_testing_proxy_video.changeMaxConnectionAttempts(count);
 }
 
 std::optional<std::string> Unblock::checkUpdate()

@@ -31,7 +31,7 @@ class Ui final : public utils::DefaultInit
 	CHECK_BOX(_testing_domains_startup);
 	CHECK_BOX(_enable_dns_hosts);
 	BUTTON(_start_update_dns_hosts);
-	INPUT(_max_time_wait_testing);
+	INPUT(_max_connection_attempts_testing);
 
 	// Remove app
 	BUTTON(_remove_app);
@@ -64,6 +64,10 @@ class Ui final : public utils::DefaultInit
 	SECONDARY_WINDOW(_window_wait_check_update_unblock);
 
 	SECONDARY_WINDOW(_window_warning_conflict_service);
+
+	SECONDARY_WINDOW(_window_warning_whitelist);
+	SECONDARY_WINDOW(_window_wait_test_whitelist);
+	SECONDARY_WINDOW(_window_warning_no_internet);
 
 	SECONDARY_WINDOW(_window_info_selected_service_setting);
 	SECONDARY_WINDOW(_window_wait_response_from_server);
@@ -105,9 +109,11 @@ private:
 
 	void _initShowInfoSetting();
 
+	void _checkWhitelist();
+
 	// update
 	void _updateApp();
-	void _checkAppUpdate(bool window_show = false);
+	void _checkAppUpdate();
 	void _updateAppWindow();
 	void _updateAppProgressWindowInfo();
 
@@ -120,8 +126,8 @@ private:
 	void _settingEnableDnsHostsWarningUser();
 	void _settingDnsHostsUpdateInfoWindow();
 
-	void _settingMaxTimeWait();
-	void _settingMaxTimeWaitUpdate();
+	void _settingMaxConnectionAttempts();
+	void _settingMaxConnectionAttemptsUpdate();
 
 	void _settingUnblockEnable();
 

@@ -180,12 +180,6 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(std
 	Debug::info("Finish test domain.");
 }
 
-void DomainTesting::changeMaxWaitTesting(u32 second)
-{
-	ASSERT_ARGS(second > 0, "The connection timeout cannot be equal to 0! This will provoke endless waiting.");
-	//_max_wait_testing = second;
-}
-
 void DomainTesting::changeMaxConnectionAttempts(u32 count)
 {
 	ASSERT_ARGS(count > 0, "The connection timeout cannot be equal to 0! This will provoke endless waiting.");

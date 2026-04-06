@@ -29,6 +29,8 @@ void Ui::initialize()
 	_window_wait_response_from_server->create(Localization::Str{ "str_please_wait" }, "str_window_wait_response_from_server_description");
 	_window_wait_response_from_server->setType(SecondaryWindow::Type::Info);
 
+	_checkWhitelist();
+
 	_initShowInfoSetting();
 
 	_updateApp();
@@ -128,4 +130,58 @@ void Ui::_checkConflictService()
 			}
 		);
 	}
+}
+
+void Ui::_checkWhitelist()
+{
+	if (!_window_wait_test_whitelist->isCreate())
+	{
+		_window_wait_test_whitelist->create(Localization::Str{ "str_please_wait" }, "str_window_wait_test_whitelist_description");
+		_window_wait_test_whitelist->setType(SecondaryWindow::Type::Wait);
+	}
+
+	_window_wait_test_whitelist->show();
+
+	if (!_window_warning_whitelist->isCreate())
+	{
+		_window_warning_whitelist->create(Localization::Str{ "str_warning" }, "str_window_whitelist_description");
+		_window_warning_whitelist->setType(SecondaryWindow::Type::OK);
+	}
+	if (!_window_warning_no_internet->isCreate())
+	{
+		_window_warning_no_internet->create(Localization::Str{ "str_warning" }, "str_window_warning_no_internet_description");
+		_window_warning_no_internet->setType(SecondaryWindow::Type::OK);
+	}
+
+	Core::get().addTaskParallel(
+		[this]
+		{
+			const bool state_yandex = _unblock.testUrl("https://yandex.ru");
+			const bool state_google = _unblock.testUrl("https://google.com");
+			_window_wait_test_whitelist->hide();
+
+			if (state_yandex && !state_google)
+			{
+				_window_warning_whitelist->show();
+				_window_warning_whitelist->addEventOk(
+					[this](JSArgs)
+					{
+						_window_warning_whitelist->hide();
+						return true;
+					}
+				);
+			}
+			else if (!state_yandex)
+			{
+				_window_warning_no_internet->show();
+				_window_warning_no_internet->addEventOk(
+					[this](JSArgs)
+					{
+						_window_warning_no_internet->hide();
+						return true;
+					}
+				);
+			}
+		}
+	);
 }

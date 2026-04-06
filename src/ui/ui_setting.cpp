@@ -8,8 +8,7 @@ void Ui::_settingInit()
 	_settingShowConsole();
 	_settingTestDomainsStartup();
 	_settingEnableDnsHosts();
-	_settingMaxTimeWait();
-
+	_settingMaxConnectionAttempts();
 	_settingUnblockEnable();
 	_settingUnblockListEnableServices();
 
@@ -148,15 +147,20 @@ void Ui::_settingEnableDnsHostsUpdate()
 		else
 			_start_update_dns_hosts->hide();
 
+		_window_wait_response_from_server->show();
+
 		Core::get().addTask(
 			[this, state]
 			{
 				if (state && (!_unblock.dnsHostsCheck()))
 				{
+					_window_wait_response_from_server->hide();
 					_window_wait_update_dns->show();
 					_unblock.dnsHostsUpdate();
 					_window_wait_update_dns->hide();
 				}
+				else
+					_window_wait_response_from_server->hide();
 
 				_unblock.dnsHosts(state);
 			}
@@ -193,44 +197,44 @@ void Ui::_settingEnableDnsHostsWarningUser()
 	);
 }
 
-constexpr static u32 base_second{ 8 };
+constexpr static u32 base_count{ 8 };
 
-void Ui::_settingMaxTimeWait()
+void Ui::_settingMaxConnectionAttempts()
 {
-	_max_time_wait_testing->create(
+	_max_connection_attempts_testing->create(
 		"#setting section .common",
 		Input::Types::number,
-		base_second,
-		"str_input_max_wait_testing_title",
-		"str_input_max_wait_testing_description"
+		base_count,
+		"str_input_max_connection_attempts_testing_title",
+		"str_input_max_connection_attempts_testing_description"
 	);
-	_max_time_wait_testing->addEventSubmit(
+	_max_connection_attempts_testing->addEventSubmit(
 		[this](JSArgs args)
 		{
-			_ui_base->userSetting()->writeSectionParameter("TESTING", "max_time_wait_testing", JSToCPP(args[0]));
-			_settingMaxTimeWaitUpdate();
+			_ui_base->userSetting()->writeSectionParameter("TESTING", "max_connection_attempts_testing", JSToCPP(args[0]));
+			_settingMaxConnectionAttemptsUpdate();
 			return false;
 		}
 	);
 
-	_settingMaxTimeWaitUpdate();
+	_settingMaxConnectionAttemptsUpdate();
 }
 
-void Ui::_settingMaxTimeWaitUpdate()
+void Ui::_settingMaxConnectionAttemptsUpdate()
 {
 	// get user setting
-	u32	 second = base_second;
-	auto result = _ui_base->userSetting()->parameterSection<u32>("TESTING", "max_time_wait_testing");
+	u32	 count	= base_count;
+	auto result = _ui_base->userSetting()->parameterSection<u32>("TESTING", "max_connection_attempts_testing");
 	if (result)
 	{
-		second = result.value();
-		if (second > 0)
-			_max_time_wait_testing->setValue(second);
+		count = result.value();
+		if (count > 0)
+			_max_connection_attempts_testing->setValue(count);
 		else
-			_max_time_wait_testing->setValue(base_second);
+			_max_connection_attempts_testing->setValue(base_count);
 	}
 
-	_unblock.maxWaitTesting(second);
+	_unblock.changeMaxConnectionAttempts(count);
 }
 
 void Ui::_settingUnblockEnable()

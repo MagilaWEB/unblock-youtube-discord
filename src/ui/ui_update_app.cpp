@@ -31,24 +31,22 @@ void Ui::_updateApp()
 	_start_check_update_app->addEventClick(
 		[this](JSArgs)
 		{
-			_checkAppUpdate(true);
+			_checkAppUpdate();
 			return false;
 		}
 	);
 }
 
-void Ui::_checkAppUpdate(bool window_show)
+void Ui::_checkAppUpdate()
 {
-	Core::get().addTask(
-		[this, window_show]
-		{
-			if (window_show)
-				_window_wait_check_update_unblock->show();
+	_window_wait_check_update_unblock->show();
 
+	Core::get().addTask(
+		[this]
+		{
 			if (auto new_version = _unblock.checkUpdate())
 			{
-				if (window_show)
-					_window_wait_check_update_unblock->hide();
+				_window_wait_check_update_unblock->hide();
 
 				static auto desc = Localization::Str{ "str_window_update_unblock" }();
 				_window_update_unblock->setDescription(utils::format(desc, new_version.value()));
@@ -56,8 +54,7 @@ void Ui::_checkAppUpdate(bool window_show)
 				return;
 			}
 
-			if (window_show)
-				_window_wait_check_update_unblock->hide();
+			_window_wait_check_update_unblock->hide();
 		}
 	);
 }

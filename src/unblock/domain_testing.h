@@ -62,8 +62,7 @@ public:
 	void test(bool test_video, bool base_test, std::function<void(std::string url, bool state)>&& callback);
 
 	void changeProxy(std::string_view ip, u32 port);
-	void changeMaxWaitTesting(u32 second);
-	void changeMaxConnectionAttempts(u32);
+	void changeMaxConnectionAttempts(u32 count);
 	void changeOptionalServices(std::list<std::string> list_services);
 
 	void cancelTesting();

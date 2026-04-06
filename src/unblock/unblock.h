@@ -26,6 +26,8 @@ class UNBLOCK_API Unblock final
 public:
 	Unblock();
 
+	bool testUrl(std::string_view str_url);
+
 	bool automaticallyStrategy();
 
 	void serviceConfigFile(const std::shared_ptr<File>& config);
@@ -64,7 +66,7 @@ public:
 	);
 	void testingDomainCancel(bool video = false);
 
-	void maxWaitTesting(u32 second);
+	void changeMaxConnectionAttempts(u32 count);
 
 	std::optional<std::string> checkUpdate();
 	bool					   appUpdate();
