@@ -23,6 +23,7 @@ class DNSHost final : public utils::DefaultInit
 	std::map<std::string, std::vector<std::string>> _map_list{};
 
 	CriticalSection	 _lock;
+	std::atomic_bool _user_host_complete{ false };
 	std::atomic_bool _cancel_update{ false };
 	std::atomic_uint _size_iter{ 0 };
 	bool			 _enable{ false };

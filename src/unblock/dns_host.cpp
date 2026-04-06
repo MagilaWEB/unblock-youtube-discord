@@ -21,20 +21,18 @@ DNSHost::DNSHost()
 	_file_hosts_backup.open(_host_backup, "", true);
 	_file_hosts_user.open(_host_user, ".list", true);
 
-	if (!_file_hosts_backup.isOpen())
-	{
-		_file_hosts.forLine(
-			[this](std::string str)
-			{
-				_file_hosts_backup.writeText(str);
-				return false;
-			}
-		);
+	_user_host_complete.store(!_file_hosts_user.empty());
 
-		_file_hosts_backup.close();
-	}
+	if ((!_file_hosts_backup.isOpen()) || _file_hosts_backup.empty())
+		if (!_file_hosts.empty())
+			for (auto& line : _file_hosts)
+				_file_hosts_backup.writeText(line);
 
 	_dir_dns_hosts = Core::get().configsPath() / "dns_hosts";
+
+	_file_hosts.close();
+	_file_hosts_backup.close();
+	_file_hosts_user.close();
 }
 
 const std::list<std::string>& DNSHost::listDnsFileName()
@@ -50,25 +48,20 @@ void DNSHost::enable()
 
 	_enable = true;
 
+	_file_hosts.open();
 	_file_hosts.clear();
 
-	_file_hosts_backup.forLine(
-		[this](std::string line)
-		{
-			_file_hosts.writeText(line);
-			return false;
-		}
-	);
+	_file_hosts_backup.open();
+	for (auto& line : _file_hosts_backup)
+		_file_hosts.writeText(line);
 
-	_file_hosts_user.forLine(
-		[this](std::string line)
-		{
-			_file_hosts.writeText(line);
-			return false;
-		}
-	);
+	_file_hosts_user.open();
+	for (auto& line : _file_hosts_user)
+		_file_hosts.writeText(line);
 
-	_file_hosts.save();
+	_file_hosts.close();
+	_file_hosts_backup.close();
+	_file_hosts_user.close();
 }
 
 void DNSHost::disable()
@@ -77,18 +70,15 @@ void DNSHost::disable()
 		return;
 
 	_enable = false;
-
+	_file_hosts.open();
 	_file_hosts.clear();
 
-	_file_hosts_backup.forLine(
-		[this](std::string line)
-		{
-			_file_hosts.writeText(line);
-			return false;
-		}
-	);
+	_file_hosts_backup.open();
+	for (auto& line : _file_hosts_backup)
+		_file_hosts.writeText(line);
 
-	_file_hosts.save();
+	_file_hosts.close();
+	_file_hosts_backup.close();
 }
 
 void DNSHost::update()
@@ -103,16 +93,10 @@ void DNSHost::update()
 		File file{};
 		file.open(entry.path(), "", true);
 
-		file.forLine(
-			[this](std::string domain)
-			{
-				if (!domain.empty())
-					if (std::ranges::find(_list_domains, domain) == _list_domains.end())
-						_list_domains.push_back(domain);
-
-				return false;
-			}
-		);
+		for (auto& line : file)
+			if (!line.empty())
+				if (std::ranges::find(_list_domains, line) == _list_domains.end())
+					_list_domains.push_back(line);
 	}
 
 	if (_cancel_update.load())
@@ -128,7 +112,7 @@ void DNSHost::update()
 				return;
 
 			static const std::regex reg_equally{ R"(->)" };
-			std::smatch para;
+			std::smatch				para;
 			if (std::regex_search(domain, para, reg_equally))
 			{
 				const std::string value = para.suffix().str();
@@ -152,6 +136,8 @@ void DNSHost::update()
 
 	if (!_cancel_update.load())
 	{
+		_file_hosts_user.open();
+
 		if (isHostsUser())
 			_file_hosts_user.clear();
 
@@ -159,29 +145,27 @@ void DNSHost::update()
 
 		File local_hosts{ false };
 		local_hosts.open(Core::get().configsPath() / "hosts", "");
-		local_hosts.forLine(
-			[this](std::string line)
+		for (auto& line : local_hosts)
+		{
+			static const std::regex ip_domain_regex(R"(^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+([^\s]+))");
+			std::smatch				para;
+			if (std::regex_search(line, para, ip_domain_regex))
 			{
-				static const std::regex ip_domain_regex(R"(^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+([^\s]+))");
-				std::smatch				para;
-				if (std::regex_search(line, para, ip_domain_regex))
-				{
-					const std::string domain = para[2].str();
-					if ((!domain.empty()) && (!_map_list[domain].empty()))
-						return false;
+				const std::string domain = para[2].str();
+				if ((!domain.empty()) && (!_map_list[domain].empty()))
+					continue;
 
-					_file_hosts_user.writeText(line);
-				}
-
-				return false;
+				_file_hosts_user.writeText(line);
 			}
-		);
+		}
+	
 
 		for (auto& [domain, ip_list] : _map_list)
 			for (auto& ip : ip_list)
 				_file_hosts_user.writeText(ip + " " + domain);
 
-		_file_hosts_user.save();
+		_user_host_complete.store(true);
+		_file_hosts_user.close();
 	}
 
 	_size_iter.store(0);
@@ -189,7 +173,7 @@ void DNSHost::update()
 
 bool DNSHost::isHostsUser() const
 {
-	return _file_hosts_user.isOpen();
+	return _user_host_complete.load();
 }
 
 void DNSHost::cancel()
