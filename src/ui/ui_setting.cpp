@@ -197,8 +197,7 @@ void Ui::_settingEnableDnsHostsWarningUser()
 	);
 }
 
-constexpr static u32 base_count{ 8 };
-
+constexpr static u32 base_count{ 4 };
 void Ui::_settingMaxConnectionAttempts()
 {
 	_max_connection_attempts_testing->create(
