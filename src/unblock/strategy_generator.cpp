@@ -14,10 +14,7 @@ void StrategyGenerator::inFile(std::shared_ptr<File>& strategy)
 	_file_strategy = strategy;
 
 	if (!_file_strategy->isOpen())
-	{
-		Debug::warning("file strategy not file [{}]", _file_strategy->getPath().string());
-		return;
-	}
+		_file_strategy->open();
 
 	_map_filters.clear();
 

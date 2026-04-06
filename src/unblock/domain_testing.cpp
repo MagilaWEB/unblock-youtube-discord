@@ -57,16 +57,15 @@ void DomainTesting::loadDomain(bool video)
 		if (!_loadFile(video ? "domain_video" : "all"))
 			return;
 
-		_file_test_domain.forLine(
-			[this](std::string str)
-			{
-				if (str.empty())
-					return false;
+		for (auto& str : _file_test_domain)
+		{
+			if (str.empty())
+				continue;
 
-				_list_domain.emplace_back(CurlDomain{ curl_easy_init(), str });
-				return false;
-			}
-		);
+			_list_domain.emplace_back(CurlDomain{ curl_easy_init(), str });
+		}
+
+		_file_test_domain.close();
 
 		return;
 	}
@@ -430,16 +429,17 @@ void DomainTesting::_genericURLS(std::string base_name)
 void DomainTesting::_appendURLS()
 {
 	if (_file_test_domain.isOpen())
-		_file_test_domain.forLine(
-			[this](std::string str)
-			{
-				if (str.empty())
-					return false;
+	{
+		for (auto& str : _file_test_domain)
+		{
+			if (str.empty())
+				continue;
 
-				_list_domain.emplace_back(CurlDomain{ curl_easy_init(), str });
-				return false;
-			}
-		);
+			_list_domain.emplace_back(CurlDomain{ curl_easy_init(), str });
+		}
+	}
+
+	_file_test_domain.close();
 }
 
 void DomainTesting::_clearURLS()
