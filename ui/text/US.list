@@ -176,6 +176,18 @@ str_window_wait_update_dns_description=🔄 Loading local DNS [{:.2f}%]...
 Updating the system hosts file to bypass blocks.
 This may take several minutes.
 
+str_window_wait_test_whitelist_description=🔍 Checking provider whitelists...
+Unblock does not provide tools to bypass whitelists. The test will determine if restrictions exist.
+This may take a while.
+
+str_window_whitelist_description=⚠ Provider whitelists detected
+Unblock cannot bypass whitelist-based restrictions.
+Access to many services may be limited.
+
+str_window_warning_no_internet_description=⚠ No internet connection detected
+Please check your network connection, cables, or Wi-Fi.
+Unblock cannot function without network access.
+
 str_button_start_dns_hosts_update_title=🔄 Update local DNS
 
 // Setting titles blocks
@@ -194,9 +206,9 @@ str_checkbox_testing_startup_description=Automatically check site availability a
 str_checkbox_enable_dns_hosts_title=📁 Local DNS (hosts)
 str_checkbox_enable_dns_hosts_description=Uses the hosts file to bypass blocks.
 
-// Setting common input max time wait testing
-str_input_max_wait_testing_title=⏱ Timeout (seconds)
-str_input_max_wait_testing_description=Time to wait for server response.
+// Setting common input max connection attempts
+str_input_max_connection_attempts_testing_title=🔢 Max connection attempts
+str_input_max_connection_attempts_testing_description=Number of connection attempts during testing. For accurate domain testing under the Zapret2 core, at least 3 attempts are recommended.
 
 // Setting checkbox zapret winws enable
 str_unblock_enable_title=🔓 Enable Zapret (winws)
