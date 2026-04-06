@@ -10,6 +10,33 @@ class UNBLOCK_API DomainTesting final
 	{
 		CURL*		curl{ nullptr };
 		std::string url{};
+
+		double result_time_sec{ 0.0 };
+		bool   tls_1_0{ false };
+		bool   tls_1_1{ false };
+		bool   tls_1_2{ false };
+		bool   tls_1_3{ false };
+
+		void setTls(u32 version, bool state)
+		{
+			switch (version)
+			{
+			case 0:
+				tls_1_0 = state;
+				break;
+			case 1:
+				tls_1_1 = state;
+				break;
+			case 2:
+				tls_1_2 = state;
+				break;
+			case 3:
+				tls_1_3 = state;
+				break;
+			default:
+				Debug::warning("TLS can only be versions 0, 1, 2, 3!");
+			}
+		}
 	};
 
 	File				   _file_test_domain{ false };
@@ -18,7 +45,8 @@ class UNBLOCK_API DomainTesting final
 
 	std::atomic_uint _domain_ok{ 0 };
 	std::atomic_uint _domain_error{ 0 };
-	std::atomic_uint _max_wait_testing{ 5U };
+	std::atomic_uint _max_wait_testing{ 0U };
+	std::atomic_uint _max_connection_attempts{ 4U };
 	std::atomic_bool _is_testing{ false };
 	std::atomic_bool _cancel_testing{ false };
 
@@ -35,7 +63,7 @@ public:
 
 	void changeProxy(std::string_view ip, u32 port);
 	void changeMaxWaitTesting(u32 second);
-
+	void changeMaxConnectionAttempts(u32);
 	void changeOptionalServices(std::list<std::string> list_services);
 
 	void cancelTesting();
@@ -47,10 +75,11 @@ public:
 	u32	 errorRate() const;
 	void printTestInfo() const;
 
-	bool isConnectionUrl(const CurlDomain& domain);
-	bool isConnectionUrlVideo(const CurlDomain& domain) const;
+	bool isConnectionUrl(CurlDomain& domain);
+	bool isConnectionUrlVideo(CurlDomain& domain);
 
 private:
+	bool _tlsTesting(CurlDomain& domain, u32& result);
 	bool _loadFile(std::filesystem::path file);
 	void _genericURLS(std::string base_name = "");
 	void _appendURLS();
