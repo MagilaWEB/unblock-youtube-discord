@@ -1,7 +1,7 @@
 #include "http_load_content.h"
 #include "curl/curl.h"
 
-HttpsLoad::HttpsLoad(std::string url)
+HttpsLoad::HttpsLoad(std::string_view url)
 {
 	_curl = curl_easy_init();
 

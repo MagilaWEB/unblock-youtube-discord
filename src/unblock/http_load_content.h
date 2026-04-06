@@ -11,7 +11,7 @@ class HttpsLoad
 
 public:
 	HttpsLoad() = delete;
-	HttpsLoad(std::string);
+	HttpsLoad(std::string_view);
 	~HttpsLoad();
 	u32						 codeResult() const;
 	std::vector<std::string> run();
