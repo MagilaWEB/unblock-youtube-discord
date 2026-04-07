@@ -85,8 +85,6 @@ void StrategiesDPI::_uploadStrategies()
 	_blob_init_to_zapret();
 
 	_normalizeStrategyFinal();
-
-	_file_strategy_dpi->close();
 }
 
 void StrategiesDPI::_saveStrategies(std::string_view str)

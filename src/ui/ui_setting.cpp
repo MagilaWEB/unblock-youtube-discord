@@ -366,7 +366,7 @@ void Ui::_settingUnblockEnableManual()
 	_unblock_manual->addEventClick(
 		[this](JSArgs args)
 		{
-			_ui_base->userSetting()->writeSectionParameter("UNBLOCK", "manual", JSToCPP(args[0]));
+			_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "manual", JSToCPP(args[0]));
 			_settingUnblockEnableManualSelectUpdate();
 			return false;
 		}
@@ -380,7 +380,7 @@ void Ui::_settingUnblockEnableManualUpdate()
 	if (_unblock_enable->getState())
 	{
 		_unblock_manual->show();
-		auto result = _ui_base->userSetting()->parameterSection<bool>("UNBLOCK", "manual");
+		auto result = _ui_base->userSetting()->parameterSection<bool>("REMEMBER_CONFIGURATION", "manual");
 		_unblock_manual->setState(result ? result.value() : false);
 	}
 	else
@@ -425,7 +425,7 @@ void Ui::_settingUnblockEnableManualSelectUpdate()
 
 		if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
 			_unblock_select_config->setSelectedOptionValue(config.value());
-		else
+		else if (_unblock_manual->getState())
 			_ui_base->userSetting()
 				->writeSectionParameter("REMEMBER_CONFIGURATION", "config", JSToCPP(_unblock_select_config->getSelectedOptionValue()));
 
