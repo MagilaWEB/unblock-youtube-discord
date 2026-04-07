@@ -57,12 +57,12 @@ void Engine::initialize()
 
 	_app = App::Create(setting, config);
 
-	const int screenWidth = GetSystemMetrics(SM_CXSCREEN)/1440;
+	const int screenWidth = GetSystemMetrics(SM_CXSCREEN)/1024;
 
 	_window = Window::Create(
 		_app->main_monitor(),
-		800 * screenWidth,
-		800 * screenWidth,
+		500 * screenWidth,
+		500 * screenWidth,
 		false,
 		kWindowFlags_Titled | kWindowFlags_Borderless | kWindowFlags_Maximizable
 	);
