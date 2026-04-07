@@ -364,8 +364,10 @@ void File::save()
 void File::close()
 {
 	CRITICAL_SECTION_RAII(lock);
+	if (_open_state)
+		save();
+
 	_open_state = false;
-	save();
 	clear();
 }
 
