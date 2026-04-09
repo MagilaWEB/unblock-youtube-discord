@@ -82,7 +82,7 @@ void Core::parallel_run()
 				}
 
 				_task_lock.EnterShared();
-				if (_task_buffer.empty())
+				if (_task_buffer.empty() && _task_buffer_parallel.empty())
 				{
 					_task_lock.LeaveShared();
 					FAST_LOCK(_task_complete_lock);
