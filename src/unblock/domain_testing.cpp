@@ -17,12 +17,13 @@ static size_t progress_callback(void* clientp, curl_off_t /*dltotal*/, curl_off_
 	return CURLE_OK;
 }
 
-static size_t write_data(void* /*buffer*/, size_t size, size_t nmemb, void* /*userdata*/)
+static size_t write_data(void*, size_t size, size_t nmemb, void*)
 {
-	return size * nmemb;
+	size_t total = size * nmemb;
+	return total;
 }
 
-DomainTesting::DomainTesting(bool enable_proxy) : _proxy(enable_proxy)
+DomainTesting::DomainTesting()
 {
 	CURL* curl = curl_easy_init();
 
@@ -37,7 +38,8 @@ DomainTesting::DomainTesting(bool enable_proxy) : _proxy(enable_proxy)
 		if (res == CURLE_OK)
 			curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &total_time);
 
-		_max_wait_testing.store(static_cast<u32>(total_time * 3) + 4);
+		const u32 time_sec = static_cast<u32>(total_time * 10) + 5;
+		_max_wait_testing.store(time_sec > 10 ? 10 : time_sec);
 
 		curl_easy_cleanup(curl);
 	}
@@ -52,7 +54,7 @@ void DomainTesting::loadDomain(bool video)
 {
 	_clearURLS();
 
-	if (video || _proxy)
+	if (video)
 	{
 		if (!_loadFile(video ? "domain_video" : "all"))
 			return;
@@ -133,7 +135,7 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(std
 		std::execution::par,
 		_list_domain.begin(),
 		_list_domain.end(),
-		[this, test_video, callback](CurlDomain& domain)
+		[this, callback](CurlDomain& domain)
 		{
 			if (errorRate() >= MAX_ERROR_CONECTION)
 			{
@@ -162,7 +164,7 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(std
 				return text;
 			};
 
-			if (test_video ? isConnectionUrlVideo(domain) : isConnectionUrl(domain))
+			if (isConnectionUrl(domain))
 			{
 				state = true;
 				_domain_ok++;
@@ -177,12 +179,6 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(std
 
 	_is_testing = false;
 	Debug::info("Finish test domain.");
-}
-
-void DomainTesting::changeMaxConnectionAttempts(u32 count)
-{
-	ASSERT_ARGS(count > 0, "The connection timeout cannot be equal to 0! This will provoke endless waiting.");
-	_max_connection_attempts = count;
 }
 
 void DomainTesting::changeOptionalServices(std::list<std::string> list_services)
@@ -211,192 +207,97 @@ void DomainTesting::printTestInfo() const
 	InputConsole::textInfo(Localization::Str{ "str_result_url_testing" }(), _domain_ok.load(), _list_domain.size(), successRate());
 }
 
-bool DomainTesting::isConnectionUrlVideo(CurlDomain& domain)
-{
-	if (domain.curl)
-	{
-		u32 count_connection{ 0U };
-
-		curl_easy_setopt(domain.curl, CURLOPT_URL, domain.url.c_str());
-		curl_easy_setopt(domain.curl, CURLOPT_HTTPGET, 0L);
-		curl_easy_setopt(domain.curl, CURLOPT_FOLLOWLOCATION, 1L);
-
-		if (_proxy)
-		{
-			curl_easy_setopt(domain.curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
-			curl_easy_setopt(domain.curl, CURLOPT_PROXY, _proxyIP.c_str());
-			curl_easy_setopt(domain.curl, CURLOPT_PORT, std::to_string(_proxyPORT).c_str());
-		}
-		else
-			curl_easy_setopt(domain.curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTPS2);
-
-		curl_easy_setopt(domain.curl, CURLOPT_NOPROGRESS, 0L);
-		curl_easy_setopt(domain.curl, CURLOPT_XFERINFODATA, this);
-		curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
-
-		curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _max_wait_testing.load());
-
-		while (count_connection++ < _max_connection_attempts.load())
-		{
-			u32 http_code{ 0U };
-
-			_tlsTesting(domain, http_code);
-
-			if (http_code != 0)
-				return http_code == 403;
-
-			if (count_connection < _max_connection_attempts.load())
-				curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _max_wait_testing.load() / 2);
-		}
-	}
-
-	return false;
-}
-
 bool DomainTesting::isConnectionUrl(CurlDomain& domain)
 {
 	if (domain.curl)
 	{
 		curl_easy_setopt(domain.curl, CURLOPT_URL, domain.url.c_str());
-		curl_easy_setopt(domain.curl, CURLOPT_HTTPGET, 0L);
 		curl_easy_setopt(domain.curl, CURLOPT_FOLLOWLOCATION, 1L);
-
-		if (_proxy)
-		{
-			curl_easy_setopt(domain.curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5);
-			curl_easy_setopt(domain.curl, CURLOPT_PROXY, _proxyIP.c_str());
-			curl_easy_setopt(domain.curl, CURLOPT_PORT, std::to_string(_proxyPORT).c_str());
-		}
-		else
-			curl_easy_setopt(domain.curl, CURLOPT_PROXYTYPE, CURLPROXY_HTTPS2);
+		curl_easy_setopt(domain.curl, CURLOPT_NOSIGNAL, 1L);
+		curl_easy_setopt(domain.curl, CURLOPT_NOBODY, 0L);
 
 		curl_easy_setopt(domain.curl, CURLOPT_NOPROGRESS, 0L);
 		curl_easy_setopt(domain.curl, CURLOPT_XFERINFODATA, this);
 		curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
 
 		curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _max_wait_testing.load());
+		curl_easy_setopt(domain.curl, CURLOPT_BUFFERSIZE, 32'768L);
 
-		u32 count_connection{ 0 };
-		while (count_connection++ < _max_connection_attempts.load())
+		long timeout = _max_wait_testing.load();
+		curl_easy_setopt(domain.curl, CURLOPT_CONNECTTIMEOUT, timeout);
+		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, timeout);
+		curl_easy_setopt(domain.curl, CURLOPT_LOW_SPEED_LIMIT, 1'024L);
+		curl_easy_setopt(domain.curl, CURLOPT_LOW_SPEED_TIME, 10L);
+		curl_easy_setopt(domain.curl, CURLOPT_FRESH_CONNECT, 1L);
+
+		constexpr static std::pair<int, int> ssl_version[]{
+			{ CURL_SSLVERSION_TLSv1_0, CURL_SSLVERSION_MAX_TLSv1_0 },
+			{ CURL_SSLVERSION_TLSv1_1, CURL_SSLVERSION_MAX_TLSv1_1 },
+			{ CURL_SSLVERSION_TLSv1_2, CURL_SSLVERSION_MAX_TLSv1_2 },
+			{ CURL_SSLVERSION_TLSv1_3, CURL_SSLVERSION_MAX_TLSv1_3 }
+		};
+		constexpr static u32 size_ssl_version{ sizeof(ssl_version) / sizeof(std::pair<int, int>) };
+
+		domain.result_time_sec = 0;
+
+		u32 iter{ 0 };
+		u32 reset{ 0 };
+		u32 reset_time{ 0 };
+		while (iter < size_ssl_version)
 		{
-			u32 http_code{ 0U };
+			auto& [version, version_max] = ssl_version[iter];
+			curl_easy_setopt(domain.curl, CURLOPT_SSLVERSION, version | version_max);
 
-			_tlsTesting(domain, http_code);
+			auto res = curl_easy_perform(domain.curl);
+			if (res == CURLE_OPERATION_TIMEDOUT || res == CURLE_SSL_CONNECT_ERROR)
+			{
+				if (res == CURLE_SSL_CONNECT_ERROR && ++reset_time > 1)
+				{
+					reset_time = 0;
+					iter++;
+				}
+				else if (res == CURLE_SSL_CONNECT_ERROR && ++reset > 1'000)
+				{
+					reset = 0;
+					iter++;
+				}
+#ifdef DEBUG
+				Debug::info("Reset connect url[{}] zapret2", domain.url);
+#endif
+				continue;
+			}
 
-			switch (http_code)
+			curl_tlssessioninfo* tls_info = nullptr;
+			CURLcode			 info_res = curl_easy_getinfo(domain.curl, CURLINFO_TLS_SSL_PTR, &tls_info);
+
+			const bool tls_ok = res == CURLE_OK && info_res == CURLE_OK && tls_info && tls_info->backend != CURLSSLBACKEND_NONE;
+
+			domain.setTls(version - CURL_SSLVERSION_TLSv1_0, tls_ok);
+
+			double time{ 0 };
+			curl_easy_getinfo(domain.curl, CURLINFO_TOTAL_TIME, &time);
+
+			if (tls_ok)
 			{
-			case 200U:
-			{
+				if (domain.result_time_sec == 0.0)
+					domain.result_time_sec = time;
+				else
+					domain.result_time_sec = domain.result_time_sec > time ? time : domain.result_time_sec;
+			}
+
+			iter++;
+			reset	   = 0;
+			reset_time = 0;
+
+			if (domain.tls_1_0 && domain.tls_1_1 && domain.tls_1_2 && domain.tls_1_3)
 				return true;
-			}
-			case 201U:
-			{
-				return true;
-			}
-			case 202U:
-			{
-				return true;
-			}
-			case 203U:
-			{
-				return true;
-			}
-			case 204U:
-			{
-				return true;
-			}
-			case 301U:
-			{
-				return true;
-			}
-			case 302U:
-			{
-				return true;
-			}
-			case 303U:
-			{
-				return true;
-			}
-			case 304U:
-			{
-				return true;
-			}
-			case 400U:
-			{
-				return true;
-			}
-			case 401U:
-			{
-				return true;
-			}
-			case 403U:
-			{
-				return true;
-			}
-			case 404U:
-			{
-				return true;
-			}
-			case 405U:
-			{
-				return true;
-			}
-			case 520U:
-			{
-				return true;
-			}
-			case 530U:
-			{
-				return true;
-			}
-			default:
-				break;
-			}
 		}
 
-		if (count_connection < _max_connection_attempts.load())
-			curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, _max_wait_testing.load() / 2);
+		if (domain.tls_1_0 || domain.tls_1_1 || domain.tls_1_2 || domain.tls_1_3)
+			return true;
 	}
 
 	return false;
-}
-
-bool DomainTesting::_tlsTesting(CurlDomain& domain, u32& http_code)
-{
-	constexpr static std::pair<int, int> ssl_version[]{
-		{ CURL_SSLVERSION_TLSv1_0, CURL_SSLVERSION_MAX_TLSv1_0 },
-		{ CURL_SSLVERSION_TLSv1_1, CURL_SSLVERSION_MAX_TLSv1_1 },
-		{ CURL_SSLVERSION_TLSv1_2, CURL_SSLVERSION_MAX_TLSv1_2 },
-		{ CURL_SSLVERSION_TLSv1_3, CURL_SSLVERSION_MAX_TLSv1_3 }
-	};
-
-	domain.result_time_sec = 0;
-
-	double time{ 0 };
-	for (auto& [version, version_max] : ssl_version)
-	{
-		curl_easy_setopt(domain.curl, CURLOPT_SSLVERSION, version | version_max);
-
-		auto				 res	  = curl_easy_perform(domain.curl);
-		curl_tlssessioninfo* tls_info = nullptr;
-		CURLcode			 info_res = curl_easy_getinfo(domain.curl, CURLINFO_TLS_SSL_PTR, &tls_info);
-		domain.setTls(
-			version - CURL_SSLVERSION_TLSv1_0,
-			res == CURLE_OK && info_res == CURLE_OK && tls_info && tls_info->backend != CURLSSLBACKEND_NONE
-		);
-
-		curl_easy_getinfo(domain.curl, CURLINFO_TOTAL_TIME, &time);
-		domain.result_time_sec += time;
-	}
-
-	if (!domain.tls_1_0 && !domain.tls_1_1 && !domain.tls_1_2 && !domain.tls_1_3)
-		return false;
-
-	curl_easy_getinfo(domain.curl, CURLINFO_RESPONSE_CODE, &http_code);
-
-	return true;
 }
 
 bool DomainTesting::_loadFile(std::filesystem::path file)
