@@ -151,14 +151,6 @@ void Unblock::testingDomainCancel(bool video)
 	_domain_testing.cancelTesting();
 }
 
-void Unblock::changeMaxConnectionAttempts(u32 count)
-{
-	_domain_testing.changeMaxConnectionAttempts(count);
-	_domain_testing_video.changeMaxConnectionAttempts(count);
-	_domain_testing_proxy.changeMaxConnectionAttempts(count);
-	_domain_testing_proxy_video.changeMaxConnectionAttempts(count);
-}
-
 std::optional<std::string> Unblock::checkUpdate()
 {
 	HttpsLoad version{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest" };

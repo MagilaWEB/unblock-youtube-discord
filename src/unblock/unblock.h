@@ -12,8 +12,6 @@ class UNBLOCK_API Unblock final
 
 	DomainTesting	   _domain_testing;
 	DomainTesting	   _domain_testing_video;
-	DomainTesting	   _domain_testing_proxy{ true };
-	DomainTesting	   _domain_testing_proxy_video{ true };
 	StrategiesDPI	   _strategies_dpi;
 	DNSHost			   _dns_hosts;
 
@@ -65,8 +63,6 @@ public:
 		std::function<void(std::string_view, bool)>&& callback = [](std::string_view, bool) {}, bool video = false, bool base_test = true
 	);
 	void testingDomainCancel(bool video = false);
-
-	void changeMaxConnectionAttempts(u32 count);
 
 	std::optional<std::string> checkUpdate();
 	bool					   appUpdate();
