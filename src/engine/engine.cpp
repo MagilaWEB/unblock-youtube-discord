@@ -61,8 +61,8 @@ void Engine::initialize()
 
 	_window = Window::Create(
 		_app->main_monitor(),
-		500 * screenWidth,
-		500 * screenWidth,
+		520 * screenWidth,
+		510 * screenWidth,
 		false,
 		kWindowFlags_Titled | kWindowFlags_Borderless | kWindowFlags_Maximizable
 	);
