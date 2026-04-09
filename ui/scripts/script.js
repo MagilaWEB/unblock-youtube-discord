@@ -20,7 +20,7 @@ if (!RUN_CPP) {
 
 	createSecondaryWindow("start_test_window", "Какое-то окно", "Описание окна");
 
-	setDescriptionSecondaryWindow("start_test_window", "sdasdasdadasdasdasdad");
+	setDescriptionSecondaryWindow("start_test_window", "Использование готовых инструментов без знаний с целью нарушить баланс этого мира не хакерство, а мошенничество.");
 
 	setTypeSecondaryWindow("start_test_window", 2);
 
@@ -37,7 +37,7 @@ if (!RUN_CPP) {
 	createButton(".buttons_start", "start_service", "Запустить службы");
 	createButton(".buttons_stop", "stop_service", "Остановить службы");
 
-	createListUl(".info_unblock", "success_domain", "Доступные домены:");
+	createListUl("#start_test_window .description", "success_domain", "Доступные домены:");
 	const ul = getListUl("success_domain");
 	ul.addClass("resource_availability");
 	createListUlLiAddSuccess("success_domain", "YouTube текст", true);

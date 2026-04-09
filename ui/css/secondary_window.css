@@ -31,10 +31,10 @@
 }
 
 .secondary_window .content .title {
-	margin        : 0 0 1vw 0;
-	text-align    : center;
-	padding       : 1vw 0;
-	font-size     : 4.08vw;
+	margin    : 0 0 1vw 0;
+	text-align: center;
+	padding   : 1vw 0;
+	font-size : 4.08vw;
 }
 
 .secondary_window .content .description {
@@ -42,13 +42,44 @@
 	padding      : .9vw 1.1vw;
 	border       : 1px solid rgba(255, 255, 255, 0.1);
 	text-align   : left;
-	font-size    : 2vw;
+	font-size    : 2.2vw;
 	white-space  : pre-line;
 	overflow     : auto;
 	max-height   : 14em;
 	line-height  : 3vw;
 	border-radius: 6px;
 }
+
+.secondary_window.show .content .description .list_ul {
+	opacity         : 1;
+	filter          : blur(0);
+	visibility      : visible;
+	background-color: transparent;
+	border-color    : transparent;
+	box-shadow      : none;
+	transform       : none;
+}
+
+.secondary_window .content .description .list_ul ul {
+	font-size: 1.5vw;
+	max-height: 100%;
+	overflow  : hidden;
+}
+
+.secondary_window .content .description .list_ul:hover {
+	background-color: none;
+	border-color    : none;
+	box-shadow      : none;
+	transform       : none;
+}
+
+.secondary_window .content .description .list_ul:active {
+	background-color: none;
+	border-color    : none;
+	box-shadow      : none;
+	transform       : none;
+}
+
 
 .secondary_window .content .elements {
 	text-align: center;
