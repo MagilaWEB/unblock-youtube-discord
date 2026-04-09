@@ -8,7 +8,6 @@ void Ui::_settingInit()
 	_settingShowConsole();
 	_settingTestDomainsStartup();
 	_settingEnableDnsHosts();
-	_settingMaxConnectionAttempts();
 	_settingUnblockEnable();
 	_settingUnblockListEnableServices();
 
@@ -195,45 +194,6 @@ void Ui::_settingEnableDnsHostsWarningUser()
 			_window_to_warn_enable_dns_hosts->show();
 		}
 	);
-}
-
-constexpr static u32 base_count{ 4 };
-void Ui::_settingMaxConnectionAttempts()
-{
-	_max_connection_attempts_testing->create(
-		"#setting section .common",
-		Input::Types::number,
-		base_count,
-		"str_input_max_connection_attempts_testing_title",
-		"str_input_max_connection_attempts_testing_description"
-	);
-	_max_connection_attempts_testing->addEventSubmit(
-		[this](JSArgs args)
-		{
-			_ui_base->userSetting()->writeSectionParameter("TESTING", "max_connection_attempts_testing", JSToCPP(args[0]));
-			_settingMaxConnectionAttemptsUpdate();
-			return false;
-		}
-	);
-
-	_settingMaxConnectionAttemptsUpdate();
-}
-
-void Ui::_settingMaxConnectionAttemptsUpdate()
-{
-	// get user setting
-	u32	 count	= base_count;
-	auto result = _ui_base->userSetting()->parameterSection<u32>("TESTING", "max_connection_attempts_testing");
-	if (result)
-	{
-		count = result.value();
-		if (count > 0)
-			_max_connection_attempts_testing->setValue(count);
-		else
-			_max_connection_attempts_testing->setValue(base_count);
-	}
-
-	_unblock.changeMaxConnectionAttempts(count);
 }
 
 void Ui::_settingUnblockEnable()

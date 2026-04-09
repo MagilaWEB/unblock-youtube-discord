@@ -56,6 +56,8 @@ void Ui::_testingWindow()
 	_window_wait_testing->create(Localization::Str{ "str_please_wait" }, "str_secondary_window_description_wait_domain");
 	_window_wait_testing->setType(SecondaryWindow::Type::Wait);
 
+	_list_domain_to_modal->create("#_window_wait_testing .description", "str_h2_verified_domains");
+
 	_window_wait_testing->addEventCancel(
 		[this](JSArgs)
 		{
@@ -80,12 +82,23 @@ void Ui::_testingServiceDomains()
 	_list_domain->clear();
 	_list_domain_video->clear();
 
-	_window_wait_testing->show();
-
 	if (_unblock_enable->getState())
 	{
+		_window_wait_testing->show();
+
 		Core::get().addTaskParallel(
-			[this] { _unblock.testingDomain([this](std::string_view url, bool state) { _list_domain->createLiSuccess(url, state); }, false, false); }
+			[this]
+			{
+				_unblock.testingDomain(
+					[this](std::string_view url, bool state)
+					{
+						_list_domain->createLiSuccess(url, state);
+						_list_domain_to_modal->createLiSuccess(url, state);
+					},
+					false,
+					false
+				);
+			}
 		);
 
 		for (auto& [name, check_box] : _unblock_list_enable_services)
@@ -96,7 +109,11 @@ void Ui::_testingServiceDomains()
 					[this]
 					{
 						_unblock.testingDomain(
-							[this](std::string_view url, bool state) { _list_domain_video->createLiSuccess(url, state); },
+							[this](std::string_view url, bool state)
+							{
+								_list_domain_video->createLiSuccess(url, state);
+								_list_domain_to_modal->createLiSuccess(url, state);
+							},
 							true,
 							false
 						);
@@ -106,7 +123,13 @@ void Ui::_testingServiceDomains()
 				break;
 			}
 		}
-	}
 
-	Core::get().taskComplete([this] { _window_wait_testing->hide(); });
+		Core::get().taskComplete(
+			[this]
+			{
+				_window_wait_testing->hide();
+				_list_domain_to_modal->clear();
+			}
+		);
+	}
 }

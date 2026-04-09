@@ -206,10 +206,6 @@ str_checkbox_testing_startup_description=Automatically check site availability a
 str_checkbox_enable_dns_hosts_title=📁 Local DNS (hosts)
 str_checkbox_enable_dns_hosts_description=Uses the hosts file to bypass blocks.
 
-// Setting common input max connection attempts
-str_input_max_connection_attempts_testing_title=🔢 Max connection attempts
-str_input_max_connection_attempts_testing_description=Number of connection attempts during testing. For accurate domain testing under the Zapret2 core, at least 3 attempts are recommended.
-
 // Setting checkbox zapret winws enable
 str_unblock_enable_title=🔓 Enable Zapret (winws)
 str_unblock_enable_description=Primary bypass mode.

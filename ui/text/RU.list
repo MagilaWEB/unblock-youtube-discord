@@ -206,10 +206,6 @@ str_checkbox_testing_startup_description=Автоматическая прове
 str_checkbox_enable_dns_hosts_title=📁 Локальный DNS (hosts)
 str_checkbox_enable_dns_hosts_description=Использует файл hosts для обхода блокировок.
 
-// Setting common input max connection attempts
-str_input_max_connection_attempts_testing_title=🔢 Максимум попыток подключения
-str_input_max_connection_attempts_testing_description=Количество попыток подключения при тестировании. Для корректного тестирования доменов под ядром Zapret2 рекомендуется не менее 3 попыток.
-
 // Setting checkbox zapret winws enable
 str_unblock_enable_title=🔓 Включить Zapret(winws)
 str_unblock_enable_description=Основной режим обхода блокировок.

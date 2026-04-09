@@ -31,7 +31,6 @@ class Ui final : public utils::DefaultInit
 	CHECK_BOX(_testing_domains_startup);
 	CHECK_BOX(_enable_dns_hosts);
 	BUTTON(_start_update_dns_hosts);
-	INPUT(_max_connection_attempts_testing);
 
 	// Remove app
 	BUTTON(_remove_app);
@@ -57,6 +56,7 @@ class Ui final : public utils::DefaultInit
 
 	UL_LIST(_list_domain);
 	UL_LIST(_list_domain_video);
+	UL_LIST(_list_domain_to_modal);
 
 	SECONDARY_WINDOW(_window_update_unblock);
 	SECONDARY_WINDOW(_window_wait_update_unblock);
@@ -125,9 +125,6 @@ private:
 	void _settingEnableDnsHostsUpdate();
 	void _settingEnableDnsHostsWarningUser();
 	void _settingDnsHostsUpdateInfoWindow();
-
-	void _settingMaxConnectionAttempts();
-	void _settingMaxConnectionAttemptsUpdate();
 
 	void _settingUnblockEnable();
 
