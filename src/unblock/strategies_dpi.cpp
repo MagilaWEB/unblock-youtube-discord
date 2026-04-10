@@ -199,6 +199,8 @@ void StrategiesDPI::_normalizeStrategyFinal()
 {
 	for (auto& line : _strategy_dpi)
 	{
+		_luaDesyncNumberStrategy(line);
+
 		static std::regex port_vars(R"(%[^%]+%)");
 		line = std::regex_replace(line, port_vars, "");
 
@@ -260,6 +262,36 @@ void StrategiesDPI::_getAllPorts(std::string& str) const
 				replace_target(setting_service_string.substr(position, found - position));
 				position = found + 2;
 			}
+		}
+	}
+}
+
+void StrategiesDPI::_luaDesyncNumberStrategy(std::string& str)
+{
+	constexpr std::string_view maker_start_strategy{ "--lua-desync=circular" };
+
+	static bool start{ false };
+
+	if ((!start) && str.starts_with(maker_start_strategy))
+	{
+		start = true;
+		return;
+	}
+
+	if (start)
+	{
+		static u32 index{ 0 };
+		if (str.empty() || str.starts_with("\n") || str.contains("--new"))
+		{
+			start = false;
+			index = 0;
+			return;
+		}
+
+		if (str.starts_with("--lua-desync") && !str.contains(":strategy"))
+		{
+			index++;
+			str.append(std::format(":strategy={}", index));
 		}
 	}
 }

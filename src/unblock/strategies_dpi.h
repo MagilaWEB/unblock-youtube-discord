@@ -40,4 +40,5 @@ private:
 	void					   _normalizeStrategyFinal();
 	bool					   _ignoringLineStrategy(std::string_view str) const;
 	void					   _getAllPorts(std::string& str) const;
+	void					   _luaDesyncNumberStrategy(std::string& str);
 };
