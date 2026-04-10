@@ -50,6 +50,9 @@
 .select_list .label {
     color : #d8d8d8;
     cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .select_list .label:focus {
@@ -160,6 +163,9 @@
     left      : 4vw;
     width     : max-content;
     font-size : 1.5vw;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .select_list .title {
