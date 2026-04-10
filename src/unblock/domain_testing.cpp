@@ -264,7 +264,7 @@ bool DomainTesting::isConnectionUrl(CurlDomain& domain)
 			{
 				if (res == CURLE_OPERATION_TIMEDOUT && ++reset_time > 1)
 					skip();
-				else if (res == CURLE_SSL_CONNECT_ERROR && ++reset > 50)
+				else if (res == CURLE_SSL_CONNECT_ERROR && ++reset > 100)
 					skip();
 #ifdef DEBUG
 				Debug::info("Reset connect url[{}] zapret2", domain.url);
