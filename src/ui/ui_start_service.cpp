@@ -244,25 +244,19 @@ void Ui::_autoStart()
 
 void Ui::_startServiceFromConfig()
 {
-	auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config");
-	if (config)
-	{
-		Core::get().addTask(
-			[this, config]
-			{
-				_window_wait_start_service->show();
+	Core::get().addTask(
+		[this]
+		{
+			_window_wait_start_service->show();
 
-				_tcpGlobalChange(true);
+			_tcpGlobalChange(true);
 
-				_unblock.changeStrategy(config.value());
+			_unblock.changeStrategy(JSToCPP(_unblock_select_config->getSelectedOptionValue()));
 
-				_unblock.startService();
-				_buttonUpdate();
-				_activeServiceUpdate();
-				_window_wait_start_service->hide();
-			}
-		);
-	}
-	else
-		Debug::fatal(config.error());
+			_unblock.startService();
+			_buttonUpdate();
+			_activeServiceUpdate();
+			_window_wait_start_service->hide();
+		}
+	);
 }
