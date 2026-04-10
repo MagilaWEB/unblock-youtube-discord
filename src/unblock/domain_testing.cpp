@@ -105,7 +105,10 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(std
 			[this, &state](CurlDomain& domain)
 			{
 				if (isConnectionUrl(domain))
+				{
 					_domain_ok++;
+					InputConsole::textOk(Localization::Str{ "str_success_url" }(), domain.url);
+				}
 				else
 				{
 					InputConsole::textWarning(Localization::Str{ "str_warning_url" }(), domain.url);
@@ -169,6 +172,7 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(std
 				state = true;
 				_domain_ok++;
 				result();
+				InputConsole::textOk(Localization::Str{ "str_success_url" }(), domain.url);
 				return;
 			}
 
@@ -248,19 +252,20 @@ bool DomainTesting::isConnectionUrl(CurlDomain& domain)
 			auto& [version, version_max] = ssl_version[iter];
 			curl_easy_setopt(domain.curl, CURLOPT_SSLVERSION, version | version_max);
 
+			auto skip = [&reset, &reset_time, &iter]
+			{
+				reset	   = 0;
+				reset_time = 0;
+				iter++;
+			};
+
 			auto res = curl_easy_perform(domain.curl);
 			if (res == CURLE_OPERATION_TIMEDOUT || res == CURLE_SSL_CONNECT_ERROR)
 			{
-				if (res == CURLE_SSL_CONNECT_ERROR && ++reset_time > 1)
-				{
-					reset_time = 0;
-					iter++;
-				}
-				else if (res == CURLE_SSL_CONNECT_ERROR && ++reset > 1'000)
-				{
-					reset = 0;
-					iter++;
-				}
+				if (res == CURLE_OPERATION_TIMEDOUT && ++reset_time > 1)
+					skip();
+				else if (res == CURLE_SSL_CONNECT_ERROR && ++reset > 50)
+					skip();
 #ifdef DEBUG
 				Debug::info("Reset connect url[{}] zapret2", domain.url);
 #endif
@@ -285,9 +290,7 @@ bool DomainTesting::isConnectionUrl(CurlDomain& domain)
 					domain.result_time_sec = domain.result_time_sec > time ? time : domain.result_time_sec;
 			}
 
-			iter++;
-			reset	   = 0;
-			reset_time = 0;
+			skip();
 
 			if (domain.tls_1_0 && domain.tls_1_1 && domain.tls_1_2 && domain.tls_1_3)
 				return true;
@@ -295,6 +298,8 @@ bool DomainTesting::isConnectionUrl(CurlDomain& domain)
 
 		if (domain.tls_1_0 || domain.tls_1_1 || domain.tls_1_2 || domain.tls_1_3)
 			return true;
+
+		curl_easy_getinfo(domain.curl, CURLINFO_TOTAL_TIME, &domain.result_time_sec);
 	}
 
 	return false;
