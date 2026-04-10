@@ -32,9 +32,12 @@ str_success_stop_service=служба [{}] остановлена.
 str_warning_no_start_service=служба [{}] была запущена но неожиданно сменила свой статус.
 
 // Warning/error url
-str_warning_url=проблема доступа: {}
+str_warning_url=⚠ Проблема доступа: {}
 str_result_url_testing=Тестирование завершилось с результатом [{}] из [{}] общий успех [{}%]
 str_base_testing_url_success=Базовое тестирование успешно, запуск полного тестирование...
+
+// Success url
+str_success_url=✅ Успешный доступ: {}
 
 // Common
 str_please_wait=⏳ Подождите...

@@ -36,6 +36,9 @@ str_warning_url=access problem: {}
 str_result_url_testing=Testing completed with result [{}] out of [{}] total success [{}%]
 str_base_testing_url_success=Basic test successful, starting full test...
 
+// Success url
+str_success_url=✅ Successful access: {}
+
 // Common
 str_please_wait=⏳ Please wait...
 str_warning=⚠ Warning
