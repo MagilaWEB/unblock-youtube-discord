@@ -231,8 +231,8 @@ str_unblock_enable_instagram_description=Bypass Instagram blocking.
 str_unblock_enable_facebook_title=📘 Facebook
 str_unblock_enable_facebook_description=Bypass Facebook and related services (Instagram, Messenger).
 
-str_unblock_enable_rutor_title=📥 Rutor.info
-str_unblock_enable_rutor_description=Bypass torrent tracker blocking.
+str_unblock_enable_torrent_tracers_title=📥 Torrent trackers
+str_unblock_enable_torrent_tracers_description=Bypass blocking of torrent trackers (Rutor, RuTracker, etc.).
 
 str_unblock_enable_x.com_title=🐦 X.com
 str_unblock_enable_x.com_description=Bypass X (Twitter) blocking.

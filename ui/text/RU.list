@@ -231,8 +231,8 @@ str_unblock_enable_instagram_description=Обход блокировки Instagr
 str_unblock_enable_facebook_title=📘 Facebook
 str_unblock_enable_facebook_description=Обход блокировки Facebook и связанных сервисов (Instagram, Messenger).
 
-str_unblock_enable_rutor_title=📥 Rutor.info
-str_unblock_enable_rutor_description=Обход блокировки торрент-трекера.
+str_unblock_enable_torrent_tracers_title=📥 Торрент-трекеры
+str_unblock_enable_torrent_tracers_description=Обход блокировки торрент-трекеров (Rutor, RuTracker и др.).
 
 str_unblock_enable_x.com_title=🐦 X.com
 str_unblock_enable_x.com_description=Обход блокировки X (Twitter).
