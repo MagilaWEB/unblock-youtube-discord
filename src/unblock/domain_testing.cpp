@@ -260,12 +260,20 @@ bool DomainTesting::isConnectionUrl(CurlDomain& domain)
 			};
 
 			auto res = curl_easy_perform(domain.curl);
+			
 			if (res == CURLE_OPERATION_TIMEDOUT || res == CURLE_SSL_CONNECT_ERROR)
 			{
 				if (res == CURLE_OPERATION_TIMEDOUT && ++reset_time > 1)
 					skip();
-				else if (res == CURLE_SSL_CONNECT_ERROR && ++reset > 100)
-					skip();
+				else
+				{
+					double time_reset{ 0 };
+					curl_easy_getinfo(domain.curl, CURLINFO_TOTAL_TIME, &time_reset);
+
+					if ((res == CURLE_SSL_CONNECT_ERROR && ++reset > 100) || (time_reset > static_cast<double>(timeout / 2)))
+						skip();
+				}
+				
 #ifdef DEBUG
 				Debug::info("Reset connect url[{}] zapret2", domain.url);
 #endif
