@@ -6,6 +6,7 @@ Unblock::Unblock()
 {
 	_zapret.open();
 	_win_divert.open();
+	_tg_ws_proxy.open();
 }
 
 bool Unblock::testUrl(std::string_view str_url)
@@ -274,6 +275,7 @@ bool Unblock::activeService()
 void Unblock::checkStateServices(const std::function<void(std::string_view, bool)>& callback)
 {
 	callback("Zapret2 (winws2.exe)", _zapret.isRun());
+	callback("TgWsProxy", _tg_ws_proxy.isRun());
 	callback(_win_divert.getName(), _win_divert.isRun());
 }
 
@@ -325,6 +327,47 @@ bool Unblock::dnsHostsCheck() const
 const std::list<std::string>& Unblock::dnsHostsListName()
 {
 	return _dns_hosts.listDnsFileName();
+}
+
+constexpr static std::string_view proxy_secret{ "dd92bc05d4dc4f4bef9cb4b7bf5628c5" };
+
+void Unblock::localProxyTg(bool run)
+{
+	Core::get().addTaskParallel(
+		[this, run]
+		{
+			if (run)
+			{
+				if (_tg_ws_proxy.isRun())
+					_tg_ws_proxy.remove();
+
+				_tg_ws_proxy.setArgs({ (Core::get().binariesPath() / "TgWsProxy.exe").string(), std::string{ "--secret " } + proxy_secret.data(), "--port 9101" });
+				_tg_ws_proxy.create();
+				_tg_ws_proxy.start();
+				return;
+			}
+
+			_tg_ws_proxy.remove();
+		}
+	);
+}
+
+bool Unblock::localProxyTgIsRun()
+{
+	return _tg_ws_proxy.isRun();
+}
+
+void Unblock::localProxyTgLinkRun()
+{
+	Core::get().addTaskParallel(
+		[]
+		{
+			std::string tg{ "start \"\" \"tg://proxy?server=127.0.0.1&port=9101&secret=" };
+			tg.append(proxy_secret);
+			tg.append("\"");
+			system(tg.c_str());
+		}
+	);
 }
 
 void Unblock::removeService()

@@ -8,6 +8,7 @@
 class UNBLOCK_API Unblock final
 {
 	Service _zapret{ "zapret2", "winws2.exe" };
+	Service _tg_ws_proxy{ "TgWsProxy", "SvcHost.exe" };
 	Service _win_divert{ "WinDivert" };
 
 	DomainTesting	   _domain_testing;
@@ -58,6 +59,10 @@ public:
 	float						  dnsHostsUpdateProgress() const;
 	bool						  dnsHostsCheck() const;
 	const std::list<std::string>& dnsHostsListName();
+
+	void localProxyTg(bool run = true);
+	bool localProxyTgIsRun();
+	void localProxyTgLinkRun();
 
 	void testingDomain(
 		std::function<void(std::string_view, bool)>&& callback = [](std::string_view, bool) {}, bool video = false, bool base_test = true
