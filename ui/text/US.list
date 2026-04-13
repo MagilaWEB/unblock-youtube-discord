@@ -213,6 +213,7 @@ str_checkbox_enable_dns_hosts_description=Uses the hosts file to bypass blocks.
 str_checkbox_enable_proxy_tg_title=📱 Proxy for Telegram
 str_checkbox_enable_proxy_tg_description=🔒 Local proxy for Telegram
 Creates a proxy server on your device. It does not connect to external servers and works locally to bypass blocks.
+str_button_proxy_link_tg_title=🔗 Connect proxy to Telegram
 
 // Setting checkbox zapret winws enable
 str_unblock_enable_title=🔓 Enable Zapret2 (winws2)

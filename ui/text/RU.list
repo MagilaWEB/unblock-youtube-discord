@@ -213,6 +213,7 @@ str_checkbox_enable_dns_hosts_description=Использует файл hosts д
 str_checkbox_enable_proxy_tg_title=📱 Прокси для Telegram
 str_checkbox_enable_proxy_tg_description=🔒 Локальный прокси для Telegram
 Создаёт прокси-сервер на вашем устройстве. Он не подключается к сторонним серверам и работает только локально для обхода блокировок.
+str_button_proxy_link_tg_title=🔗 Подключить прокси к Telegram
 
 // Setting checkbox zapret winws2 enable
 str_unblock_enable_title=🔓 Включить Zapret2 (winws2)
