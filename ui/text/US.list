@@ -203,11 +203,18 @@ str_checkbox_show_console_description=Opens a console window with Unblock logs.
 
 // Setting common testing on startup
 str_checkbox_testing_startup_title=🧪 Test at startup
-str_checkbox_testing_startup_description=Automatically check site availability at application start.
+str_checkbox_testing_startup_description=🧪 Automatically test site availability when the application starts.
+When enabled, Unblock will immediately check whether bypasses for major services (YouTube, Discord, Instagram, etc.) are working.
+Test results will be shown on the main screen as a list of accessible domains.
+This helps quickly verify that the selected configuration is working and, if needed, rerun automatic configuration selection.
 
 // Setting common enable dns hosts
 str_checkbox_enable_dns_hosts_title=📁 Local DNS (hosts)
-str_checkbox_enable_dns_hosts_description=Uses the hosts file to bypass blocks.
+str_checkbox_enable_dns_hosts_description=📁 Use system hosts file to bypass DNS blocks.
+When enabled, Unblock adds domain-to-IP mappings to the hosts file (C:\Windows\System32\drivers\etc\hosts), bypassing your ISP's DNS servers.
+This allows blocking circumvention at the DNS level without additional software.
+The hosts file is checked first on any network request, so the redirection happens before any external DNS lookup.
+Safe: when disabled, Unblock restores the original hosts file content.
 
 // Setting common enable local proxy telegram
 str_checkbox_enable_proxy_tg_title=📱 Proxy for Telegram
@@ -270,9 +277,6 @@ str_manual_description=Enables manual selection → disables auto‑selection.
 str_select_config_title=📂 Select configuration
 str_select_config_description=Choose a strategy file for bypassing blocks.
 Settings will be saved for future launches.
-str_unblock_select_fake_bin_title=🎭 ClientHello spoofing
-str_unblock_select_fake_bin_description=Select the type of ClientHello spoofing.
-This helps bypass DPI by mimicking traffic of popular sites or services.
 
 // Setting strategy version
 str_select_version_strategy_title=📚 Strategy list version
