@@ -347,31 +347,6 @@ footer .button.show button:active {
     padding: 0 4.5%;
 }
 
-
-.common .button button {
-    width           : 90%;
-    color           : #f0f0f0;
-    padding         : 0;
-    background-color: rgba(48, 52, 68, 0.78);
-    border          : 1px solid rgba(255, 255, 255, 0.10);
-    border-radius   : 9px;
-    font-weight     : 500;
-    transition      : all 0.26s cubic-bezier(0.23, 1, 0.32, 1);
-    box-shadow      : 0 2px 12px rgba(0, 0, 0, 0.28);
-}
-
-.common .button button:hover {
-    background-color: rgba(70, 75, 92, 0.88);
-    transform       : translateY(-1px);
-    box-shadow      : 0 6px 18px rgba(0, 0, 0, 0.4);
-}
-
-.common .button button:active {
-    background-color: rgba(35, 38, 52, 0.92);
-    transform       : scale(0.98);
-    box-shadow      : 0 1px 6px rgba(0, 0, 0, 0.35);
-}
-
 ::selection {
     background-color: rgba(115, 135, 155, 0.7);
     color           : #ffffff;
