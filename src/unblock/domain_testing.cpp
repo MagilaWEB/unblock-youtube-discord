@@ -50,28 +50,9 @@ DomainTesting::~DomainTesting()
 	_clearURLS();
 }
 
-void DomainTesting::loadDomain(bool video)
+void DomainTesting::loadDomain()
 {
 	_clearURLS();
-
-	if (video)
-	{
-		if (!_loadFile(video ? "domain_video" : "all"))
-			return;
-
-		for (auto& str : _file_test_domain)
-		{
-			if (str.empty())
-				continue;
-
-			_list_domain.emplace_back(CurlDomain{ curl_easy_init(), str });
-		}
-
-		_file_test_domain.close();
-
-		return;
-	}
-
 	_genericURLS();
 }
 
@@ -81,7 +62,7 @@ void DomainTesting::changeProxy(std::string_view ip, u32 port)
 	_proxyPORT = port;
 }
 
-void DomainTesting::test(bool test_video, bool base_test, std::function<void(std::string url, bool state)>&& callback)
+void DomainTesting::test(bool base_test, std::function<void(std::string url, bool state)>&& callback)
 {
 	Debug::info("Start test domain.");
 
@@ -89,7 +70,7 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(std
 	_cancel_testing = false;
 	_domain_error = _domain_ok = 0;
 
-	if (base_test && !test_video)
+	if (base_test)
 	{
 		// BASE TESTING!!!
 
@@ -132,7 +113,7 @@ void DomainTesting::test(bool test_video, bool base_test, std::function<void(std
 		InputConsole::textOk(Localization::Str{ "str_base_testing_url_success" }());
 	}
 
-	loadDomain(test_video);
+	loadDomain();
 
 	std::for_each(
 		std::execution::par,
@@ -265,14 +246,8 @@ bool DomainTesting::isConnectionUrl(CurlDomain& domain)
 			{
 				if (res == CURLE_OPERATION_TIMEDOUT && ++reset_time > 1)
 					skip();
-				else
-				{
-					double time_reset{ 0 };
-					curl_easy_getinfo(domain.curl, CURLINFO_TOTAL_TIME, &time_reset);
-
-					if ((res == CURLE_SSL_CONNECT_ERROR && ++reset > 100) || (time_reset > static_cast<double>(timeout / 2)))
-						skip();
-				}
+				else if (res == CURLE_SSL_CONNECT_ERROR && ++reset > 100)
+					skip();
 				
 #ifdef DEBUG
 				Debug::info("Reset connect url[{}] zapret2", domain.url);

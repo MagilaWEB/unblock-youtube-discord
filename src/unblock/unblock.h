@@ -12,7 +12,6 @@ class UNBLOCK_API Unblock final
 	Service _win_divert{ "WinDivert" };
 
 	DomainTesting	   _domain_testing;
-	DomainTesting	   _domain_testing_video;
 	StrategiesDPI	   _strategies_dpi;
 	DNSHost			   _dns_hosts;
 
@@ -38,7 +37,7 @@ public:
 	void removeOptionalStrategies(std::string_view name);
 	void clearOptionalStrategies();
 
-	bool runTest(bool video = false);
+	[[nodiscard]] bool runTest();
 
 	std::string getNameStrategies();
 
@@ -65,9 +64,9 @@ public:
 	void localProxyTgLinkRun();
 
 	void testingDomain(
-		std::function<void(std::string_view, bool)>&& callback = [](std::string_view, bool) {}, bool video = false, bool base_test = true
+		std::function<void(std::string_view, bool)>&& callback = [](std::string_view, bool) {}, bool base_test = true
 	);
-	void testingDomainCancel(bool video = false);
+	void testingDomainCancel();
 
 	std::optional<std::string> checkUpdate();
 	bool					   appUpdate();

@@ -120,35 +120,19 @@ std::list<Service>& Unblock::getConflictingServices()
 	return conflicting_service;
 }
 
-bool Unblock::runTest(bool video)
+bool Unblock::runTest()
 {
-	if (video)
-		return _domain_testing_video.isTesting();
-
 	return _domain_testing.isTesting();
 }
 
-void Unblock::testingDomain(std::function<void(std::string_view url, bool state)>&& callback, bool video, bool base_test)
+void Unblock::testingDomain(std::function<void(std::string_view url, bool state)>&& callback, bool base_test)
 {
-	if (video)
-	{
-		_domain_testing_video.test(video, base_test, [callback](std::string_view url, bool state) { callback(url, state); });
-		_domain_testing_video.printTestInfo();
-		return;
-	}
-
-	_domain_testing.test(video, base_test, [callback](std::string_view url, bool state) { callback(url, state); });
+	_domain_testing.test(base_test, [callback](std::string_view url, bool state) { callback(url, state); });
 	_domain_testing.printTestInfo();
 }
 
-void Unblock::testingDomainCancel(bool video)
+void Unblock::testingDomainCancel()
 {
-	if (video)
-	{
-		_domain_testing_video.cancelTesting();
-		return;
-	}
-
 	_domain_testing.cancelTesting();
 }
 

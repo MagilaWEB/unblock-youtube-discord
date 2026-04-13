@@ -58,7 +58,6 @@ class Ui final : public utils::DefaultInit
 	UL_LIST(_active_service);
 
 	UL_LIST(_list_domain);
-	UL_LIST(_list_domain_video);
 	UL_LIST(_list_domain_to_modal);
 
 	SECONDARY_WINDOW(_window_update_unblock);

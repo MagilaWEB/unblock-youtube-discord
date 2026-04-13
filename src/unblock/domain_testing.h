@@ -51,9 +51,9 @@ public:
 	DomainTesting();
 	~DomainTesting();
 
-	void loadDomain(bool video = false);
+	void loadDomain();
 
-	void test(bool test_video, bool base_test, std::function<void(std::string url, bool state)>&& callback);
+	void test(bool base_test, std::function<void(std::string url, bool state)>&& callback);
 
 	void changeProxy(std::string_view ip, u32 port);
 	void changeOptionalServices(std::list<std::string> list_services);

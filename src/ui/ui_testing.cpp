@@ -9,13 +9,12 @@ void Ui::_testingInit()
 	_activeServiceUpdate();
 
 	_list_domain->create("#home section .info_unblock", "str_h2_verified_domains");
-	_list_domain_video->create("#home section .info_unblock", "str_h2_verified_domains_video");
 
 	_start_testing->create(".buttons_start", "str_b_start_testing");
 	_start_testing->addEventClick(
 		[this](JSArgs)
 		{
-			if (_unblock.runTest() || _unblock.runTest(true))
+			if (_unblock.runTest())
 				return false;
 
 			_testingServiceDomains();
@@ -34,15 +33,9 @@ void Ui::_testingUpdate()
 {
 	// list domains
 	if (_unblock_enable->getState())
-	{
 		_list_domain->show();
-		_list_domain_video->show();
-	}
 	else
-	{
 		_list_domain->hide();
-		_list_domain_video->hide();
-	}
 
 	// button start testing
 	if (_unblock_enable->getState())
@@ -62,7 +55,6 @@ void Ui::_testingWindow()
 		[this](JSArgs)
 		{
 			_unblock.testingDomainCancel();
-			_unblock.testingDomainCancel(true);
 			return false;
 		}
 	);
@@ -80,7 +72,6 @@ void Ui::_activeServiceUpdate()
 void Ui::_testingServiceDomains()
 {
 	_list_domain->clear();
-	_list_domain_video->clear();
 
 	if (_unblock_enable->getState())
 	{
@@ -95,34 +86,10 @@ void Ui::_testingServiceDomains()
 						_list_domain->createLiSuccess(url, state);
 						_list_domain_to_modal->createLiSuccess(url, state);
 					},
-					false,
 					false
 				);
 			}
 		);
-
-		for (auto& [name, check_box] : _unblock_list_enable_services)
-		{
-			if (name.contains("youtube") && check_box->getState())
-			{
-				Core::get().addTaskParallel(
-					[this]
-					{
-						_unblock.testingDomain(
-							[this](std::string_view url, bool state)
-							{
-								_list_domain_video->createLiSuccess(url, state);
-								_list_domain_to_modal->createLiSuccess(url, state);
-							},
-							true,
-							false
-						);
-					}
-				);
-
-				break;
-			}
-		}
 
 		Core::get().taskComplete(
 			[this]
