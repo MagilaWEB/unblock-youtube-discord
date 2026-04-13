@@ -2,6 +2,7 @@
     display: none;
     height : 3vw;
     width: 100%;
+    margin: inherit;
 }
 
 .button.show {
