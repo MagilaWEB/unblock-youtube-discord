@@ -333,23 +333,20 @@ constexpr static std::string_view proxy_secret{ "dd92bc05d4dc4f4bef9cb4b7bf5628c
 
 void Unblock::localProxyTg(bool run)
 {
-	Core::get().addTaskParallel(
-		[this, run]
-		{
-			if (run)
-			{
-				if (_tg_ws_proxy.isRun())
-					_tg_ws_proxy.remove();
-
-				_tg_ws_proxy.setArgs({ (Core::get().binariesPath() / "TgWsProxy.exe").string(), std::string{ "--secret " } + proxy_secret.data(), "--port 9101" });
-				_tg_ws_proxy.create();
-				_tg_ws_proxy.start();
-				return;
-			}
-
+	if (run)
+	{
+		if (_tg_ws_proxy.isRun())
 			_tg_ws_proxy.remove();
-		}
-	);
+
+		_tg_ws_proxy.setArgs(
+			{ (Core::get().binariesPath() / "TgWsProxy.exe").string(), std::string{ "--secret " } + proxy_secret.data(), "--port 9101" }
+		);
+		_tg_ws_proxy.create();
+		_tg_ws_proxy.start();
+		return;
+	}
+
+	_tg_ws_proxy.remove();
 }
 
 bool Unblock::localProxyTgIsRun()

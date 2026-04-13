@@ -8,13 +8,15 @@ void Ui::_settingInit()
 	_settingShowConsole();
 	_settingTestDomainsStartup();
 	_settingEnableDnsHosts();
+	_settingEnableProxyTg();
+	_settingEnableProxyLinkTg();
+
 	_settingUnblockEnable();
 	_settingUnblockListEnableServices();
 
 	_settingUnblockEnableManual();
 	_settingUnblockEnableManualSelect();
 	_settingUnblockSelectStrategyVersion();
-
 }
 
 void Ui::_settingShowConsole()
@@ -131,6 +133,52 @@ void Ui::_settingDnsHostsUpdateInfoWindow()
 			_window_wait_update_dns->setDescription(utils::format(disc_text, progress));
 		}
 	});
+}
+
+void Ui::_settingEnableProxyTg()
+{
+	_proxy_tg_enable
+		->create("#setting section .common", "str_checkbox_enable_proxy_tg_title", Localization::Str{ "str_checkbox_enable_proxy_tg_description" });
+	_proxy_tg_enable->setState(_unblock.localProxyTgIsRun());
+	_proxy_tg_enable->addEventClick(
+		[this](JSArgs args)
+		{
+			Core::get().addTaskParallel(
+				[this, args]
+				{
+					const bool state = JSToCPP<bool>(args[0]);
+					if (state)
+						_window_wait_start_service->show();
+					else
+						_window_wait_stop_service->show();
+
+					_unblock.localProxyTg(state);
+
+					_activeServiceUpdate();
+
+					if (state)
+						_window_wait_start_service->hide();
+					else
+						_window_wait_stop_service->hide();
+				}
+			);
+
+			return false;
+		}
+	);
+}
+
+void Ui::_settingEnableProxyLinkTg()
+{
+	_proxy_link_tg->create("#setting section .common", "str_button_proxy_link_tg_title");
+
+	_proxy_link_tg->addEventClick(
+		[this](JSArgs)
+		{
+			_unblock.localProxyTgLinkRun();
+			return false;
+		}
+	);
 }
 
 void Ui::_settingEnableDnsHostsUpdate()
@@ -381,7 +429,6 @@ void Ui::_settingUnblockEnableManualSelectUpdate()
 
 		for (u32 i = 0; i < strategies_list.size(); i++)
 			_unblock_select_config->createOption(i, strategies_list[i]);
-
 
 		if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
 			_unblock_select_config->setSelectedOptionValue(config.value());

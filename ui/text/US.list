@@ -195,7 +195,7 @@ str_button_start_dns_hosts_update_title=🔄 Update local DNS
 
 // Setting titles blocks
 str_setting_common_title=⚙ General
-str_setting_unblock_title=🔓 Unblock
+str_setting_unblock_title=🔓 Zapret2
 
 // Setting common show console
 str_checkbox_show_console_title=📟 Show console
@@ -209,9 +209,17 @@ str_checkbox_testing_startup_description=Automatically check site availability a
 str_checkbox_enable_dns_hosts_title=📁 Local DNS (hosts)
 str_checkbox_enable_dns_hosts_description=Uses the hosts file to bypass blocks.
 
+// Setting common enable local proxy telegram
+str_checkbox_enable_proxy_tg_title=📱 Proxy for Telegram
+str_checkbox_enable_proxy_tg_description=🔒 Local proxy for Telegram
+Creates a proxy server on your device. It does not connect to external servers and works locally to bypass blocks.
+
 // Setting checkbox zapret winws enable
-str_unblock_enable_title=🔓 Enable Zapret (winws)
-str_unblock_enable_description=Primary bypass mode.
+str_unblock_enable_title=🔓 Enable Zapret2 (winws2)
+str_unblock_enable_description=Primary bypass mode based on the Zapret2 DPI evader (winws2).
+Analyzes and modifies network packets in real time, altering TLS handshake parameters (ClientHello) and other signatures.
+Bypasses most types of blocking without redirecting traffic to external servers.
+Works locally and requires no additional proxies.
 
 // Setting checkbox unblock enable services
 str_unblock_enable_discord_title=🎤 Discord

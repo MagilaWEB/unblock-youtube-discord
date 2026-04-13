@@ -32,6 +32,9 @@ class Ui final : public utils::DefaultInit
 	CHECK_BOX(_enable_dns_hosts);
 	BUTTON(_start_update_dns_hosts);
 
+	CHECK_BOX(_proxy_tg_enable);
+	BUTTON(_proxy_link_tg);
+
 	// Remove app
 	BUTTON(_remove_app);
 	SECONDARY_WINDOW(_window_remove_app);
@@ -125,6 +128,9 @@ private:
 	void _settingEnableDnsHostsUpdate();
 	void _settingEnableDnsHostsWarningUser();
 	void _settingDnsHostsUpdateInfoWindow();
+
+	void _settingEnableProxyTg();
+	void _settingEnableProxyLinkTg();
 
 	void _settingUnblockEnable();
 

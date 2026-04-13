@@ -195,7 +195,7 @@ str_button_start_dns_hosts_update_title=🔄 Обновить локальный
 
 // Setting titles blocks
 str_setting_common_title=⚙ Общие
-str_setting_unblock_title=🔓 Unblock
+str_setting_unblock_title=🔓 Zapret2
 
 // Setting common show console
 str_checkbox_show_console_title=📟 Показывать консоль
@@ -209,9 +209,17 @@ str_checkbox_testing_startup_description=Автоматическая прове
 str_checkbox_enable_dns_hosts_title=📁 Локальный DNS (hosts)
 str_checkbox_enable_dns_hosts_description=Использует файл hosts для обхода блокировок.
 
-// Setting checkbox zapret winws enable
-str_unblock_enable_title=🔓 Включить Zapret(winws)
-str_unblock_enable_description=Основной режим обхода блокировок.
+// Setting common enable local proxy telegram
+str_checkbox_enable_proxy_tg_title=📱 Прокси для Telegram
+str_checkbox_enable_proxy_tg_description=🔒 Локальный прокси для Telegram
+Создаёт прокси-сервер на вашем устройстве. Он не подключается к сторонним серверам и работает только локально для обхода блокировок.
+
+// Setting checkbox zapret winws2 enable
+str_unblock_enable_title=🔓 Включить Zapret2 (winws2)
+str_unblock_enable_description=Основной режим обхода блокировок на основе DPI-обходчика Zapret2 (winws2).
+Анализирует и модифицирует сетевые пакеты в реальном времени, подменяя параметры TLS-рукопожатия (ClientHello) и другие сигнатуры.
+Позволяет обходить большинство видов блокировок без перенаправления трафика на сторонние серверы.
+Работает локально и не требует дополнительных прокси.
 
 // Setting checkbox unblock enable services
 str_unblock_enable_discord_title=🎤 Discord
