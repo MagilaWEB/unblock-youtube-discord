@@ -119,7 +119,7 @@ void DNSHost::update()
 				if (!value.empty())
 				{
 					const std::string key = para.prefix().str();
-					_map_list[key].emplace_back(value);
+					_map_list[key]		  = value;
 				}
 
 				return;
@@ -160,9 +160,8 @@ void DNSHost::update()
 		}
 	
 
-		for (auto& [domain, ip_list] : _map_list)
-			for (auto& ip : ip_list)
-				_file_hosts_user.writeText(ip + " " + domain);
+		for (auto& [domain, ip] : _map_list)
+			_file_hosts_user.writeText(ip + " " + domain);
 
 		_user_host_complete.store(true);
 		_file_hosts_user.close();
@@ -272,17 +271,14 @@ void DNSHost::_writeDomain(std::string domain)
 	for (auto& [key, ip_list] : map_domain)
 	{
 		for (auto& ip : ip_list)
-			if (std::regex_match(ip, reg_ipv4_pattern))
+		{
+			if (!_map_list[key].empty() && std::regex_match(ip, reg_ipv4_pattern))
 			{
-				auto& list = _map_list[key];
-				if (std::ranges::find(list, ip) == list.end())
-				{
-					CRITICAL_SECTION_RAII(_lock);
-					_map_list[key].emplace_back(ip);
-				}
+				CRITICAL_SECTION_RAII(_lock);
+				_map_list[key] = ip;
 			}
-			else if (_map_list[ip].empty())
-				if (_map_list[ip].empty())
-					_writeDomain(ip);
+			else if (!std::regex_match(ip, reg_ipv4_pattern) && !_map_list[ip].empty())
+				_writeDomain(ip);
+		}
 	}
 }

@@ -20,7 +20,7 @@ class DNSHost final : public utils::DefaultInit
 
 	std::list<std::string>							_list_domains{};
 	std::list<std::string>							_list_dns_hosts_file_name{};
-	std::map<std::string, std::vector<std::string>> _map_list{};
+	std::map<std::string, std::string>				_map_list{};
 
 	CriticalSection	 _lock;
 	std::atomic_bool _user_host_complete{ false };
