@@ -44,10 +44,75 @@ std::string_view Debug::get_prefix(MessageTypes type)
 	return "";
 }
 
+LONG WINAPI seh_unhandled_filter(_EXCEPTION_POINTERS* pExceptionInfo)
+{
+	if (pExceptionInfo->ExceptionRecord->ExceptionCode == 0xE0'6D'73'63)
+		return EXCEPTION_CONTINUE_SEARCH;
+
+	std::string msg = "SEH Exception (Crash) caught!\n";
+
+	switch (pExceptionInfo->ExceptionRecord->ExceptionCode)
+	{
+	case EXCEPTION_ACCESS_VIOLATION:
+		msg += "Cause: Access Violation (Invalid pointer)\n";
+		break;
+	case EXCEPTION_INT_DIVIDE_BY_ZERO:
+		msg += "Cause: Integer Division by Zero\n";
+		break;
+	case EXCEPTION_STACK_OVERFLOW:
+		msg += "Cause: Stack Overflow\n";
+		break;
+	case EXCEPTION_ILLEGAL_INSTRUCTION:
+		msg += "Cause: Illegal Instruction\n";
+		break;
+	default:
+		msg += "Cause: Unknown SEH Exception\n";
+		break;
+	}
+
+	if (pExceptionInfo->ExceptionRecord->ExceptionCode != EXCEPTION_STACK_OVERFLOW)
+	{
+		try
+		{
+			msg += "\n\n";
+			msg += Debug::pretty_stacktrace();
+		}
+		catch (...)
+		{
+			msg += "\n\n(Stack trace collection failed due to corrupted state)";
+		}
+	}
+	else
+	{
+		msg += "\n\n(Stack trace unavailable: stack overflow)";
+	}
+
+	Debug::winApiWindowShow("str_error", msg.c_str());
+	Debug::fatalErrorMessage(msg.c_str());
+	Debug::log.close();
+
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+
+
+static void seh_translator(unsigned int code, EXCEPTION_POINTERS*)
+{
+	char buf[64];
+	snprintf(buf, sizeof(buf), "SEH Exception: 0x%08X", code);
+	throw std::runtime_error(buf);
+}
+
 void Debug::initialize(const std::string& /*command_line*/)
 {
 	s_catch_exceptions = true;
 	s_error_fatal	   = true;
+
+	std::set_terminate(cpp_terminate_handler);
+	SetUnhandledExceptionFilter(seh_unhandled_filter);
+
+#ifdef _WIN32
+	_set_se_translator(seh_translator);
+#endif
 }
 
 void Debug::initLogFile()

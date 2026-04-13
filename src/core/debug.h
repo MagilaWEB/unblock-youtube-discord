@@ -57,6 +57,41 @@ private:
 			throw(exception(str.c_str()));
 	}
 
+	[[noreturn]] static void cpp_terminate_handler()
+	{
+		std::string msg;
+
+		if (auto eptr = std::current_exception())
+		{
+			try
+			{
+				std::rethrow_exception(eptr);
+			}
+			catch (const std::exception& e)
+			{
+				msg	 = "C++ Exception: ";
+				msg += e.what();
+			}
+			catch (...)
+			{
+				msg = "Unknown C++ exception type.";
+			}
+		}
+		else
+		{
+			msg = "std::terminate called without active exception.";
+		}
+
+		msg += "\n\n";
+		msg += Debug::pretty_stacktrace();
+
+		Debug::winApiWindowShow("str_error", msg.c_str());
+		Debug::fatalErrorMessage(msg.c_str());
+
+		Debug::log.close();
+		std::abort();
+	}
+
 public:
 	static void initialize(const std::string& command_line);
 	static void initLogFile();
@@ -83,52 +118,13 @@ public:
 	{
 		if (s_catch_exceptions)
 		{
-			std::set_terminate(
-				[]()
-				{
-					try
-					{
-						std::rethrow_exception(std::current_exception());
-					}
-					catch (const std::exception& E)
-					{
-						std::string exception_msg  = "Exception caught!\n";
-						exception_msg			  += E.what();
-						winApiWindowShow("str_error", exception_msg.c_str());
-						fatalErrorMessage(exception_msg);
-					}
-					catch (...)
-					{
-						std::string stacktrace = pretty_stacktrace();
-						std::string error_desc = "Unhandled exception of unknown type...\n" + stacktrace;
-						winApiWindowShow("str_error", error_desc.c_str());
-						fatalErrorMessage(error_desc.c_str());
-					}
-
-					log.close();
-					std::abort();
-				}
-			);
-
 			try
 			{
 				fn(std::forward<Args>(args)...);
 			}
-			catch (std::exception& E)
-			{
-				std::string exception_msg  = "Exception caught!\n";
-				exception_msg			  += E.what();
-				winApiWindowShow("str_error", exception_msg.c_str());
-				fatalErrorMessage(exception_msg);
-				return -1;
-			}
 			catch (...)
 			{
-				std::string stacktrace = pretty_stacktrace();
-				std::string error_desc = "Exception caught!\nUnknown exception...\n" + stacktrace;
-				winApiWindowShow("str_error", error_desc.c_str());
-				fatalErrorMessage(error_desc.c_str());
-				return -1;
+				cpp_terminate_handler();
 			}
 		}
 		else
