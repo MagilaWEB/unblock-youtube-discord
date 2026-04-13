@@ -1,83 +1,129 @@
 #include "service.h"
 
+using namespace std::chrono_literals;
+
+static std::string win_error_message(DWORD err)
+{
+	return std::system_category().message(static_cast<int>(err));
+}
+
 Service::~Service()
 {
 	close();
 }
 
+// -----------------------------------------------------------------------------
+// Parameter setters
+// -----------------------------------------------------------------------------
 void Service::setName(std::string new_name)
 {
-	CRITICAL_SECTION_RAII(lock);
-
-	_name = new_name;
+	CRITICAL_SECTION_RAII(_lock);
+	_name = std::move(new_name);
 }
 
 void Service::setDescription(std::string_view description)
 {
-	CRITICAL_SECTION_RAII(lock);
-
+	CRITICAL_SECTION_RAII(_lock);
 	_description = description;
 }
 
+void Service::setArgs(std::vector<std::string> args)
+{
+	CRITICAL_SECTION_RAII(_lock);
+	_args = std::move(args);
+}
+
+// -----------------------------------------------------------------------------
+// Information retrieval
+// -----------------------------------------------------------------------------
 std::string Service::getName() const
 {
-	return _name.data();
+	return _name;
 }
 
 const Service::Config& Service::getConfig()
 {
-	CRITICAL_SECTION_RAII(lock);
-
+	CRITICAL_SECTION_RAII(_lock);
 	update();
-
-	return config;
+	return _config;
 }
 
 bool Service::isRun()
 {
-	CRITICAL_SECTION_RAII(lock);
-
+	CRITICAL_SECTION_RAII(_lock);
 	update();
+	return _config.sc_status.dwCurrentState == SERVICE_START_PENDING || _config.sc_status.dwCurrentState == SERVICE_RUNNING;
+}
 
-	return config.sc_status.dwCurrentState == SERVICE_START_PENDING || config.sc_status.dwCurrentState == SERVICE_RUNNING;
+// -----------------------------------------------------------------------------
+// Internal methods
+// -----------------------------------------------------------------------------
+void Service::_initScManager()
+{
+	if (_sc_manager)
+		return;
+
+	SC_HANDLE h = OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS);
+
+	ASSERT_ARGS(h, "Couldn't open SCManager to interact with system services!");
+
+	_sc_manager.reset(h);
+}
+
+void Service::open()
+{
+	CRITICAL_SECTION_RAII(_lock);
+	if (_sc)
+		return;
+
+	_initScManager();
+
+	for (size_t i = 0; i < _max_open_retries; ++i)
+	{
+		SC_HANDLE h = OpenService(_sc_manager.get(), _name.c_str(), SC_MANAGER_ALL_ACCESS);
+		if (h)
+		{
+			_sc.reset(h);
+			update();
+			return;
+		}
+
+		if (i < _max_open_retries - 1)
+			std::this_thread::sleep_for(std::chrono::milliseconds(_open_retry_ms));
+	}
 }
 
 void Service::create()
 {
-	CRITICAL_SECTION_RAII(lock);
+	CRITICAL_SECTION_RAII(_lock);
 
-	ASSERT_ARGS(!sc, "The service [{}] has already been found or created, it cannot be recreated!", _name);
+	ASSERT_ARGS(!_sc, "The service [{}] has already been found or created, it cannot be recreated!", _name);
 
 	_initScManager();
 
-	std::string sc_path{ "\"\"" };
-	sc_path.insert(1, (Core::get().binariesPath() / file_name).string());
+	std::string binPath = (Core::get().binariesPath() / _file_name).string();
+	std::string cmdLine = "\"" + binPath + "\"";
+	for (const auto& arg : _args)
+		cmdLine += ' ' + arg;
 
-	std::string args{ " " };
+	ASSERT_ARGS(cmdLine.size() <= 32'767, "The maximum line size for the service path is 32'767!");
 
-	for (auto& arg : _args)
-		args = args.append(arg + " ");
-
-	sc_path.append(args);
-
-	ASSERT_ARGS(sc_path.length() <= 32'767, "The maximum line size for the service path is 32'767!");
+	auto wname = utils::UTF8_to_UTF16(_name);
+	auto wdesc = utils::UTF8_to_UTF16(_description);
+	auto wcmd  = utils::UTF8_to_UTF16(cmdLine);
 
 	_time_limit.start();
-	do
+	while (true)
 	{
-		std::wstring wname	  = utils::UTF8_to_UTF16(_name);
-		std::wstring wdesc	  = utils::UTF8_to_UTF16(_description);
-		std::wstring wsc_path = utils::UTF8_to_UTF16(sc_path);
-
-		sc = CreateServiceW(
-			_sc_manager,
+		SC_HANDLE h = CreateServiceW(
+			_sc_manager.get(),
 			wname.c_str(),
 			wdesc.c_str(),
 			SC_MANAGER_ALL_ACCESS,
 			SERVICE_WIN32_OWN_PROCESS,
 			SERVICE_AUTO_START,
 			SERVICE_ERROR_NORMAL,
-			wsc_path.c_str(),
+			wcmd.c_str(),
 			nullptr,
 			nullptr,
 			nullptr,
@@ -85,47 +131,52 @@ void Service::create()
 			nullptr
 		);
 
-		u32 err = GetLastError();
+		if (h)
+		{
+			_sc.reset(h);
+			update();
+			return;
+		}
 
-		update();
-
-		if (sc)
-			break;
+		DWORD err = GetLastError();
 
 		open();
 
-		if (sc)
-			break;
-
-		if (_time_limit.getElapsed_sec() > 5.f)
+		if (_sc)
 		{
-			std::string message = std::system_category().message(static_cast<int>(err));
+			return;
+		}
+
+		if (_time_limit.getElapsed_sec() > 5.0f)
+		{
+			std::string message = win_error_message(err);
 			InputConsole::textError(Localization::Str{ "str_error_create_service" }(), _name, message.c_str());
 			return;
 		}
 
-		using namespace std::chrono;
-		std::this_thread::sleep_for(300ms);
-
-	} while (true);
-
-	ASSERT_ARGS(sc, "Service could not be created [{}]!", _name);
-}
-
-void Service::setArgs(std::vector<std::string> args)
-{
-	CRITICAL_SECTION_RAII(lock);
-
-	_args = args;
+		std::this_thread::sleep_for(std::chrono::milliseconds(_create_retry_ms));
+	}
 }
 
 void Service::start()
 {
-	CRITICAL_SECTION_RAII(lock);
+	CRITICAL_SECTION_RAII(_lock);
+
+	if (!_sc)
+	{
+		open();
+
+		if (!_sc)
+		{
+			InputConsole::textError(Localization::Str{ "str_error_stoping_service" }(), _name);
+			return;
+		}
+	}
 
 	update();
 
-	if (config.sc_status.dwCurrentState != SERVICE_STOPPED && config.sc_status.dwCurrentState != SERVICE_STOP_PENDING)
+	DWORD state = _config.sc_status.dwCurrentState;
+	if (state != SERVICE_STOPPED && state != SERVICE_STOP_PENDING)
 	{
 		InputConsole::textError(Localization::Str{ "str_error_stoping_service" }(), _name);
 		return;
@@ -133,59 +184,41 @@ void Service::start()
 
 	InputConsole::textPlease(Localization::Str{ "str_wait_startig_service" }(), true, _name);
 
-	std::vector<pcstr> args;
-	for (auto& arg : _args)
-		args.push_back(arg.c_str());
+	std::vector<pcstr> argv;
+	for (const auto& arg : _args)
+		argv.push_back(arg.c_str());
 
-	bool send_start = false;
 	_time_limit.start();
-	do
+	bool started = false;
+	while (true)
 	{
-		send_start = StartService(sc, static_cast<u32>(args.size()), args.data());
+		started = StartService(_sc.get(), static_cast<DWORD>(argv.size()), argv.data());
+		if (started)
+			break;
 
-		// We try for 5 seconds, otherwise we interrupt.
-		if (_time_limit.getElapsed_sec() > 5.f)
+		if (_time_limit.getElapsed_sec() > 5.0f)
 		{
 			InputConsole::textError(Localization::Str{ "str_error_wait_time_start_service" }(), _name);
 			return;
 		}
-
-		if (!send_start)
-		{
-			// wait
-			using namespace std::chrono;
-			std::this_thread::sleep_for(300ms);
-		}
-	} while (!send_start);
+		std::this_thread::sleep_for(std::chrono::milliseconds(_start_retry_ms));
+	}
 
 	update();
 
-	_waitStatusService(
-		SERVICE_START_PENDING,
-		SERVICE_RUNNING,
-		[this]
-		{
-			InputConsole::textError(Localization::Str{ "str_expired_wait_time_start_service" }(), _name);
-			stop();
-		}
-	);
+	auto on_timeout = [this]
+	{
+		InputConsole::textError(Localization::Str{ "str_expired_wait_time_start_service" }(), _name);
+		stop();
+	};
 
-	_waitStatusService(
-		SERVICE_CONTINUE_PENDING,
-		SERVICE_RUNNING,
-		[this]
-		{
-			InputConsole::textError(Localization::Str{ "str_expired_wait_time_start_service" }(), _name);
-			stop();
-		}
-	);
+	_waitStatusService(SERVICE_START_PENDING, SERVICE_RUNNING, on_timeout);
+	_waitStatusService(SERVICE_CONTINUE_PENDING, SERVICE_RUNNING, on_timeout);
 
-	using namespace std::chrono;
-	std::this_thread::sleep_for(30ms);
-
+	std::this_thread::sleep_for(std::chrono::milliseconds(30));
 	update();
 
-	if (config.sc_status.dwCurrentState == SERVICE_RUNNING)
+	if (_config.sc_status.dwCurrentState == SERVICE_RUNNING)
 		InputConsole::textOk(Localization::Str{ "str_success_start_service" }(), _name);
 	else
 		InputConsole::textWarning(Localization::Str{ "str_warning_no_start_service" }(), _name);
@@ -193,254 +226,174 @@ void Service::start()
 
 void Service::update()
 {
-	if (!sc)
+	if (!_sc)
 		return;
 
-	DWORD dw_bytes_needed{ 0 };
-
-	bool q_service = QueryServiceStatusEx(
-		sc,
-		SC_STATUS_PROCESS_INFO,
-		reinterpret_cast<LPBYTE>(&config.sc_status),
-		sizeof(SERVICE_STATUS_PROCESS),
-		&dw_bytes_needed
-	);
-
-	if (!q_service)
+	DWORD				   needed = 0;
+	SERVICE_STATUS_PROCESS temp{};
+	if (!QueryServiceStatusEx(_sc.get(), SC_STATUS_PROCESS_INFO, reinterpret_cast<LPBYTE>(&temp), sizeof(temp), &needed))
 	{
-		CloseServiceHandle(sc);
-		sc				 = nullptr;
-		config.sc_status = {};
+		_sc.reset();
+		_config.sc_status = {};
 		return;
 	}
+	_config.sc_status = temp;
 
-	dw_bytes_needed = 0;
-
-	LPQUERY_SERVICE_CONFIGA service_config = nullptr;
-	u32						size_buffer{ 0 };
+	needed = 0;
+	std::unique_ptr<QUERY_SERVICE_CONFIGA, decltype(&free)> configBuf{ nullptr, &free };
+	DWORD													bufSize = 0;
 	while (true)
 	{
-		if (QueryServiceConfig(sc, service_config, size_buffer, &dw_bytes_needed))
+		QUERY_SERVICE_CONFIGA* ptr = reinterpret_cast<QUERY_SERVICE_CONFIGA*>(configBuf.get());
+		if (QueryServiceConfigA(_sc.get(), ptr, bufSize, &needed))
 		{
-			if (service_config)
+			if (ptr)
 			{
-				config.type				= static_cast<u32>(service_config->dwServiceType);
-				config.start_type		= static_cast<u32>(service_config->dwStartType);
-				config.tag_id			= static_cast<u32>(service_config->dwTagId);
-				config.start_name		= service_config->lpServiceStartName;
-				config.display_name		= service_config->lpDisplayName;
-				config.load_order_group = service_config->lpLoadOrderGroup;
-				config.binary_path		= service_config->lpBinaryPathName;
-
-				free(service_config);
+				_config.type			 = static_cast<u32>(ptr->dwServiceType);
+				_config.start_type		 = static_cast<u32>(ptr->dwStartType);
+				_config.tag_id			 = static_cast<u32>(ptr->dwTagId);
+				_config.start_name		 = ptr->lpServiceStartName ? ptr->lpServiceStartName : "";
+				_config.display_name	 = ptr->lpDisplayName ? ptr->lpDisplayName : "";
+				_config.load_order_group = ptr->lpLoadOrderGroup ? ptr->lpLoadOrderGroup : "";
+				_config.binary_path		 = ptr->lpBinaryPathName ? ptr->lpBinaryPathName : "";
 			}
-
 			break;
 		}
 
-		u32 err = GetLastError();
-		if (service_config && ERROR_MORE_DATA != err)
-		{
-			free(service_config);
+		DWORD err = GetLastError();
+		if (err != ERROR_INSUFFICIENT_BUFFER && err != ERROR_MORE_DATA)
 			break;
-		}
 
-		size_buffer += dw_bytes_needed;
-		free(service_config);
-		service_config = reinterpret_cast<LPQUERY_SERVICE_CONFIGA>(malloc(size_buffer));
-	}
-}
+		bufSize += needed;
+		configBuf.reset(reinterpret_cast<QUERY_SERVICE_CONFIGA*>(malloc(bufSize)));
 
-void Service::open()
-{
-	CRITICAL_SECTION_RAII(lock);
-
-	_initScManager();
-
-	if (_sc_manager)
-	{
-		if (!sc)
-		{
-			u32 it{ 0 };
-			do
-			{
-				sc = OpenService(_sc_manager, _name.data(), SC_MANAGER_ALL_ACCESS);
-				if (sc)
-					break;
-
-				using namespace std::chrono;
-				std::this_thread::sleep_for(5ms);
-
-			} while (it++ < 2);
-
-			update();
-		}
+		if (!configBuf)
+			break;
 	}
 }
 
 void Service::stop()
 {
-	CRITICAL_SECTION_RAII(lock);
-
-	if (!sc)
+	CRITICAL_SECTION_RAII(_lock);
+	if (!_sc)
 		return;
 
 	update();
 
-	bool stopped = false;
+	if (_config.sc_status.dwCurrentState == SERVICE_STOPPED)
+		return;
 
-	if (config.sc_status.dwCurrentState != SERVICE_STOPPED)
+	InputConsole::textPlease(Localization::Str{ "str_wait_stoping_service" }(), true, _name);
+
+	bool stopped   = false;
+	auto send_stop = [&]
 	{
-		InputConsole::textPlease(Localization::Str{ "str_wait_stoping_service" }(), true, _name);
+		SERVICE_STATUS dummy;
+		const bool	   ok = ControlService(_sc.get(), SERVICE_CONTROL_STOP, &dummy);
+		ASSERT_ARGS(ok, "Failed to send a request to stop the service [{}]!", _name);
+		stopped = true;
+	};
 
-		auto service_stop = [this, &stopped]
-		{
-			stopped					= true;
-			const bool send_control = ControlService(sc, SERVICE_CONTROL_STOP, reinterpret_cast<LPSERVICE_STATUS>(&config.sc_status));
-			ASSERT_ARGS(send_control, "Failed to send a request to stop the service [{}]!", _name);
-		};
+	send_stop();
 
-		service_stop();
-
-		_waitStatusService(
-			SERVICE_RUNNING,
-			SERVICE_STOPPED,
-			[this, service_stop]
-			{
-				service_stop();
-				_waitStatusService(SERVICE_RUNNING, SERVICE_STOPPED, service_stop);
-			}
-		);
-
-		_waitStatusService(
-			SERVICE_STOP_PENDING,
-			SERVICE_STOPPED,
-			[this, service_stop]
-			{
-				service_stop();
-				_waitStatusService(SERVICE_STOP_PENDING, SERVICE_STOPPED, service_stop);
-			}
-		);
-	}
+	_waitStatusService(SERVICE_RUNNING, SERVICE_STOPPED, send_stop);
+	_waitStatusService(SERVICE_STOP_PENDING, SERVICE_STOPPED, send_stop);
 
 	update();
-
-	if ((stopped && config.sc_status.dwCurrentState == SERVICE_STOPPED) || !sc)
+	if (stopped && _config.sc_status.dwCurrentState == SERVICE_STOPPED)
 		InputConsole::textOk(Localization::Str{ "str_success_stop_service" }(), _name);
 }
 
 void Service::remove()
 {
-	CRITICAL_SECTION_RAII(lock);
-
-	if (sc)
+	CRITICAL_SECTION_RAII(_lock);
+	if (!_sc)
 	{
-		stop();
-		DeleteService(sc);
-		CloseServiceHandle(sc);
-		sc = nullptr;
+		open();
+		if (!_sc)
+			return;
 	}
+
+	stop();
+
+	DeleteService(_sc.get());	 // ignore error, service might already be deleted
+	_sc.reset();
 }
 
 void Service::close()
 {
-	CRITICAL_SECTION_RAII(lock);
-
-	if (_sc_manager)
-	{
-		CloseServiceHandle(_sc_manager);
-		_sc_manager = nullptr;
-	}
-
-	CloseServiceHandle(sc);
-	sc				 = nullptr;
-	config.sc_status = {};
+	CRITICAL_SECTION_RAII(_lock);
+	_sc.reset();
+	_sc_manager.reset();
+	_config = {};
 }
 
+// -----------------------------------------------------------------------------
+// Static methods
+// -----------------------------------------------------------------------------
 void Service::allService(std::function<void(std::string)>&& callback)
 {
-	static CriticalSection lock;
+	UniqueScHandle scManager(OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
+	if (!scManager)
+		return;
 
-	CRITICAL_SECTION_RAII(lock);
-
-	if (!_sc_manager)
-		_sc_manager = OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS);
-
-	if (_sc_manager)
+	DWORD												   needed = 0, returned = 0;
+	std::unique_ptr<ENUM_SERVICE_STATUSA, decltype(&free)> buf{ nullptr, &free };
+	DWORD												   bufSize = 0;
+	while (true)
 	{
-		LPENUM_SERVICE_STATUSA service_all	  = nullptr;
-		DWORD				   buffer_size	  = 0;
-		DWORD				   service_needed = 0;
-
-		while (true)
+		if (EnumServicesStatusA(scManager.get(), SERVICE_WIN32, SERVICE_STATE_ALL, buf.get(), bufSize, &needed, &returned, nullptr))
 		{
-			DWORD service_count = 0;
-
-			if (EnumServicesStatus(_sc_manager, SERVICE_WIN32, SERVICE_STATE_ALL, service_all, buffer_size, &service_needed, &service_count, nullptr))
+			if (buf)
 			{
-				if (service_all)
+				for (DWORD i = 0; i < returned; ++i)
 				{
-					for (u32 i = 0; i < service_count; i++)
-					{
-						std::string name{ service_all[i].lpServiceName };
-						callback(name.size() > 0 ? name : service_all[i].lpDisplayName);
-					}
-
-					free(service_all);
+					std::string name = buf.get()[i].lpServiceName;
+					callback(name.empty() ? buf.get()[i].lpDisplayName : name);
 				}
-				break;
 			}
 
-			u32 err = GetLastError();
-			if (ERROR_MORE_DATA != err)
-			{
-				free(service_all);
-				break;
-			}
-
-			buffer_size += service_needed;
-			free(service_all);
-			service_all = reinterpret_cast<LPENUM_SERVICE_STATUSA>(malloc(buffer_size));
+			break;
 		}
+
+		if (GetLastError() != ERROR_MORE_DATA)
+			break;
+
+		bufSize += needed;
+		buf.reset(reinterpret_cast<ENUM_SERVICE_STATUSA*>(malloc(bufSize)));
+
+		if (!buf)
+			break;
 	}
 }
 
-std::list<std::string> Service::allService()
+std::vector<std::string> Service::allService()
 {
-	std::list<std::string> list_service{};
-	allService([&list_service](std::string service_name) { list_service.push_back(service_name); });
-	return list_service;
+	std::vector<std::string> list;
+	allService([&list](std::string name) { list.push_back(name); });
+	return list;
 }
 
-void Service ::_waitStatusService(DWORD check_state, DWORD check_stat_end, std::function<void()>&& send_timeout_check)
+// -----------------------------------------------------------------------------
+// Status waiting
+// -----------------------------------------------------------------------------
+void Service::_waitStatusService(DWORD check_state, DWORD check_stat_end, std::function<void()>&& on_timeout)
 {
 	_dw_start_time = GetTickCount64();
-
-	while (sc && config.sc_status.dwCurrentState == check_state)
+	while (_sc && _config.sc_status.dwCurrentState == check_state)
 	{
-		_dw_wait_time = std::clamp<DWORD>(config.sc_status.dwWaitHint / 10, 1'000, 10'000);
-
+		_dw_wait_time = std::clamp<DWORD>(_config.sc_status.dwWaitHint / 10, 1'000, 10'000);
 		std::this_thread::sleep_for(std::chrono::milliseconds(_dw_wait_time));
 
 		update();
 
-		if (config.sc_status.dwCurrentState == check_stat_end)
+		if (_config.sc_status.dwCurrentState == check_stat_end)
 			break;
 
-		if ((GetTickCount64() - _dw_start_time) > _dw_timeout)
+		if ((GetTickCount64() - _dw_start_time) > _dw_timeout_ms)
 		{
-			send_timeout_check();
+			on_timeout();
 			break;
 		}
 	}
-}
-
-void Service::_initScManager()
-{
-	CRITICAL_SECTION_RAII(lock);
-
-	if (!_sc_manager)
-		_sc_manager = OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS);
-
-	ASSERT_ARGS(_sc_manager, "Couldn't open SCManager to interact with system services!");
 }
