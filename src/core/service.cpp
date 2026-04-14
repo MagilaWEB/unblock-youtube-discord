@@ -101,16 +101,18 @@ void Service::create()
 
 	_initScManager();
 
-	std::string binPath = (Core::get().binariesPath() / _file_name).string();
-	std::string cmdLine = "\"" + binPath + "\"";
+	std::string tempBinPath = (Core::get().binariesPath() / _file_name).string();
+	std::string fullCmdLine = "\"" + tempBinPath + "\"";
 	for (const auto& arg : _args)
-		cmdLine += ' ' + arg;
+		fullCmdLine += " " + arg;
 
-	ASSERT_ARGS(cmdLine.size() <= 32'767, "The maximum line size for the service path is 32'767!");
+	ASSERT_ARGS(fullCmdLine.size() <= 32'767, "The maximum line size for the service path is 32'767!");
+
 
 	auto wname = utils::UTF8_to_UTF16(_name);
 	auto wdesc = utils::UTF8_to_UTF16(_description);
-	auto wcmd  = utils::UTF8_to_UTF16(cmdLine);
+	auto wtempBin = utils::UTF8_to_UTF16(tempBinPath);
+	auto wfullCmd = utils::UTF8_to_UTF16(fullCmdLine);
 
 	_time_limit.start();
 	while (true)
@@ -118,12 +120,12 @@ void Service::create()
 		SC_HANDLE h = CreateServiceW(
 			_sc_manager.get(),
 			wname.c_str(),
-			wdesc.c_str(),
+			wname.c_str(),
 			SC_MANAGER_ALL_ACCESS,
 			SERVICE_WIN32_OWN_PROCESS,
 			SERVICE_AUTO_START,
 			SERVICE_ERROR_NORMAL,
-			wcmd.c_str(),
+			wtempBin.c_str(),
 			nullptr,
 			nullptr,
 			nullptr,
@@ -134,6 +136,32 @@ void Service::create()
 		if (h)
 		{
 			_sc.reset(h);
+
+			SERVICE_DESCRIPTIONW sd{};
+			sd.lpDescription = wdesc.empty() ? nullptr : const_cast<LPWSTR>(wdesc.c_str());
+			ChangeServiceConfig2W(_sc.get(), SERVICE_CONFIG_DESCRIPTION, &sd);
+
+			if (!ChangeServiceConfigW(
+					_sc.get(),
+					SERVICE_NO_CHANGE,
+					SERVICE_NO_CHANGE,
+					SERVICE_NO_CHANGE,
+					wfullCmd.c_str(),
+					nullptr,
+					nullptr,
+					nullptr,
+					nullptr,
+					nullptr,
+					nullptr
+				))
+			{
+				DWORD		err		= GetLastError();
+				std::string message = win_error_message(err);
+				InputConsole::textError(Localization::Str{ "str_error_create_service" }(), _name, message.c_str());
+				_sc.reset();
+				return;
+			}
+
 			update();
 			return;
 		}

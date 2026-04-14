@@ -9,4 +9,5 @@ update
 .vs
 .vscode
 .idea
+.log
 lua
