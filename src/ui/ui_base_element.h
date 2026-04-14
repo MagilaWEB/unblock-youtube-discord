@@ -33,6 +33,7 @@ protected:
 	JSFunction		  _show;
 	JSFunction		  _hide;
 	bool			  _created{ false };
+	bool			  _is_show{ true };
 
 	inline static View* _view;
 	inline static std::map<std::string, BaseElement*> _all_element;
@@ -57,6 +58,7 @@ public:
 	virtual void hide();
 
 	bool isCreate() const;
+	bool isShow() const;
 
 	void setTitle(Localization::Str title);
 

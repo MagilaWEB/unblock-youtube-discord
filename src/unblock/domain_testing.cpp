@@ -17,12 +17,6 @@ static size_t progress_callback(void* clientp, curl_off_t /*dltotal*/, curl_off_
 	return CURLE_OK;
 }
 
-static size_t write_data(void*, size_t size, size_t nmemb, void*)
-{
-	size_t total = size * nmemb;
-	return total;
-}
-
 DomainTesting::DomainTesting()
 {
 	CURL* curl = curl_easy_init();
@@ -30,7 +24,7 @@ DomainTesting::DomainTesting()
 	if (curl)
 	{
 		curl_easy_setopt(curl, CURLOPT_URL, "https://yandex.ru/");
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, nullptr);
 		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
 
 		double	 total_time = 0;
@@ -131,29 +125,16 @@ void DomainTesting::test(bool base_test, std::function<void(std::string url, boo
 
 			auto result = [&]
 			{
-				constexpr const char* TLS_OK  = "\xE2\x9C\x93";
-				constexpr const char* TLS_ERR = "\xE2\x9C\x97";
-				std::string			  text	  = utils::format(
-					 "{:<30} | TLS1.0[{}] TLS1.1[{}] TLS1.2[{}] TLS1.3[{}] | time: {:>5.2f}s",
-					 domain.url,
-					 domain.tls_1_0 ? TLS_OK : TLS_ERR,
-					 domain.tls_1_1 ? TLS_OK : TLS_ERR,
-					 domain.tls_1_2 ? TLS_OK : TLS_ERR,
-					 domain.tls_1_3 ? TLS_OK : TLS_ERR,
-					 domain.result_time_sec
-				 );
+				callback(domain.url, state);
 
-				callback(text, state);
-
-				return text;
+				return domain.url;
 			};
 
 			if (isConnectionUrl(domain))
 			{
 				state = true;
 				_domain_ok++;
-				result();
-				InputConsole::textOk(Localization::Str{ "str_success_url" }(), domain.url);
+				InputConsole::textOk(Localization::Str{ "str_success_url" }(), result());
 				return;
 			}
 
@@ -194,97 +175,52 @@ void DomainTesting::printTestInfo() const
 
 bool DomainTesting::isConnectionUrl(CurlDomain& domain)
 {
-	if (domain.curl)
+	if (!domain.curl)
+		return false;
+
+	curl_easy_setopt(domain.curl, CURLOPT_URL, domain.url.c_str());
+	curl_easy_setopt(domain.curl, CURLOPT_NOSIGNAL, 1L);
+	curl_easy_setopt(domain.curl, CURLOPT_FRESH_CONNECT, 1L);
+	curl_easy_setopt(domain.curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(domain.curl, CURLOPT_CONNECT_ONLY, 1L);
+	curl_easy_setopt(domain.curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_DEFAULT);
+
+	long timeout = _max_wait_testing.load();
+	curl_easy_setopt(domain.curl, CURLOPT_CONNECTTIMEOUT, timeout);
+	curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, timeout);
+
+	curl_easy_setopt(domain.curl, CURLOPT_NOPROGRESS, 0L);
+	curl_easy_setopt(domain.curl, CURLOPT_XFERINFODATA, this);
+	curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
+
+	curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, nullptr);
+	curl_easy_setopt(domain.curl, CURLOPT_READFUNCTION, nullptr);
+	curl_easy_setopt(domain.curl, CURLOPT_HEADERFUNCTION, nullptr);
+
+	const u32 max_retries = 100;
+	u32		  retry		  = 0;
+
+	while (retry < max_retries)
 	{
-		curl_easy_setopt(domain.curl, CURLOPT_URL, domain.url.c_str());
-		curl_easy_setopt(domain.curl, CURLOPT_FOLLOWLOCATION, 1L);
-		curl_easy_setopt(domain.curl, CURLOPT_NOSIGNAL, 1L);
-		curl_easy_setopt(domain.curl, CURLOPT_NOBODY, 0L);
+		CURLcode res = curl_easy_perform(domain.curl);
 
-		curl_easy_setopt(domain.curl, CURLOPT_NOPROGRESS, 0L);
-		curl_easy_setopt(domain.curl, CURLOPT_XFERINFODATA, this);
-		curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
-
-		curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(domain.curl, CURLOPT_BUFFERSIZE, 32'768L);
-
-		long timeout = _max_wait_testing.load();
-		curl_easy_setopt(domain.curl, CURLOPT_CONNECTTIMEOUT, timeout);
-		curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, timeout);
-		curl_easy_setopt(domain.curl, CURLOPT_LOW_SPEED_LIMIT, 1'024L);
-		curl_easy_setopt(domain.curl, CURLOPT_LOW_SPEED_TIME, 10L);
-		curl_easy_setopt(domain.curl, CURLOPT_FRESH_CONNECT, 1L);
-
-		constexpr static std::pair<int, int> ssl_version[]{
-			{ CURL_SSLVERSION_TLSv1_0, CURL_SSLVERSION_MAX_TLSv1_0 },
-			{ CURL_SSLVERSION_TLSv1_1, CURL_SSLVERSION_MAX_TLSv1_1 },
-			{ CURL_SSLVERSION_TLSv1_2, CURL_SSLVERSION_MAX_TLSv1_2 },
-			{ CURL_SSLVERSION_TLSv1_3, CURL_SSLVERSION_MAX_TLSv1_3 }
-		};
-		constexpr static u32 size_ssl_version{ sizeof(ssl_version) / sizeof(std::pair<int, int>) };
-
-		domain.result_time_sec = 0;
-
-		u32 iter{ 0 };
-		u32 reset{ 0 };
-		u32 reset_time{ 0 };
-		while (iter < size_ssl_version)
+		if (res == CURLE_OK)
 		{
-			auto& [version, version_max] = ssl_version[iter];
-			curl_easy_setopt(domain.curl, CURLOPT_SSLVERSION, version | version_max);
-
-			auto skip = [&reset, &reset_time, &iter]
-			{
-				reset	   = 0;
-				reset_time = 0;
-				iter++;
-			};
-
-			auto res = curl_easy_perform(domain.curl);
-			
-			if (res == CURLE_OPERATION_TIMEDOUT || res == CURLE_SSL_CONNECT_ERROR)
-			{
-				if (res == CURLE_OPERATION_TIMEDOUT && ++reset_time > 1)
-					skip();
-				else if (res == CURLE_SSL_CONNECT_ERROR && ++reset > 100)
-					skip();
-				
-#ifdef DEBUG
-				Debug::info("Reset connect url[{}] zapret2", domain.url);
-#endif
-				continue;
-			}
-
-			curl_tlssessioninfo* tls_info = nullptr;
-			CURLcode			 info_res = curl_easy_getinfo(domain.curl, CURLINFO_TLS_SSL_PTR, &tls_info);
-
-			const bool tls_ok = res == CURLE_OK && info_res == CURLE_OK && tls_info && tls_info->backend != CURLSSLBACKEND_NONE;
-
-			domain.setTls(version - CURL_SSLVERSION_TLSv1_0, tls_ok);
-
-			double time{ 0 };
-			curl_easy_getinfo(domain.curl, CURLINFO_TOTAL_TIME, &time);
-
-			if (tls_ok)
-			{
-				if (domain.result_time_sec == 0.0)
-					domain.result_time_sec = time;
-				else
-					domain.result_time_sec = domain.result_time_sec > time ? time : domain.result_time_sec;
-			}
-
-			skip();
-
-			if (domain.tls_1_0 && domain.tls_1_1 && domain.tls_1_2 && domain.tls_1_3)
-				return true;
+			double connect_time = 0.0;
+			curl_easy_getinfo(domain.curl, CURLINFO_CONNECT_TIME, &connect_time);
+			domain.result_time_sec = connect_time;
+			return true;
 		}
 
-		if (domain.tls_1_0 || domain.tls_1_1 || domain.tls_1_2 || domain.tls_1_3)
-			return true;
+		if (res != CURLE_SSL_CONNECT_ERROR)
+			break;
 
-		curl_easy_getinfo(domain.curl, CURLINFO_TOTAL_TIME, &domain.result_time_sec);
+		++retry;
 	}
 
+	double total_time = 0.0;
+	curl_easy_getinfo(domain.curl, CURLINFO_TOTAL_TIME, &total_time);
+	domain.result_time_sec = total_time;
 	return false;
 }
 

@@ -103,6 +103,7 @@ void BaseElement::remove()
 				return;
 
 			_created = false;
+
 			ASSERT_ARGS(_remove({ name() }).ToBoolean() == true, "Couldn't remove a {} named [{}]", _type, name());
 			_event_click[name()].clear();
 		}
@@ -117,6 +118,8 @@ void BaseElement::show()
 			if (!_created)
 				return;
 
+			_is_show = true;
+
 			ASSERT_ARGS(_show({ name() }).ToBoolean() == true, "Couldn't remove a {} named [{}]", _type, name());
 		}
 	);
@@ -130,6 +133,8 @@ void BaseElement::hide()
 			if (!_created)
 				return;
 
+			_is_show = false;
+
 			ASSERT_ARGS(_hide({ name() }).ToBoolean() == true, "Couldn't remove a {} named [{}]", _type, name());
 		}
 	);
@@ -138,6 +143,11 @@ void BaseElement::hide()
 bool BaseElement::isCreate() const
 {
 	return _created;
+}
+
+bool BaseElement::isShow() const
+{
+	return _is_show;
 }
 
 void BaseElement::setTitle(Localization::Str title)

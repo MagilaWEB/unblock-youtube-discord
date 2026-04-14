@@ -250,8 +250,16 @@ void Ui::_startServiceFromConfig()
 			_window_wait_start_service->show();
 
 			_tcpGlobalChange(true);
-
-			_unblock.changeStrategy(JSToCPP(_unblock_select_config->getSelectedOptionValue()));
+			
+			if (_unblock_select_config->isShow())
+				_unblock.changeStrategy(JSToCPP(_unblock_select_config->getSelectedOptionValue()));
+			else if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
+				_unblock.changeStrategy(config.value());
+			else
+			{
+				Debug::fatal("REMEMBER_CONFIGURATION parameter config = null");
+				return;
+			}
 
 			_unblock.startService();
 			_buttonUpdate();

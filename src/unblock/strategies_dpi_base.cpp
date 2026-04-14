@@ -20,7 +20,7 @@ void StrategiesDPIBase::changeStrategy(u32 index)
 void StrategiesDPIBase::changeStrategy(std::string_view file)
 {
 	auto it_file = std::ranges::find(_strategy_files_list, file);
-	ASSERT_ARGS(it_file != _strategy_files_list.end(), "the file was not found");
+	ASSERT_ARGS(it_file != _strategy_files_list.end(), "the file was not found, file{}!", file);
 
 	std::string strategy_file{ *it_file };
 

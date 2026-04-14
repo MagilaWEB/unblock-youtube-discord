@@ -319,9 +319,8 @@ void Unblock::localProxyTg(bool run)
 {
 	if (run)
 	{
-		if (_tg_ws_proxy.isRun())
-			_tg_ws_proxy.remove();
-
+		_tg_ws_proxy.remove();
+		_tg_ws_proxy.setDescription("Local proxy telegram.");
 		_tg_ws_proxy.setArgs(
 			{ (Core::get().binariesPath() / "TgWsProxy.exe").string(), std::string{ "--secret " } + proxy_secret.data(), "--port 9101" }
 		);
