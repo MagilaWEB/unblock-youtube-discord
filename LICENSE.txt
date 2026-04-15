@@ -1,6 +1,6 @@
 # MIT License
 - **Copyright © 2016–2026** [bol-van](https://github.com/bol-van)
-- **Copyright © 2024–2026** [hufrea](https://github.com/hufrea)
+- **Copyright © 2024–2026** [Flowseal](https://github.com/Flowseal)
 - **Copyright © 2024–2026** [MagilaWEB](https://github.com/MagilaWEB)
 
 ## Разрешение
@@ -18,7 +18,7 @@
 ## Сторонние компоненты
 
 ### Проект zapret
-Данный репозиторий содержит бинарные файлы из проекта [zapret](https://github.com/bol-van/zapret) от [bol-van](https://github.com/bol-van), распространяемые под лицензией MIT.
+Данный репозиторий содержит бинарные файлы из проекта [zapret2](https://github.com/bol-van/zapret2) от [bol-van](https://github.com/bol-van) и [TgWsProxy](https://github.com/Flowseal/tg-ws-proxy) от [Flowseal](https://github.com/Flowseal), распространяемые под лицензией MIT.
 
 ### WinDivert
 Проект включает и зависит от [WinDivert](https://github.com/basil00/WinDivert), который распространяется на условиях выбора одной из следующих лицензий:

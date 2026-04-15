@@ -32,7 +32,7 @@
 - **Автоподбор конфигураций**: Автоматический выбор оптимальных настроек
 - **Готовые профили**: Предустановленные конфигурации для быстрого запуска
 - **Фильтрация по доменам**: Поддержка .com, .net, .org и других TLD
-- **Локальный прокси-сервер**: SOCKS5 прокси на базе BayDPI
+- **Локальный прокси-сервер**: TgWsProxy от Flowseal
 - **Многопоточность**: Высокая производительность на С++
 - **Открытый код**: Полная прозрачность работы
 
@@ -107,22 +107,21 @@
 1. Запустите Unblock с правами администратора
 2. Перейдите в настройки Unblock
 3. Включите ручной режим
-3. Выберите нужный профиль обхода
 4. Перейдите на главную
-5. Запустите службу Unblock
+5. Запустите службу Zapret
 
 ### Автоматический режим работы:
 1. Запустите Unblock с правами администратора
 2. Перейдите в **Настройки**
 3. Отключите **ручной режим**
 4. Перейдите на **главную**
-5. Нажмите кнопку запуска службы Unblock
+5. Нажмите кнопку запуска службы Zapret
 6. Следуйте подсказкам UI.
 
 ## ⚠️ Решение проблем
 
 ### 🔴 Антивирусные предупреждения
-WinDivert может вызывать ложные срабатывания антивирусов. Это легитимный драйвер для работы с сетевым трафиком. Добавьте исключения или временно отключите антивирус.
+WinDivert может вызывать ложные срабатывания антивирусов. Это легитимный драйвер для работы с сетевым трафиком. Добавьте в исключение, отключать антивирус не обязательно.
 
 ### 🔴 Конфликты с VPN
 - Отключите **TUN режим** в настройках VPN
@@ -143,8 +142,7 @@ WinDivert может вызывать ложные срабатывания ан
 ### 🔴 Создание собственных конфигураций
 Если стандартные профили не работают, изучите документацию:
 
-Zapret: https://github.com/bol-van/zapret/blob/master/docs/readme.md#nfqws
-BayDPI: https://github.com/hufrea/byedpi
+Zapret: https://github.com/bol-van/zapret2/blob/master/docs/readme.md
 
 Создайте файл в папке `configs/strategy` и поделитесь рабочим профилем в обсуждениях.
 
@@ -152,15 +150,15 @@ BayDPI: https://github.com/hufrea/byedpi
 
 ### Проверка файлов
 Все исполняемые файлы взяты из проверенных источников:
-- [zapret-win-bundle](https://github.com/bol-van/zapret-win-bundle)
-- [byedpi](https://github.com/hufrea/byedpi)
+- [zapret2](https://github.com/bol-van/zapret2)
+- [TgWsProxy](https://github.com/Flowseal/tg-ws-proxy) Собран в режим работы через консоль, в оригинальном репозитории такого .exe нет.
 
 Вы можете проверить контрольные суммы для подтверждения подлинности.
 
 ### Открытый код
 Проект основан на открытом исходном коде:
-- Основной движок: [zapret](https://github.com/bol-van/zapret)
-- Прокси-режим: [byedpi](https://github.com/hufrea/byedpi)
+- Основной движок: [zapret2](https://github.com/bol-van/zapret2)
+- Прокси телеграмм: [TgWsProxy](https://github.com/Flowseal/tg-ws-proxy)
 
 ### Предупреждение
 > [!CAUTION]
@@ -170,7 +168,7 @@ BayDPI: https://github.com/hufrea/byedpi
 
 Проект стал возможным благодаря:
 - **[bol-van](https://github.com/bol-van)** – разработка zapret
-- **[hufrea](https://github.com/hufrea)** – разработка byedpi
+- **[Flowseal](https://github.com/Flowseal)** – разработка TgWsProxy
 
 ## 📄 Лицензия
 
@@ -180,7 +178,7 @@ BayDPI: https://github.com/hufrea/byedpi
 
 ## Авторские права
 - **Copyright © 2016–2026** [bol-van](https://github.com/bol-van)
-- **Copyright © 2024–2026** [hufrea](https://github.com/hufrea)
+- **Copyright © 2026** [Flowseal](https://github.com/Flowseal)
 - **Copyright © 2024–2026** [MagilaWEB](https://github.com/MagilaWEB)
 
 ---
@@ -200,7 +198,7 @@ BayDPI: https://github.com/hufrea/byedpi
 ## Сторонние компоненты
 
 ### Проект zapret
-Данный репозиторий содержит бинарные файлы из проекта [zapret](https://github.com/bol-van/zapret) от [bol-van](https://github.com/bol-van), распространяемые под лицензией MIT.
+Данный репозиторий содержит бинарные файлы из проекта [zapret2](https://github.com/bol-van/zapret2) от [bol-van](https://github.com/bol-van), распространяемые под лицензией MIT.
 
 ### WinDivert
 Проект включает и зависит от [WinDivert](https://github.com/basil00/WinDivert), который распространяется на условиях выбора одной из следующих лицензий:
