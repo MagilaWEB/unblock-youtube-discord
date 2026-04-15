@@ -4,7 +4,6 @@
 #include "../core/timer.h"
 #include "../engine/version.hpp"
 
-
 UiBase::UiBase(IEngineAPI* engine): _engine(engine)
 {
 	_ui = std::make_unique<Ui>(this);
@@ -100,6 +99,13 @@ void UiBase::OnWindowObjectReady(View* caller, uint64_t /*frame_id*/, bool /*is_
 	global["VERSION_APP"] = JSValue(VERSION_STR);
 	global["CPPTaskRun"]  = static_cast<JSCallback>(std::bind(&UiBase::runTask, this, std::placeholders::_1, std::placeholders::_2));
 	global["CPPLangText"] = static_cast<JSCallbackWithRetval>(std::bind(&UiBase::langText, this, std::placeholders::_1, std::placeholders::_2));
+
+	global["WINDOW_MINIMIZE"] = static_cast<JSCallback>(std::bind(&UiBase::minimizeWindow, this, std::placeholders::_1, std::placeholders::_2));
+	global["WINDOW_MAXIMIZE"] = static_cast<JSCallback>(std::bind(&UiBase::maximizeWindow, this, std::placeholders::_1, std::placeholders::_2));
+	global["WINDOW_RESTORE"]  = static_cast<JSCallback>(std::bind(&UiBase::restoreWindow, this, std::placeholders::_1, std::placeholders::_2));
+	global["START_MOVE_WINDOW"] = static_cast<JSCallback>(std::bind(&UiBase::startMoveWindow, this, std::placeholders::_1, std::placeholders::_2));
+	global["MOVE_WINDOW"]	  = static_cast<JSCallback>(std::bind(&UiBase::moveWindow, this, std::placeholders::_1, std::placeholders::_2));
+	global["WINDOW_CLOSE"]	  = static_cast<JSCallback>(std::bind(&UiBase::closeWindow, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 void UiBase::OnDOMReady(View* caller, uint64_t /*frame_id*/, bool /*is_main_frame*/, const String& /*url*/)
@@ -124,6 +130,66 @@ void UiBase::OnClose(ultralight::Window* /*window*/)
 	BaseElement::release();
 	_ui.release();
 	_engine->app()->Quit();
+}
+
+void UiBase::minimizeWindow(const JSObject& /*obj*/, const JSArgs& /*args*/)
+{
+	if (auto* wnd = _engine->window())
+	{
+		HWND hwnd = static_cast<HWND>(wnd->native_handle());
+		if (hwnd)
+			PostMessage(hwnd, WM_SYSCOMMAND, SC_MINIMIZE, 0);
+	}
+}
+
+void UiBase::maximizeWindow(const JSObject& /*obj*/, const JSArgs& /*args*/)
+{
+	if (auto* wnd = _engine->window())
+	{
+		HWND hwnd = static_cast<HWND>(wnd->native_handle());
+		if (hwnd)
+			PostMessage(hwnd, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
+	}
+}
+
+void UiBase::restoreWindow(const JSObject& /*obj*/, const JSArgs& /*args*/)
+{
+	if (auto* wnd = _engine->window())
+	{
+		HWND hwnd = static_cast<HWND>(wnd->native_handle());
+		if (hwnd)
+			PostMessage(hwnd, WM_SYSCOMMAND, SC_RESTORE, 0);
+	}
+}
+
+void UiBase::startMoveWindow(const JSObject& /*obj*/, const JSArgs& /*args*/)
+{
+	auto* wnd	  = _engine->window();
+	if (!wnd)
+		return;
+
+	POINT cursorPos;
+	if (GetCursorPos(&cursorPos))
+	{
+		_current_move_x = (cursorPos.x / wnd->scale()) - wnd->x();
+		_current_move_y = (cursorPos.y / wnd->scale()) - wnd->y();
+	}
+}
+
+void UiBase::moveWindow(const JSObject& /*obj*/, const JSArgs& /*args*/)
+{
+	auto* wnd = _engine->window();
+	if (!wnd)
+		return;
+
+	POINT cursorPos;
+	if (GetCursorPos(&cursorPos))
+		wnd->MoveTo((cursorPos.x / wnd->scale())  - _current_move_x, (cursorPos.y / wnd->scale()) - _current_move_y);
+}
+
+void UiBase::closeWindow(const JSObject& /*obj*/, const JSArgs& /*args*/)
+{
+	OnClose(_engine->window());
 }
 
 const std::shared_ptr<File>& UiBase::userSetting()

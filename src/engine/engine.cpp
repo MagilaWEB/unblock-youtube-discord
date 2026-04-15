@@ -64,7 +64,7 @@ void Engine::initialize()
 		520 * screenWidth,
 		510 * screenWidth,
 		false,
-		kWindowFlags_Titled | kWindowFlags_Borderless | kWindowFlags_Maximizable
+		kWindowFlags_Borderless
 	);
 
 	static std::string title{ "Unblock " + std::format("Version: {}", VERSION_STR) };

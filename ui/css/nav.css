@@ -1,7 +1,7 @@
 .nav {
-    z-index                   : 10;
-    position                  : fixed;
-    top                       : -.5em;
+    z-index                   : 51;
+    position                  : absolute;
+    top: 100%;                      
     left                      : -.5em;
     color                     : #f0f0f0;
     background-color          : rgba(32, 35, 50, 0.80);

@@ -16,6 +16,22 @@ body {
     background-color: #0d0e14;
 }
 
+body::after {
+    content: '';
+    position: fixed;
+    top: 40px;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border: 4px solid rgb(0, 0, 0);
+    border-top: none;
+    border-radius: 0;
+    pointer-events: none;
+    box-sizing: border-box;
+    z-index: 9999;
+}
+
 #background {
     z-index : 0;
     position: fixed;
@@ -50,22 +66,104 @@ h2 {
     filter: blur(12px);
 }
 
-.text_version {
-    z-index         : 30;
+.window-controls {
+    z-index         : 50;
     position        : fixed;
-    top             : -.5vw;
-    right           : .5vw;
-    padding         : .4vw .7vw;
-    background-color: rgba(35, 38, 52, 0.82);
-    border          : 1px solid rgba(255, 255, 255, 0.11);
-    border-radius   : 0 0 6px 6px;
-    box-shadow      : 0 4px 16px rgba(0, 0, 0, 0.35);
+    top             : 0;
+    left            : 0;
+    width           : 100%;
+    height          : 40px;
+    background-color: rgba(35, 38, 52, 0.85);
+    backdrop-filter : blur(24px);
+    border-bottom   : 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow      : 0 4px 16px rgba(0, 0, 0, 0.25);
+    cursor          : move;
+    user-select     : none;
+    animation       : titleBarReveal 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.text_version .text {
-    margin     : 0;
-    font-size  : 1.5vw;
+@keyframes titleBarReveal {
+    0% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.window-controls:hover {
+    background-color: rgba(40, 44, 60, 0.92);
+    border-bottom-color: rgba(255, 255, 255, 0.15);
+    transition: background-color 0.25s, border-color 0.2s;
+}
+
+.window-controls .text_version {
+    display: inline-block;
+    padding: 0 11px;
+    line-height: 40px;
+    font-size: 12px;
     font-weight: 500;
+    letter-spacing: -0.02em;
+    color: #e0e0e0;
+}
+
+.window-controls .text_version .text {
+    margin: 0;
+}
+
+.window-controls .control-buttons {
+    position: fixed;
+    top: 0;
+    right: 11px;
+    display: flex;
+    gap: 7px;
+    height: 40px;
+    align-items: center;
+}
+
+.window-controls .control-buttons .button {
+    width: 41px;
+    height: 29px;
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.window-controls .control-buttons .button:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    transform: scale(1.02);
+}
+
+.window-controls .control-buttons .button:active {
+    transform: scale(0.96);
+    transition-duration: 0.08s;
+}
+
+.window-controls .control-buttons .button.close:hover {
+    background-color: #e81123;
+    color: white;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .window-controls {
+        animation: none;
+    }
+    .window-controls .control-buttons .button:hover {
+        transform: none;
+    }
+}
+
+.window-controls .control-button.maximized {
+    /* можно заменить содержимое на "?" или "??" через ::before, но проще через JS менять текст */
 }
 
 main {
@@ -74,7 +172,7 @@ main {
 
 main article {
     position  : absolute;
-    top       : 20vw;
+    top       : calc(20vw + 40px);
     left      : 0;
     width     : 100%;
     visibility: hidden;
@@ -263,7 +361,7 @@ footer .button.show button:active {
 .buttons_start,
 .buttons_stop {
     position        : relative;
-    top             : 4vw;
+    top             : calc(5vw + 40px);
     background-color: rgba(25, 28, 42, 0.65);
     backdrop-filter : blur(20px);
     border-radius   : 24px;
