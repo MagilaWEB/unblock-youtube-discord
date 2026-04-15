@@ -35,6 +35,9 @@
 	text-align: center;
 	padding   : 1vw 0;
 	font-size : 4.08vw;
+	line-height  : 1.3;              /* явная высота строки */
+    word-break   : break-word;       /* разрешаем перенос длинных слов */
+    overflow-wrap: break-word;
 }
 
 .secondary_window .content .description {
