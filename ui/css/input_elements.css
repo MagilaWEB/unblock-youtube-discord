@@ -7,7 +7,7 @@
     top       : 0;
     margin    : .95vw auto;
     height    : 3.1vw;
-    box-shadow: 0 0.4vw 1vw rgba(0, 0, 0, 0.5);
+    box-shadow      : 0 1vw 1.5vw rgba(0, 0, 0, 0.35);
 }
 
 .input.show,
