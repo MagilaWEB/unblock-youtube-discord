@@ -28,7 +28,6 @@
 	background-color: rgba(28, 31, 46, 0.94);
 	border          : 1px solid rgba(255, 255, 255, 0.12);
 	border-radius   : 8px;
-	box-shadow      : 0 2vw 3vw rgba(0, 0, 0, 0.7);
 	padding         : 1.9vw 2.2vw;
 	will-change     : transform, border-color;
 	contain         : layout style;

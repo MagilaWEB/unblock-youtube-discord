@@ -4,7 +4,6 @@
     margin          : 0 0 1.1em 0;
     background-color: rgba(32, 35, 50, 0.75);
     border          : 1px solid rgba(255, 255, 255, 0.09);
-    border-radius   : 13px;
     opacity         : 0;
     filter          : blur(17px);
     visibility      : hidden;
