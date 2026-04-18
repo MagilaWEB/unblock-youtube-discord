@@ -8,7 +8,14 @@ UiBase::UiBase(IEngineAPI* engine): _engine(engine)
 {
 	_ui = std::make_unique<Ui>(this);
 
-	_overlay = Overlay::Create(_engine->window(), _engine->window()->width(), _engine->window()->height(), 0, 0);
+    view_config.is_accelerated = true;
+    view_config.is_transparent = false;
+	view_config.enable_compositor = true;
+	view_config.enable_compositor_debug_info = false;
+    
+    auto		 renderer = App::instance()->renderer();
+	RefPtr<View> view	  = renderer->CreateView(_engine->window()->width(), _engine->window()->height(), view_config, nullptr);
+	_overlay = Overlay::Create(_engine->window(), view, 0, 0);
 	_overlay->view()->LoadURL("file:///main.html");
 
 	_overlay->view()->set_load_listener(this);

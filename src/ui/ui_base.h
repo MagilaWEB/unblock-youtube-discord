@@ -51,4 +51,7 @@ public:
 	void	console(bool show);
 	void	runTask(const JSObject& obj, const JSArgs& args);
 	JSValue langText(const JSObject& obj, const JSArgs& args);
+
+public:
+	ViewConfig view_config{};
 };

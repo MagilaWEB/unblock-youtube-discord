@@ -3,8 +3,6 @@ cmake_minimum_required(VERSION 3.25)
 
 project(unblock_cpp LANGUAGES CXX VERSION 0)
 
-
-
 enable_testing()
 
 option(CUPY_LIBS_DLL_TO_BIN "CUPY_LIBS_DLL_TO_BIN" ON)
@@ -47,18 +45,6 @@ FetchContent_Declare(
   SOURCE_DIR ultralight
 )
 
-FetchContent_Declare(
-  DXVK
-  URL https://github.com/doitsujin/dxvk/releases/download/v2.7.1/dxvk-2.7.1.tar.gz
-  SOURCE_DIR dxvk
-)
-
-FetchContent_Declare(
-  Zapret2
-  URL https://github.com/bol-van/zapret2/releases/download/v0.9.4.7/zapret2-v0.9.4.7.zip
-  SOURCE_DIR zapret2
-)
-
 # Load GitHub curl binaries
 FetchContent_Declare(
   curl
@@ -81,8 +67,6 @@ FetchContent_Declare(
 # Build
 FetchContent_MakeAvailable(
     ultralight
-    DXVK
-    Zapret2
     curl
     bit7z
     7za
@@ -109,15 +93,6 @@ set(ULTRALIGHT_DIR ${CMAKE_BINARY_DIR}/ultralight)
 set(ULTRALIGHT_INCLUDE ${ULTRALIGHT_DIR}/include)
 set(ULTRALIGHT_LIB ${ULTRALIGHT_DIR}/lib)
 set(ULTRALIGHT_BIN ${ULTRALIGHT_DIR}/bin)
-
-# bin DXVK 
-set(DXVK_DIR ${CMAKE_BINARY_DIR}/dxvk)
-set(DXVK_BIN ${DXVK_DIR}/x64)
-
-# bin Zapret2 res 
-set(ZAPRET2_DIR ${CMAKE_BINARY_DIR}/zapret2)
-set(ZAPRET2_BIN ${ZAPRET2_DIR}/binaries/windows-x86_64)
-set(ZAPRET2_LUA ${ZAPRET2_DIR}/lua)
 
 # Include bit7z
 set(BIT7Z_DIR ${CMAKE_BINARY_DIR}/bit7z)
