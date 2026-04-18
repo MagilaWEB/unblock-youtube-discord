@@ -431,10 +431,19 @@ void Ui::_settingUnblockEnableManualSelectUpdate()
 			_unblock_select_config->createOption(i, strategies_list[i]);
 
 		if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
-			_unblock_select_config->setSelectedOptionValue(config.value());
-		else if (_unblock_manual->getState())
-			_ui_base->userSetting()
-				->writeSectionParameter("REMEMBER_CONFIGURATION", "config", JSToCPP(_unblock_select_config->getSelectedOptionValue()));
+		{
+			if (std::ranges::find(strategies_list, config.value()) != strategies_list.end())
+			{
+				_unblock_select_config->setSelectedOptionValue(config.value());
+				_ui_base->userSetting()
+					->writeSectionParameter("REMEMBER_CONFIGURATION", "config", JSToCPP(_unblock_select_config->getSelectedOptionValue()));
+			}
+			else
+			{
+				_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", "");
+				Debug::warning("config[{}] The specified strategy does not exist from the user's settings!", config.value());
+			}
+		}
 
 		_buttonUpdate();
 
