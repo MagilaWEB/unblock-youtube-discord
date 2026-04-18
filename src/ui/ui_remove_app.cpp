@@ -51,7 +51,7 @@ exit
 
 void Ui::_removeAppRun()
 {
-	_stoppingServices(StoppingService::eUnblock);
+	_stoppingServices();
 
 	_tcpGlobalChange(false);
 
