@@ -158,7 +158,7 @@ std::expected<TypeReturn, std::string> File::parameterSection(std::string_view s
 		}
 	);
 
-	if (kay_value)
+	if (kay_value && !kay_value.value().empty())
 	{
 		using namespace concepts;
 		if constexpr (VallidString<TypeReturn>)
