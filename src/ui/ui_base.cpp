@@ -8,6 +8,7 @@ UiBase::UiBase(IEngineAPI* engine): _engine(engine)
 {
 	_ui = std::make_unique<Ui>(this);
 
+	ViewConfig view_config{};
     view_config.is_accelerated = true;
     view_config.is_transparent = false;
 	view_config.enable_compositor = true;
