@@ -1,19 +1,20 @@
 .nav {
     z-index                   : 51;
     position                  : absolute;
-    top: 100%;                      
-    left                      : -.5em;
+    top                       : 100%;
+    left                      : -0.5em;
     color                     : #f0f0f0;
     background-color          : rgba(32, 35, 50, 0.80);
     border                    : 1px solid rgba(255, 255, 255, 0.10);
     border-bottom-right-radius: 6px;
-    box-shadow                : 5px 5px 24px rgba(0, 0, 0, 0.45);
-    padding                   : .3vw;
+    padding                   : 0.3vw;
+    will-change               : transform;
+    transform                 : translateZ(0);
+    contain                   : layout style;
 }
 
 .nav:hover {
     background-color: rgba(45, 50, 70, 0.88);
-    box-shadow      : 8px 8px 32px rgba(0, 0, 0, 0.55);
     border-color    : rgba(255, 255, 255, 0.20);
 }
 
@@ -28,7 +29,7 @@
 }
 
 .nav li:first-child::after {
-    margin-left: .14cm;
+    margin-left: 0.14cm;
     content    : "|";
     opacity    : 0.45;
     transition : opacity 0.2s ease;
@@ -45,8 +46,10 @@
     font-weight    : 500;
     padding        : 0.2vw 0.4vw;
     display        : inline-block;
-    transition     : color 0.2s ease, transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1), text-shadow 0.2s ease;
+    transition     : color 0.2s ease, transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
     position       : relative;
+    will-change    : transform;
+    transform      : translateZ(0);
 }
 
 .nav li a::before {
@@ -59,12 +62,12 @@
     background-color: #ffffff;
     transition      : width 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
     border-radius   : 2px;
+    will-change     : width;
 }
 
 .nav li a:hover {
-    color      : #ffffff;
-    transform  : translateY(-1px);
-    text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+    color    : #ffffff;
+    transform: translateY(-1px) translateZ(0);
 }
 
 .nav li a:hover::before {
@@ -74,7 +77,6 @@
 .nav li #active {
     font-weight: 700;
     color      : #ffffff;
-    text-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
     position   : relative;
 }
 
@@ -88,6 +90,8 @@
     background   : linear-gradient(90deg, transparent, #fff, transparent);
     border-radius: 2px;
     animation    : activePulse 2s ease-in-out infinite;
+    will-change  : transform, opacity;
+    transform    : translateZ(0);
 }
 
 @keyframes activePulse {
@@ -95,11 +99,11 @@
     0%,
     100% {
         opacity  : 0.4;
-        transform: scaleX(0.8);
+        transform: scaleX(0.8) translateZ(0);
     }
 
     50% {
         opacity  : 1;
-        transform: scaleX(1);
+        transform: scaleX(1) translateZ(0);
     }
 }

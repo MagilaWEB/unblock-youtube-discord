@@ -8,7 +8,6 @@ html,
 body {
     color           : #f0f0f0;
     font-family     : "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-    text-shadow     : 0 1px 3px rgba(0, 0, 0, 0.6);
     margin          : 0;
     padding         : 0;
     width           : 100%;
@@ -17,19 +16,19 @@ body {
 }
 
 body::after {
-    content: '';
-    position: fixed;
-    top: 40px;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    border: 4px solid rgb(0, 0, 0);
-    border-top: none;
-    border-radius: 0;
+    content       : '';
+    position      : fixed;
+    top           : 40px;
+    left          : 0;
+    width         : 100%;
+    height        : 100%;
+    margin        : 0;
+    border        : 4px solid rgb(0, 0, 0);
+    border-top    : none;
+    border-radius : 0;
     pointer-events: none;
-    box-sizing: border-box;
-    z-index: 9999;
+    box-sizing    : border-box;
+    z-index       : 9999;
 }
 
 #background {
@@ -44,10 +43,6 @@ body::after {
         radial-gradient(circle at 78% 32%, rgba(170, 110, 255, 0.28) 0%, transparent 52%),
         radial-gradient(circle at 38% 82%, rgba(70, 215, 190, 0.25) 0%, transparent 48%),
         linear-gradient(135deg, #1a1b2e 0%, #282c44 42%, #1f2237 100%);
-
-    box-shadow:
-        inset 0 0 200px 90px rgba(0, 0, 0, 0.55),
-        inset 0 0 110px 45px rgba(25, 35, 75, 0.35);
 }
 
 h1 {
@@ -76,7 +71,6 @@ h2 {
     background-color: rgba(35, 38, 52, 0.85);
     backdrop-filter : blur(24px);
     border-bottom   : 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow      : 0 4px 16px rgba(0, 0, 0, 0.25);
     cursor          : move;
     user-select     : none;
     animation       : titleBarReveal 0.4s cubic-bezier(0.23, 1, 0.32, 1);
@@ -84,29 +78,30 @@ h2 {
 
 @keyframes titleBarReveal {
     0% {
-        opacity: 0;
+        opacity  : 0;
         transform: translateY(-10px);
     }
+
     100% {
-        opacity: 1;
+        opacity  : 1;
         transform: translateY(0);
     }
 }
 
 .window-controls:hover {
-    background-color: rgba(40, 44, 60, 0.92);
+    background-color   : rgba(40, 44, 60, 0.92);
     border-bottom-color: rgba(255, 255, 255, 0.15);
-    transition: background-color 0.25s, border-color 0.2s;
+    transition         : background-color 0.25s, border-color 0.2s;
 }
 
 .window-controls .text_version {
-    display: inline-block;
-    padding: 0 11px;
-    line-height: 40px;
-    font-size: 12px;
-    font-weight: 500;
+    display       : inline-block;
+    padding       : 0 11px;
+    line-height   : 40px;
+    font-size     : 12px;
+    font-weight   : 500;
     letter-spacing: -0.02em;
-    color: #e0e0e0;
+    color         : #e0e0e0;
 }
 
 .window-controls .text_version .text {
@@ -114,56 +109,53 @@ h2 {
 }
 
 .window-controls .control-buttons {
-    position: fixed;
-    top: 0;
-    right: 11px;
-    display: flex;
-    gap: 7px;
-    height: 40px;
+    position   : fixed;
+    top        : 0;
+    right      : 11px;
+    display    : flex;
+    gap        : 7px;
+    height     : 40px;
     align-items: center;
 }
 
 .window-controls .control-buttons .button {
-    width: 41px;
-    height: 29px;
-    background: transparent;
-    border: none;
-    border-radius: 7px;
-    color: #e0e0e0;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-    font-size: 15px;
-    display: flex;
-    align-items: center;
+    width          : 41px;
+    height         : 29px;
+    background     : transparent;
+    border         : none;
+    border-radius  : 7px;
+    color          : #e0e0e0;
+    cursor         : pointer;
+    transition     : all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    font-size      : 15px;
+    display        : flex;
+    align-items    : center;
     justify-content: center;
 }
 
 .window-controls .control-buttons .button:hover {
     background-color: rgba(255, 255, 255, 0.12);
-    transform: scale(1.02);
+    transform       : scale(1.02);
 }
 
 .window-controls .control-buttons .button:active {
-    transform: scale(0.96);
+    transform          : scale(0.96);
     transition-duration: 0.08s;
 }
 
 .window-controls .control-buttons .button.close:hover {
     background-color: #e81123;
-    color: white;
+    color           : white;
 }
 
 @media (prefers-reduced-motion: reduce) {
     .window-controls {
         animation: none;
     }
+
     .window-controls .control-buttons .button:hover {
         transform: none;
     }
-}
-
-.window-controls .control-button.maximized {
-    /* можно заменить содержимое на "?" или "??" через ::before, но проще через JS менять текст */
 }
 
 main {
@@ -236,15 +228,12 @@ footer {
     height          : 4.3em;
     border-top      : 1px solid rgba(255, 255, 255, 0.08);
     transition      : bottom 0.38s cubic-bezier(0.34, 1.2, 0.64, 1),
-        box-shadow 0.3s ease,
         border-color 0.2s ease;
-    box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.5);
 }
 
 footer:hover {
     bottom          : 0;
     border-top-color: rgba(255, 255, 255, 0.22);
-    box-shadow      : 0 -8px 36px rgba(0, 0, 0, 0.65);
 }
 
 footer::after {
@@ -259,14 +248,13 @@ footer::after {
     height        : 2em;
     opacity       : 0.7;
     letter-spacing: 0.1em;
-    transition    : opacity 0.2s ease, text-shadow 0.2s ease;
+    transition    : opacity 0.2s ease;
     animation     : dotsPulse 2s ease-in-out infinite;
 }
 
 footer:hover::after {
-    opacity    : 1;
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
-    animation  : dotsPulse 1.2s ease-in-out infinite, dotsGlow 1.8s infinite alternate;
+    opacity  : 1;
+    animation: dotsPulse 1.2s ease-in-out infinite;
 }
 
 @keyframes dotsPulse {
@@ -283,23 +271,12 @@ footer:hover::after {
     }
 }
 
-@keyframes dotsGlow {
-    from {
-        text-shadow: 0 0 0 rgba(255, 255, 255, 0);
-    }
-
-    to {
-        text-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
-    }
-}
-
 footer .button.show {
     margin   : auto;
     width    : 30vw;
     opacity  : 0;
     transform: scale(0.85) translateY(12px);
     filter   : blur(5px);
-
     transition: opacity 0.25s cubic-bezier(0.23, 1, 0.32, 1),
         transform 0.3s cubic-bezier(0.23, 1, 0.32, 1),
         filter 0.25s ease;
@@ -313,12 +290,11 @@ footer:hover .button.show {
 
 footer .button.show button {
     transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1),
-        box-shadow 0.2s, border-color 0.2s;
+        border-color 0.2s;
 }
 
 footer:hover .button.show button:hover {
     transform   : scale(1.02);
-    box-shadow  : 0 8px 20px rgba(0, 0, 0, 0.5);
     border-color: rgba(255, 255, 255, 0.35);
 }
 
@@ -366,7 +342,6 @@ footer .button.show button:active {
     backdrop-filter : blur(20px);
     border-radius   : 24px;
     border          : 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow      : 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     padding         : 1vw 1.2vw;
     opacity         : 0;
     transform       : translateY(10px) scale(0.98);
@@ -410,7 +385,6 @@ footer .button.show button:active {
 .buttons_start .button button,
 .buttons_stop .button button {
     transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1),
-        box-shadow 0.2s ease,
         background-color 0.2s,
         border-color 0.2s;
 }
@@ -418,7 +392,6 @@ footer .button.show button:active {
 .buttons_start .button button:hover,
 .buttons_stop .button button:hover {
     transform       : scale(1.02);
-    box-shadow      : 0 8px 20px rgba(0, 0, 0, 0.45);
     border-color    : rgba(255, 255, 255, 0.35);
     background-color: rgba(65, 72, 95, 0.96);
 }
@@ -432,8 +405,7 @@ footer .button.show button:active {
 .buttons_start:hover,
 .buttons_stop:hover {
     border-color: rgba(255, 255, 255, 0.25);
-    box-shadow  : 0 12px 32px rgba(0, 0, 0, 0.5);
-    transition  : border-color 0.2s, box-shadow 0.2s;
+    transition  : border-color 0.2s;
 }
 
 #setting section {

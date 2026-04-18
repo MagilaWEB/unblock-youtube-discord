@@ -5,17 +5,15 @@
     background-color: rgba(32, 35, 50, 0.75);
     border          : 1px solid rgba(255, 255, 255, 0.09);
     border-radius   : 13px;
-    box-shadow      : 0 8px 28px rgba(0, 0, 0, 0.38);
     opacity         : 0;
     filter          : blur(17px);
     visibility      : hidden;
+    will-change     : transform, opacity, filter;
+    transform       : translateZ(0);
 }
 
 main article.active .block {
-    transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1),
-        box-shadow 0.25s ease,
-        background-color 0.25s ease,
-        border-color 0.25s ease;
+    transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1), background-color 0.25s ease, border-color 0.25s ease;
     animation : blockReveal 0.45s cubic-bezier(0.23, 1, 0.32, 1) forwards;
     visibility: visible;
     transform : translateY(12px) scale(0.9);
@@ -34,40 +32,38 @@ main article.active .block:nth-child(1) {
 }
 
 main article.active .block:nth-child(2) {
-    animation-delay: 0.1s;
+    animation-delay: 0.10s;
 }
 
 main article.active .block:nth-child(3) {
-    animation-delay: 0.2s;
+    animation-delay: 0.20s;
 }
 
 main article.active .block:nth-child(4) {
-    animation-delay: 0.3s;
+    animation-delay: 0.30s;
 }
 
 main article.active .block:nth-child(5) {
-    animation-delay: 0.4s;
+    animation-delay: 0.40s;
 }
 
 main article.active .block:nth-child(6) {
-    animation-delay: 0.5s;
+    animation-delay: 0.50s;
 }
 
 main article.active .block:nth-child(n+7) {
-    animation-delay: 0.6s;
+    animation-delay: 0.60s;
 }
 
 .block:hover {
     background-color: rgba(45, 52, 74, 0.88);
     border-color    : rgba(255, 255, 255, 0.22);
-    box-shadow      : 0 14px 38px rgba(0, 0, 0, 0.48);
-    transform       : scale(1.1);
+    transform       : scale(1.1) translateZ(0);
 }
 
 .block:active {
-    transform          : translateY(1px) scale(0.99);
+    transform          : translateY(1px) scale(0.99) translateZ(0);
     transition-duration: 0.08s;
-    box-shadow         : 0 6px 20px rgba(0, 0, 0, 0.42);
 }
 
 .block h2 {

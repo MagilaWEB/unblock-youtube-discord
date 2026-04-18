@@ -1,33 +1,39 @@
 .input,
 .select_list {
-    display   : none;
-    position  : relative;
-    font-size : 1.3vw;
-    left      : 0;
-    top       : 0;
-    margin    : .95vw auto;
-    height    : 3.1vw;
-    box-shadow      : 0 1vw 1.5vw rgba(0, 0, 0, 0.35);
+    display: none;
+    position: relative;
+    font-size: 1.3vw;
+    left: 0;
+    top: 0;
+    margin: 0.95vw auto;
+    height: 3.1vw;
 }
 
 .input.show,
 .select_list.show {
     display: block;
+    animation: elementFadeIn 0.25s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+@keyframes elementFadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 .input input,
 .select_list .label {
-    position        : absolute;
-    z-index         : 10;
-    width           : 14vw;
-    height          : 100%;
-    border-radius   : 9px;
-    color           : #f0f0f0;
-    padding         : .5vw;
-    transition      : left .25s cubic-bezier(0.23, 1, 0.32, 1);
+    position: absolute;
+    z-index: 10;
+    width: 14vw;
+    height: 100%;
+    border-radius: 9px;
+    color: #f0f0f0;
+    padding: 0.5vw;
     background-color: rgba(40, 44, 58, 0.82);
-    border          : 1px solid rgba(255, 255, 255, 0.10);
-    text-align      : center;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    text-align: center;
+    transition: left 0.25s cubic-bezier(0.23, 1, 0.32, 1);
+    will-change: left;
 }
 
 .input input {
@@ -37,18 +43,18 @@
 .input input:hover,
 .input input:focus {
     background-color: rgba(55, 60, 78, 0.92);
-    border-color    : rgba(80, 150, 255, 0.75);
-    box-shadow      : 0 0 0 3.5px rgba(60, 130, 255, 0.25);
+    border-color: rgba(80, 150, 255, 0.75);
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .select_list {
     background-color: rgba(40, 44, 58, 0.82);
-    border          : 1px solid rgba(255, 255, 255, 0.10);
-    border-radius   : 9px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 9px;
 }
 
 .select_list .label {
-    color : #d8d8d8;
+    color: #d8d8d8;
     cursor: pointer;
     white-space: nowrap;
     overflow: hidden;
@@ -56,40 +62,47 @@
 }
 
 .select_list .label:focus {
-    color           : white;
+    color: white;
     background-color: rgba(50, 55, 70, 0.92);
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .select_list .select {
-    position        : absolute;
-    z-index         : 10;
-    visibility      : hidden;
-    opacity         : 0;
-    text-align      : center;
-    overflow        : auto;
-    top             : 102%;
-    width           : 14vw;
+    position: absolute;
+    z-index: 10;
+    visibility: hidden;
+    opacity: 0;
+    text-align: center;
+    overflow: auto;
+    top: 102%;
+    width: 14vw;
     background-color: rgba(28, 31, 45, 0.96);
-    border          : 1px solid rgba(255, 255, 255, 0.13);
-    border-radius   : 6px;
-    box-shadow      : 0 .5vw 1vw rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 6px;
+    will-change: opacity;
+    transform: translateZ(0);
 }
 
 .select_list .select_active {
-    z-index   : 20;
+    z-index: 20;
     visibility: visible;
-    opacity   : 1;
+    opacity: 1;
     max-height: 16vw;
-    height    : max-content;
-    transition: visibility 180ms, opacity 180ms cubic-bezier(0.23, 1, 0.32, 1);
+    height: max-content;
+    animation: selectFadeIn 180ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+@keyframes selectFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 
 .select_list .select .option {
-    cursor       : pointer;
-    width        : 100%;
+    cursor: pointer;
+    width: 100%;
     border-bottom: 1px solid rgba(255, 255, 255, 0.09);
-    padding      : .38vw 1.2vw;
-    transition   : background 140ms;
+    padding: 0.38vw 1.2vw;
+    transition: background 140ms;
 }
 
 .select_list .select .option:last-child {
@@ -101,68 +114,68 @@
 }
 
 .check_box {
-    display         : none;
-    position        : relative;
-    margin          : 1vw 0;
+    display: none;
+    position: relative;
+    margin: 1vw 0;
     background-color: rgba(32, 35, 50, 0.78);
-    border          : 1px solid rgba(255, 255, 255, 0.09);
-    border-radius   : 6px;
-    box-shadow      : 0 1vw 1.5vw rgba(0, 0, 0, 0.35);
-    transition      : transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1),
-        background-color 0.2s ease,
-        box-shadow 0.2s ease,
-        border-color 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 6px;
+    will-change: transform;
+    transform: translateZ(0);
 }
 
 .check_box.show {
     display: block;
+    animation: checkBoxAppear 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+}
+
+@keyframes checkBoxAppear {
+    from { opacity: 0; transform: scale(0.95) translateZ(0); }
+    to   { opacity: 1; transform: scale(1) translateZ(0); }
 }
 
 .check_box:hover {
     background-color: rgba(45, 50, 70, 0.88);
-    border-color    : rgba(255, 255, 255, 0.2);
-    box-shadow      : 0 8px 22px rgba(0, 0, 0, 0.45);
-    transform       : translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px) translateZ(0);
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
 }
 
 .check_box .check::before {
-    content      : "";
-    position     : absolute;
-    top          : 50%;
-    left         : 0.15vw;
-    width        : 0.68vw;
-    height       : 0.68vw;
-    background   : #f0f0f0;
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0.15vw;
+    width: 0.68vw;
+    height: 0.68vw;
+    background: #f0f0f0;
     border-radius: 50%;
-    transform    : translateY(-50%);
-    transition   : left 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1), background 0.2s ease;
-    box-shadow   : 0 1px 2px rgba(0, 0, 0, 0.2);
+    transform: translateY(-50%);
+    transition: left 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1), background 0.2s ease;
+    will-change: left;
 }
 
 .check_box .check {
-    position        : absolute;
-    top             : 0.7vw;
-    left            : 0.75vw;
-    width           : 2.3vw;
-    height          : 1.1vw;
-    border-radius   : 50px;
-    box-shadow      : inset 0 1px 4px rgba(0, 0, 0, 0.45);
-    transition      : background 0.25s ease, box-shadow 0.2s ease;
+    position: absolute;
+    top: 0.7vw;
+    left: 0.75vw;
+    width: 2.3vw;
+    height: 1.1vw;
+    border-radius: 50px;
     background-color: rgba(55, 95, 145, 0.88);
-    border-color    : rgba(100, 160, 220, 0.5);
-    box-shadow      : inset 0 1px 4px rgba(0, 0, 0, 0.2), 0 0 6px rgba(100, 160, 220, 0.6);
+    transition: background 0.25s ease;
 }
 
 .check_box .title,
 .select_list .title {
-    position  : relative;
+    position: relative;
     text-align: left;
-    margin    : 0;
-    bottom    : 0;
-    padding   : .2vw;
-    left      : 4vw;
-    width     : max-content;
-    font-size : 1.5vw;
+    margin: 0;
+    bottom: 0;
+    padding: 0.2vw;
+    left: 4vw;
+    width: max-content;
+    font-size: 1.5vw;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -170,103 +183,92 @@
 
 .select_list .title {
     left: 15vw;
-    top : .2vw;
+    top: 0.2vw;
 }
 
 .info_description {
-    z-index         : 30;
-    position        : fixed;
-    left            : -100%;
-    opacity         : 0;
-    font-size       : 1.7vw;
-    visibility      : hidden;
-    width           : 40vw;
-    padding         : 0.1vw 1vw;
-    margin-left     : 1em;
+    z-index: 30;
+    position: fixed;
+    left: -100%;
+    opacity: 0;
+    font-size: 1.7vw;
+    visibility: hidden;
+    width: 40vw;
+    padding: 0.1vw 1vw;
+    margin-left: 1em;
     background-color: rgba(32, 35, 50, 0.92);
-    border          : 1px solid rgba(255, 255, 255, 0.11);
-    border-radius   : 12px;
-    box-shadow      : 0 0.5vw 1vw rgba(0, 0, 0, 0.45);
-    transition      : opacity 0.2s cubic-bezier(0.23, 1, 0.32, 1),
-        transform 0.25s cubic-bezier(0.34, 1.2, 0.64, 1),
-        filter 0.2s ease,
-        visibility 0s 0.25s;
-    transform       : scale(0.85) rotate(-2deg);
-    filter          : blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    border-radius: 12px;
+    transform: scale(0.85) rotate(-2deg);
+    filter: blur(16px);
     transform-origin: top left;
-    pointer-events  : none;
+    pointer-events: none;
+    will-change: transform, opacity, filter;
+    animation: descriptionDisappear 0.25s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
 }
 
 .info_description.info_description_active {
-    opacity   : 1;
+    opacity: 1;
     visibility: visible;
-    transform : scale(1) rotate(0deg);
-    filter    : blur(0);
-    transition: opacity 0.2s cubic-bezier(0.23, 1, 0.32, 1),
-        transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1),
-        filter 0.2s ease,
-        visibility 0s 0s;
-    animation: descriptionAppear 0.4s cubic-bezier(0.34, 1.2, 0.64, 1),
-        descriptionBreathing 4.5s ease-in-out 0.4s infinite;
+    transform: scale(1) rotate(0deg);
+    filter: blur(0);
+    animation: descriptionAppear 0.4s cubic-bezier(0.34, 1.2, 0.64, 1), descriptionBreathing 4.5s ease-in-out 0.4s infinite;
+}
+
+@keyframes descriptionDisappear {
+    from { opacity: 1; transform: scale(1) rotate(0deg); filter: blur(0); }
+    to   { opacity: 0; transform: scale(0.85) rotate(-2deg); filter: blur(16px); }
 }
 
 @keyframes descriptionAppear {
     0% {
         transform: scale(0.7) rotate(-4deg);
-        opacity  : 0;
-        filter   : blur(18px);
+        opacity: 0;
+        filter: blur(18px);
     }
-
     60% {
         transform: scale(1.04) rotate(1deg);
-        filter   : blur(0);
+        filter: blur(0);
     }
-
     100% {
         transform: scale(1) rotate(0deg);
-        opacity  : 1;
+        opacity: 1;
     }
 }
 
 @keyframes descriptionBreathing {
     0% {
-        transform   : scale(1) translateY(0) translateX(0);
-        box-shadow  : 0 0.5vw 1vw rgba(0, 0, 0, 0.45);
+        transform: scale(1) translateY(0) translateX(0);
         border-color: rgba(255, 255, 255, 0.11);
     }
-
     50% {
-        transform   : scale(1.02) translateY(-2px) translateX(-0.5em);
-        box-shadow  : 0 0.8vw 1.2vw rgba(0, 0, 0, 0.52);
+        transform: scale(1.02) translateY(-2px) translateX(-0.5em);
         border-color: rgba(255, 255, 255, 0.22);
     }
-
     100% {
-        transform   : scale(1) translateY(0) translateX(0);
-        box-shadow  : 0 0.5vw 1vw rgba(0, 0, 0, 0.45);
+        transform: scale(1) translateY(0) translateX(0);
         border-color: rgba(255, 255, 255, 0.11);
     }
 }
 
 .check_box .check label {
-    position        : absolute;
-    width           : 1.5vw;
-    height          : 1.5vw;
-    top             : -.2vw;
-    left            : 0;
-    cursor          : pointer;
-    border-radius   : 50%;
+    position: absolute;
+    width: 1.5vw;
+    height: 1.5vw;
+    top: -0.2vw;
+    left: 0;
+    cursor: pointer;
+    border-radius: 50%;
     background-color: #d8d8d8;
-    box-shadow      : 0 2px 8px rgba(0, 0, 0, 0.4);
-    transition      : left .38s cubic-bezier(0.23, 1, 0.32, 1);
+    transition: left 0.38s cubic-bezier(0.23, 1, 0.32, 1);
+    will-change: left;
 }
 
 .check_box .check input[type="checkbox"] {
     visibility: hidden;
 }
 
-.check_box .check input[type="checkbox"]:checked+label {
-    left            : 1.07vw;
+.check_box .check input[type="checkbox"]:checked + label {
+    left: 1.07vw;
     background-color: #00e8a0;
-    box-shadow      : 0 0 1vw #00e8a0;
 }

@@ -1,4 +1,3 @@
-/* Базовое скрытие списка */
 .list_ul {
     display: none;
 }
@@ -15,6 +14,9 @@
     overflow        : auto;
     border-top      : 1px solid rgba(255, 255, 255, 0.1);
     background-color: rgba(28, 31, 45, 0.65);
+    will-change     : scroll-position;
+    transform       : translateZ(0);
+    contain         : layout style
 }
 
 .list_ul ul li {

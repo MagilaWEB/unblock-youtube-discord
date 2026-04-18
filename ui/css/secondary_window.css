@@ -6,51 +6,60 @@
 	z-index         : 40;
 	width           : 100%;
 	height          : 100%;
-	transform       : scale(0.92);
+	transform       : scale(0.92) translateZ(0);
 	background-color: rgba(0, 0, 0, 0.42);
+	will-change     : transform, opacity;
+	contain         : layout style paint;
 }
 
 .secondary_window.show {
-	transition: visibility .4s, opacity .4s, transform .4s cubic-bezier(0.23, 1, 0.32, 1);
+	transition: visibility 0.4s, opacity 0.4s, transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 	visibility: visible;
 	opacity   : 1;
-	transform : scale(1);
+	transform : scale(1) translateZ(0);
 }
 
 .secondary_window .content {
 	position        : absolute;
-	top             : 50%;
+	top             : calc(50% + 20px);
 	left            : 50%;
-	transform       : translate(-50%, -50%);
+	transform       : translate(-50%, -50%) translateZ(0);
 	width           : 80%;
 	background-color: rgba(28, 31, 46, 0.94);
 	border          : 1px solid rgba(255, 255, 255, 0.12);
 	border-radius   : 8px;
 	box-shadow      : 0 2vw 3vw rgba(0, 0, 0, 0.7);
 	padding         : 1.9vw 2.2vw;
+	will-change     : transform, border-color;
+	contain         : layout style;
 }
 
 .secondary_window .content .title {
-	margin    : 0 0 1vw 0;
-	text-align: center;
-	padding   : 1vw 0;
-	font-size : 4.08vw;
-	line-height  : 1.3;              /* явная высота строки */
-    word-break   : break-word;       /* разрешаем перенос длинных слов */
-    overflow-wrap: break-word;
+	margin       : 0 0 1vw 0;
+	text-align   : center;
+	padding      : 1vw 0;
+	font-size    : 4.08vw;
+	line-height  : 1.3;
+	word-break   : break-word;
+	overflow-wrap: break-word;
+	will-change  : transform, opacity;
+	transform    : translateZ(0);
 }
 
 .secondary_window .content .description {
 	margin       : 1.7vw 0 1.3vw;
-	padding      : .9vw 1.1vw;
+	padding      : 0.9vw 1.1vw;
 	border       : 1px solid rgba(255, 255, 255, 0.1);
 	text-align   : left;
 	font-size    : 2.2vw;
 	white-space  : pre-line;
 	overflow     : auto;
-	max-height   : 14em;
+	max-height   : 40vh;
 	line-height  : 3vw;
 	border-radius: 6px;
+	will-change  : transform, opacity;
+	transform    : translateZ(0);
+	contain      : layout style;
 }
 
 .secondary_window.show .content .description .list_ul {
@@ -64,28 +73,23 @@
 }
 
 .secondary_window .content .description .list_ul ul {
-	font-size: 1.5vw;
+	font-size : 1.5vw;
 	max-height: 100%;
 	overflow  : hidden;
 }
 
-.secondary_window .content .description .list_ul:hover {
-	background-color: none;
-	border-color    : none;
-	box-shadow      : none;
-	transform       : none;
-}
-
+.secondary_window .content .description .list_ul:hover,
 .secondary_window .content .description .list_ul:active {
-	background-color: none;
-	border-color    : none;
+	background-color: transparent;
+	border-color    : transparent;
 	box-shadow      : none;
 	transform       : none;
 }
-
 
 .secondary_window .content .elements {
-	text-align: center;
+	text-align : center;
+	will-change: transform, opacity;
+	transform  : translateZ(0);
 }
 
 .secondary_window .content .horizontally .button {
@@ -108,34 +112,31 @@
 }
 
 .secondary_window.show .content {
-	animation:
-		borderGlow 4s ease-in-out 0.5s infinite;
+	animation: borderGlow 4s ease-in-out 0.5s infinite;
 }
 
 .secondary_window.show .content .title {
-	animation: fadeSlideUp 0.4s ease-out 0.05s forwards,
-		gentleSway 4s ease-in-out 0.6s infinite;
+	animation: fadeSlideUp 0.4s ease-out 0.05s forwards, gentleSway 4s ease-in-out 0.6s infinite;
 	opacity  : 0;
-	transform: translateY(3vw);
+	transform: translateY(3vw) translateZ(0);
 }
 
 .secondary_window.show .content .description {
-	animation: fadeSlideUp 0.4s ease-out 0.15s forwards,
-		gentleBreathing 4s ease-in-out 0.5s infinite;
+	animation: fadeSlideUp 0.4s ease-out 0.15s forwards, gentleBreathing 4s ease-in-out 0.5s infinite;
 	opacity  : 0;
-	transform: translateY(3vw);
+	transform: translateY(3vw) translateZ(0);
 }
 
 .secondary_window.show .content .elements {
 	animation: fadeSlideUp 0.4s ease-out 0.25s forwards;
 	opacity  : 0;
-	transform: translateY(3vw);
+	transform: translateY(3vw) translateZ(0);
 }
 
 @keyframes fadeSlideUp {
 	to {
 		opacity  : 1;
-		transform: translateY(0);
+		transform: translateY(0) translateZ(0);
 	}
 }
 
@@ -153,18 +154,15 @@
 
 @keyframes gentleBreathing {
 	0% {
-		transform : scale(1);
-		box-shadow: 0 26px 75px rgba(0, 0, 0, 0.58);
+		transform: scale(1) translateZ(0);
 	}
 
 	50% {
-		transform : scale(1.02);
-		box-shadow: 0 28px 82px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(255, 255, 255, 0.03);
+		transform: scale(1.02) translateZ(0);
 	}
 
 	100% {
-		transform : scale(1);
-		box-shadow: 0 26px 75px rgba(0, 0, 0, 0.58);
+		transform: scale(1) translateZ(0);
 	}
 }
 
@@ -172,10 +170,10 @@
 
 	0%,
 	100% {
-		transform: scale(1);
+		transform: scale(1) translateZ(0);
 	}
 
 	50% {
-		transform: scale(1.05);
+		transform: scale(1.05) translateZ(0);
 	}
 }

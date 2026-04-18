@@ -115,7 +115,6 @@ class SecondaryWindow {
 	}
 	show() {
 		document.querySelector(".nav").classList.add("blur");
-		document.querySelector(".text_version").classList.add("blur");
 		document.querySelector("main").classList.add("blur");
 		document.querySelector("footer").classList.add("blur");
 
@@ -128,7 +127,6 @@ class SecondaryWindow {
 		this.is_show = false;
 
 		document.querySelector(".nav").classList.remove("blur");
-		document.querySelector(".text_version").classList.remove("blur");
 		document.querySelector("main").classList.remove("blur");
 		document.querySelector("footer").classList.remove("blur");
 	}
