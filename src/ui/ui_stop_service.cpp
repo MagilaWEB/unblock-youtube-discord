@@ -12,7 +12,7 @@ void Ui::_stopInit()
 	_stop_unblock->addEventClick(
 		[this](JSArgs)
 		{
-			_stoppingServices(eUnblock);
+			_stoppingServices();
 			_tcpGlobalChange(false);
 			return false;
 		}
@@ -22,7 +22,7 @@ void Ui::_stopInit()
 	_stop_service_all->addEventClick(
 		[this](JSArgs)
 		{
-			_stoppingServices(StoppingService::eUnblock);
+			_stoppingServices();
 			_tcpGlobalChange(false);
 			return false;
 		}
@@ -31,7 +31,7 @@ void Ui::_stopInit()
 	_buttonUpdate();
 }
 
-void Ui::_stoppingServices(StoppingService /* type */)
+void Ui::_stoppingServices()
 {
 	Core::get().addTask(
 		[this]
@@ -39,6 +39,9 @@ void Ui::_stoppingServices(StoppingService /* type */)
 			_window_wait_stop_service->show();
 
 			_unblock.removeService();
+
+			_unblock.localProxyTg(false);
+			_proxy_tg_enable->setState(false);
 
 			_buttonUpdate();
 			_activeServiceUpdate();

@@ -91,11 +91,6 @@ class Ui final : public utils::DefaultInit
 	BUTTON(_link_to_github);
 	BUTTON(_link_to_telegram);
 
-	enum StoppingService : u32
-	{
-		eUnblock  = (1 << 0),
-	};
-
 public:
 	Ui(UiBase* ui_base);
 
@@ -170,8 +165,7 @@ private:
 
 	// Stopping services
 	void _stopInit();
-	void _stoppingServices(StoppingService type);
-	// void _stopTorProxy();
+	void _stoppingServices();
 
 	// base footer
 	void _footerElements();
