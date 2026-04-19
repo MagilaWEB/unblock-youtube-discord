@@ -1,15 +1,52 @@
 .anim_loader {
-    display: inline-block;
-    width: 8vw;
-    height: 8vw;
-    border: 0.8vw solid rgba(255, 255, 255, 0.1);
-    border-top-color: currentColor;
+    display      : inline-block;
+    width        : 8vw;
+    height       : 8vw;
+    position     : relative;
+    transform    : scale(0.6) translateY(-30%);
     border-radius: 50%;
-    box-sizing: border-box;
-    transform: scale(0.6) translateY(-30%);
-    animation: anim_loader 1.25s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    border       : 0.8vw solid rgba(255, 255, 255, 0.1);
+    box-sizing   : border-box;
 }
+
+.anim_loader div {
+    content         : "";
+    position        : absolute;
+    top             : -0.8vw;
+    left            : -0.8vw;
+    right           : -0.8vw;
+    bottom          : -0.8vw;
+    border-radius   : 50%;
+    border          : 0.8vw solid transparent;
+    border-top-color: currentColor;
+    box-sizing      : border-box;
+    animation       : anim_loader 1.25s linear infinite;
+    will-change     : transform;
+    contain         : strict
+}
+
 @keyframes anim_loader {
-    0% { transform: scale(0.6) translateY(-30%) rotate(0deg); }
-    100% { transform: scale(0.6) translateY(-30%) rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    10% {
+        transform: rotate(7deg);
+    }
+
+    30% {
+        transform: rotate(76deg);
+    }
+
+    70% {
+        transform: rotate(284deg);
+    }
+
+    90% {
+        transform: rotate(353deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
