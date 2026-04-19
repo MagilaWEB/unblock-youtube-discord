@@ -4,19 +4,19 @@
 #include "../core/timer.h"
 #include "../engine/version.hpp"
 
-UiBase::UiBase(IEngineAPI* engine): _engine(engine)
+UiBase::UiBase(IEngineAPI* engine) : _engine(engine)
 {
 	_ui = std::make_unique<Ui>(this);
 
 	ViewConfig view_config{};
-    view_config.is_accelerated = true;
-    view_config.is_transparent = false;
-	view_config.enable_compositor = true;
+	view_config.is_accelerated				 = true;
+	view_config.is_transparent				 = false;
+	view_config.enable_compositor			 = true;
 	view_config.enable_compositor_debug_info = false;
-    
-    auto		 renderer = App::instance()->renderer();
+
+	auto		 renderer = App::instance()->renderer();
 	RefPtr<View> view	  = renderer->CreateView(_engine->window()->width(), _engine->window()->height(), view_config, nullptr);
-	_overlay = Overlay::Create(_engine->window(), view, 0, 0);
+	_overlay			  = Overlay::Create(_engine->window(), view, 0, 0);
 	_overlay->view()->LoadURL("file:///main.html");
 
 	_overlay->view()->set_load_listener(this);
@@ -108,12 +108,12 @@ void UiBase::OnWindowObjectReady(View* caller, uint64_t /*frame_id*/, bool /*is_
 	global["CPPTaskRun"]  = static_cast<JSCallback>(std::bind(&UiBase::runTask, this, std::placeholders::_1, std::placeholders::_2));
 	global["CPPLangText"] = static_cast<JSCallbackWithRetval>(std::bind(&UiBase::langText, this, std::placeholders::_1, std::placeholders::_2));
 
-	global["WINDOW_MINIMIZE"] = static_cast<JSCallback>(std::bind(&UiBase::minimizeWindow, this, std::placeholders::_1, std::placeholders::_2));
-	global["WINDOW_MAXIMIZE"] = static_cast<JSCallback>(std::bind(&UiBase::maximizeWindow, this, std::placeholders::_1, std::placeholders::_2));
-	global["WINDOW_RESTORE"]  = static_cast<JSCallback>(std::bind(&UiBase::restoreWindow, this, std::placeholders::_1, std::placeholders::_2));
+	global["WINDOW_MINIMIZE"]	= static_cast<JSCallback>(std::bind(&UiBase::minimizeWindow, this, std::placeholders::_1, std::placeholders::_2));
+	global["WINDOW_MAXIMIZE"]	= static_cast<JSCallback>(std::bind(&UiBase::maximizeWindow, this, std::placeholders::_1, std::placeholders::_2));
+	global["WINDOW_RESTORE"]	= static_cast<JSCallback>(std::bind(&UiBase::restoreWindow, this, std::placeholders::_1, std::placeholders::_2));
 	global["START_MOVE_WINDOW"] = static_cast<JSCallback>(std::bind(&UiBase::startMoveWindow, this, std::placeholders::_1, std::placeholders::_2));
-	global["MOVE_WINDOW"]	  = static_cast<JSCallback>(std::bind(&UiBase::moveWindow, this, std::placeholders::_1, std::placeholders::_2));
-	global["WINDOW_CLOSE"]	  = static_cast<JSCallback>(std::bind(&UiBase::closeWindow, this, std::placeholders::_1, std::placeholders::_2));
+	global["MOVE_WINDOW"]		= static_cast<JSCallback>(std::bind(&UiBase::moveWindow, this, std::placeholders::_1, std::placeholders::_2));
+	global["WINDOW_CLOSE"]		= static_cast<JSCallback>(std::bind(&UiBase::closeWindow, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 void UiBase::OnDOMReady(View* caller, uint64_t /*frame_id*/, bool /*is_main_frame*/, const String& /*url*/)
@@ -172,15 +172,15 @@ void UiBase::restoreWindow(const JSObject& /*obj*/, const JSArgs& /*args*/)
 
 void UiBase::startMoveWindow(const JSObject& /*obj*/, const JSArgs& /*args*/)
 {
-	auto* wnd	  = _engine->window();
+	auto* wnd = _engine->window();
 	if (!wnd)
 		return;
 
 	POINT cursorPos;
 	if (GetCursorPos(&cursorPos))
 	{
-		_current_move_x = (cursorPos.x / wnd->scale()) - wnd->x();
-		_current_move_y = (cursorPos.y / wnd->scale()) - wnd->y();
+		_current_move_x = static_cast<int>(cursorPos.x / wnd->scale()) - wnd->x();
+		_current_move_y = static_cast<int>(cursorPos.y / wnd->scale()) - wnd->y();
 	}
 }
 
@@ -192,7 +192,7 @@ void UiBase::moveWindow(const JSObject& /*obj*/, const JSArgs& /*args*/)
 
 	POINT cursorPos;
 	if (GetCursorPos(&cursorPos))
-		wnd->MoveTo((cursorPos.x / wnd->scale())  - _current_move_x, (cursorPos.y / wnd->scale()) - _current_move_y);
+		wnd->MoveTo(static_cast<int>(cursorPos.x / wnd->scale()) - _current_move_x, static_cast<int>(cursorPos.y / wnd->scale()) - _current_move_y);
 }
 
 void UiBase::closeWindow(const JSObject& /*obj*/, const JSArgs& /*args*/)

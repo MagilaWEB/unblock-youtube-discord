@@ -18,11 +18,11 @@ class DNSHost final : public utils::DefaultInit
 	File _file_hosts_backup;
 	File _file_hosts_user;
 
-	std::list<std::string>							_list_domains{};
-	std::list<std::string>							_list_dns_hosts_file_name{};
-	std::map<std::string, std::string>				_map_list{};
+	std::list<std::string>			   _list_domains{};
+	std::list<std::string>			   _list_dns_hosts_file_name{};
+	std::map<std::string, std::string> _map_list{};
 
-	CriticalSection	 _lock;
+	FastLock	 _lock;
 	std::atomic_bool _user_host_complete{ false };
 	std::atomic_bool _cancel_update{ false };
 	std::atomic_uint _size_iter{ 0 };
@@ -43,12 +43,10 @@ public:
 	private:
 		std::unique_ptr<HttpsLoad> _http;
 		std::string				   _url{ "https://dns.google/resolve?name=" };
-		// std::string _domain{};
-		// u32			_code_result{ 0 };
-		// std::string _stringBuffer;
-		MapDomainIP				   _map_domains_ip{};
 
-		void _formatToMap(std::string&, std::string);
+		MapDomainIP _map_domains_ip{};
+
+		void _formatToMap(std::string&, std::string_view);
 	};
 
 public:
