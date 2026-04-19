@@ -41,7 +41,7 @@ include(FetchContent)
 # Load GitHub ultralight-sdk
 FetchContent_Declare(
   ultralight
-  URL https://github.com/MagilaWEB/ultralight-sdk/releases/download/v1.4.1_dev_new/ultralight-sdk.7z
+  URL https://github.com/MagilaWEB/ultralight-sdk/releases/download/v1.4.1_dev/ultralight-sdk.7z
   SOURCE_DIR ultralight
 )
 
