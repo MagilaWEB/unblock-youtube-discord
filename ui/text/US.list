@@ -106,11 +106,9 @@ Factors:
 • Resource availability
 • ISP blocking level
 
-str_window_auto_start_wait_name_strategy_description=🧪 Testing configuration:
-├ Config: [{}]
-└ Version: [{}]
-
-str_window_auto_start_wait_name_strategy_proxy_description=🧪 Testing configuration: {}
+str_window_auto_start_wait_name_strategy_description=🧪 Testing bypass option:
+├ Configuration: [{}]
+└ Strategies version: [{}]
 
 str_window_configuration_selection_error=❌ Automatic selection failed
 Possible reasons:
@@ -133,8 +131,10 @@ Looking for available Unblock updates.
 
 // Secondary Window config not found
 str_window_config_not_found_title=📭 No configuration selected
-str_window_config_not_found_description=First launch or config deleted.
-→ Automatic selection will start.
+str_window_config_not_found_description=Configuration file not found.
+This could be the first launch or the file may have been deleted.
+Automatic selection of the optimal configuration for your provider will now start.
+This process may take a while.
 
 // Secondary Window config found
 str_window_config_found_title=📂 Previous configuration found
@@ -155,16 +155,14 @@ str_window_continue_select_strategy_title=✅ Configuration selected
 str_window_continue_select_strategy_description=Selected:
 ├ Config: [{}]
 └ Version: [{}]
-Continue searching?
 
-str_window_continue_select_strategy_proxy_description=✅ Configuration selected: [{}]
 We recommend checking site availability yourself.
 If everything works — click «No» to finish selection.
-If you want a different option — click «Yes» to continue searching.
+If you need a different option — click «Yes» to continue searching.
 
 // Secondary Window warning to conflict service
 str_window_warning_conflict_service=⚠ Conflicting services: [{}]
-Recommended to remove them for Unblock to work properly.
+It is recommended to remove them for Unblock to work correctly.
 Remove?
 
 // Secondary Window Warning about the introduction into the system
