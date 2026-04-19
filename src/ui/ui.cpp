@@ -147,6 +147,7 @@ void Ui::_checkWhitelist()
 		_window_warning_whitelist->create(Localization::Str{ "str_warning" }, "str_window_whitelist_description");
 		_window_warning_whitelist->setType(SecondaryWindow::Type::OK);
 	}
+
 	if (!_window_warning_no_internet->isCreate())
 	{
 		_window_warning_no_internet->create(Localization::Str{ "str_warning" }, "str_window_warning_no_internet_description");
@@ -156,22 +157,27 @@ void Ui::_checkWhitelist()
 	Core::get().addTaskParallel(
 		[this]
 		{
-			const bool state_yandex = _unblock.testUrl("https://yandex.ru");
-			const bool state_google = _unblock.testUrl("https://google.com");
-			_window_wait_test_whitelist->hide();
-
-			if (state_yandex && !state_google)
+			const bool state_internet = _unblock.testUrl("https://yandex.ru") || _unblock.testUrl("https://vk.com");
+			if (state_internet)
 			{
-				_window_warning_whitelist->show();
-				_window_warning_whitelist->addEventOk(
-					[this](JSArgs)
-					{
-						_window_warning_whitelist->hide();
-						return true;
-					}
-				);
+				const bool state_block =
+					_unblock.testUrl("https://google.com") || _unblock.testUrl("https://2ip.ru") || _unblock.testUrl("https://github.com");
+
+				_window_wait_test_whitelist->hide();
+
+				if (!state_block)
+				{
+					_window_warning_whitelist->show();
+					_window_warning_whitelist->addEventOk(
+						[this](JSArgs)
+						{
+							_window_warning_whitelist->hide();
+							return true;
+						}
+					);
+				}
 			}
-			else if (!state_yandex)
+			else
 			{
 				_window_warning_no_internet->show();
 				_window_warning_no_internet->addEventOk(
