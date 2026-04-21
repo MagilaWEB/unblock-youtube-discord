@@ -2,6 +2,15 @@
 
 * {
     box-sizing: border-box;
+    cursor    : default;
+}
+
+a,
+button,
+.button,
+[onclick],
+.clickable {
+    cursor: pointer;
 }
 
 html,
@@ -13,22 +22,6 @@ body {
     width           : 100%;
     height          : 100%;
     background-color: #0d0e14;
-}
-
-body::after {
-    content       : '';
-    position      : fixed;
-    top           : 40px;
-    left          : 0;
-    width         : 100%;
-    height        : 100%;
-    margin        : 0;
-    border        : 4px solid rgb(0, 0, 0);
-    border-top    : none;
-    border-bottom : none;
-    pointer-events: none;
-    box-sizing    : border-box;
-    z-index       : 9999;
 }
 
 #background {
@@ -61,110 +54,13 @@ h2 {
     filter: blur(12px);
 }
 
-.window-controls {
-    z-index         : 50;
-    position        : fixed;
-    top             : 0;
-    left            : 0;
-    width           : 100%;
-    height          : 40px;
-    background-color: rgba(35, 38, 52, 0.85);
-    backdrop-filter : blur(24px);
-    border-bottom   : 1px solid rgba(255, 255, 255, 0.08);
-    cursor          : move;
-    user-select     : none;
-    animation       : titleBarReveal 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-@keyframes titleBarReveal {
-    0% {
-        opacity  : 0;
-        transform: translateY(-10px);
-    }
-
-    100% {
-        opacity  : 1;
-        transform: translateY(0);
-    }
-}
-
-.window-controls:hover {
-    background-color   : rgba(40, 44, 60, 0.92);
-    border-bottom-color: rgba(255, 255, 255, 0.15);
-    transition         : background-color 0.25s, border-color 0.2s;
-}
-
-.window-controls .text_version {
-    display       : inline-block;
-    padding       : 0 11px;
-    line-height   : 40px;
-    font-size     : 12px;
-    font-weight   : 500;
-    letter-spacing: -0.02em;
-    color         : #e0e0e0;
-}
-
-.window-controls .text_version .text {
-    margin: 0;
-}
-
-.window-controls .control-buttons {
-    position   : fixed;
-    top        : 0;
-    right      : 11px;
-    display    : flex;
-    gap        : 7px;
-    height     : 40px;
-    align-items: center;
-}
-
-.window-controls .control-buttons .button {
-    width          : 41px;
-    height         : 29px;
-    background     : transparent;
-    border         : none;
-    border-radius  : 7px;
-    color          : #e0e0e0;
-    cursor         : pointer;
-    transition     : all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-    font-size      : 15px;
-    display        : flex;
-    align-items    : center;
-    justify-content: center;
-}
-
-.window-controls .control-buttons .button:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-    transform       : scale(1.02);
-}
-
-.window-controls .control-buttons .button:active {
-    transform          : scale(0.96);
-    transition-duration: 0.08s;
-}
-
-.window-controls .control-buttons .button.close:hover {
-    background-color: #e81123;
-    color           : white;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .window-controls {
-        animation: none;
-    }
-
-    .window-controls .control-buttons .button:hover {
-        transform: none;
-    }
-}
-
 main {
     transition: filter .5s;
 }
 
 main article {
     position  : absolute;
-    top       : calc(20vw + 40px);
+    top       : 20vw;
     left      : 0;
     width     : 100%;
     visibility: hidden;
@@ -176,7 +72,7 @@ main article.active {
     visibility: visible;
     opacity   : 1;
     transform : translateY(0) scale(1);
-    transition: opacity 0.32s cubic-bezier(0.23, 1, 0.32, 1);
+    transition: opacity 0.32s ease-in-out;
 }
 
 main article .header_title {
@@ -199,7 +95,7 @@ main article .header_title {
 }
 
 main article.active .header_title {
-    animation: headerReveal 0.45s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    animation: headerReveal 0.45s ease-in-out forwards;
 }
 
 @keyframes headerReveal {
@@ -227,7 +123,7 @@ footer {
     background-color: rgba(25, 28, 42, 0.82);
     height          : 4.3em;
     border-top      : 1px solid rgba(255, 255, 255, 0.08);
-    transition      : bottom 0.38s cubic-bezier(0.34, 1.2, 0.64, 1),
+    transition      : bottom 0.38s ease-in-out,
         border-color 0.2s ease;
 }
 
@@ -277,8 +173,8 @@ footer .button.show {
     opacity  : 0;
     transform: scale(0.85) translateY(12px);
     filter   : blur(5px);
-    transition: opacity 0.25s cubic-bezier(0.23, 1, 0.32, 1),
-        transform 0.3s cubic-bezier(0.23, 1, 0.32, 1),
+    transition: opacity 0.25s ease-in-out,
+        transform 0.3s ease-in-out,
         filter 0.25s ease;
 }
 
@@ -289,7 +185,7 @@ footer:hover .button.show {
 }
 
 footer .button.show button {
-    transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1),
+    transition: transform 0.2s ease-in-out,
         border-color 0.2s;
 }
 
@@ -337,7 +233,7 @@ footer .button.show button:active {
 .buttons_start,
 .buttons_stop {
     position        : relative;
-    top             : calc(5vw + 40px);
+    top             : 5vw;
     background-color: rgba(25, 28, 42, 0.65);
     backdrop-filter : blur(20px);
     border-radius   : 24px;
@@ -346,7 +242,7 @@ footer .button.show button:active {
     opacity         : 0;
     transform       : translateY(10px) scale(0.98);
     filter          : blur(3px);
-    animation       : buttonsPanelReveal 0.5s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    animation       : buttonsPanelReveal 0.5s ease-in-out forwards;
 }
 
 .buttons_start {
@@ -371,7 +267,7 @@ footer .button.show button:active {
     margin   : 0;
     transform: scale(0.85) translateY(8px);
     filter   : blur(3px);
-    animation: buttonReveal 0.35s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    animation: buttonReveal 0.35s ease-in-out forwards;
 }
 
 @keyframes buttonReveal {
@@ -384,7 +280,7 @@ footer .button.show button:active {
 
 .buttons_start .button button,
 .buttons_stop .button button {
-    transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1),
+    transition: transform 0.2s ease-in-out,
         background-color 0.2s,
         border-color 0.2s;
 }

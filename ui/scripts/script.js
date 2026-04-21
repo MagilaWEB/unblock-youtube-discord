@@ -78,6 +78,13 @@ if (!RUN_CPP) {
 	createSelectOption("unblock3", 4, "Элемент 4");
 	createSelectOption("unblock3", 5, "Элемент 5");
 
+		createListSelect("#setting section .unblock", "unblock4", "Список выбора", "Какоето описание 2")
+	createSelectOption("unblock4", 1, "Элемент 1");
+	createSelectOption("unblock4", 2, "Элемент 2");
+	createSelectOption("unblock4", 3, "Элемент 3");
+	createSelectOption("unblock4", 4, "Элемент 4");
+	createSelectOption("unblock4", 5, "Элемент 5");
+
 	addInputEventSubmit("testInput1", false, new_value => {
 		console.log(new_value);
 	});

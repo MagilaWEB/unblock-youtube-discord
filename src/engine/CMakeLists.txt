@@ -70,6 +70,10 @@ if(CUPY_LIBS_DLL_TO_BIN)
         COMMAND ${CMAKE_COMMAND} -E $<IF:$<CONFIG:Debug>,copy_if_different,echo>
             "${CURL_DIR_DEBUG}/bin/zlibd.pdb"
             $<TARGET_FILE_DIR:${NAME}>
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_SOURCE_DIR}/src/engine/unblock.ico"
+            $<TARGET_FILE_DIR:${NAME}>
+
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ultralight_files} $<TARGET_FILE_DIR:${NAME}>
         COMMENT "Copying runtime DLLs to output directory"

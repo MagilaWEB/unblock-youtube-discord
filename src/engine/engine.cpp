@@ -1,7 +1,8 @@
 #include "engine.h"
 #include "version.hpp"
-#include <corecrt_io.h>
-#include <fcntl.h>
+
+#include <dwmapi.h>
+#pragma comment(lib, "dwmapi.lib")
 
 Engine& Engine::get()
 {
@@ -21,6 +22,30 @@ static std::string get_system_locale()
 
 	WideCharToMultiByte(CP_UTF8, 0, buffer.data(), chars - 1, result.data(), size_needed, nullptr, nullptr);
 	return result.substr(result.find_first_of("-") + 1, result.length());
+}
+
+static void ForceSetWindowIcon(HWND hwnd, const wchar_t* iconPath)
+{
+	HICON hIconBig = static_cast<HICON>(LoadImageW(NULL, iconPath, IMAGE_ICON, GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), LR_LOADFROMFILE));
+	HICON hIconSmall = static_cast<HICON>(LoadImageW(NULL, iconPath, IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_LOADFROMFILE));
+
+	if (!hIconBig || !hIconSmall)
+	{
+		hIconBig   = static_cast<HICON>(LoadImageW(NULL, iconPath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE));
+		hIconSmall = hIconBig;
+	}
+
+	SendMessage(hwnd, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIconBig));
+	SendMessage(hwnd, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIconSmall));
+
+	SetClassLongPtr(hwnd, GCLP_HICON, reinterpret_cast<LONG_PTR>(hIconBig));
+	SetClassLongPtr(hwnd, GCLP_HICONSM, reinterpret_cast<LONG_PTR>(hIconSmall));
+}
+
+static void ApplyDarkTitleBar(HWND hwnd)
+{
+	BOOL useDarkMode = TRUE;
+	DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
 }
 
 void Engine::initialize()
@@ -61,8 +86,12 @@ void Engine::initialize()
 	_app = App::Create(setting, config);
 
 	const int screenScale = GetSystemMetrics(SM_CYSCREEN) / 520;
+	_window = Window::Create(_app->main_monitor(), 520 * screenScale, 510 * screenScale, false, kWindowFlags_Resizable | kWindowFlags_Maximizable);
 
-	_window = Window::Create(_app->main_monitor(), 520 * screenScale, 510 * screenScale, false, kWindowFlags_Borderless | kWindowFlags_Resizable);
+	auto hwnd = static_cast<HWND>(_window->native_handle());
+
+	ApplyDarkTitleBar(hwnd);
+	ForceSetWindowIcon(hwnd, L"./unblock.ico");
 
 	static std::string title{ "Unblock " + std::format("Version: {}", VERSION_STR) };
 	_window->SetTitle(title.c_str());

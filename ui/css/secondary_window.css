@@ -6,22 +6,19 @@
 	z-index         : 40;
 	width           : 100%;
 	height          : 100%;
-	transform       : scale(0.92) translateZ(0);
 	background-color: rgba(0, 0, 0, 0.42);
 	will-change     : transform, opacity;
 	contain         : layout style paint;
 }
 
 .secondary_window.show {
-	transition: visibility 0.4s, opacity 0.4s, transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 	visibility: visible;
 	opacity   : 1;
-	transform : scale(1) translateZ(0);
 }
 
 .secondary_window .content {
 	position        : absolute;
-	top             : calc(50% + 20px);
+	top             : 50%;
 	left            : 50%;
 	transform       : translate(-50%, -50%) translateZ(0);
 	width           : 80%;

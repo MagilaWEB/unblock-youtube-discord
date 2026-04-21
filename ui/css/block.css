@@ -5,17 +5,16 @@
     background-color: rgba(32, 35, 50, 0.75);
     border          : 1px solid rgba(255, 255, 255, 0.09);
     opacity         : 0;
-    filter          : blur(17px);
+    filter          : blur(10px);
     visibility      : hidden;
-    will-change     : transform, opacity, filter;
-    transform       : translateZ(0);
+    will-change     : transform, opacity, filter, background-color, border-color;
+    transform       : translateY(10px) ;
 }
 
 main article.active .block {
-    transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1), background-color 0.25s ease, border-color 0.25s ease;
-    animation : blockReveal 0.45s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+    animation : blockReveal 0.45s ease-in-out forwards;
     visibility: visible;
-    transform : translateY(12px) scale(0.9);
 }
 
 @keyframes blockReveal {
@@ -54,15 +53,9 @@ main article.active .block:nth-child(n+7) {
     animation-delay: 0.60s;
 }
 
-.block:hover {
+main article.active .block:hover {
     background-color: rgba(45, 52, 74, 0.88);
     border-color    : rgba(255, 255, 255, 0.22);
-    transform       : scale(1.1) translateZ(0);
-}
-
-.block:active {
-    transform          : translateY(1px) scale(0.99) translateZ(0);
-    transition-duration: 0.08s;
 }
 
 .block h2 {
