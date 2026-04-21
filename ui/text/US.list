@@ -262,6 +262,15 @@ Enable only if you experience issues in games.
 str_unblock_enable_torproject_title=🧅 Torproject
 str_unblock_enable_torproject_description=Bypass Tor blocking.
 
+str_unblock_enable_roblox_title=👾 Roblox
+str_unblock_enable_roblox_description=Bypass blocking of the Roblox platform for games and game servers.
+
+str_unblock_enable_speedtest_title=📊 Speedtest
+str_unblock_enable_speedtest_description=Bypass blocking of the Speedtest internet speed testing service.
+
+str_unblock_enable_amazon_title=📦 Amazon
+str_unblock_enable_amazon_description=Bypass blocking of Amazon (website and AWS cloud services).
+
 // Setting checkbox unblock enable TLD
 str_unblock_enable_tld_title=🌐 TLD filtering mode
 str_unblock_enable_tld_description=TLD filtering:
