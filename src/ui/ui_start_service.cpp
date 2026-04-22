@@ -118,19 +118,21 @@ void Ui::_clickStartService()
 {
 	if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
 	{
-		auto& strategy_list = _unblock.getStrategiesList();
-		if (std::ranges::find(strategy_list, config.value()) == strategy_list.end())
-		{
-			if (!_unblock_manual->getState())
-				Debug::warning("config[{}] The specified strategy does not exist from the user's settings!", config.value());
-
-			_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", strategy_list[0]);
-			_unblock_select_config->setSelectedOptionValue(strategy_list[0]);
-		}
-
 		if (_unblock_manual->getState())
 		{
 			_startServiceFromConfig();
+			return;
+		}
+
+		auto& strategy_list = _unblock.getStrategiesList();
+		if (std::ranges::find(strategy_list, config.value()) == strategy_list.end())
+		{
+			Debug::warning("config[{}] The specified strategy does not exist from the user's settings!", config.value());
+
+			_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", "");
+			_unblock_select_config->setSelectedOptionValue(strategy_list[0]);
+
+			_window_config_not_found->show();
 			return;
 		}
 
