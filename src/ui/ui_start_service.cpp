@@ -130,7 +130,9 @@ void Ui::_clickStartService()
 			Debug::warning("config[{}] The specified strategy does not exist from the user's settings!", config.value());
 
 			_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", "");
-			_unblock_select_config->setSelectedOptionValue(strategy_list[0]);
+
+			if (_unblock_select_config->isShow())
+				_unblock_select_config->setSelectedOptionValue(strategy_list[0]);
 
 			_window_config_not_found->show();
 			return;
