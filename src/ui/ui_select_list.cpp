@@ -89,13 +89,14 @@ void SelectList::addEventChange(std::function<bool(JSArgs)>&& callback)
 
 void SelectList::setSelectedOptionValue(std::string_view value)
 {
+	std::string _value = value.data();
 	runCodeToJS(
-		[this, value]
+		[this, _value]
 		{
 			if (!_created)
 				return;
 
-			ASSERT_ARGS(_set_value({ name(), value.data() }).ToBoolean() == true, "Couldn't setSelectedOptionValue a {} named [{}]", _type, name());
+			ASSERT_ARGS(_set_value({ name(), _value.c_str() }).ToBoolean() == true, "Couldn't setSelectedOptionValue a {} named [{}]", _type, name());
 		}
 	);
 }
