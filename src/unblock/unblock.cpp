@@ -271,14 +271,7 @@ std::vector<std::string> Unblock::listVersionStrategy()
 	for (auto& entry : std::filesystem::directory_iterator(patch_dir))
 		strategy_dirs.push_back(entry.path().filename().string());
 
-	std::ranges::sort(
-		strategy_dirs,
-		[](const std::string& left, const std::string& right)
-		{
-			static std::regex reg{ "\\." };
-			return std::stoul(std::regex_replace(left, reg, "")) > std::stoul(std::regex_replace(right, reg, ""));
-		}
-	);
+	std::ranges::sort(strategy_dirs, [](const std::string& left, const std::string& right) { return Core::get().isVersionNewer(left, right); });
 
 	return strategy_dirs;
 }

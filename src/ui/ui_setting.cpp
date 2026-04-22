@@ -440,8 +440,8 @@ void Ui::_settingUnblockEnableManualSelectUpdate()
 			}
 			else
 			{
-				_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", "");
-				Debug::warning("config[{}] The specified strategy does not exist from the user's settings!", config.value());
+				_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", strategies_list[0]);
+				_unblock_select_config->setSelectedOptionValue(strategies_list[0]);
 			}
 		}
 
