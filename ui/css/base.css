@@ -66,6 +66,7 @@ main article {
     visibility: hidden;
     opacity   : 0;
     padding   : 0 1.4vw;
+    padding-bottom: 10em;
 }
 
 main article.active {
