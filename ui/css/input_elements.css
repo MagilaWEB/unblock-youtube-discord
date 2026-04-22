@@ -102,7 +102,7 @@
     text-align      : center;
     overflow        : auto;
     top             : 102%;
-    width           : 14vw;
+    width           : fit-content;
     max-height      : 16vw;
     height          : max-content;
     background-color: rgba(28, 31, 45, 0.96);
