@@ -17,6 +17,11 @@ static size_t progress_callback(void* clientp, curl_off_t /*dltotal*/, curl_off_
 	return CURLE_OK;
 }
 
+static size_t write_data(void*, size_t size, size_t nmemb, void*)
+{
+	return size * nmemb;
+}
+
 DomainTesting::DomainTesting()
 {
 	CURL* curl = curl_easy_init();
@@ -182,40 +187,65 @@ bool DomainTesting::isConnectionUrl(CurlDomain& domain)
 	curl_easy_setopt(domain.curl, CURLOPT_NOSIGNAL, 1L);
 	curl_easy_setopt(domain.curl, CURLOPT_FRESH_CONNECT, 1L);
 	curl_easy_setopt(domain.curl, CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(domain.curl, CURLOPT_CONNECT_ONLY, 1L);
+	curl_easy_setopt(domain.curl, CURLOPT_MAXREDIRS, 10L);
+	curl_easy_setopt(domain.curl, CURLOPT_NOBODY, 1L);
 	curl_easy_setopt(domain.curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_DEFAULT);
 
-	long timeout = _max_wait_testing.load();
+	curl_easy_setopt(domain.curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+	u32 timeout = _max_wait_testing.load();
 	curl_easy_setopt(domain.curl, CURLOPT_CONNECTTIMEOUT, timeout);
 	curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, timeout);
 
 	curl_easy_setopt(domain.curl, CURLOPT_NOPROGRESS, 0L);
 	curl_easy_setopt(domain.curl, CURLOPT_XFERINFODATA, this);
 	curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
+	curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
 
-	curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, nullptr);
-	curl_easy_setopt(domain.curl, CURLOPT_READFUNCTION, nullptr);
-	curl_easy_setopt(domain.curl, CURLOPT_HEADERFUNCTION, nullptr);
+	constexpr u32						MAX_QUICK_RETRIES = 50;
+	constexpr std::chrono::milliseconds RETRY_DELAY{ 10 };
+	constexpr double					CONNECT_TIME_THRESHOLD = 0.4;
 
-	const u32 max_retries = 100;
-	u32		  retry		  = 0;
-
-	while (retry < max_retries)
+	for (u32 attempt = 0; attempt < MAX_QUICK_RETRIES; ++attempt)
 	{
 		CURLcode res = curl_easy_perform(domain.curl);
 
 		if (res == CURLE_OK)
 		{
-			double connect_time = 0.0;
-			curl_easy_getinfo(domain.curl, CURLINFO_CONNECT_TIME, &connect_time);
-			domain.result_time_sec = connect_time;
-			return true;
+			u32 http_code = 0;
+			curl_easy_getinfo(domain.curl, CURLINFO_RESPONSE_CODE, &http_code);
+			if (http_code > 0)
+			{
+				double total_time = 0.0;
+				curl_easy_getinfo(domain.curl, CURLINFO_TOTAL_TIME, &total_time);
+				domain.result_time_sec = total_time;
+				return true;
+			}
 		}
 
-		if (res != CURLE_SSL_CONNECT_ERROR)
+		u32 os_errno = 0;
+		curl_easy_getinfo(domain.curl, CURLINFO_OS_ERRNO, &os_errno);
+
+		double connect_time = 0.0;
+		curl_easy_getinfo(domain.curl, CURLINFO_CONNECT_TIME, &connect_time);
+
+		// Criteria for "active connection reset" (zapret2 changes strategy):
+		bool is_zapret_reset = false;
+		if (res == CURLE_SSL_CONNECT_ERROR || res == CURLE_COULDNT_CONNECT || res == CURLE_OPERATION_TIMEDOUT || res == CURLE_GOT_NOTHING)
+		{
+			if (os_errno == ECONNRESET && connect_time < CONNECT_TIME_THRESHOLD)
+				is_zapret_reset = true;
+
+#ifdef _WIN32
+			if (os_errno == WSAECONNRESET && connect_time < CONNECT_TIME_THRESHOLD)
+				is_zapret_reset = true;
+#endif
+		}
+
+		if (!is_zapret_reset)
 			break;
 
-		++retry;
+		std::this_thread::sleep_for(RETRY_DELAY);
 	}
 
 	double total_time = 0.0;
