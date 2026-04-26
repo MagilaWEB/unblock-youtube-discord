@@ -25,6 +25,7 @@ static size_t write_data(void*, size_t size, size_t nmemb, void*)
 DomainTesting::DomainTesting()
 {
 	static bool init_timer_wait_testing{ false };
+
 	if (init_timer_wait_testing)
 		return;
 
@@ -32,18 +33,22 @@ DomainTesting::DomainTesting()
 	{
 		curl_easy_setopt(curl, CURLOPT_URL, "https://yandex.ru/");
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, nullptr);
-		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
 
 		double	 total_time = 0;
 		CURLcode res		= curl_easy_perform(curl);
 		if (res == CURLE_OK)
+		{
 			curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &total_time);
+			const u32 time_sec = static_cast<u32>(total_time * 10) + 5;
+			_max_wait_testing.store(time_sec > 10 ? 10 : time_sec);
 
-		const u32 time_sec = static_cast<u32>(total_time * 10) + 5;
-		_max_wait_testing.store(time_sec > 10 ? 10 : time_sec);
+			curl_easy_cleanup(curl);
+			init_timer_wait_testing = true;
+			return;
+		}
 
-		curl_easy_cleanup(curl);
-		init_timer_wait_testing = true;
+		_max_wait_testing.store(5);
 	}
 }
 

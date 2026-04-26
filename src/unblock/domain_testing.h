@@ -42,7 +42,7 @@ private:
 	void _clearURLS();
 
 private:
-	inline static std::atomic_uint _max_wait_testing;
+	inline static std::atomic_uint _max_wait_testing{ 0 };
 
 	File				   _file_test_domain{ false };
 	std::list<CurlDomain>  _list_domain{};
