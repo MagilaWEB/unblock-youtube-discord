@@ -1,6 +1,8 @@
 #include "unblock.h"
 #include "../engine/version.hpp"
+#include "domain_testing.h"
 #include <bit7z/bitfileextractor.hpp>
+#include <curl/curl.h>
 
 Unblock::Unblock()
 {
@@ -11,11 +13,9 @@ Unblock::Unblock()
 
 bool Unblock::testUrl(std::string_view str_url)
 {
-	HttpsLoad url{ str_url };
+	DomainTesting::CurlDomain domain{ curl_easy_init(), str_url.data() };
 
-	url.run();
-
-	return url.codeResult() == 200;
+	return DomainTesting::isConnectionUrl(nullptr, domain);
 }
 
 bool Unblock::automaticallyStrategy()
