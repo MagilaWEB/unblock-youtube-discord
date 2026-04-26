@@ -24,9 +24,11 @@ static size_t write_data(void*, size_t size, size_t nmemb, void*)
 
 DomainTesting::DomainTesting()
 {
-	CURL* curl = curl_easy_init();
+	static bool init_timer_wait_testing{ false };
+	if (init_timer_wait_testing)
+		return;
 
-	if (curl)
+	if (CURL* curl = curl_easy_init())
 	{
 		curl_easy_setopt(curl, CURLOPT_URL, "https://yandex.ru/");
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, nullptr);
@@ -41,6 +43,7 @@ DomainTesting::DomainTesting()
 		_max_wait_testing.store(time_sec > 10 ? 10 : time_sec);
 
 		curl_easy_cleanup(curl);
+		init_timer_wait_testing = true;
 	}
 }
 
@@ -84,7 +87,7 @@ void DomainTesting::test(bool base_test, std::function<void(std::string url, boo
 			_list_domain.end(),
 			[this, &state](CurlDomain& domain)
 			{
-				if (isConnectionUrl(domain))
+				if (isConnectionUrl(this, domain))
 				{
 					_domain_ok++;
 					InputConsole::textOk(Localization::Str{ "str_success_url" }(), domain.url);
@@ -135,7 +138,7 @@ void DomainTesting::test(bool base_test, std::function<void(std::string url, boo
 				return domain.url;
 			};
 
-			if (isConnectionUrl(domain))
+			if (isConnectionUrl(this, domain))
 			{
 				state = true;
 				_domain_ok++;
@@ -178,7 +181,7 @@ void DomainTesting::printTestInfo() const
 	InputConsole::textInfo(Localization::Str{ "str_result_url_testing" }(), _domain_ok.load(), _list_domain.size(), successRate());
 }
 
-bool DomainTesting::isConnectionUrl(CurlDomain& domain)
+bool DomainTesting::isConnectionUrl(DomainTesting * obj, CurlDomain& domain)
 {
 	if (!domain.curl)
 		return false;
@@ -198,13 +201,15 @@ bool DomainTesting::isConnectionUrl(CurlDomain& domain)
 	curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, timeout);
 
 	curl_easy_setopt(domain.curl, CURLOPT_NOPROGRESS, 0L);
-	curl_easy_setopt(domain.curl, CURLOPT_XFERINFODATA, this);
+
+	curl_easy_setopt(domain.curl, CURLOPT_XFERINFODATA, obj);
 	curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
+
 	curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
 
 	constexpr u32						MAX_QUICK_RETRIES = 50;
 	constexpr std::chrono::milliseconds RETRY_DELAY{ 10 };
-	constexpr double					CONNECT_TIME_THRESHOLD = 0.4;
+	constexpr double					CONNECT_TIME_THRESHOLD = 0.5;
 
 	for (u32 attempt = 0; attempt < MAX_QUICK_RETRIES; ++attempt)
 	{
