@@ -179,6 +179,7 @@ void Ui::_checkWhitelist()
 			}
 			else
 			{
+				_window_wait_test_whitelist->hide();
 				_window_warning_no_internet->show();
 				_window_warning_no_internet->addEventOk(
 					[this](JSArgs)
