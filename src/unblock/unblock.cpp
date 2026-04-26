@@ -14,8 +14,9 @@ Unblock::Unblock()
 bool Unblock::testUrl(std::string_view str_url)
 {
 	DomainTesting::CurlDomain domain{ curl_easy_init(), str_url.data() };
-
-	return DomainTesting::isConnectionUrl(nullptr, domain);
+	const bool				  state_url = DomainTesting::isConnectionUrl(nullptr, domain);
+	curl_easy_cleanup(domain.curl);
+	return state_url;
 }
 
 bool Unblock::automaticallyStrategy()
