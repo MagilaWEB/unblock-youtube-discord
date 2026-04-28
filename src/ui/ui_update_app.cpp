@@ -84,6 +84,7 @@ void Ui::_updateAppWindow()
 				Core::get().addTask(
 					[this]
 					{
+						_stoppingAllServices();
 						_window_update_unblock->hide();
 						_window_wait_update_unblock->show();
 						bool state = _unblock.appUpdate();
