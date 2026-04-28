@@ -212,7 +212,7 @@ bool DomainTesting::isConnectionUrl(DomainTesting * obj, CurlDomain& domain)
 
 	curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
 
-	constexpr u32						MAX_QUICK_RETRIES = 50;
+	constexpr u32						MAX_QUICK_RETRIES = 150;
 	constexpr std::chrono::milliseconds RETRY_DELAY{ 10 };
 	constexpr double					CONNECT_TIME_THRESHOLD = 0.5;
 

@@ -99,16 +99,16 @@ void DNSHost::update()
 					_list_domains.push_back(line);
 	}
 
-	if (_cancel_update.load())
+	if (_cancel_update.load(std::memory_order_relaxed))
 		return;
 
 	std::for_each(
 		std::execution::par,
 		_list_domains.begin(),
 		_list_domains.end(),
-		[this](std::string domain)
+		[this](const std::string& domain) 
 		{
-			if (_cancel_update.load())
+			if (_cancel_update.load(std::memory_order_relaxed))
 				return;
 
 			static const std::regex reg_equally{ R"(->)" };
@@ -120,6 +120,7 @@ void DNSHost::update()
 				{
 					const std::string key = para.prefix().str();
 					_map_list[key]		  = value;
+					_size_iter++;
 				}
 
 				return;
@@ -134,7 +135,7 @@ void DNSHost::update()
 		}
 	);
 
-	if (!_cancel_update.load())
+	if (!_cancel_update.load(std::memory_order_relaxed))
 	{
 		_file_hosts_user.open();
 
@@ -291,7 +292,7 @@ void DNSHost::_writeDomain(std::string domain)
 		for (auto& ip : ip_list)
 			if (_map_list[key].empty() && std::regex_match(ip, reg_ipv4_pattern))
 			{
-				FAST_LOCK(_lock);
+				CRITICAL_SECTION_RAII(_lock);
 				_map_list[key] = ip;
 			}
 			else if (_map_list[ip].empty())
