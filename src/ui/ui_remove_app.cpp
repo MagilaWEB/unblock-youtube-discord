@@ -51,9 +51,7 @@ exit
 
 void Ui::_removeAppRun()
 {
-	_stoppingServices();
-
-	_tcpGlobalChange(false);
+	_stoppingAllServices();
 
 	_unblock.dnsHosts(false);
 	_ui_base->console(false);

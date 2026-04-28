@@ -166,6 +166,7 @@ private:
 	// Stopping services
 	void _stopInit();
 	void _stoppingServices();
+	void _stoppingAllServices();
 
 	// base footer
 	void _footerElements();
