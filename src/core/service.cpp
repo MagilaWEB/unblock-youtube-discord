@@ -106,11 +106,16 @@ void Service::create()
 	for (const auto& arg : _args)
 		fullCmdLine += " " + arg;
 
-	ASSERT_ARGS(fullCmdLine.size() <= 32'767, "The maximum line size for the service path is 32'767!");
+	ASSERT_ARGS(fullCmdLine.length() <= 32'767, "The maximum line size for the service path is 32'767!");
 
+	if (fullCmdLine.length() > 30'000)
+		Debug::warning(
+			"For the [{}] service, the number of launch parameter characters exceeds 30,000. Please note that the maximum length can be 32,767!",
+			_name
+		);
 
-	auto wname = utils::UTF8_to_UTF16(_name);
-	auto wdesc = utils::UTF8_to_UTF16(_description);
+	auto wname	  = utils::UTF8_to_UTF16(_name);
+	auto wdesc	  = utils::UTF8_to_UTF16(_description);
 	auto wtempBin = utils::UTF8_to_UTF16(tempBinPath);
 	auto wfullCmd = utils::UTF8_to_UTF16(fullCmdLine);
 
@@ -171,9 +176,7 @@ void Service::create()
 		open();
 
 		if (_sc)
-		{
 			return;
-		}
 
 		if (_time_limit.getElapsed_sec() > 5.0f)
 		{
