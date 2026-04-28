@@ -130,7 +130,7 @@ bool StrategyGenerator::_useIn(std::string str, std::string_view section)
 			File to_list{ false };
 			to_list.open(path / result, ".list", true);
 
-			for (auto& line : to_list)
+			for (auto& line : from_list)
 				to_list.writeText(line);
 		};
 
