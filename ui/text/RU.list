@@ -10,7 +10,7 @@ str_link_to_telegram=↗ Telegram
 str_b_start_unblock=▶ Запустить Zapret
 str_b_restart_unblock=🔄 Перезапустить Zapret
 str_b_stop_unblock=⏹ Остановить Zapret
-str_b_stop_service_all=⏹ Остановить службы
+str_b_stop_service_all=⏹ Остановить все службы
 
 str_b_start_testing=🧪 Тестировать
 str_b_start_find_config=🔍 Подобрать конфиг

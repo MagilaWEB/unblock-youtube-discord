@@ -10,7 +10,7 @@ str_link_to_telegram=↗ Telegram
 str_b_start_unblock=▶ Start Zapret
 str_b_restart_unblock=🔄 Restart Zapret
 str_b_stop_unblock=⏹ Stop Zapret
-str_b_stop_service_all=⏹ Stop Services
+str_b_stop_service_all=⏹ Stop all Services
 
 str_b_start_testing=🧪 Test
 str_b_start_find_config=🔍 Find Config
