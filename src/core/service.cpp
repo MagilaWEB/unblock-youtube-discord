@@ -110,8 +110,9 @@ void Service::create()
 
 	if (fullCmdLine.length() > 30'000)
 		Debug::warning(
-			"For the [{}] service, the number of launch parameter characters exceeds 30,000. Please note that the maximum length can be 32,767!",
-			_name
+			"For the [{}] service, the number of launch parameter characters exceeds 30,000. The current number of characters is [{}]. Please note that the maximum length can be 32,767! ",
+			_name,
+			fullCmdLine.length()
 		);
 
 	auto wname	  = utils::UTF8_to_UTF16(_name);
