@@ -15,8 +15,6 @@ class UI_API UiBase final : public WindowListener,
 	IEngineAPI*		_engine;
 	RefPtr<Overlay> _overlay;
 
-	int _current_move_x, _current_move_y;
-
 public:
 	UiBase() = delete;
 	UiBase(IEngineAPI* engine);
@@ -32,16 +30,6 @@ public:
 	void OnClose(Window* window) override;
 
 	void OnChangeCursor(View*, Cursor cursor) override { _engine->window()->SetCursor(cursor); }
-
-	void minimizeWindow(const JSObject& obj, const JSArgs& args);
-
-	void maximizeWindow(const JSObject& obj, const JSArgs& args);
-
-	void restoreWindow(const JSObject& obj, const JSArgs& args);
-
-	void startMoveWindow(const JSObject& obj, const JSArgs& args);
-
-	void moveWindow(const JSObject& obj, const JSArgs& args);
 
 	void closeWindow(const JSObject& obj, const JSArgs& args);
 
