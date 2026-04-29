@@ -186,7 +186,7 @@ void DomainTesting::printTestInfo() const
 	InputConsole::textInfo(Localization::Str{ "str_result_url_testing" }(), _domain_ok.load(), _list_domain.size(), successRate());
 }
 
-bool DomainTesting::isConnectionUrl(DomainTesting * obj, CurlDomain& domain)
+bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 {
 	if (!domain.curl)
 		return false;
@@ -212,11 +212,12 @@ bool DomainTesting::isConnectionUrl(DomainTesting * obj, CurlDomain& domain)
 
 	curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
 
-	constexpr u32						MAX_QUICK_RETRIES = 150;
-	constexpr std::chrono::milliseconds RETRY_DELAY{ 10 };
-	constexpr double					CONNECT_TIME_THRESHOLD = 0.5;
+	constexpr u32						MAX_QUICK_RETRIES{ 100 };
+	constexpr std::chrono::milliseconds RETRY_DELAY{ 20 };
+	constexpr double					CONNECT_TIME_THRESHOLD = 1.5;
+	constexpr u32						MAX_TIME_NULL{ 2 };
 
-	for (u32 attempt = 0; attempt < MAX_QUICK_RETRIES; ++attempt)
+	for (u32 attempt = 0, COUNT_TIME_NULL = 0; attempt < MAX_QUICK_RETRIES; ++attempt)
 	{
 		CURLcode res = curl_easy_perform(domain.curl);
 
@@ -233,27 +234,41 @@ bool DomainTesting::isConnectionUrl(DomainTesting * obj, CurlDomain& domain)
 			}
 		}
 
-		u32 os_errno = 0;
-		curl_easy_getinfo(domain.curl, CURLINFO_OS_ERRNO, &os_errno);
-
-		double connect_time = 0.0;
-		curl_easy_getinfo(domain.curl, CURLINFO_CONNECT_TIME, &connect_time);
-
-		// Criteria for "active connection reset" (zapret2 changes strategy):
-		bool is_zapret_reset = false;
-		if (res == CURLE_SSL_CONNECT_ERROR || res == CURLE_COULDNT_CONNECT || res == CURLE_OPERATION_TIMEDOUT || res == CURLE_GOT_NOTHING)
+		if (res != CURLE_ABORTED_BY_CALLBACK)
 		{
-			if (os_errno == ECONNRESET && connect_time < CONNECT_TIME_THRESHOLD)
-				is_zapret_reset = true;
+			double connect_time = 0.0;
+			curl_easy_getinfo(domain.curl, CURLINFO_CONNECT_TIME, &connect_time);
 
-#ifdef _WIN32
-			if (os_errno == WSAECONNRESET && connect_time < CONNECT_TIME_THRESHOLD)
-				is_zapret_reset = true;
+			// Criteria for "active connection reset" (zapret2 changes strategy):
+			bool is_zapret_reset = false;
+			if (res == CURLE_SSL_CONNECT_ERROR || res == CURLE_COULDNT_CONNECT || res == CURLE_GOT_NOTHING || res == CURLE_RECV_ERROR)
+			{
+#ifdef DEBUG
+				Debug::info("is reset zapret? connect result[{}] time[{}] url[{}]", static_cast<u32>(res), connect_time, domain.url);
 #endif
-		}
+				u32 os_errno = 0;
+				curl_easy_getinfo(domain.curl, CURLINFO_OS_ERRNO, &os_errno);
+				is_zapret_reset = (connect_time < CONNECT_TIME_THRESHOLD) || (os_errno == WSAECONNRESET);
+			}
 
-		if (!is_zapret_reset)
-			break;
+			// If the connection time is 0, then the resource is unavailable or some other unknown reason, but this is not always the case,
+			// you need to make sure several times, usually two attempts are enough.
+			if (connect_time == 0)
+			{
+				COUNT_TIME_NULL++;
+#ifdef DEBUG
+				Debug::info("curl connect_time == 0 result[{}] COUNT_TIME_NULL[{}] url[{}]", static_cast<u32>(res), COUNT_TIME_NULL, domain.url);
+#endif
+			}
+
+			if (!is_zapret_reset || (COUNT_TIME_NULL > MAX_TIME_NULL))
+			{
+#ifdef DEBUG
+				Debug::info("no reset zapret! curl result[{}] COUNT_TIME_NULL[{}] url[{}]", static_cast<u32>(res), COUNT_TIME_NULL, domain.url);
+#endif
+				break;
+			}
+		}
 
 		std::this_thread::sleep_for(RETRY_DELAY);
 	}
