@@ -37,6 +37,12 @@ private:
 
 	[[nodiscard]] static std::string_view get_prefix(MessageTypes type);
 
+	static std::string strip_ansi(const std::string & s)
+	{
+		static const std::regex ansi_re("\\x1B\\[[0-9;]*m");
+		return std::regex_replace(s, ansi_re, "");
+	}
+
 	template<typename... Args>
 	static void msg(MessageTypes type, std::string_view message, Args&&... args)
 	{
@@ -48,7 +54,7 @@ private:
 		if (error_state)
 			str.append("\n" + pretty_stacktrace());
 
-		log.writeText(std::to_string(_console_line) + ". " + str);
+		log.writeText(std::to_string(_console_line) + ". " + strip_ansi(str));
 
 		auto log_str = std::format("{}. {}{}", ++_console_line, get_prefix(type), str);
 		(error_state ? std::cerr : std::cout) << log_str.c_str() << std::endl;
