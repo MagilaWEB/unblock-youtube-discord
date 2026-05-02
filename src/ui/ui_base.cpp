@@ -1,28 +1,21 @@
 #include "ui_base.h"
 #include "ui.h"
-
 #include "../core/timer.h"
 #include "../engine/version.hpp"
 
+// ------------------ Constructor ------------------
 UiBase::UiBase(IEngineAPI* engine) : _engine(engine)
 {
 	_ui = std::make_unique<Ui>(this);
 
-	ViewConfig view_config{};
-	view_config.is_accelerated				 = true;
-	view_config.is_transparent				 = false;
-	view_config.enable_compositor			 = true;
-	view_config.enable_compositor_debug_info = false;
-
-	auto		 renderer = App::instance()->renderer();
-	RefPtr<View> view	  = renderer->CreateView(_engine->window()->width(), _engine->window()->height(), view_config, nullptr);
-	_overlay			  = Overlay::Create(_engine->window(), view, 0, 0);
+	_overlay = Overlay::Create(_engine->window(), _engine->window()->width(), _engine->window()->height(), 0, 0);
 	_overlay->view()->LoadURL("file:///main.html");
 
 	_overlay->view()->set_load_listener(this);
 	_overlay->view()->set_view_listener(this);
 }
 
+// ------------------ Destructor ------------------
 UiBase::~UiBase()
 {
 	if (_overlay)
@@ -33,6 +26,88 @@ UiBase::~UiBase()
 	_engine = nullptr;
 }
 
+// ------------------ WindowListener ------------------
+void UiBase::OnResize(ultralight::Window*, uint32_t width, uint32_t height)
+{
+	if (_overlay)
+		_overlay->Resize(width, height);
+
+	_engine->userConfig()->writeSectionParameter("WINDOW", "width", std::to_string(width));
+	_engine->userConfig()->writeSectionParameter("WINDOW", "height", std::to_string(height));
+}
+
+void UiBase::OnClose(ultralight::Window*)
+{
+	BaseElement::release();
+	_ui.release();
+	_engine->app()->Quit();
+}
+
+// ------------------ JS callbacks ------------------
+void UiBase::closeWindow(const JSObject&, const JSArgs&)
+{
+	OnClose(_engine->window());
+}
+
+const std::shared_ptr<File>& UiBase::userSetting()
+{
+	return _engine->userConfig();
+}
+
+void UiBase::console(bool show)
+{
+	show ? _engine->showConsole() : _engine->hideConsole();
+}
+
+void UiBase::runTask(const JSObject&, const JSArgs&)
+{
+	auto& task = Core::get().getTaskJS();
+	FAST_LOCK(Core::get().getTaskLockJS());
+	while (!task.empty())
+	{
+		task.front()();
+		task.pop_front();
+	}
+	_ui->jsUpdate();
+}
+
+JSValue UiBase::langText(const JSObject&, const JSArgs& args)
+{
+	if (!args[0].IsString())
+	{
+		Debug::warning("The passed argument in LANG_TEXT is not a string");
+		return "";
+	}
+	const auto text_id = static_cast<String>(args[0].ToString());
+	return Localization::Str{ text_id.utf8().data() }().data();
+}
+
+// ------------------ LoadListener ------------------
+void UiBase::OnWindowObjectReady(View* caller, uint64_t, bool, const String&)
+{
+	auto locked_context = caller->LockJSContext();
+	SetJSContext(locked_context->ctx());
+
+	JSObject global		   = JSGlobalObject();
+	global["RUN_CPP"]	   = JSValue(true);
+	global["VERSION_APP"]  = JSValue(VERSION_STR);
+	global["CPPTaskRun"]   = static_cast<JSCallback>(std::bind(&UiBase::runTask, this, std::placeholders::_1, std::placeholders::_2));
+	global["CPPLangText"]  = static_cast<JSCallbackWithRetval>(std::bind(&UiBase::langText, this, std::placeholders::_1, std::placeholders::_2));
+	global["WINDOW_CLOSE"] = static_cast<JSCallback>(std::bind(&UiBase::closeWindow, this, std::placeholders::_1, std::placeholders::_2));
+}
+
+void UiBase::OnDOMReady(View* caller, uint64_t, bool, const String&)
+{
+	Core::setThreadJsID(GetCurrentThreadId());
+
+	auto locked_context = caller->LockJSContext();
+	SetJSContext(locked_context->ctx());
+
+	BaseElement::initializeAll(caller);
+	_ui->initialize();
+}
+
+// --------------- Console message (debug/release) ---------------
 #define LOGS(method)                                                                                        \
 	method(                                                                                                 \
 		"Java/Script\n\tsource:\t{}\n\ttype:\t{}\n\tmessage:\t{}\n\tline_number:\t{}\n\tcolumn_number:\t{}" \
@@ -96,83 +171,3 @@ void UiBase::OnAddConsoleMessage(View* /*caller*/, const ConsoleMessage& msg)
 		LOGS(InputConsole::textError)
 }
 #endif
-
-void UiBase::OnWindowObjectReady(View* caller, uint64_t /*frame_id*/, bool /*is_main_frame*/, const String& /*url*/)
-{
-	auto locked_context = caller->LockJSContext();
-	SetJSContext(locked_context->ctx());
-
-	JSObject global		  = JSGlobalObject();
-	global["RUN_CPP"]	  = JSValue(true);
-	global["VERSION_APP"] = JSValue(VERSION_STR);
-	global["CPPTaskRun"]  = static_cast<JSCallback>(std::bind(&UiBase::runTask, this, std::placeholders::_1, std::placeholders::_2));
-	global["CPPLangText"] = static_cast<JSCallbackWithRetval>(std::bind(&UiBase::langText, this, std::placeholders::_1, std::placeholders::_2));
-
-	global["WINDOW_CLOSE"]		= static_cast<JSCallback>(std::bind(&UiBase::closeWindow, this, std::placeholders::_1, std::placeholders::_2));
-}
-
-void UiBase::OnDOMReady(View* caller, uint64_t /*frame_id*/, bool /*is_main_frame*/, const String& /*url*/)
-{
-	Core::setThreadJsID(GetCurrentThreadId());
-
-	auto locked_context = caller->LockJSContext();
-	SetJSContext(locked_context->ctx());
-
-	BaseElement::initializeAll(caller);
-
-	_ui->initialize();
-}
-
-void UiBase::OnResize(ultralight::Window* /*window*/, uint32_t width, uint32_t height)
-{
-	_overlay->Resize(width, height);
-}
-
-void UiBase::OnClose(ultralight::Window* /*window*/)
-{
-	BaseElement::release();
-	_ui.release();
-	_engine->app()->Quit();
-}
-
-void UiBase::closeWindow(const JSObject& /*obj*/, const JSArgs& /*args*/)
-{
-	OnClose(_engine->window());
-}
-
-const std::shared_ptr<File>& UiBase::userSetting()
-{
-	return _engine->userConfig();
-}
-
-void UiBase::console(bool show)
-{
-	show ? _engine->showConsole() : _engine->hideConsole();
-}
-
-void UiBase::runTask(const JSObject& /*obj*/, const JSArgs& /*args*/)
-{
-	auto& task = Core::get().getTaskJS();
-	FAST_LOCK(Core::get().getTaskLockJS());
-	while (!task.empty())
-	{
-		task.front()();
-		task.pop_front();
-	}
-
-	_ui->jsUpdate();
-}
-
-JSValue UiBase::langText(const JSObject& /*obj*/, const JSArgs& args)
-{
-	if (!args[0].IsString())
-	{
-		Debug::warning(
-			"The passed argument in LANG_TEXT is not a string, it is necessary to pass the string value of the text_id of the localization system."
-		);
-		return "";
-	}
-
-	const auto text_id = static_cast<String>(args[0].ToString());
-	return Localization::Str{ text_id.utf8().data() }().data();
-}

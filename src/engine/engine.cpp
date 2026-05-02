@@ -85,8 +85,25 @@ void Engine::initialize()
 
 	_app = App::Create(setting, config);
 
-	const int screenScale = GetSystemMetrics(SM_CYSCREEN) / 520;
-	_window = Window::Create(_app->main_monitor(), 520 * screenScale, 510 * screenScale, false, kWindowFlags_Resizable | kWindowFlags_Maximizable);
+	u32 width{ 0 };
+	u32 height{ 0 };
+
+	if (auto config_width = _file_user_setting->parameterSection<u32>("WINDOW", "width"))
+	{
+		width = config_width.value();
+
+		if (auto config_height = _file_user_setting->parameterSection<u32>("WINDOW", "height"))
+			height = config_height.value();
+	}
+	else
+	{
+		const int screenScale = GetSystemMetrics(SM_CYSCREEN) / 520;
+
+		width = 520 * screenScale;
+		height = 510 * screenScale;
+	}
+
+	_window = Window::Create(_app->main_monitor(), width, height, false, kWindowFlags_Resizable | kWindowFlags_Maximizable);
 
 	auto hwnd = static_cast<HWND>(_window->native_handle());
 
