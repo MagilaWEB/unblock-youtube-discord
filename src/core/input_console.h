@@ -48,7 +48,7 @@ public:
 	static void textOk(std::string_view text, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
-		msg(text, "Успех: {}", ColorType::GREEN, true, args...);
+		msg(text, Localization::Str("str_console_input_success")(), ColorType::GREEN, true, args...);
 		std::cout << std::endl;
 	}
 
@@ -56,7 +56,7 @@ public:
 	static void textInfo(std::string_view text, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
-		msg(text, "Информация: {}", ColorType::YELLOW, true, args...);
+		msg(text, Localization::Str("str_console_input_info")(), ColorType::YELLOW, true, args...);
 	}
 
 	template<typename... Args>
@@ -71,21 +71,21 @@ public:
 	static void textWarning(std::string_view text, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
-		msg(text, "Предупреждение: {}", ColorType::ORANGE, true, args...);
+		msg(text, Localization::Str("str_console_input_warning")(), ColorType::ORANGE, true, args...);
 	}
 
 	template<typename... Args>
 	static void textError(std::string_view text, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
-		msg(text, "Ошибка: {}", ColorType::RED, true, args...);
+		msg(text, Localization::Str("str_console_input_error")(), ColorType::RED, true, args...);
 	}
 
 	template<typename... Args>
 	static void textPlease(std::string_view text, bool reset_color, Args&&... args)
 	{
 		CriticalSection::raii mt{ _lock };
-		msg(text, "Пожалуйста, {}:", ColorType::CYAN, reset_color, args...);
+		msg(text, Localization::Str("str_console_input_please")(), ColorType::CYAN, reset_color, args...);
 	}
 
 	static std::string textColor(std::string_view text, ColorType type, bool reset_color = true);

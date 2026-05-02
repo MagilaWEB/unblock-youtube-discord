@@ -19,6 +19,27 @@ str_b_start_find_config=🔍 Подобрать конфиг
 str_console_selected_config=Выбрана конфигурация [{}].
 str_console_not_find_fake_key=fake ключ [{}] не найден! Доступные ключи [{}].
 
+// console Input
+str_console_input_success=Успех: {}
+str_console_input_info=Информация: {}
+str_console_input_warning=Предупреждение: {}
+str_console_input_please=Пожалуйста, {}:
+str_console_input_error=Ошибка: {}
+str_console_input_forbidden_characters=Ввести можно только 0 или 1!
+str_console_input_get_string=введите текст и нажмите Enter
+str_console_input_pause={} Нажмите enter чтобы продолжить
+str_console_input_get_u32=введите число и нажмите Enter (Только целочисленные значения)
+str_console_input_get_u32_invalid_argument=Ввести можно только целочисленные значения!
+str_console_input_get_u32_out_of_range=Введённое значение слишком большое!
+str_console_input_get_u32_unknown=Неизвестная ошибка, введите число!
+str_console_input_send_num=нажмите на один из вариантов [{}]
+str_console_input_get_bool=нажмите ENTER для подтверждения, ESC для отмены
+str_console_input_select_from_list=символ '>>' указывает текущие положение.
+стрелка ↓ или numpad 2 на клавиатуре для выбора по списку ниже.
+стрелка ↑ или numpad 8 на клавиатуре для выбора по списку выше.
+клавиша Enter для подтверждения.
+str_console_input_please_select=выберите один из вариантов
+
 // services info
 str_service_zapret_description=DPI программное обеспечение для обхода блокировки.
 str_error_create_service=не удаётся создать службу [{}], причина [{}].

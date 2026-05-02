@@ -4,7 +4,7 @@ using namespace std::chrono;
 
 void InputConsole::pause(std::string_view info)
 {
-	textPlease("{} Нажмите enter чтобы продолжить", true, info);
+	textPlease(Localization::Str("str_console_input_pause")(), true, info);
 
 	KEY(VK::ENTER, true);
 
@@ -15,7 +15,7 @@ std::string InputConsole::getString()
 {
 	std::string text_input{};
 
-	textPlease("введите текст и нажмите Enter", true);
+	textPlease(Localization::Str("str_console_input_pause")(), true);
 	std::cin.clear();
 
 	std::cin >> text_input;
@@ -28,7 +28,7 @@ u32 InputConsole::getU32()
 	std::string text_input{};
 	u32			count{ 0 };
 
-	textPlease("введите число и нажмите Enter (Только целочисленные значения)", true);
+	textPlease(Localization::Str("str_console_input_get_u32")(), true);
 	std::cin.clear();
 	std::cin >> text_input;
 
@@ -41,19 +41,19 @@ u32 InputConsole::getU32()
 	}
 	catch (std::invalid_argument)
 	{
-		textError("Ввести можно только целочисленные значения!", true);
+		textError(Localization::Str("str_console_input_get_u32_invalid_argument")(), true);
 		std::cin.clear();
 		return getU32();
 	}
 	catch (std::out_of_range)
 	{
-		textError("Введённое значение слишком большое!", true);
+		textError(Localization::Str("str_console_input_get_u32_out_of_range")(), true);
 		std::cin.clear();
 		return getU32();
 	}
 	catch (...)
 	{
-		textError("Неизвестная ошибка, введите число!", true);
+		textError(Localization::Str("str_console_input_get_u32_unknown")(), true);
 		std::cin.clear();
 		return getU32();
 	}
@@ -103,7 +103,7 @@ u32 InputConsole::sendNum(std::list<u8> nums)
 			str_nums.append(std::to_string(send_num).append(", "));
 	}
 
-	textPlease("нажмите на один из вариантов [{}]", true, str_nums.c_str());
+	textPlease(Localization::Str("str_console_input_send_num")(), true, str_nums.c_str());
 
 	while (true)
 	{
@@ -128,7 +128,7 @@ u32 InputConsole::sendNum(std::list<u8> nums)
 
 bool InputConsole::getBool()
 {
-	textPlease("нажмите ENTER для подтверждения, ESC для отмены", true);
+	textPlease(Localization::Str("str_console_input_get_bool")(), true);
 
 	while (true)
 	{
@@ -188,10 +188,8 @@ size_t InputConsole::selectFromList(const std::list<std::string>& list, std::fun
 		{
 			print = false;
 
-			textInfo("символ '>>' указывает текущие положение.");
-			textInfo("стрелка ↓ или numpad 2 на клавиатуре для выбора по списку ниже.");
-			textInfo("стрелка ↑ или numpad 8 на клавиатуре для выбора по списку выше.");
-			textInfo("клавиша Enter для подтверждения.");
+			textInfo(Localization::Str("str_console_input_select_from_list")());
+
 			std::string str_all{};
 
 			u32 it{ 0 };
@@ -208,7 +206,7 @@ size_t InputConsole::selectFromList(const std::list<std::string>& list, std::fun
 				it++;
 			}
 
-			textPlease("выберите один из вариантов", true);
+			textPlease(Localization::Str("str_console_input_please_select")(), true);
 
 			text(str_all);
 		}
@@ -293,7 +291,7 @@ bool InputConsole::_forbiddenCharacters(const std::string& text)
 	{
 		if (text.contains(_char))
 		{
-			textError("Ввести можно только 0 или 1!", true);
+			textError(Localization::Str("str_console_input_forbidden_characters")(), true);
 			std::cin.clear();
 			return false;
 		}

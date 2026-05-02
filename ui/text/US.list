@@ -19,6 +19,27 @@ str_b_start_find_config=🔍 Find Config
 str_console_selected_config=Configuration selected [{}].
 str_console_not_find_fake_key=fake key [{}] not found! Available keys [{}].
 
+// console input
+str_console_input_success=Success: {}
+str_console_input_info=Info: {}
+str_console_input_warning=Warning: {}
+str_console_input_please=Please, {}:
+str_console_input_error=Error: {}
+str_console_input_forbidden_characters=You can only enter 0 or 1!
+str_console_input_get_string=enter text and press Enter
+str_console_input_pause={} Press Enter to continue
+str_console_input_get_u32=enter a number and press Enter (integer value only)
+str_console_input_get_u32_invalid_argument=You can only enter integer values!
+str_console_input_get_u32_out_of_range=The value entered is too large!
+str_console_input_get_u32_unknown=Unknown error, enter a number!
+str_console_input_send_num=choose one of the options [{}]
+str_console_input_get_bool=press ENTER to confirm, ESC to cancel
+str_console_input_select_from_list=the '>>' symbol indicates the current position.
+↓ or numpad 2 to move down.
+↑ or numpad 8 to move up.
+Press Enter to confirm.
+str_console_input_please_select=choose one of the options
+
 // services info
 str_service_zapret_description=DPI software for bypassing blocks.
 str_error_create_service=failed to create service [{}], reason [{}].
