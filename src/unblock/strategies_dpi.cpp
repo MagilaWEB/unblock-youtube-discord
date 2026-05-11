@@ -282,7 +282,7 @@ void StrategiesDPI::_luaDesyncNumberStrategy(std::string& str)
 	{
 		static u32 index{ 0 };
 
-		if (str.empty()  || str.starts_with("\n"))
+		if (str.empty() || str.starts_with("\n"))
 			return;
 
 		if (str.contains("--new"))
@@ -292,7 +292,7 @@ void StrategiesDPI::_luaDesyncNumberStrategy(std::string& str)
 			return;
 		}
 
-		if (str.starts_with("--lua-desync") && !str.contains(":strategy"))
+		if (str.starts_with("--lua-desync") && ((!str.contains(":strategy")) || (!str.contains(":final"))))
 		{
 			index++;
 			str.append(std::format(":strategy={}", index));
