@@ -9,9 +9,9 @@ static size_t progress_callback(void* clientp, curl_off_t /*dltotal*/, curl_off_
 		if (domain->isCancelTesting())
 			return CURLE_COULDNT_CONNECT;
 
-		const u32 error_rate = domain->errorRate();
-		if (error_rate >= MAX_ERROR_CONECTION)
-			return CURLE_COULDNT_CONNECT;
+		//const u32 error_rate = domain->errorRate();
+		//if (error_rate >= MAX_ERROR_CONECTION)
+		//	return CURLE_COULDNT_CONNECT;
 	}
 
 	return CURLE_OK;
@@ -215,10 +215,13 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 	constexpr u32						MAX_QUICK_RETRIES{ 100 };
 	constexpr std::chrono::milliseconds RETRY_DELAY{ 20 };
 	constexpr double					CONNECT_TIME_THRESHOLD = 1.5;
-	constexpr u32						MAX_TIME_NULL{ 2 };
+	constexpr u32						MAX_TIME_NULL{ 3 };
 
 	for (u32 attempt = 0, COUNT_TIME_NULL = 0; attempt < MAX_QUICK_RETRIES; ++attempt)
 	{
+		if (obj && obj->isCancelTesting())
+			break;
+
 		CURLcode res = curl_easy_perform(domain.curl);
 
 		if (res == CURLE_OK)
@@ -270,7 +273,8 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 			}
 		}
 
-		std::this_thread::sleep_for(RETRY_DELAY);
+		if (obj && !obj->isCancelTesting())
+			std::this_thread::sleep_for(RETRY_DELAY);
 	}
 
 	double total_time = 0.0;
