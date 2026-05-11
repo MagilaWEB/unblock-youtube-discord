@@ -102,10 +102,12 @@ static void seh_translator(unsigned int code, EXCEPTION_POINTERS*)
 	throw std::runtime_error(buf);
 }
 
-void Debug::initialize(const std::string& /*command_line*/)
+void Debug::initialize(const std::string& command_line)
 {
 	s_catch_exceptions = true;
 	s_error_fatal	   = true;
+
+	_command_line = command_line;
 
 	std::set_terminate(cpp_terminate_handler);
 	SetUnhandledExceptionFilter(seh_unhandled_filter);

@@ -24,10 +24,12 @@ static std::string get_system_locale()
 	return result.substr(result.find_first_of("-") + 1, result.length());
 }
 
-static void ForceSetWindowIcon(HWND hwnd, const wchar_t* iconPath)
+static void forceSetWindowIcon(HWND hwnd, const wchar_t* iconPath)
 {
-	HICON hIconBig = static_cast<HICON>(LoadImageW(NULL, iconPath, IMAGE_ICON, GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), LR_LOADFROMFILE));
-	HICON hIconSmall = static_cast<HICON>(LoadImageW(NULL, iconPath, IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_LOADFROMFILE));
+	HICON hIconBig =
+		static_cast<HICON>(LoadImageW(NULL, iconPath, IMAGE_ICON, GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), LR_LOADFROMFILE));
+	HICON hIconSmall =
+		static_cast<HICON>(LoadImageW(NULL, iconPath, IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_LOADFROMFILE));
 
 	if (!hIconBig || !hIconSmall)
 	{
@@ -42,7 +44,7 @@ static void ForceSetWindowIcon(HWND hwnd, const wchar_t* iconPath)
 	SetClassLongPtr(hwnd, GCLP_HICONSM, reinterpret_cast<LONG_PTR>(hIconSmall));
 }
 
-static void ApplyDarkTitleBar(HWND hwnd)
+static void applyDarkTitleBar(HWND hwnd)
 {
 	BOOL useDarkMode = TRUE;
 	DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
@@ -99,7 +101,7 @@ void Engine::initialize()
 	{
 		const int screenScale = GetSystemMetrics(SM_CYSCREEN) / 520;
 
-		width = 520 * screenScale;
+		width  = 520 * screenScale;
 		height = 510 * screenScale;
 	}
 
@@ -107,8 +109,8 @@ void Engine::initialize()
 
 	auto hwnd = static_cast<HWND>(_window->native_handle());
 
-	ApplyDarkTitleBar(hwnd);
-	ForceSetWindowIcon(hwnd, L"./unblock.ico");
+	applyDarkTitleBar(hwnd);
+	forceSetWindowIcon(hwnd, L"./unblock.ico");
 
 	static std::string title{ "Unblock " + std::format("Version: {}", VERSION_STR) };
 	_window->SetTitle(title.c_str());

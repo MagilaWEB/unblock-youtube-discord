@@ -38,14 +38,14 @@ target_link_libraries(${NAME} PRIVATE
 target_compile_definitions(${NAME} PRIVATE CONSOLE ENGINE_EXPORTS ${ALL_MACRO_CPP})
 
 # Tell MSVC to use main instead of WinMain for Windows subsystem executables
-target_link_options(${NAME} PRIVATE
-    $<$<CXX_COMPILER_ID:MSVC>:/ENTRY:mainCRTStartup>
-    $<$<CXX_COMPILER_ID:MSVC>:/MANIFESTUAC:level='requireAdministrator'>
-    $<$<CXX_COMPILER_ID:MSVC>:/SUBSYSTEM:WINDOWS>
-    $<$<CXX_COMPILER_ID:Clang>:-Wl,/ENTRY:mainCRTStartup>
-    $<$<CXX_COMPILER_ID:Clang>:-Wl,/MANIFESTUAC:level='requireAdministrator'>
-    $<$<CXX_COMPILER_ID:Clang>:-Wl,/SUBSYSTEM:WINDOWS>
-)
+ if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    set_target_properties(${NAME} PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup /MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\" /SUBSYSTEM:WINDOWS")
+elseif(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU")
+    target_link_options(${NAME} PRIVATE
+            "LINKER:/ENTRY:mainCRTStartup"
+            "LINKER:/SUBSYSTEM:WINDOWS"
+        )
+endif()
 
 # Copy library binaries to the folder of the compiled project
 if(CUPY_LIBS_DLL_TO_BIN)

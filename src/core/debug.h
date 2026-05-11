@@ -17,6 +17,7 @@ class CORE_API Debug
 		eFatal
 	};
 
+	inline static std::string	  _command_line{};
 	inline static size_t		  _console_line{ 0 };
 	inline static CriticalSection _lock;
 
@@ -37,7 +38,7 @@ private:
 
 	[[nodiscard]] static std::string_view get_prefix(MessageTypes type);
 
-	static std::string strip_ansi(const std::string & s)
+	static std::string strip_ansi(const std::string& s)
 	{
 		static const std::regex ansi_re("\\x1B\\[[0-9;]*m");
 		return std::regex_replace(s, ansi_re, "");
@@ -99,6 +100,8 @@ private:
 	}
 
 public:
+	static const std::string& commandLine() { return _command_line; }
+
 	static void initialize(const std::string& command_line);
 	static void initLogFile();
 	static void fatalErrorMessage(std::string message);
