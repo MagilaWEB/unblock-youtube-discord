@@ -281,7 +281,11 @@ void StrategiesDPI::_luaDesyncNumberStrategy(std::string& str)
 	if (start)
 	{
 		static u32 index{ 0 };
-		if (str.empty() || str.starts_with("\n") || str.contains("--new"))
+
+		if (str.empty()  || str.starts_with("\n"))
+			return;
+
+		if (str.contains("--new"))
 		{
 			start = false;
 			index = 0;
