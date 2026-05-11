@@ -292,7 +292,7 @@ void StrategiesDPI::_luaDesyncNumberStrategy(std::string& str)
 			return;
 		}
 
-		if (str.starts_with("--lua-desync") && ((!str.contains(":strategy")) || (!str.contains(":final"))))
+		if (str.starts_with("--lua-desync") && (!str.contains(":strategy") && !str.contains(":final")))
 		{
 			index++;
 			str.append(std::format(":strategy={}", index));
