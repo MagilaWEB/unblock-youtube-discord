@@ -3,7 +3,7 @@
 
 void Ui::_checkValidRootDirectory()
 {
-	if (!_ui_base->hasCyrillicOrSpaceInBinaryPath())
+	if (_ui_base->hasCyrillicOrSpaceInBinaryPath())
 	{
 		_window_root_directory_error->create(
 			Localization::Str{ "str_error" },
