@@ -8,7 +8,6 @@ class Ui;
 class UI_API UiBase final : public WindowListener,
 							private LoadListener,
 							private ViewListener
-
 {
 	std::unique_ptr<Ui> _ui;
 
@@ -34,6 +33,8 @@ public:
 	void closeWindow(const JSObject& obj, const JSArgs& args);
 
 	const std::shared_ptr<File>& userSetting();
+
+	bool hasCyrillicOrSpaceInBinaryPath() const { return _engine->hasCyrillicOrSpaceInBinaryPath(); }
 
 public:
 	void	console(bool show);

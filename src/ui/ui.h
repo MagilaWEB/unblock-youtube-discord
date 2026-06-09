@@ -60,6 +60,8 @@ class Ui final : public utils::DefaultInit
 	UL_LIST(_list_domain);
 	UL_LIST(_list_domain_to_modal);
 
+	SECONDARY_WINDOW(_window_root_directory_error);
+
 	SECONDARY_WINDOW(_window_update_unblock);
 	SECONDARY_WINDOW(_window_wait_update_unblock);
 	SECONDARY_WINDOW(_window_error_update_unblock);
@@ -100,6 +102,8 @@ public:
 
 private:
 	void _checkConflictService();
+
+	void _checkValidRootDirectory();
 
 	void _removeApp();
 	void _removeAppRun();

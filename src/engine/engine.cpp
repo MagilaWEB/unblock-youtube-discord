@@ -1,6 +1,9 @@
 #include "engine.h"
 #include "version.hpp"
 
+#include <cwctype>
+#include <algorithm>
+
 #include <dwmapi.h>
 #pragma comment(lib, "dwmapi.lib")
 
@@ -10,49 +13,9 @@ Engine& Engine::get()
 	return instance;
 }
 
-static std::string get_system_locale()
-{
-	std::array<wchar_t, LOCALE_NAME_MAX_LENGTH> buffer{};
-	int											chars = GetUserDefaultLocaleName(buffer.data(), static_cast<int>(buffer.size()));
-	if (chars == 0)
-		return "US";
-
-	int			size_needed = WideCharToMultiByte(CP_UTF8, 0, buffer.data(), chars - 1, nullptr, 0, nullptr, nullptr);
-	std::string result(size_needed, 0);
-
-	WideCharToMultiByte(CP_UTF8, 0, buffer.data(), chars - 1, result.data(), size_needed, nullptr, nullptr);
-	return result.substr(result.find_first_of("-") + 1, result.length());
-}
-
-static void forceSetWindowIcon(HWND hwnd, const wchar_t* iconPath)
-{
-	HICON hIconBig =
-		static_cast<HICON>(LoadImageW(NULL, iconPath, IMAGE_ICON, GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), LR_LOADFROMFILE));
-	HICON hIconSmall =
-		static_cast<HICON>(LoadImageW(NULL, iconPath, IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_LOADFROMFILE));
-
-	if (!hIconBig || !hIconSmall)
-	{
-		hIconBig   = static_cast<HICON>(LoadImageW(NULL, iconPath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE));
-		hIconSmall = hIconBig;
-	}
-
-	SendMessage(hwnd, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIconBig));
-	SendMessage(hwnd, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIconSmall));
-
-	SetClassLongPtr(hwnd, GCLP_HICON, reinterpret_cast<LONG_PTR>(hIconBig));
-	SetClassLongPtr(hwnd, GCLP_HICONSM, reinterpret_cast<LONG_PTR>(hIconSmall));
-}
-
-static void applyDarkTitleBar(HWND hwnd)
-{
-	BOOL useDarkMode = TRUE;
-	DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
-}
-
 void Engine::initialize()
 {
-	Localization::get().set(get_system_locale());
+	Localization::get().set(_getSystemLocale());
 
 	if (_checkRunApp())
 	{
@@ -87,8 +50,10 @@ void Engine::initialize()
 
 	_app = App::Create(setting, config);
 
-	u32 width{ 0 };
-	u32 height{ 0 };
+	const int screenScale = GetSystemMetrics(SM_CYSCREEN) / 520;
+
+	u32 width{ 520U * screenScale };
+	u32 height{ 510U * screenScale };
 
 	if (auto config_width = _file_user_setting->parameterSection<u32>("WINDOW", "width"))
 	{
@@ -97,20 +62,13 @@ void Engine::initialize()
 		if (auto config_height = _file_user_setting->parameterSection<u32>("WINDOW", "height"))
 			height = config_height.value();
 	}
-	else
-	{
-		const int screenScale = GetSystemMetrics(SM_CYSCREEN) / 520;
-
-		width  = 520 * screenScale;
-		height = 510 * screenScale;
-	}
 
 	_window = Window::Create(_app->main_monitor(), width, height, false, kWindowFlags_Resizable | kWindowFlags_Maximizable);
 
 	auto hwnd = static_cast<HWND>(_window->native_handle());
 
-	applyDarkTitleBar(hwnd);
-	forceSetWindowIcon(hwnd, L"./unblock.ico");
+	_applyDarkTitleBar(hwnd);
+	_forceSetWindowIcon(hwnd, L"./unblock.ico");
 
 	static std::string title{ "Unblock " + std::format("Version: {}", VERSION_STR) };
 	_window->SetTitle(title.c_str());
@@ -210,6 +168,19 @@ std::shared_ptr<File>& Engine::userConfig()
 	return _file_user_setting;
 }
 
+bool Engine::hasCyrillicOrSpaceInBinaryPath()
+{
+	const auto is_cyrillic_or_space = [](wchar_t ch)
+	{
+		if (std::iswspace(ch))
+			return true;
+
+		return (ch >= 0x04'00 && ch <= 0x04'FF) || (ch >= 0x05'00 && ch <= 0x05'2F);
+	};
+
+	return std::ranges::any_of(Core::get().binariesPath().wstring(), is_cyrillic_or_space);
+}
+
 bool Engine::_checkRunApp()
 {
 	static HANDLE mutex{ CreateMutex(nullptr, true, "MutexOfTheUnblockApplication") };
@@ -222,4 +193,44 @@ void Engine::_finish()
 	hideConsole();
 	if (_window)
 		_window->set_listener(nullptr);
+}
+
+std::string Engine::_getSystemLocale()
+{
+	std::array<wchar_t, LOCALE_NAME_MAX_LENGTH> buffer{};
+	int											chars = GetUserDefaultLocaleName(buffer.data(), static_cast<int>(buffer.size()));
+	if (chars == 0)
+		return "US";
+
+	int			size_needed = WideCharToMultiByte(CP_UTF8, 0, buffer.data(), chars - 1, nullptr, 0, nullptr, nullptr);
+	std::string result(size_needed, 0);
+
+	WideCharToMultiByte(CP_UTF8, 0, buffer.data(), chars - 1, result.data(), size_needed, nullptr, nullptr);
+	return result.substr(result.find_first_of("-") + 1, result.length());
+}
+
+void Engine::_forceSetWindowIcon(HWND hwnd, const wchar_t* iconPath)
+{
+	HICON hIconBig =
+		static_cast<HICON>(LoadImageW(NULL, iconPath, IMAGE_ICON, GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), LR_LOADFROMFILE));
+	HICON hIconSmall =
+		static_cast<HICON>(LoadImageW(NULL, iconPath, IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_LOADFROMFILE));
+
+	if (!hIconBig || !hIconSmall)
+	{
+		hIconBig   = static_cast<HICON>(LoadImageW(NULL, iconPath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE));
+		hIconSmall = hIconBig;
+	}
+
+	SendMessage(hwnd, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIconBig));
+	SendMessage(hwnd, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIconSmall));
+
+	SetClassLongPtr(hwnd, GCLP_HICON, reinterpret_cast<LONG_PTR>(hIconBig));
+	SetClassLongPtr(hwnd, GCLP_HICONSM, reinterpret_cast<LONG_PTR>(hIconSmall));
+}
+
+void Engine::_applyDarkTitleBar(HWND hwnd)
+{
+	BOOL useDarkMode = TRUE;
+	DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
 }

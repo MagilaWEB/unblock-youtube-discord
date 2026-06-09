@@ -30,7 +30,12 @@ public:
 	Window*				   window() override;
 	std::shared_ptr<File>& userConfig() override;
 
+	bool hasCyrillicOrSpaceInBinaryPath() override;
+
 private:
 	bool _checkRunApp();
-	void _finish();
+	void		_finish();
+	std::string _getSystemLocale();
+	void _forceSetWindowIcon(HWND hwnd, const wchar_t* iconPath);
+	void _applyDarkTitleBar(HWND hwnd);
 };
