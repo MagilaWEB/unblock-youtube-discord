@@ -64,12 +64,19 @@ FetchContent_Declare(
   SOURCE_DIR 7za
 )
 
+FetchContent_Declare(
+  Zapret2
+  URL https://github.com/bol-van/zapret2/releases/download/v1.0.2/zapret2-v1.0.2.zip
+  SOURCE_DIR zapret2
+)
+
 # Build
 FetchContent_MakeAvailable(
     ultralight
     curl
     bit7z
     7za
+    Zapret2
 )
 
 # Include libcurl
@@ -107,6 +114,12 @@ endif()
 # Include bit7z
 set(7ZA_DIR ${CMAKE_BINARY_DIR}/7za)
 set(7ZA_BIN ${7ZA_DIR}/x64/7za.dll)
+
+# bin Zapret2 res 
+set(ZAPRET2_DIR ${CMAKE_BINARY_DIR}/zapret2)
+set(ZAPRET2_BIN ${ZAPRET2_DIR}/binaries/windows-x86_64)
+set(ZAPRET2_LUA ${ZAPRET2_DIR}/lua)
+
 # Build
 message(STATUS "COMPILER = ${CMAKE_CXX_COMPILER_ID}")
 

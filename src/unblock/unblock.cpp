@@ -315,8 +315,10 @@ void Unblock::localProxyTg(bool run)
 	{
 		_tg_ws_proxy.remove();
 		_tg_ws_proxy.setDescription("Local proxy telegram.");
-		_tg_ws_proxy.setArgs(
-			{ (Core::get().binariesPath() / "TgWsProxy.exe").string(), std::string{ "--secret " } + proxy_secret.data(), "--port 9101" }
+		_tg_ws_proxy.setArgs({ (Core::get().binariesPath() / "tg-ws-proxy.exe").string(),
+							   std::string{ "--secret " } + proxy_secret.data(),
+							   "--host 127.0.0.1",
+							   "--port 9101" }
 		);
 		_tg_ws_proxy.create();
 		_tg_ws_proxy.start();
@@ -383,7 +385,14 @@ void Unblock::startService()
 	if (!list.empty())
 	{
 		_zapret.setDescription(Localization::Str{ "str_service_zapret_description" }());
-		_zapret.setArgs(list);
+		std::vector<std::string> args{};
+		args.reserve(list.size() + 1);
+		args.push_back((Core::get().binariesPath() / "winws2.exe").string());
+
+		for (auto& line : list)
+			args.push_back(line);
+
+		_zapret.setArgs(args);
 		_zapret.create();
 
 #ifdef DEBUG_RUN_ZAPRET	   // #ifdef DEBUG

@@ -7,7 +7,7 @@
 
 class UNBLOCK_API Unblock final
 {
-	Service _zapret{ "zapret2", "winws2.exe" };
+	Service _zapret{ "zapret2", "SvcHost.exe" };
 	Service _tg_ws_proxy{ "TgWsProxy", "SvcHost.exe" };
 	Service _win_divert{ "WinDivert" };
 

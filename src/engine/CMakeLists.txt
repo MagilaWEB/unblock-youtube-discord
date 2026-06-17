@@ -9,6 +9,9 @@ if(CUPY_LIBS_DLL_TO_BIN)
         COMMAND ${CMAKE_COMMAND} -E echo "=== Global Pre-Build Cleanup ==="
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
         COMMAND ${CMAKE_COMMAND} -E echo "Cleanup complete"
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_SOURCE_DIR}/binaries/winws2.exe
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_SOURCE_DIR}/binaries/cygwin1.dll
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_SOURCE_DIR}/binaries/lua
         COMMENT "Global pre-build cleanup"
     )
 endif()
@@ -77,5 +80,12 @@ if(CUPY_LIBS_DLL_TO_BIN)
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ultralight_files} $<TARGET_FILE_DIR:${NAME}>
         COMMENT "Copying runtime DLLs to output directory"
+
+        COMMAND ${CMAKE_COMMAND} -E copy
+            ${ZAPRET2_BIN}/winws2.exe ${CMAKE_SOURCE_DIR}/binaries
+        COMMAND ${CMAKE_COMMAND} -E copy
+            ${ZAPRET2_BIN}/cygwin1.dll ${CMAKE_SOURCE_DIR}/binaries
+        COMMAND ${CMAKE_COMMAND} -E copy_directory 
+            ${ZAPRET2_LUA}/ ${CMAKE_SOURCE_DIR}/binaries/lua
     )
 endif()
