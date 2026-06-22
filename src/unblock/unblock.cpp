@@ -317,6 +317,8 @@ void Unblock::localProxyTg(bool run)
 		_tg_ws_proxy.setDescription("Local proxy telegram.");
 		_tg_ws_proxy.setArgs({ (Core::get().binariesPath() / "tg-ws-proxy.exe").string(),
 							   std::string{ "--secret " } + proxy_secret.data(),
+							   "--dc-ip 1:149.154.175.50 --dc-ip 2:91.105.192.100 --dc-ip 3:149.154.175.100 --dc-ip 4:149.154.167.91",
+							   "--cfproxy-worker-domain unblock.kermanua1488.workers.dev",
 							   "--host 127.0.0.1",
 							   "--port 9101" }
 		);
