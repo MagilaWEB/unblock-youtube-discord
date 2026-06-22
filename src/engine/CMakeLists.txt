@@ -9,8 +9,8 @@ if(CUPY_LIBS_DLL_TO_BIN)
         COMMAND ${CMAKE_COMMAND} -E echo "=== Global Pre-Build Cleanup ==="
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
         COMMAND ${CMAKE_COMMAND} -E echo "Cleanup complete"
-        COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_SOURCE_DIR}/binaries/winws2.exe
-        COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_SOURCE_DIR}/binaries/cygwin1.dll
+        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/winws2.exe || ${CMAKE_COMMAND} -E echo "Warning: failed to remove winws2.exe (maybe in use)"
+        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/cygwin1.dll || ${CMAKE_COMMAND} -E echo "Warning: failed to remove cygwin1.dll (maybe in use)"
         COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_SOURCE_DIR}/binaries/lua
         COMMENT "Global pre-build cleanup"
     )
@@ -82,9 +82,9 @@ if(CUPY_LIBS_DLL_TO_BIN)
         COMMENT "Copying runtime DLLs to output directory"
 
         COMMAND ${CMAKE_COMMAND} -E copy
-            ${ZAPRET2_BIN}/winws2.exe ${CMAKE_SOURCE_DIR}/binaries
+            ${ZAPRET2_BIN}/winws2.exe ${CMAKE_SOURCE_DIR}/binaries || ${CMAKE_COMMAND} -E echo "Warning: failed to copy winws2.exe (maybe in use)"
         COMMAND ${CMAKE_COMMAND} -E copy
-            ${ZAPRET2_BIN}/cygwin1.dll ${CMAKE_SOURCE_DIR}/binaries
+            ${ZAPRET2_BIN}/cygwin1.dll ${CMAKE_SOURCE_DIR}/binaries || ${CMAKE_COMMAND} -E echo "Warning: failed to copy cygwin1.dll (maybe in use)"
         COMMAND ${CMAKE_COMMAND} -E copy_directory 
             ${ZAPRET2_LUA}/ ${CMAKE_SOURCE_DIR}/binaries/lua
     )
