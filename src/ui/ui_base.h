@@ -30,14 +30,12 @@ public:
 
 	void OnChangeCursor(View*, Cursor cursor) override { _engine->window()->SetCursor(cursor); }
 
-	void closeWindow(const JSObject& obj, const JSArgs& args);
-
 	const std::shared_ptr<File>& userSetting();
 
 	bool hasCyrillicOrSpaceInBinaryPath() const { return _engine->hasCyrillicOrSpaceInBinaryPath(); }
 
 public:
 	void	console(bool show);
-	void	runTask(const JSObject& obj, const JSArgs& args);
+	void	runJsUpdate(const JSObject& obj, const JSArgs& args);
 	JSValue langText(const JSObject& obj, const JSArgs& args);
 };

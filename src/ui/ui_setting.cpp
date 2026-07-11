@@ -11,7 +11,6 @@ void Ui::_settingInit()
 	_settingEnableProxyTg();
 	_settingEnableProxyLinkTg();
 
-	_settingUnblockEnable();
 	_settingUnblockListEnableServices();
 
 	_settingUnblockEnableManual();
@@ -24,7 +23,7 @@ void Ui::_settingShowConsole()
 #ifndef DEBUG
 	{
 		_show_console
-			->create("#setting section .common", "str_checkbox_show_console_title", Localization::Str{ "str_checkbox_show_console_description" });
+			->create("#unblock section .common", "str_checkbox_show_console_title", Localization::Str{ "str_checkbox_show_console_description" });
 
 		auto result = _ui_base->userSetting()->parameterSection<bool>("SUSTEM", "show_console");
 		_show_console->setState(result ? result.value() : false);
@@ -44,7 +43,7 @@ void Ui::_settingShowConsole()
 void Ui::_settingTestDomainsStartup()
 {
 	_testing_domains_startup
-		->create("#setting section .common", "str_checkbox_testing_startup_title", Localization::Str{ "str_checkbox_testing_startup_description" });
+		->create("#unblock section .common", "str_checkbox_testing_startup_title", Localization::Str{ "str_checkbox_testing_startup_description" });
 
 	auto result = _ui_base->userSetting()->parameterSection<bool>("TESTING", "startup");
 	_testing_domains_startup->setState(result ? result.value() : false);
@@ -85,7 +84,7 @@ void Ui::_settingEnableDnsHosts()
 	);
 
 	_enable_dns_hosts
-		->create("#setting section .common", "str_checkbox_enable_dns_hosts_title", Localization::Str{ "str_checkbox_enable_dns_hosts_description" });
+		->create("#local_dns section .common", "str_checkbox_enable_dns_hosts_title", Localization::Str{ "str_checkbox_enable_dns_hosts_description" });
 	_enable_dns_hosts->addEventClick(
 		[this](JSArgs args)
 		{
@@ -101,7 +100,7 @@ void Ui::_settingEnableDnsHosts()
 		}
 	);
 
-	_start_update_dns_hosts->create("#setting section .common", "str_button_start_dns_hosts_update_title");
+	_start_update_dns_hosts->create("#local_dns section .common", "str_button_start_dns_hosts_update_title");
 
 	_start_update_dns_hosts->addEventClick(
 		[this](JSArgs)
@@ -138,7 +137,7 @@ void Ui::_settingDnsHostsUpdateInfoWindow()
 void Ui::_settingEnableProxyTg()
 {
 	_proxy_tg_enable
-		->create("#setting section .common", "str_checkbox_enable_proxy_tg_title", Localization::Str{ "str_checkbox_enable_proxy_tg_description" });
+		->create("#tg_ws_proxy section .common", "str_checkbox_enable_proxy_tg_title", Localization::Str{ "str_checkbox_enable_proxy_tg_description" });
 	_proxy_tg_enable->setState(_unblock.localProxyTgIsRun());
 	_proxy_tg_enable->addEventClick(
 		[this](JSArgs args)
@@ -154,8 +153,6 @@ void Ui::_settingEnableProxyTg()
 
 					_unblock.localProxyTg(state);
 
-					_activeServiceUpdate();
-
 					if (state)
 						_window_wait_start_service->hide();
 					else
@@ -170,7 +167,7 @@ void Ui::_settingEnableProxyTg()
 
 void Ui::_settingEnableProxyLinkTg()
 {
-	_proxy_link_tg->create("#setting section .common", "str_button_proxy_link_tg_title");
+	_proxy_link_tg->create("#tg_ws_proxy section .common", "str_button_proxy_link_tg_title");
 
 	_proxy_link_tg->addEventClick(
 		[this](JSArgs)
@@ -244,32 +241,12 @@ void Ui::_settingEnableDnsHostsWarningUser()
 	);
 }
 
-void Ui::_settingUnblockEnable()
-{
-	_unblock_enable->create("#setting section .unblock", "str_unblock_enable_title", Localization::Str{ "str_unblock_enable_description" });
-
-	auto result = _ui_base->userSetting()->parameterSection<bool>("UNBLOCK", "enable");
-	_unblock_enable->setState(result ? result.value() : true);
-
-	_unblock_enable->addEventClick(
-		[this](JSArgs args)
-		{
-			_ui_base->userSetting()->writeSectionParameter("UNBLOCK", "enable", JSToCPP(args[0]));
-			_settingUnblockListEnableServicesUpdate();
-			_settingUnblockEnableManualUpdate();
-			_buttonUpdate();
-			_testingUpdate();
-			return false;
-		}
-	);
-}
-
 void Ui::_settingUnblockListEnableServices()
 {
 	for (auto& [name, check_box] : _unblock_list_enable_services)
 	{
 		check_box->create(
-			"#setting section .unblock",
+			"#zapret .service",
 			std::string{ "str_unblock_enable_" + name + "_title" },
 			Localization::Str{ std::string{ "str_unblock_enable_" + name + "_description" } }
 		);
@@ -292,13 +269,7 @@ void Ui::_settingUnblockListEnableServicesUpdate()
 {
 	for (auto& [name, check_box] : _unblock_list_enable_services)
 	{
-		if (_unblock_enable->getState())
-			check_box->show();
-		else
-		{
-			check_box->hide();
-			continue;
-		}
+		check_box->show();
 
 		std::string setting_name{ "enable_" + name };
 
@@ -329,7 +300,7 @@ void Ui::_settingUnblockListEnableServicesUpdate()
 void Ui::_settingUnblockSelectStrategyVersion()
 {
 	_unblock_select_version_strategy
-		->create("#setting section .unblock", "str_select_version_strategy_title", Localization::Str{ "str_select_version_strategy_description" });
+		->create("#zapret .common", "str_select_version_strategy_title", Localization::Str{ "str_select_version_strategy_description" });
 	_unblock_select_version_strategy->addEventChange(
 		[this](JSArgs args)
 		{
@@ -347,59 +318,35 @@ void Ui::_settingUnblockSelectStrategyVersionUpdate()
 	if (!_unblock_select_version_strategy->isCreate())
 		return;
 
-	if (_unblock_enable->getState())
-	{
-		_unblock_select_version_strategy->clear();
+_unblock_select_version_strategy->clear();
 
-		_unblock_select_version_strategy->show();
+	_unblock_select_version_strategy->show();
 
-		auto strategy_dirs = _unblock.listVersionStrategy();
+	auto strategy_dirs = _unblock.listVersionStrategy();
 
-		for (u32 i = 0; i < strategy_dirs.size(); i++)
-			_unblock_select_version_strategy->createOption(i, strategy_dirs[i]);
+	for (u32 i = 0; i < strategy_dirs.size(); i++)
+		_unblock_select_version_strategy->createOption(i, strategy_dirs[i]);
 
-		if (auto strategy_version = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "version_strategy"))
-			_unblock_select_version_strategy->setSelectedOptionValue(strategy_version.value());
+	if (auto strategy_version = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "version_strategy"))
+		_unblock_select_version_strategy->setSelectedOptionValue(strategy_version.value());
 
-		_unblock.changeDirVersionStrategy(JSToCPP<std::string>(_unblock_select_version_strategy->getSelectedOptionValue()));
-	}
+	_unblock.changeDirVersionStrategy(JSToCPP<std::string>(_unblock_select_version_strategy->getSelectedOptionValue()));
 
 	_settingUnblockEnableManualSelectUpdate();
 }
 
 void Ui::_settingUnblockEnableManual()
 {
-	_unblock_manual->create("#setting section .unblock", "str_manual_title", Localization::Str{ "str_manual_description" });
-
-	_unblock_manual->addEventClick(
-		[this](JSArgs args)
-		{
-			_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "manual", JSToCPP(args[0]));
-			_settingUnblockEnableManualSelectUpdate();
-			return false;
-		}
-	);
-
 	_settingUnblockEnableManualUpdate();
 }
 
 void Ui::_settingUnblockEnableManualUpdate()
 {
-	if (_unblock_enable->getState())
-	{
-		_unblock_manual->show();
-		auto result = _ui_base->userSetting()->parameterSection<bool>("REMEMBER_CONFIGURATION", "manual");
-		_unblock_manual->setState(result ? result.value() : false);
-	}
-	else
-		_unblock_manual->hide();
-
-	_settingUnblockEnableManualSelectUpdate();
 }
 
 void Ui::_settingUnblockEnableManualSelect()
 {
-	_unblock_select_config->create("#setting section .unblock", "str_select_config_title", Localization::Str{ "str_select_config_description" });
+	_unblock_select_config->create("#zapret .common", "str_select_config_title", Localization::Str{ "str_select_config_description" });
 	_unblock_select_config->addEventChange(
 		[this](JSArgs args)
 		{
@@ -416,40 +363,32 @@ void Ui::_settingUnblockEnableManualSelectUpdate()
 	if (!_unblock_select_config->isCreate())
 		return;
 
-	if (_unblock_enable->getState() && _unblock_manual->getState())
-	{
-		_unblock_select_config->clear();
+	_unblock_select_config->clear();
 
-		auto& strategies_list = _unblock.getStrategiesList();
+	auto& strategies_list = _unblock.getStrategiesList();
 
-		if (strategies_list.empty())
-			return;
-
-		_unblock_select_config->show();
-
-		for (u32 i = 0; i < strategies_list.size(); i++)
-			_unblock_select_config->createOption(i, strategies_list[i]);
-
-		if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
-		{
-			if (std::ranges::find(strategies_list, config.value()) != strategies_list.end())
-			{
-				_unblock_select_config->setSelectedOptionValue(config.value());
-				_ui_base->userSetting()
-					->writeSectionParameter("REMEMBER_CONFIGURATION", "config", JSToCPP(_unblock_select_config->getSelectedOptionValue()));
-			}
-			else
-			{
-				_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", strategies_list[0]);
-				_unblock_select_config->setSelectedOptionValue(strategies_list[0]);
-			}
-		}
-
-		_buttonUpdate();
-
+	if (strategies_list.empty())
 		return;
+
+	_unblock_select_config->show();
+
+	for (u32 i = 0; i < strategies_list.size(); i++)
+		_unblock_select_config->createOption(i, strategies_list[i]);
+
+	if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
+	{
+		if (std::ranges::find(strategies_list, config.value()) != strategies_list.end())
+		{
+			_unblock_select_config->setSelectedOptionValue(config.value());
+			_ui_base->userSetting()
+				->writeSectionParameter("REMEMBER_CONFIGURATION", "config", JSToCPP(_unblock_select_config->getSelectedOptionValue()));
+		}
+		else
+		{
+			_ui_base->userSetting()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", strategies_list[0]);
+			_unblock_select_config->setSelectedOptionValue(strategies_list[0]);
+		}
 	}
 
-	_unblock_select_config->hide();
-	_unblock_select_config->clear();
+	_buttonUpdate();
 }

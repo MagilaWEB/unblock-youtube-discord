@@ -8,8 +8,8 @@ void Ui::_stopInit()
 	_window_wait_stop_service->create(Localization::Str{ "str_please_wait" }, "str_window_service_stop_wait_description");
 	_window_wait_stop_service->setType(SecondaryWindow::Type::Info);
 
-	_stop_unblock->create(".buttons_stop", "str_b_stop_unblock");
-	_stop_unblock->addEventClick(
+	_stop_zapret->create("#zapret .common", "str_b_stop_zapret");
+	_stop_zapret->addEventClick(
 		[this](JSArgs)
 		{
 			_window_wait_stop_service->show();
@@ -24,7 +24,17 @@ void Ui::_stopInit()
 		}
 	);
 
-	_stop_service_all->create(".buttons_stop", "str_b_stop_service_all");
+	_run_auto_config_zapret->create("#zapret .common", "str_b_run_auto_config_zapret");
+
+	_run_auto_config_zapret->addEventClick(
+		[this](JSArgs)
+		{
+			_autoStart();
+			return false;
+		}
+	);
+
+	_stop_service_all->create("#unblock .common", "str_b_stop_service_all");
 	_stop_service_all->addEventClick(
 		[this](JSArgs)
 		{
@@ -50,7 +60,6 @@ void Ui::_stoppingServices()
 	_unblock.removeService();
 
 	_buttonUpdate();
-	_activeServiceUpdate();
 
 	_tcpGlobalChange(false);
 }

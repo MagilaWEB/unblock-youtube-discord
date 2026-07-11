@@ -18,14 +18,8 @@ Ui::Ui(UiBase* ui_base) : _ui_base(ui_base)
 	_unblock.serviceConfigFile(_file_service_list);
 }
 
-void Ui::initialize()
+void Ui::_initializeAppState()
 {
-	if (_init)
-		return;
-
-	auto js_global					 = JSGlobalObject();
-	_updateCountStartStopButtonToCss = js_global["updateCountStartStopButtonToCss"];
-
 	_window_wait_response_from_server->create(Localization::Str{ "str_please_wait" }, "str_window_wait_response_from_server_description");
 	_window_wait_response_from_server->setType(SecondaryWindow::Type::Info);
 
@@ -33,22 +27,39 @@ void Ui::initialize()
 
 	//_checkWhitelist();
 
-	_initShowInfoSetting();
-
 	_updateApp();
-
 	_checkConflictService();
+}
 
-	_settingInit();
-
-	// HOME
+void Ui::_initializeSettings()
+{
 	_startInit();
 	_stopInit();
+
+	_initShowInfoSetting();
+	_settingInit();
+}
+
+void Ui::_initializeHome()
+{
 	_testingInit();
+}
 
+void Ui::_initializeFooter()
+{
 	_footerElements();
-
 	_removeApp();
+}
+
+void Ui::initialize()
+{
+	if (_init)
+		return;
+
+	_initializeAppState();
+	_initializeSettings();
+	_initializeHome();
+	_initializeFooter();
 
 	_init = true;
 }

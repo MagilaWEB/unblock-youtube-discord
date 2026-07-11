@@ -38,7 +38,13 @@ void StrategiesDPI::changeDirVersion(std::string_view dir_version)
 		_patch_file = Core::get().configsPath() / "strategy" / _patch_dir_version;
 
 	for (auto& entry : std::filesystem::directory_iterator(_patch_file))
-		_strategy_files_list.push_back(entry.path().filename().string());
+	{
+		auto & path = entry.path();
+
+		if (std::filesystem::is_regular_file(path) && path.has_extension())
+			if (path.extension() == ".config")
+				_strategy_files_list.push_back(path.filename().string());
+	}
 
 	_sortFiles();
 }

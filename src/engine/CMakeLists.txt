@@ -4,6 +4,8 @@ file(GLOB src_cpp "*.cpp")
 file(GLOB src_h "*.h")
 file(GLOB src_hpp "*.hpp")
 
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 if(CUPY_LIBS_DLL_TO_BIN)
     add_custom_target(global_pre_build ALL
         COMMAND ${CMAKE_COMMAND} -E echo "=== Global Pre-Build Cleanup ==="

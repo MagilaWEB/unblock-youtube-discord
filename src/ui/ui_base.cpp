@@ -44,11 +44,6 @@ void UiBase::OnClose(ultralight::Window*)
 }
 
 // ------------------ JS callbacks ------------------
-void UiBase::closeWindow(const JSObject&, const JSArgs&)
-{
-	OnClose(_engine->window());
-}
-
 const std::shared_ptr<File>& UiBase::userSetting()
 {
 	return _engine->userConfig();
@@ -59,7 +54,7 @@ void UiBase::console(bool show)
 	show ? _engine->showConsole() : _engine->hideConsole();
 }
 
-void UiBase::runTask(const JSObject&, const JSArgs&)
+void UiBase::runJsUpdate(const JSObject&, const JSArgs&)
 {
 	auto& task = Core::get().getTaskJS();
 	FAST_LOCK(Core::get().getTaskLockJS());
@@ -68,6 +63,7 @@ void UiBase::runTask(const JSObject&, const JSArgs&)
 		task.front()();
 		task.pop_front();
 	}
+
 	_ui->jsUpdate();
 }
 
@@ -78,6 +74,7 @@ JSValue UiBase::langText(const JSObject&, const JSArgs& args)
 		Debug::warning("The passed argument in LANG_TEXT is not a string");
 		return "";
 	}
+
 	const auto text_id = static_cast<String>(args[0].ToString());
 	return Localization::Str{ text_id.utf8().data() }().data();
 }
@@ -88,12 +85,14 @@ void UiBase::OnWindowObjectReady(View* caller, uint64_t, bool, const String&)
 	auto locked_context = caller->LockJSContext();
 	SetJSContext(locked_context->ctx());
 
-	JSObject global		   = JSGlobalObject();
-	global["RUN_CPP"]	   = JSValue(true);
-	global["VERSION_APP"]  = JSValue(VERSION_STR);
-	global["CPPTaskRun"]   = static_cast<JSCallback>(std::bind(&UiBase::runTask, this, std::placeholders::_1, std::placeholders::_2));
-	global["CPPLangText"]  = static_cast<JSCallbackWithRetval>(std::bind(&UiBase::langText, this, std::placeholders::_1, std::placeholders::_2));
-	global["WINDOW_CLOSE"] = static_cast<JSCallback>(std::bind(&UiBase::closeWindow, this, std::placeholders::_1, std::placeholders::_2));
+	JSObject global			 = JSGlobalObject();
+	global["RUN_CPP"]		 = JSValue(true);
+	global["VERSION_APP"]	 = JSValue(VERSION_STR);
+	global["CPPRunJsUpdate"] = static_cast<JSCallback>(std::bind(&UiBase::runJsUpdate, this, std::placeholders::_1, std::placeholders::_2));
+	global["CPPLangText"]	 = static_cast<JSCallbackWithRetval>(std::bind(&UiBase::langText, this, std::placeholders::_1, std::placeholders::_2));
+
+	// Logic thread JavaScript to CPP
+	caller->EvaluateScript("setInterval(CPPRunJsUpdate, 30)");
 }
 
 void UiBase::OnDOMReady(View* caller, uint64_t, bool, const String&)

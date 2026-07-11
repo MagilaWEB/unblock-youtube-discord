@@ -40,8 +40,8 @@ class Ui final : public utils::DefaultInit
 	SECONDARY_WINDOW(_window_remove_app);
 
 	// Setting Unblock
-	CHECK_BOX(_unblock_enable);
-	CHECK_BOX(_unblock_manual);
+	//CHECK_BOX(_unblock_enable);
+	//CHECK_BOX(_unblock_manual);
 	SELECT_LIST(_unblock_select_version_strategy);
 	SELECT_LIST(_unblock_select_config);
 
@@ -49,13 +49,13 @@ class Ui final : public utils::DefaultInit
 	std::map<std::string, std::shared_ptr<CheckBox>> _unblock_list_enable_services{};
 
 	// Home
-	BUTTON(_start_unblock);
-	BUTTON(_stop_unblock);
-	BUTTON(_stop_service_all);
-	BUTTON(_start_testing);
+	BUTTON(_start_zapret);
+	BUTTON(_stop_zapret);
+	BUTTON(_run_auto_config_zapret);
+	BUTTON(_start_testing_zapret);
 	BUTTON(_show_info_selected_service_setting);
 
-	UL_LIST(_active_service);
+	BUTTON(_stop_service_all);
 
 	UL_LIST(_list_domain);
 	UL_LIST(_list_domain_to_modal);
@@ -101,6 +101,11 @@ public:
 	void jsUpdate();
 
 private:
+	void _initializeAppState();
+	void _initializeSettings();
+	void _initializeHome();
+	void _initializeFooter();
+
 	void _checkConflictService();
 
 	void _checkValidRootDirectory();
@@ -130,8 +135,6 @@ private:
 	void _settingEnableProxyTg();
 	void _settingEnableProxyLinkTg();
 
-	void _settingUnblockEnable();
-
 	void _settingUnblockListEnableServices();
 	void _settingUnblockListEnableServicesUpdate();
 
@@ -150,7 +153,6 @@ private:
 	void _testingWindow();
 
 	// Testing methods base
-	void _activeServiceUpdate();
 	void _testingServiceDomains();
 
 	// Starting services
@@ -162,7 +164,6 @@ private:
 	void	   _clickStartService();
 	void	   _autoStart();
 	void	   _startServiceFromConfig();
-	JSFunction _updateCountStartStopButtonToCss;
 
 	// Starting services update button
 	void _buttonUpdate();

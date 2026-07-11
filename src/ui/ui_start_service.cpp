@@ -11,9 +11,9 @@ void Ui::_startInit()
 
 void Ui::_startUnblock()
 {
-	_start_unblock->create(".buttons_start", "str_b_start_unblock", true);
+	_start_zapret->create("#zapret .common", "str_b_start_zapret");
 
-	_start_unblock->addEventClick(
+	_start_zapret->addEventClick(
 		[this](JSArgs)
 		{
 			_clickStartService();
@@ -86,45 +86,22 @@ void Ui::_startServiceWindow()
 
 void Ui::_buttonUpdate()
 {
-	if (_unblock_enable->getState())
-	{
-		_start_unblock->show();
-		_stop_unblock->show();
-
-		if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
-			if (_unblock.activeService())
-				_start_unblock->setTitle("str_b_restart_unblock");
-			else
-				_start_unblock->setTitle("str_b_start_unblock");
+	if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
+		if (_unblock.activeService())
+			_start_zapret->setTitle("str_b_restart_unblock");
 		else
-			_start_unblock->setTitle("str_b_start_find_config");
-	}
+			_start_zapret->setTitle("str_b_start_zapret");
 	else
-	{
-		_start_unblock->hide();
-		_stop_unblock->hide();
-	}
-
-	Core::get().addTaskJS(
-		[this]
-		{
-			if (_updateCountStartStopButtonToCss)
-				_updateCountStartStopButtonToCss({});
-		}
-	);
+		_start_zapret->setTitle("str_b_start_find_config");
 }
 
 void Ui::_clickStartService()
 {
 	if (auto config = _ui_base->userSetting()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
 	{
-		if (_unblock_manual->getState())
-		{
-			_startServiceFromConfig();
-			return;
-		}
-
-		auto& strategy_list = _unblock.getStrategiesList();
+		_startServiceFromConfig();
+		
+		/*auto& strategy_list = _unblock.getStrategiesList();
 		if (std::ranges::find(strategy_list, config.value()) == strategy_list.end())
 		{
 			Debug::warning("config[{}] The specified strategy does not exist from the user's settings!", config.value());
@@ -144,7 +121,7 @@ void Ui::_clickStartService()
 			JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue())
 		));
 
-		_window_config_found->show();
+		_window_config_found->show();*/
 		return;
 	}
 
@@ -248,7 +225,6 @@ void Ui::_autoStart()
 			}
 
 			_buttonUpdate();
-			_activeServiceUpdate();
 
 			_automatically_strategy_cancel = false;
 			_window_auto_start_wait->hide();
@@ -277,7 +253,6 @@ void Ui::_startServiceFromConfig()
 
 			_unblock.startService();
 			_buttonUpdate();
-			_activeServiceUpdate();
 			_window_wait_start_service->hide();
 		}
 	);

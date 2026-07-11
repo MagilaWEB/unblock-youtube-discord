@@ -7,7 +7,7 @@ void Ui::_updateApp()
 	_updateAppWindow();
 
 	_enable_check_update_startup->create(
-		"#setting section .common",
+		"#unblock section .common",
 		"str_checkbox_check_update_app_startup_title",
 		Localization::Str{ "str_checkbox_check_update_app_startup_description" }
 	);
@@ -26,7 +26,7 @@ void Ui::_updateApp()
 	if (_enable_check_update_startup->getState())
 		_checkAppUpdate();
 
-	_start_check_update_app->create("#setting section .common", "str_bottom_check_update_app_startup_title");
+	_start_check_update_app->create("#unblock section .common", "str_bottom_check_update_app_startup_title");
 
 	_start_check_update_app->addEventClick(
 		[this](JSArgs)

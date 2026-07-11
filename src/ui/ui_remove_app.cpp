@@ -4,7 +4,7 @@
 
 void Ui::_removeApp()
 {
-	_remove_app->create("#setting section .common", "str_button_remove");
+	_remove_app->create("#unblock section .common", "str_button_remove");
 	_remove_app->addEventClick(
 		[this](JSArgs)
 		{

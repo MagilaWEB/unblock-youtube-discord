@@ -3,7 +3,7 @@
 
 void Ui::_initShowInfoSetting()
 {
-	_show_info_selected_service_setting->create(".buttons_start", "str_show_info_selected_service_setting");
+	_show_info_selected_service_setting->create("#zapret .common", "str_show_info_selected_service_setting");
 	_show_info_selected_service_setting->addEventClick(
 		[this](JSArgs)
 		{
