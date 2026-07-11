@@ -1,4 +1,5 @@
 // NAV
+str_h2_zapret2=🔓 Zapret2
 str_h2_home=Главная
 str_h2_setting=Настройки
 
@@ -7,12 +8,13 @@ str_link_to_github=↗ GitHub
 str_link_to_telegram=↗ Telegram
 
 // BUTTON HOME
-str_b_start_unblock=▶ Запустить Zapret
+str_b_start_zapret=▶ Запустить Zapret
 str_b_restart_unblock=🔄 Перезапустить Zapret
-str_b_stop_unblock=⏹ Остановить Zapret
+str_b_stop_zapret=⏹ Остановить Zapret
+str_b_run_auto_config_zapret=⚙️ Автоподбор Zapret
 str_b_stop_service_all=⏹ Остановить все службы
 
-str_b_start_testing=🧪 Тестировать
+str_b_start_testing_zapret=🧪 Тестировать
 str_b_start_find_config=🔍 Подобрать конфиг
 
 // console text
@@ -73,7 +75,7 @@ str_not_selected=◌ Не выбрано
 str_window_wait_response_from_server_description=⏳ Ожидание ответа от сервера...
 Загрузка данных. Это может занять несколько секунд.
 
-str_show_info_selected_service_setting=📋 Показать настройки
+str_show_info_selected_service_setting=📋 Текущие настройки
 str_window_info_selected_service_setting=📋 Текущие настройки:
 ├ Zapret2 конфигурация: [{}]
 └ Zapret2 конфиг версия: [{}]
@@ -215,9 +217,9 @@ Unblock не сможет работать без доступа в сеть.
 
 str_button_start_dns_hosts_update_title=🔄 Обновить локальный DNS
 
-// Setting titles blocks
-str_setting_common_title=⚙ Общие
-str_setting_unblock_title=🔓 Zapret2
+// Zapret titles blocks
+str_zapret_common_title=⚙ Общие
+str_zapret_service_title=🔓 Сервисы
 
 // Setting common show console
 str_checkbox_show_console_title=📟 Показывать консоль

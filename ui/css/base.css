@@ -60,7 +60,7 @@ main {
 
 main article {
     position  : absolute;
-    top       : 20vw;
+    top       : 5vw;
     left      : 0;
     width     : 100%;
     visibility: hidden;
@@ -199,16 +199,11 @@ footer .button.show button:active {
     transform: scale(0.98);
 }
 
-.info_unblock {
-    display              : grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap                  : 1.2%;
-}
-
-.info_unblock .block ul {
+section .block ul {
     height: 25vw;
 }
 
+/* 
 .buttons_start,
 .buttons_stop {
     display       : grid;
@@ -303,15 +298,15 @@ footer .button.show button:active {
 .buttons_stop:hover {
     border-color: rgba(255, 255, 255, 0.25);
     transition  : border-color 0.2s;
-}
+} */
 
-#setting section {
+.active section:has(> .block:nth-child(2)) {
     display              : grid;
     grid-template-columns: repeat(2, 1fr);
     gap                  : 1.2%;
 }
 
-#setting .block {
+.active .block {
     padding: 0 4.5%;
 }
 

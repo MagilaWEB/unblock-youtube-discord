@@ -1,4 +1,5 @@
 // NAV
+str_h2_zapret2=Zapret2
 str_h2_home=Home
 str_h2_setting=Settings
 
@@ -7,12 +8,13 @@ str_link_to_github=↗ GitHub
 str_link_to_telegram=↗ Telegram
 
 // BUTTON HOME
-str_b_start_unblock=▶ Start Zapret
+str_b_start_zapret=▶ Start Zapret
 str_b_restart_unblock=🔄 Restart Zapret
-str_b_stop_unblock=⏹ Stop Zapret
+str_b_stop_zapret=⏹ Stop Zapret
+str_b_run_auto_config_zapret=⚙️ Auto-config Zapret
 str_b_stop_service_all=⏹ Stop all Services
 
-str_b_start_testing=🧪 Test
+str_b_start_testing_zapret=🧪 Test
 str_b_start_find_config=🔍 Find Config
 
 // console text
@@ -73,7 +75,7 @@ str_not_selected=◌ Not selected
 str_window_wait_response_from_server_description=⏳ Waiting for server response...
 Loading data. This may take a few seconds.
 
-str_show_info_selected_service_setting=📋 Show settings
+str_show_info_selected_service_setting=📋 Current settings
 str_window_info_selected_service_setting=📋 Current settings:
 ├ Zapret2 config: [{}]
 └ Zapret2 config version: [{}]
@@ -215,9 +217,9 @@ Unblock cannot function without network access.
 
 str_button_start_dns_hosts_update_title=🔄 Update local DNS
 
-// Setting titles blocks
-str_setting_common_title=⚙ General
-str_setting_unblock_title=🔓 Zapret2
+// Zapret titles blocks
+str_zapret_common_title=⚙ General
+str_zapret_service_title=🔓 Service
 
 // Setting common show console
 str_checkbox_show_console_title=📟 Show console

@@ -1,11 +1,5 @@
 const list_nav = document.querySelectorAll(".nav li a");
 list_nav.forEach(element => {
-	if (element.hash == "#home") {
-		let hom = document.querySelector(element.hash);
-		if (hom)
-			hom.classList.add("active");
-	}
-
 	eventClick(element);
 });
 

@@ -1,7 +1,7 @@
 try {
 	!RUN_CPP
 } catch (error) {
-	var RUN_CPP = false;
+	const RUN_CPP = false;
 }
 
 if (!RUN_CPP) {
@@ -24,7 +24,7 @@ if (!RUN_CPP) {
 
 	setTypeSecondaryWindow("start_test_window", 2);
 
-	createButton(".buttons_start", "start_test", "Запустить тестирование");
+	createButton("#zapret .common", "start_test", "Запустить тестирование");
 
 	addButtonEventClick("start_test", () => {
 		showSecondaryWindow("start_test_window");
@@ -34,7 +34,7 @@ if (!RUN_CPP) {
 		}, 3000)
 	});
 
-	createButton(".buttons_start", "start_service", "Запустить службы");
+	createButton("#zapret .common", "start_service", "Запустить службы");
 	createButton(".buttons_stop", "stop_service", "Остановить службы");
 
 	createListUl("#start_test_window .description", "success_domain", "Доступные домены:");
@@ -65,20 +65,20 @@ if (!RUN_CPP) {
 	createListUlLiAddSuccess("success_service", "Unblock x.com", true);
 	createListUlLiAddSuccess("success_service", "Unblock Proxy BayDPI", false);
 
-	createCheckBox("#setting section .unblock", "unblock", "Включаем что то", "DA");
+	createCheckBox("#zapret .common", "unblock", "Включаем что то", "DA");
 
-	createButton("#setting section .unblock", "test", "Запустить тест");
+	createButton("#zapret .common", "test", "Запустить тест");
 
-	createCheckBox("#setting section .unblock", "unblock2", "тут тоже", "Какоето описание (тут тоже)");
+	createCheckBox("#zapret .common", "unblock2", "тут тоже", "Какоето описание (тут тоже)");
 
-	createListSelect("#setting section .unblock", "unblock3", "Список выбора", "Какоето описание 2")
+	createListSelect("#zapret .common", "unblock3", "Список выбора", "Какоето описание 2")
 	createSelectOption("unblock3", 1, "Элемент 1");
 	createSelectOption("unblock3", 2, "Элемент 2");
 	createSelectOption("unblock3", 3, "Элемент 3");
 	createSelectOption("unblock3", 4, "Элемент 4");
 	createSelectOption("unblock3", 5, "Элемент 5");
 
-		createListSelect("#setting section .unblock", "unblock4", "Список выбора", "Какоето описание 2")
+		createListSelect("#zapret .common", "unblock4", "Список выбора", "Какоето описание 2")
 	createSelectOption("unblock4", 1, "Элемент 1");
 	createSelectOption("unblock4", 2, "Элемент 2");
 	createSelectOption("unblock4", 3, "Элемент 3");
@@ -89,7 +89,7 @@ if (!RUN_CPP) {
 		console.log(new_value);
 	});
 
-	createListSelect("#setting section .proxy", "test_select", "Название списка выбора опции.", "Описание списка выбора опции.")
+	createListSelect("#unblock section .proxy", "test_select", "Название списка выбора опции.", "Описание списка выбора опции.")
 	createSelectOption("test_select", "1", "опция 1");
 	createSelectOption("test_select", "2", "опция 2");
 	createSelectOption("test_select", "3", "опция 3", true);
@@ -101,5 +101,3 @@ if (!RUN_CPP) {
 
 	updateCountStartStopButtonToCss();
 }
-else
-	setInterval(CPPTaskRun, 30);
