@@ -126,6 +126,7 @@ message(STATUS "COMPILER = ${CMAKE_CXX_COMPILER_ID}")
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 # Enforce Clang warnings
     add_compile_options(-Wall -Wextra -Wpedantic -Werror
+        -Wno-unknown-warning-option
         -Wno-unique-object-duplication
         -Wno-exit-time-destructors
         -Wno-global-constructors
