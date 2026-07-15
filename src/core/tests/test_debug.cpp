@@ -8,6 +8,23 @@
 
 namespace fs = std::filesystem;
 
+struct CoutSilencer
+{
+    std::streambuf* old_cout;
+    std::streambuf* old_cerr;
+    std::ofstream null;
+    CoutSilencer() : old_cout(std::cout.rdbuf()), old_cerr(std::cerr.rdbuf()), null("nul")
+    {
+        std::cout.rdbuf(null.rdbuf());
+        std::cerr.rdbuf(null.rdbuf());
+    }
+    ~CoutSilencer()
+    {
+        std::cout.rdbuf(old_cout);
+        std::cerr.rdbuf(old_cerr);
+    }
+};
+
 struct DebugFixture
 {
     fs::path root;
@@ -52,6 +69,7 @@ TEST_CASE("Debug::print does not throw", "[debug][msg]")
 {
     DebugFixture fx;
     Debug::initialize("");
+    CoutSilencer silencer;
     CHECK_NOTHROW(Debug::print("print message {}", 42));
 }
 
@@ -59,6 +77,7 @@ TEST_CASE("Debug::ok does not throw", "[debug][msg]")
 {
     DebugFixture fx;
     Debug::initialize("");
+    CoutSilencer silencer;
     CHECK_NOTHROW(Debug::ok("ok message"));
 }
 
@@ -66,6 +85,7 @@ TEST_CASE("Debug::info does not throw", "[debug][msg]")
 {
     DebugFixture fx;
     Debug::initialize("");
+    CoutSilencer silencer;
     CHECK_NOTHROW(Debug::info("info message"));
 }
 
@@ -73,6 +93,7 @@ TEST_CASE("Debug::warning does not throw", "[debug][msg]")
 {
     DebugFixture fx;
     Debug::initialize("");
+    CoutSilencer silencer;
     CHECK_NOTHROW(Debug::warning("warning message"));
 }
 
@@ -80,6 +101,7 @@ TEST_CASE("Debug::please does not throw", "[debug][msg]")
 {
     DebugFixture fx;
     Debug::initialize("");
+    CoutSilencer silencer;
     CHECK_NOTHROW(Debug::please("please message"));
 }
 
@@ -89,6 +111,7 @@ TEST_CASE("Debug::error throws Debug::exception", "[debug][msg][throw]")
 {
     DebugFixture fx;
     Debug::initialize("");
+    CoutSilencer silencer;
     CHECK_THROWS_AS(Debug::error("error message"), Debug::exception);
 }
 
@@ -112,6 +135,7 @@ TEST_CASE("Debug::verify throws on false condition", "[debug][verify][throw]")
 {
     DebugFixture fx;
     Debug::initialize("");
+    CoutSilencer silencer;
     CHECK_THROWS_AS(Debug::verify(false, "should throw"), Debug::exception);
 }
 
@@ -121,6 +145,7 @@ TEST_CASE("Debug::initLogFile creates logs directory", "[debug][log]")
 {
     DebugFixture fx;
     Debug::initialize("");
+    CoutSilencer silencer;
 
     Debug::initLogFile();
 
@@ -131,6 +156,7 @@ TEST_CASE("Debug log file contains written messages", "[debug][log]")
 {
     DebugFixture fx;
     Debug::initialize("");
+    CoutSilencer silencer;
 
     auto log_path = fx.root / "logs" / "log.txt";
     fs::create_directories(log_path.parent_path());

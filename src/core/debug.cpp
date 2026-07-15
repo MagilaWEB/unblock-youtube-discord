@@ -102,7 +102,8 @@ static LONG WINAPI seh_unhandled_filter(_EXCEPTION_POINTERS* pExceptionInfo)
 	throw std::runtime_error(buf);
 }
 
-namespace {
+namespace
+{
 	struct SEHFilterGuard
 	{
 		LPTOP_LEVEL_EXCEPTION_FILTER old_filter;
@@ -116,7 +117,7 @@ namespace {
 		{
 			SetUnhandledExceptionFilter(old_filter);
 		}
-	} g_seh_guard;
+	} guard;
 }
 
 void Debug::initialize(const std::string& command_line)
