@@ -124,27 +124,11 @@ set(ZAPRET2_LUA ${ZAPRET2_DIR}/lua)
 message(STATUS "COMPILER = ${CMAKE_CXX_COMPILER_ID}")
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-# Enforce Clang warnings
     add_compile_options(-Wall -Wextra -Wpedantic -Werror
-        -Wno-unknown-warning-option
-        -Wno-unique-object-duplication
-        -Wno-exit-time-destructors
-        -Wno-global-constructors
         -Wno-padded
-        -Wno-shadow-field
-        -Wno-shadow-field-in-constructor
-        -Wno-shadow-uncaptured-local
-        -Wno-deprecated-copy-with-user-provided-dtor
+        -Wno-exit-time-destructors
         -Wno-unsafe-buffer-usage
-        -Wno-unsafe-buffer-usage-in-libc-call
-        -Wno-sign-conversion
-        -Wno-zero-as-null-pointer-constant
-        -Wno-extra-semi-stmt
-        -Wno-implicit-int-float-conversion
-        -Wno-float-equal
-        -Wno-missing-prototypes
-        -Wno-missing-noreturn
-        -Wno-unreachable-code-return
+        -Wno-unique-object-duplication
     )
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     add_compile_options(/utf-8 /W4)
