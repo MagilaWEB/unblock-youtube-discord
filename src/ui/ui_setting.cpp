@@ -3,9 +3,7 @@
 
 #include "../unblock/unblock.h"
 
-#ifdef __clang__
-	#pragma clang diagnostic ignored "-Wshadow-uncaptured-local"
-#endif
+#pragma clang diagnostic ignored "-Wshadow-uncaptured-local"
 
 void Ui::_settingInit()
 {

@@ -38,20 +38,16 @@ target_link_libraries(${NAME} PRIVATE
         ${ULTRALIGHT_LIB}/AppCore.lib
         ${ULTRALIGHT_LIB}/UltralightCore.lib
         ${ULTRALIGHT_LIB}/Ultralight.lib
+        dwmapi.lib
 )
 
 # Define EXPORTS when building the libraries
 target_compile_definitions(${NAME} PRIVATE CONSOLE ENGINE_EXPORTS ${ALL_MACRO_CPP})
 
-# Tell MSVC to use main instead of WinMain for Windows subsystem executables
- if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    set_target_properties(${NAME} PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup /MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\" /SUBSYSTEM:WINDOWS")
-elseif(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU")
-    target_link_options(${NAME} PRIVATE
-            "LINKER:/ENTRY:mainCRTStartup"
-            "LINKER:/SUBSYSTEM:WINDOWS"
-        )
-endif()
+target_link_options(${NAME} PRIVATE
+        "LINKER:/ENTRY:mainCRTStartup"
+        "LINKER:/SUBSYSTEM:WINDOWS"
+    )
 
 # Copy library binaries to the folder of the compiled project
 if(CUPY_LIBS_DLL_TO_BIN)

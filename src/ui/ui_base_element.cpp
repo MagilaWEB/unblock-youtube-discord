@@ -4,15 +4,11 @@
 using namespace ultralight;
 
 View*												 BaseElement::_view;
-#ifdef __clang__
-	#pragma clang diagnostic push
-	#pragma clang diagnostic ignored "-Wglobal-constructors"
-#endif
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wglobal-constructors"
 std::map<std::string, BaseElement*>			  BaseElement::_all_element;
 BaseElement::MapEvent							   BaseElement::_event_click;
-#ifdef __clang__
-	#pragma clang diagnostic pop
-#endif
+#pragma clang diagnostic pop
 
 void BaseElement::runCodeToJS(const std::function<void()>& run_code)
 {

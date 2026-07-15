@@ -206,14 +206,10 @@ start cmd /c del "%CURRENT_DIR%setup_update.bat"
 exit
 )" };
 
-#ifdef __clang__
-	#pragma clang diagnostic push
-	#pragma clang diagnostic ignored "-Wglobal-constructors"
-#endif
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wglobal-constructors"
 static HttpsLoad& load_7z = *new HttpsLoad{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" };
-#ifdef __clang__
-	#pragma clang diagnostic pop
-#endif
+#pragma clang diagnostic pop
 
 bool Unblock::appUpdate()
 {

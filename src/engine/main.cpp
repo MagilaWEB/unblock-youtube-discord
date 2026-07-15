@@ -14,7 +14,6 @@ static void run(const std::string& command_line)
 	core.finish();
 }
 
-#ifdef __clang__
 static bool isRunningAsAdmin()
 {
 	BOOL					 isAdmin	 = FALSE;
@@ -56,7 +55,6 @@ static bool requestElevation()
 
 	return true;
 }
-#endif
 
 int main(int argc, char** argv)
 {
@@ -66,7 +64,6 @@ int main(int argc, char** argv)
 
 	Debug::initialize(lp_cmd_line);
 
-#ifdef __clang__
 	if (!isRunningAsAdmin())
 	{
 		if (requestElevation())
@@ -74,7 +71,6 @@ int main(int argc, char** argv)
 		else
 			return 1;
 	}
-#endif
 
 	auto res = Debug::try_wrap(run, lp_cmd_line);
 	return res;

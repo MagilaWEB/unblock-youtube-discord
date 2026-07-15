@@ -1,14 +1,10 @@
 #include "file_system.h"
 
-#ifdef __clang__
-	#pragma clang diagnostic push
-	#pragma clang diagnostic ignored "-Wglobal-constructors"
-#endif
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wglobal-constructors"
 static const std::regex& r_section_name = *new std::regex{ "\\[.*\\](?:.*|\\n)" };
 static const std::regex& reg_equally = *new std::regex{ "\\=" };
-#ifdef __clang__
-	#pragma clang diagnostic pop
-#endif
+#pragma clang diagnostic pop
 
 File::~File()
 {

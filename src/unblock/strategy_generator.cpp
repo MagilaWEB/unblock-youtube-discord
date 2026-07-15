@@ -1,16 +1,12 @@
 #include "strategy_generator.h"
 
-#ifdef __clang__
-	#pragma clang diagnostic push
-	#pragma clang diagnostic ignored "-Wglobal-constructors"
-#endif
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wglobal-constructors"
 const std::filesystem::path& StrategyGenerator::_base_blacklist = *new std::filesystem::path{ Core::get().configsPath() / "blacklist" };
 const std::filesystem::path& StrategyGenerator::_base_ip_set = *new std::filesystem::path{ Core::get().configsPath() / "ip-set" };
 const std::filesystem::path& StrategyGenerator::_user_blacklist = *new std::filesystem::path{ Core::get().userPath() / "blacklist" };
 const std::filesystem::path& StrategyGenerator::_user_ip_set = *new std::filesystem::path{ Core::get().userPath() / "ip-set" };
-#ifdef __clang__
-	#pragma clang diagnostic pop
-#endif
+#pragma clang diagnostic pop
 
 StrategyGenerator::StrategyGenerator()
 {

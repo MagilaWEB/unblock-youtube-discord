@@ -1,15 +1,11 @@
 #include "ui_secondary_window.h"
 
-#ifdef __clang__
-	#pragma clang diagnostic push
-	#pragma clang diagnostic ignored "-Wglobal-constructors"
-#endif
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wglobal-constructors"
 std::vector<SecondaryWindow*> SecondaryWindow::_all_window;
 SecondaryWindow::MapEvent SecondaryWindow::_event_yes_no;
 SecondaryWindow::MapEvent SecondaryWindow::_event_cancel;
-#ifdef __clang__
-	#pragma clang diagnostic pop
-#endif
+#pragma clang diagnostic pop
 
 SecondaryWindow::SecondaryWindow(std::string_view name) : BaseElement(name)
 {

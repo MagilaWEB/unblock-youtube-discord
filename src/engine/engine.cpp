@@ -5,7 +5,6 @@
 #include <algorithm>
 
 #include <dwmapi.h>
-#pragma comment(lib, "dwmapi.lib")
 
 Engine& Engine::get()
 {

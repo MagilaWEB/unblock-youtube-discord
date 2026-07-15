@@ -1,22 +1,12 @@
 #pragma once
 
-#ifdef __clang__
-	#pragma clang diagnostic push
-	#pragma clang diagnostic ignored "-Weverything"
-#else
-	#pragma warning(push)
-	#pragma warning(disable : 4'100)
-	#pragma warning(disable : 4'201)
-#endif
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
 
 #include <AppCore/JSHelpers.h>
 #include <Ultralight/View.h>
 
-#ifdef __clang__
-	#pragma clang diagnostic pop
-#else
-	#pragma warning(pop)
-#endif
+#pragma clang diagnostic pop
 
 using namespace ultralight;
 #define JS_EVENT(map) static_cast<JSCallbackWithRetval>([this](JSObject, const JSArgs& args) -> JSValue { return this->eventCPP(args, map); })

@@ -2,9 +2,7 @@
 #include "ui_base.h"
 #include "utils_ultralight.hpp"
 
-#ifdef __clang__
-	#pragma clang diagnostic ignored "-Wshadow-uncaptured-local"
-#endif
+#pragma clang diagnostic ignored "-Wshadow-uncaptured-local"
 
 void Ui::_updateApp()
 {
