@@ -119,7 +119,7 @@ void StrategiesDPIBase::_sortFiles()
 		{
 			std::smatch		  left_res;
 			std::smatch		  right_res;
-			static const std::regex reg("\\d+");
+			static const std::regex& reg{ *new std::regex{ "\\d+" } };
 			if (std::regex_search(left, left_res, reg) && std::regex_search(right, right_res, reg))
 				return std::stoul(left_res.str()) < std::stoul(right_res.str());
 

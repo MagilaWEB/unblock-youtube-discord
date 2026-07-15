@@ -256,7 +256,7 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 
 			// If the connection time is 0, then the resource is unavailable or some other unknown reason, but this is not always the case,
 			// you need to make sure several times, usually two attempts are enough.
-			if (connect_time == 0)
+			if (connect_time < std::numeric_limits<double>::epsilon())
 			{
 				COUNT_TIME_NULL++;
 #ifdef DEBUG

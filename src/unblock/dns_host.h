@@ -1,10 +1,9 @@
 #pragma once
 #include "http_load_content.h"
 
-inline static const std::regex reg_ipv4_pattern{ R"(^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$)" };
-inline static const std::regex reg_domain_regex{ R"(^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$)" };
-inline static const std::vector<unsigned char> data{ 0x0d, 0x33, 0x34, 0x3e, 0x35, 0x2d, 0x29, 0x75, 0x09, 0x23, 0x29, 0x2e, 0x3f, 0x37,
-													 0x69, 0x68, 0x75, 0x3e, 0x28, 0x33, 0x2c, 0x3f, 0x28, 0x29, 0x75, 0x3f, 0x2e, 0x39 };
+const std::regex& reg_ipv4_pattern();
+const std::regex& reg_domain_regex();
+extern const std::vector<unsigned char>& data_vec();
 
 class DNSHost final : public utils::DefaultInit
 {
@@ -23,9 +22,9 @@ class DNSHost final : public utils::DefaultInit
 	std::map<std::string, std::string> _map_list{};
 
 	CriticalSection	 _lock;
+	std::atomic_uint _size_iter{ 0 };
 	std::atomic_bool _user_host_complete{ false };
 	std::atomic_bool _cancel_update{ false };
-	std::atomic_uint _size_iter{ 0 };
 	bool			 _enable{ false };
 
 public:

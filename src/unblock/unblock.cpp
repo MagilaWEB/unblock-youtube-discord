@@ -68,15 +68,26 @@ void Unblock::removeOptionalStrategies(std::string_view name)
 
 void Unblock::clearOptionalStrategies()
 {
+
 	_section_opt_service_names.clear();
 
 	_strategies_dpi.changeOptionalServices({});
 	_domain_testing.changeOptionalServices({});
 }
 
+bool Unblock::runTest()
+{
+	return _domain_testing.isTesting();
+}
+
 std::string Unblock::getNameStrategies()
 {
 	return _strategies_dpi.getStrategyFileName();
+}
+
+const std::vector<std::string>& Unblock::getStrategies()
+{
+	return _strategies_dpi.getStrategy();
 }
 
 const std::vector<std::string>& Unblock::getStrategiesList()
@@ -86,10 +97,10 @@ const std::vector<std::string>& Unblock::getStrategiesList()
 
 std::list<Service>& Unblock::getConflictingServices()
 {
-	static std::list<Service> conflicting_service;
+	static auto& conflicting_service = *new std::list<Service>();
 
 	Service::allService(
-		[&](std::string name_service)
+		[&](std::string name_service)->void
 		{
 			if (name_service.empty())
 				return;
@@ -119,11 +130,6 @@ std::list<Service>& Unblock::getConflictingServices()
 	);
 
 	return conflicting_service;
-}
-
-bool Unblock::runTest()
-{
-	return _domain_testing.isTesting();
 }
 
 void Unblock::testingDomain(std::function<void(std::string_view url, bool state)>&& callback, bool base_test)
@@ -200,7 +206,14 @@ start cmd /c del "%CURRENT_DIR%setup_update.bat"
 exit
 )" };
 
-static HttpsLoad load_7z{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" };
+#ifdef __clang__
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Wglobal-constructors"
+#endif
+static HttpsLoad& load_7z = *new HttpsLoad{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" };
+#ifdef __clang__
+	#pragma clang diagnostic pop
+#endif
 
 bool Unblock::appUpdate()
 {
@@ -214,8 +227,8 @@ bool Unblock::appUpdate()
 
 	try
 	{
-		static bit7z::Bit7zLibrary	   lib{ "7za.dll" };
-		static bit7z::BitFileExtractor extractor{ lib, bit7z::BitFormat::SevenZip };
+		static bit7z::Bit7zLibrary&	   lib{ *new bit7z::Bit7zLibrary{ "7za.dll" } };
+		static bit7z::BitFileExtractor& extractor{ *new bit7z::BitFileExtractor{ lib, bit7z::BitFormat::SevenZip } };
 
 		extractor.extract(path.string(), path.parent_path().string());
 	}

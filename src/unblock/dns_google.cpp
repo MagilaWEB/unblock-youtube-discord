@@ -105,7 +105,7 @@ void DNSHost::Google::_formatToMap(std::string& domain, std::string_view str)
 		return;
 
 	std::string valStr(value);
-	if (std::regex_match(valStr, reg_ipv4_pattern) || std::regex_match(valStr, reg_domain_regex))
+	if (std::regex_match(valStr, reg_ipv4_pattern()) || std::regex_match(valStr, reg_domain_regex()))
 		_map_domains_ip[domain].push_back(std::move(valStr));
 }
 

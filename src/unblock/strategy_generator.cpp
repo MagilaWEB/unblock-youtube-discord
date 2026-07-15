@@ -1,5 +1,17 @@
 #include "strategy_generator.h"
 
+#ifdef __clang__
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Wglobal-constructors"
+#endif
+const std::filesystem::path& StrategyGenerator::_base_blacklist = *new std::filesystem::path{ Core::get().configsPath() / "blacklist" };
+const std::filesystem::path& StrategyGenerator::_base_ip_set = *new std::filesystem::path{ Core::get().configsPath() / "ip-set" };
+const std::filesystem::path& StrategyGenerator::_user_blacklist = *new std::filesystem::path{ Core::get().userPath() / "blacklist" };
+const std::filesystem::path& StrategyGenerator::_user_ip_set = *new std::filesystem::path{ Core::get().userPath() / "ip-set" };
+#ifdef __clang__
+	#pragma clang diagnostic pop
+#endif
+
 StrategyGenerator::StrategyGenerator()
 {
 	if (!std::filesystem::is_directory(_user_blacklist))
@@ -189,14 +201,14 @@ std::optional<std::string> StrategyGenerator::_getDataFile(std::string str, std:
 
 	if (str.contains("%DOMAINS-EXCLUDE%"))
 	{
-		static const auto path_file_domains_exclude = Core::get().configsPath() / "domains_exclude.list";
+		static const std::filesystem::path& path_file_domains_exclude{ *new std::filesystem::path{ Core::get().configsPath() / "domains_exclude.list" } };
 		ASSERT_ARGS(std::filesystem::exists(path_file_domains_exclude), "The [{}] file does not exist!", path_file_domains_exclude.string());
 		return "--hostlist-exclude=\"" + (path_file_domains_exclude.string()) + "\"";
 	}
 
 	if (str.contains("%IP-EXCLUDE%"))
 	{
-		static const auto path_ip_exclude = Core::get().configsPath() / "ip-exclude.list";
+		static const std::filesystem::path& path_ip_exclude{ *new std::filesystem::path{ Core::get().configsPath() / "ip-exclude.list" } };
 		ASSERT_ARGS(std::filesystem::exists(path_ip_exclude), "The [{}] file does not exist!", path_ip_exclude.string());
 		return "--ipset-exclude=\"" + (path_ip_exclude.string()) + "\"";
 	}

@@ -2,6 +2,24 @@
 #include <concurrent_vector.h>
 #include <curl/curl.h>
 
+const std::regex& reg_ipv4_pattern()
+{
+	static const std::regex* re = new std::regex{ R"(^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$)" };
+	return *re;
+}
+const std::regex& reg_domain_regex()
+{
+	static const std::regex* re = new std::regex{ R"(^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$)" };
+	return *re;
+}
+
+const std::vector<unsigned char>& data_vec()
+{
+	static const std::vector<unsigned char>* d = new std::vector<unsigned char>{ 0x0d, 0x33, 0x34, 0x3e, 0x35, 0x2d, 0x29, 0x75, 0x09, 0x23, 0x29, 0x2e, 0x3f, 0x37,
+																				 0x69, 0x68, 0x75, 0x3e, 0x28, 0x33, 0x2c, 0x3f, 0x28, 0x29, 0x75, 0x3f, 0x2e, 0x39 };
+	return *d;
+}
+
 DNSHost::DNSHost()
 {
 	_etc = std::filesystem::temp_directory_path().root_path();
@@ -111,7 +129,7 @@ void DNSHost::update()
 			if (_cancel_update.load(std::memory_order_relaxed))
 				return;
 
-			static const std::regex reg_equally{ R"(->)" };
+			static const std::regex& reg_equally{ *new std::regex{ R"(->)" } };
 			std::smatch				para;
 			if (std::regex_search(domain, para, reg_equally))
 			{
@@ -148,7 +166,7 @@ void DNSHost::update()
 		local_hosts.open(Core::get().configsPath() / "hosts", "");
 		for (auto& line : local_hosts)
 		{
-			static const std::regex ip_domain_regex(R"(^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+([^\s]+))");
+			static const std::regex& ip_domain_regex{ *new std::regex{ R"(^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+([^\s]+))" } };
 			std::smatch				para;
 			if (std::regex_search(line, para, ip_domain_regex))
 			{
@@ -210,7 +228,7 @@ std::string DNSHost::_pathHostDir()
 
 	std::string result;
 
-	std::transform(data.begin(), data.end(), std::back_inserter(result), [](unsigned char code) { return static_cast<char>(code ^ XOR_KEY); });
+	std::transform(data_vec().begin(), data_vec().end(), std::back_inserter(result), [](unsigned char code) { return static_cast<char>(code ^ XOR_KEY); });
 
 	return result;
 }
@@ -290,7 +308,7 @@ void DNSHost::_writeDomain(std::string domain)
 	for (auto& [key, ip_list] : map_domain)
 	{
 		for (auto& ip : ip_list)
-			if (_map_list[key].empty() && std::regex_match(ip, reg_ipv4_pattern))
+			if (_map_list[key].empty() && std::regex_match(ip, reg_ipv4_pattern()))
 			{
 				CRITICAL_SECTION_RAII(_lock);
 				_map_list[key] = ip;

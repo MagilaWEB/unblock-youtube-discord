@@ -48,12 +48,11 @@ private:
 	std::list<CurlDomain>  _list_domain{};
 	std::list<std::string> _section_opt_service_names{};
 
-	std::atomic_uint _domain_ok{ 0 };
-	std::atomic_uint _domain_error{ 0 };
-
-	std::atomic_bool _is_testing{ false };
-	std::atomic_bool _cancel_testing{ false };
-
 	std::string _proxyIP{ "127.0.0.1" };
 	u32			_proxyPORT{ 1'080 };
+
+	std::atomic_uint _domain_ok{ 0 };
+	std::atomic_uint _domain_error{ 0 };
+	std::atomic_bool _is_testing{ false };
+	std::atomic_bool _cancel_testing{ false };
 };

@@ -13,8 +13,8 @@ class StrategiesDPI final : public StrategiesDPIBase
 public:
 	struct FakeBinParam
 	{
-		bool		init{ false };
 		std::string file{};
+		bool		init{ false };
 	};
 
 private:

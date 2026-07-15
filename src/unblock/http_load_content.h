@@ -5,8 +5,8 @@ class HttpsLoad
 {
 	CURL*		_curl{ nullptr };
 	std::string _url{};
-	u32			_code_result{ 0 };
 	std::string _stringBuffer;
+	u32			_code_result{ 0 };
 	float		_progress{ 0.f };
 
 public:
