@@ -96,7 +96,7 @@ void StrategyGenerator::_convertDataFiles()
 void StrategyGenerator::_readFileFilters(std::string_view section)
 {
 	const bool start_end = section == "START" || section == "END";
-	auto&		section_lines = _map_filters[section.data()];
+	auto&		section_lines = _map_filters[std::string{section}];
 
 	if (!section_lines.empty())
 		return;

@@ -106,7 +106,7 @@ void StrategiesDPIBase::_saveStrategies(std::string_view str)
 std::optional<std::string> StrategiesDPIBase::_getPath(std::string_view str, std::string_view prefix, std::filesystem::path path) const
 {
 	if (str.contains(prefix))
-		return std::regex_replace(str.data(), std::regex{ prefix.data() }, path.string() + "\\");
+		return std::regex_replace(std::string{str}, std::regex{ std::string{prefix} }, path.string() + "\\");
 
 	return std::nullopt;
 }
