@@ -11,34 +11,29 @@ bool utils::IsUTF8(std::string_view string)
 	{
 		if ((*bytes & 0x80) == 0x00)
 		{
-			// U+0000 to U+007F
 			num = 1;
 		}
 		else if ((*bytes & 0xE0) == 0xC0)
 		{
-			// U+0080 to U+07FF
 			num = 2;
 		}
 		else if ((*bytes & 0xF0) == 0xE0)
 		{
-			// U+0800 to U+FFFF
 			num = 3;
 		}
 		else if ((*bytes & 0xF8) == 0xF0)
 		{
-			// U+10000 to U+10FFFF
 			num = 4;
 		}
 		else
 			return false;
 
-		bytes++;
 		for (u32 i = 1; i < num; ++i)
 		{
-			if ((*bytes & 0xC0) != 0x80)
+			if ((*++bytes & 0xC0) != 0x80)
 				return false;
-			bytes++;
 		}
+		bytes++;
 	}
 
 	return true;
@@ -79,7 +74,7 @@ std::wstring utils::UTF8_to_UTF16(std::string_view utf8_str)
 		return std::wstring();
 	}
 
-	std::vector<wchar_t> buffer(size_needed + 1);
+	std::vector<wchar_t> buffer(static_cast<size_t>(size_needed) + 1);
 	int					 result = MultiByteToWideChar(CP_UTF8, 0, utf8_str.data(), static_cast<int>(utf8_str.size()), buffer.data(), size_needed);
 
 	if (size_needed <= 0)
@@ -88,7 +83,7 @@ std::wstring utils::UTF8_to_UTF16(std::string_view utf8_str)
 		return std::wstring();
 	}
 
-	return std::wstring(buffer.data(), result);
+	return std::wstring(buffer.data(), static_cast<size_t>(result));
 }
 
 void utils::ltrim(std::string& str)

@@ -35,7 +35,7 @@
 
 Core& Core::get()
 {
-	static Core instance;
+	static Core& instance = *new Core();
 	return instance;
 }
 

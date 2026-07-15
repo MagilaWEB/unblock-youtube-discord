@@ -7,7 +7,7 @@ Localization::~Localization()
 
 Localization& Localization::get()
 {
-	static Localization lang{};
+	static Localization& lang = *new Localization{};
 	return lang;
 }
 

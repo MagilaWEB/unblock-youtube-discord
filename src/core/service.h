@@ -7,14 +7,14 @@ class CORE_API Service final
 public:
 	struct Config
 	{
-		u32 type{ 0 };
-		u32 start_type{ 0 };
-		u32 tag_id{ 0 };
-
 		std::string binary_path;
 		std::string start_name;
 		std::string display_name;
 		std::string load_order_group;
+
+		u32 type{ 0 };
+		u32 start_type{ 0 };
+		u32 tag_id{ 0 };
 
 		SERVICE_STATUS_PROCESS sc_status{};
 	};
@@ -31,7 +31,7 @@ public:
 	using UniqueScHandle = std::unique_ptr<std::remove_pointer_t<SC_HANDLE>, ScHandleDeleter>;
 
 	Service(const std::string_view name) : _name(name), _file_name(std::filesystem::path("")) {}
-	Service(const std::string_view name, std::string_view _file_name) : _name(name), _file_name(std::filesystem::path(_file_name)) {}
+	Service(const std::string_view name, std::string_view name_file) : _name(name), _file_name(std::filesystem::path(name_file)) {}
 	Service(Service&&) = default;
 	~Service();
 

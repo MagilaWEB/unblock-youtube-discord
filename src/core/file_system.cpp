@@ -1,7 +1,14 @@
 #include "file_system.h"
 
-static const std::regex r_section_name{ "\\[.*\\](?:.*|\\n)" };
-static const std::regex reg_equally("\\=");
+#ifdef __clang__
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Wglobal-constructors"
+#endif
+static const std::regex& r_section_name = *new std::regex{ "\\[.*\\](?:.*|\\n)" };
+static const std::regex& reg_equally = *new std::regex{ "\\=" };
+#ifdef __clang__
+	#pragma clang diagnostic pop
+#endif
 
 File::~File()
 {
@@ -377,11 +384,11 @@ void File::_normalize()
 	{
 		std::string key{ std::format("[{}]", section) };
 
-		bool   is_section{ false };
-		size_t it = 0;
-		for (; it < _line_string.size(); it++)
+	bool   is_section{ false };
+	ptrdiff_t it = 0;
+	for (; static_cast<size_t>(it) < _line_string.size(); it++)
 		{
-			auto& str = _line_string[it];
+			auto& str = _line_string[static_cast<size_t>(it)];
 			if ((!is_section) && std::regex_match(str, r_section_name) && str.contains(key))
 				is_section = true;
 			else if (is_section && std::regex_match(str, r_section_name))
@@ -399,7 +406,7 @@ void File::_normalize()
 		for (auto& str : list_string)
 			_line_string.insert(_line_string.begin() + ++it, str);
 
-		if (++it < _line_string.size())
+		if (++it; static_cast<size_t>(it) < _line_string.size())
 			_line_string.insert(_line_string.begin() + it, "\n");
 	}
 }

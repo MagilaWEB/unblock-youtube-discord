@@ -44,7 +44,7 @@ std::string_view Debug::get_prefix(MessageTypes type)
 	return "";
 }
 
-LONG WINAPI seh_unhandled_filter(_EXCEPTION_POINTERS* pExceptionInfo)
+static LONG WINAPI seh_unhandled_filter(_EXCEPTION_POINTERS* pExceptionInfo)
 {
 	if (pExceptionInfo->ExceptionRecord->ExceptionCode == 0xE0'6D'73'63)
 		return EXCEPTION_CONTINUE_SEARCH;
@@ -95,7 +95,7 @@ LONG WINAPI seh_unhandled_filter(_EXCEPTION_POINTERS* pExceptionInfo)
 }
 
 
-static void seh_translator(unsigned int code, EXCEPTION_POINTERS*)
+[[noreturn]] static void seh_translator(unsigned int code, EXCEPTION_POINTERS*)
 {
 	char buf[64];
 	snprintf(buf, sizeof(buf), "SEH Exception: 0x%08X", code);
@@ -163,7 +163,7 @@ std::string Debug::pretty_stacktrace()
 			func = "???";
 
 		std::string file = frame.source_file();
-		int			line = frame.source_line();
+		u32			line = frame.source_line();
 
 		std::string location;
 		if (!file.empty())
