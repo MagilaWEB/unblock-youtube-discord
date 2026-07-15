@@ -234,8 +234,8 @@ void StrategiesDPI::_normalizeStrategyFinal()
 
 bool StrategiesDPI::_ignoringLineStrategy(std::string_view str) const
 {
-    return str.empty() || str.starts_with("//") || (!str.empty() && str[0] == '\n') || (!str.empty() && str.back() ==
-        '\n');
+    static std::regex r_n("\n");
+    return str.empty() || str.starts_with("//") || std::regex_match(std::string{str}, r_n);
 }
 
 void StrategiesDPI::_getAllPorts(std::string& str) const
