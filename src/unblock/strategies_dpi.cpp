@@ -12,7 +12,7 @@ StrategiesDPI::StrategiesDPI()
             const auto path_file = Core::get().binariesPath() / "fake" / value;
             ASSERT_ARGS(std::filesystem::exists(path_file), "The [{}] file does not exist!", path_file.string());
 
-            auto& fake = _fake_bin_params[key.data()];
+            auto& fake = _fake_bin_params[std::string{key}];
             fake.file = path_file.string();
             return false;
         }

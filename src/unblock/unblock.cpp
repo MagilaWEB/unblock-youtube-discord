@@ -13,7 +13,7 @@ Unblock::Unblock()
 
 bool Unblock::testUrl(std::string_view str_url)
 {
-	DomainTesting::CurlDomain domain{ curl_easy_init(), str_url.data() };
+	DomainTesting::CurlDomain domain{ curl_easy_init(), std::string{str_url} };
 	const bool				  state_url = DomainTesting::isConnectionUrl(nullptr, domain);
 	curl_easy_cleanup(domain.curl);
 	return state_url;

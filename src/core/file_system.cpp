@@ -40,7 +40,7 @@ void File::forLineSection(std::string_view section, std::function<bool(std::stri
 		return;
 	}
 
-	auto& list_string = _map_list_string[section.data()];
+	auto& list_string = _map_list_string[std::string{section}];
 	if (list_string.empty())
 	{
 		bool		start{ false };
@@ -261,7 +261,7 @@ void File::writeSectionParameter(std::string_view section, std::string parameter
 	if (stoped)
 		return;
 
-	_map_list_string[section.data()].emplace_back(std::format("{}={}", parameter, value_argument));
+	_map_list_string[std::string{section}].emplace_back(std::format("{}={}", parameter, value_argument));
 	_normalize();
 }
 

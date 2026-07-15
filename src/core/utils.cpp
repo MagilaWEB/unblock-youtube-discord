@@ -5,35 +5,27 @@ bool utils::IsUTF8(std::string_view string)
 	if (string.empty())
 		return true;
 
-	const unsigned char* bytes = reinterpret_cast<const unsigned char*>(string.data());
+	const auto* bytes = reinterpret_cast<const unsigned char*>(string.data());
 	u32					 num;
-	while (*bytes != 0x00)
+	for (size_t idx = 0; idx < string.size();)
 	{
-		if ((*bytes & 0x80) == 0x00)
-		{
+		if ((bytes[idx] & 0x80) == 0x00)
 			num = 1;
-		}
-		else if ((*bytes & 0xE0) == 0xC0)
-		{
+		else if ((bytes[idx] & 0xE0) == 0xC0)
 			num = 2;
-		}
-		else if ((*bytes & 0xF0) == 0xE0)
-		{
+		else if ((bytes[idx] & 0xF0) == 0xE0)
 			num = 3;
-		}
-		else if ((*bytes & 0xF8) == 0xF0)
-		{
+		else if ((bytes[idx] & 0xF8) == 0xF0)
 			num = 4;
-		}
 		else
 			return false;
 
 		for (u32 i = 1; i < num; ++i)
 		{
-			if ((*++bytes & 0xC0) != 0x80)
+			if (idx + i >= string.size() || (bytes[idx + i] & 0xC0) != 0x80)
 				return false;
 		}
-		bytes++;
+		idx += num;
 	}
 
 	return true;
@@ -58,7 +50,7 @@ std::string utils::UTF8_to_CP1251(std::string_view utf8_str)
 		return { cache_str_result };
 	}
 
-	return { utf8_str.data() };
+	return std::string{utf8_str};
 }
 
 std::wstring utils::UTF8_to_UTF16(std::string_view utf8_str)

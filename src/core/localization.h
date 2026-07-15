@@ -51,7 +51,7 @@ public:
 		Str() = delete;
 		Str(pcstr str_id) : _str_id(str_id) {}
 		Str(std::string str_id) : _str_id(str_id) {}
-		Str(std::string_view str_id) : _str_id(str_id.data()) {}
+		Str(std::string_view str_id) : _str_id(std::string{str_id}) {}
 
 		std::string operator()()
 		{
