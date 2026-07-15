@@ -3,7 +3,7 @@
   "configurePresets": [
     {
       "name": "debug",
-      "displayName": "Ninja CL Debug",
+      "displayName": "Ninja Clang Debug",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/_build/${presetName}",
 
@@ -13,37 +13,12 @@
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_C_COMPILER": "cl",
-        "CMAKE_CXX_COMPILER": "cl"
-      },
-      "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "hostOS": [ "Windows" ],
-          "intelliSenseMode": "windows-msvc-x64",
-          "enableMicrosoftCodeAnalysis": true,
-          "enableClangTidyCodeAnalysis": false
-        }
-      }
-    },
-    {
-      "name": "release",
-      "inherits": "debug",
-      "displayName": "Ninja CL Release",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      }
-    },
-    {
-      "name": "clang debug",
-      "inherits": "debug",
-      "displayName": "Ninja Clang Debug",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++"
       },
       "vendor": {
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Windows" ],
           "intelliSenseMode": "windows-clang-x64",
           "enableMicrosoftCodeAnalysis": false,
           "enableClangTidyCodeAnalysis": true
@@ -51,8 +26,8 @@
       }
     },
     {
-      "name": "clang release",
-      "inherits": "clang debug",
+      "name": "release",
+      "inherits": "debug",
       "displayName": "Ninja Clang Release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"

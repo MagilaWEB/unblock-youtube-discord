@@ -13,11 +13,7 @@ else (WIN32)
   set (UNICODE_DEFAULT OFF)
 endif (WIN32)
 
-if (MSVC)
-  set (LOG4CPLUS_WORKING_LOCALE_DEFAULT ON)
-else (MSVC)
-  set (LOG4CPLUS_WORKING_LOCALE_DEFAULT OFF)
-endif (MSVC)
+set (LOG4CPLUS_WORKING_LOCALE_DEFAULT ON)
 
 # Enable C++23
 set(CMAKE_CXX_STANDARD 23)
@@ -131,15 +127,11 @@ set(ZAPRET2_LUA ${ZAPRET2_DIR}/lua)
 # Build
 message(STATUS "COMPILER = ${CMAKE_CXX_COMPILER_ID}")
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    add_compile_options(-Wall -Wextra -Wpedantic -Werror
-        -Wno-padded
-        -Wno-exit-time-destructors
-        -Wno-unsafe-buffer-usage
-    )
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    add_compile_options(/utf-8 /W4)
-endif()
+add_compile_options(-Wall -Wextra -Wpedantic -Werror
+    -Wno-padded
+    -Wno-exit-time-destructors
+    -Wno-unsafe-buffer-usage
+)
 
 # Add submodules
 add_subdirectory(src/engine)
