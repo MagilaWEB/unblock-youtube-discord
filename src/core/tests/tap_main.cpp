@@ -25,13 +25,15 @@ public:
         if (buf.starts_with("ok "))
         {
             emit(green);
-            emit(buf);
+            emit("[OK] ");
+            emit(std::string_view(buf).substr(3));
             emit(reset);
         }
         else if (buf.starts_with("not ok "))
         {
             emit(red);
-            emit(buf);
+            emit("[ERROR] ");
+            emit(std::string_view(buf).substr(7));
             emit(reset);
         }
         else
