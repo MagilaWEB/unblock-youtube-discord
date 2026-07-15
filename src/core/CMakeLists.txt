@@ -15,3 +15,6 @@ target_precompile_headers(${NAME} PRIVATE pch.h)
 
 # Define EXPORTS when building the libraries
 target_compile_definitions(${NAME} PRIVATE CORE_EXPORTS ${ALL_MACRO_CPP})
+
+# Tests
+add_subdirectory(tests)

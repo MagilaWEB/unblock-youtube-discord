@@ -79,6 +79,14 @@ FetchContent_MakeAvailable(
     Zapret2
 )
 
+# Test framework
+FetchContent_Declare(
+  Catch2
+  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+  GIT_TAG v3.7.0
+)
+FetchContent_MakeAvailable(Catch2)
+
 # Include libcurl
 set(CURL_DIR ${CMAKE_BINARY_DIR}/curl)
 set(CURL_DIR_RELEASE ${CURL_DIR}/release)
