@@ -102,6 +102,23 @@ static LONG WINAPI seh_unhandled_filter(_EXCEPTION_POINTERS* pExceptionInfo)
 	throw std::runtime_error(buf);
 }
 
+namespace {
+	struct SEHFilterGuard
+	{
+		LPTOP_LEVEL_EXCEPTION_FILTER old_filter;
+
+		SEHFilterGuard()
+			: old_filter(SetUnhandledExceptionFilter(seh_unhandled_filter))
+		{
+		}
+
+		~SEHFilterGuard()
+		{
+			SetUnhandledExceptionFilter(old_filter);
+		}
+	} g_seh_guard;
+}
+
 void Debug::initialize(const std::string& command_line)
 {
 	s_catch_exceptions = true;
@@ -110,11 +127,8 @@ void Debug::initialize(const std::string& command_line)
 	_command_line = command_line;
 
 	std::set_terminate(cpp_terminate_handler);
-	SetUnhandledExceptionFilter(seh_unhandled_filter);
 
-#ifdef _WIN32
 	_set_se_translator(seh_translator);
-#endif
 }
 
 void Debug::initLogFile()
