@@ -29,7 +29,7 @@ void Engine::initialize()
 #ifdef DEBUG
 	showConsole();
 #else
-	auto result = _file_user_setting->parameterSection<bool>("SUSTEM", "show_console");
+	auto result = _file_user_setting->parameterSection<bool>("SYSTEM", "show_console");
 	if (result && result.value())
 		showConsole();
 #endif
@@ -41,7 +41,6 @@ void Engine::initialize()
 
 	Config config{};
 	config.effect_quality		 = EffectQuality::Low;
-	config.force_repaint		 = true;
 	config.memory_cache_size	 = 128 * 1'024 * 1'024;
 	config.animation_timer_delay = 1.0 / 30.0;
 	config.max_update_time		 = 1.0 / 60.0;
@@ -50,7 +49,7 @@ void Engine::initialize()
 
 	_app = App::Create(setting, config);
 
-	const int screenScale = GetSystemMetrics(SM_CYSCREEN) / 520;
+	const u32 screenScale = static_cast<u32>(GetSystemMetrics(SM_CYSCREEN)) / 520;
 
 	u32 width{ 520U * screenScale };
 	u32 height{ 510U * screenScale };
@@ -70,10 +69,11 @@ void Engine::initialize()
 	_applyDarkTitleBar(hwnd);
 	_forceSetWindowIcon(hwnd, L"./unblock.ico");
 
-	static std::string title{ "Unblock " + std::format("Version: {}", VERSION_STR) };
-	_window->SetTitle(title.c_str());
+	_window->SetTitle(("Unblock " + std::format("Version: {}", VERSION_STR)).c_str());
 
-	_ui = std::make_unique<UiBase>(this);
+	auto ui = std::make_shared<UiBase>(this);
+	ui->postConstruct();
+	_ui = ui;
 	_window->set_listener(_ui.get());
 }
 
@@ -203,7 +203,7 @@ std::string Engine::_getSystemLocale()
 		return "US";
 
 	int			size_needed = WideCharToMultiByte(CP_UTF8, 0, buffer.data(), chars - 1, nullptr, 0, nullptr, nullptr);
-	std::string result(size_needed, 0);
+	std::string result(static_cast<size_t>(size_needed), 0);
 
 	WideCharToMultiByte(CP_UTF8, 0, buffer.data(), chars - 1, result.data(), size_needed, nullptr, nullptr);
 	return result.substr(result.find_first_of("-") + 1, result.length());
@@ -212,13 +212,13 @@ std::string Engine::_getSystemLocale()
 void Engine::_forceSetWindowIcon(HWND hwnd, const wchar_t* iconPath)
 {
 	HICON hIconBig =
-		static_cast<HICON>(LoadImageW(NULL, iconPath, IMAGE_ICON, GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), LR_LOADFROMFILE));
+		static_cast<HICON>(LoadImageW(nullptr, iconPath, IMAGE_ICON, GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), LR_LOADFROMFILE));
 	HICON hIconSmall =
-		static_cast<HICON>(LoadImageW(NULL, iconPath, IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_LOADFROMFILE));
+		static_cast<HICON>(LoadImageW(nullptr, iconPath, IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_LOADFROMFILE));
 
 	if (!hIconBig || !hIconSmall)
 	{
-		hIconBig   = static_cast<HICON>(LoadImageW(NULL, iconPath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE));
+		hIconBig   = static_cast<HICON>(LoadImageW(nullptr, iconPath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE));
 		hIconSmall = hIconBig;
 	}
 

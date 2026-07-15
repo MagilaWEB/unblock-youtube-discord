@@ -9,7 +9,7 @@ class ENGINE_API Engine final : public IEngineAPI
 	RefPtr<App>	   _app;
 	RefPtr<Window> _window;
 
-	std::unique_ptr<UiBase> _ui{ nullptr };
+	std::shared_ptr<UiBase> _ui{ nullptr };
 	std::shared_ptr<File>	_file_user_setting;
 
 	HWND			_hwnd_console;
