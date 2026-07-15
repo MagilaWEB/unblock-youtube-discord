@@ -3,9 +3,12 @@ cmake_minimum_required(VERSION 3.25)
 
 project(unblock_cpp LANGUAGES C CXX VERSION 0)
 
-enable_testing()
-
+option(BUILD_TESTS "Build tests" ON)
 option(CUPY_LIBS_DLL_TO_BIN "CUPY_LIBS_DLL_TO_BIN" ON)
+
+if (BUILD_TESTS)
+  enable_testing()
+endif ()
 
 if (WIN32)
   set (UNICODE_DEFAULT ON)
@@ -75,13 +78,14 @@ FetchContent_MakeAvailable(
     Zapret2
 )
 
-# Test framework
-FetchContent_Declare(
-  Catch2
-  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG v3.7.0
-)
-FetchContent_MakeAvailable(Catch2)
+if (BUILD_TESTS)
+  FetchContent_Declare(
+    Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG v3.7.0
+  )
+  FetchContent_MakeAvailable(Catch2)
+endif ()
 
 # Include libcurl
 set(CURL_DIR ${CMAKE_BINARY_DIR}/curl)

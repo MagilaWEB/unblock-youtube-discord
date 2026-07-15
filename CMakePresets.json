@@ -32,6 +32,22 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
+    },
+    {
+      "name": "debug-min",
+      "inherits": "debug",
+      "displayName": "Ninja Clang Debug (no tests)",
+      "cacheVariables": {
+        "BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "release-min",
+      "inherits": "release",
+      "displayName": "Ninja Clang Release (no tests)",
+      "cacheVariables": {
+        "BUILD_TESTS": "OFF"
+      }
     }
   ]
 }
