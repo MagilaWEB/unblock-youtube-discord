@@ -9,3 +9,4 @@ endfunction()
 
 add_core_test(test_file_system)
 add_core_test(test_localization)
+add_core_test(test_debug)
