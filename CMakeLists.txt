@@ -128,7 +128,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         -Wno-padded
         -Wno-exit-time-destructors
         -Wno-unsafe-buffer-usage
-        -Wno-unique-object-duplication
     )
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     add_compile_options(/utf-8 /W4)

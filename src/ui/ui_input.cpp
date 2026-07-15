@@ -1,5 +1,14 @@
 #include "ui_input.h"
 
+std::pair<Input::Types, pcstr> Input::convert_types[]{
+	{ Input::Types::text,   "text" },
+	{ Input::Types::number, "number" },
+	{ Input::Types::color,  "color" },
+	{ Input::Types::time,   "time" },
+	{ Input::Types::ip,	   "ip" },
+	{ Input::Types::port,  "port" },
+};
+
 Input::Input(std::string_view name) : BaseElement(name)
 {
 	_type = "input";
