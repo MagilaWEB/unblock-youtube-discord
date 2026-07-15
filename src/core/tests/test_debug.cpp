@@ -3,6 +3,7 @@
 #include "../pch.h"
 #include "../debug.h"
 
+#include <algorithm>
 #include <fstream>
 
 namespace fs = std::filesystem;
@@ -133,6 +134,8 @@ TEST_CASE("Debug log file contains written messages", "[debug][log]")
 
     auto log_path = fx.root / "logs" / "log.txt";
     fs::create_directories(log_path.parent_path());
+
+    { std::ofstream touch(log_path); }
 
     Debug::log.clear();
     Debug::log.close();

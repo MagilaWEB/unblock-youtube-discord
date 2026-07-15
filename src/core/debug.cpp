@@ -152,34 +152,41 @@ void Debug::fatalErrorMessage(std::string message)
 
 std::string Debug::pretty_stacktrace()
 {
-	auto		trace  = std::stacktrace::current(1);	 // пропускаем текущую функцию
-	std::string result = "🚨 Stacktrace (depth: " + std::to_string(trace.size()) + "):\n";
-
-	int frame_num = 0;
-	for (const auto& frame : trace)
+	try
 	{
-		std::string func = frame.description();
-		if (func.empty())
-			func = "???";
+		auto		trace  = std::stacktrace::current(1);
+		std::string result = "🚨 Stacktrace (depth: " + std::to_string(trace.size()) + "):\n";
 
-		std::string file = frame.source_file();
-		u32			line = frame.source_line();
-
-		std::string location;
-		if (!file.empty())
+		int frame_num = 0;
+		for (const auto& frame : trace)
 		{
-			std::filesystem::path p(file);
-			location = std::format("{}:{}", p.filename().string(), line);
+			std::string func = frame.description();
+			if (func.empty())
+				func = "???";
+
+			std::string file = frame.source_file();
+			u32			line = frame.source_line();
+
+			std::string location;
+			if (!file.empty())
+			{
+				std::filesystem::path p(file);
+				location = std::format("{}:{}", p.filename().string(), line);
+			}
+			else
+				location = std::format("{:016x}", reinterpret_cast<uintptr_t>(frame.native_handle()));
+
+			const int func_width = 86;
+			if (func.length() > func_width)
+				func = func.substr(0, func_width - 3) + "...";
+
+			result += std::format("  #{:2} -> {:<{}} ({})\n", frame_num++, func, func_width, location);
 		}
-		else
-			location = std::format("{:016x}", reinterpret_cast<uintptr_t>(frame.native_handle()));
 
-		const int func_width = 86;
-		if (func.length() > func_width)
-			func = func.substr(0, func_width - 3) + "...";
-
-		result += std::format("  #{:2} -> {:<{}} ({})\n", frame_num++, func, func_width, location);
+		return result;
 	}
-
-	return result;
+	catch (const std::exception& e)
+	{
+		return std::format("🚨 Stacktrace unavailable: {}", e.what());
+	}
 }
