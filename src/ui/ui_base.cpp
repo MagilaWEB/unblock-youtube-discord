@@ -6,13 +6,18 @@
 // ------------------ Constructor ------------------
 UiBase::UiBase(IEngineAPI* engine) : _engine(engine)
 {
-	_ui = std::make_unique<Ui>(this);
-
 	_overlay = Overlay::Create(_engine->window(), _engine->window()->width(), _engine->window()->height(), 0, 0);
 	_overlay->view()->LoadURL("file:///main.html");
 
 	_overlay->view()->set_load_listener(this);
 	_overlay->view()->set_view_listener(this);
+}
+
+void UiBase::postConstruct()
+{
+	auto ui = std::make_shared<Ui>(shared_from_this());
+	ui->postConstruct();
+	_ui = ui;
 }
 
 // ------------------ Destructor ------------------
@@ -39,7 +44,7 @@ void UiBase::OnResize(ultralight::Window*, uint32_t width, uint32_t height)
 void UiBase::OnClose(ultralight::Window*)
 {
 	BaseElement::release();
-	_ui.release();
+	_ui.reset();
 	_engine->app()->Quit();
 }
 

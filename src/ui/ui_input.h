@@ -17,14 +17,21 @@ public:
 		port
 	};
 
+#ifdef __clang__
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Wunique-object-duplication"
+#endif
 	inline static std::pair<Types, pcstr> convert_types[]{
 		{	  Types::text,   "text" },
 		 { Types::number, "number" },
 		  {	Types::color,  "color" },
 		{	  Types::time,   "time" },
-		 {	   Types::ip,	  "ip" },
-		  {	Types::port,	 "port" }
+		{	 Types::ip,	   "ip" },
+		{	 Types::port,  "port" },
 	};
+#ifdef __clang__
+	#pragma clang diagnostic pop
+#endif
 
 public:
 	Input(std::string_view name);

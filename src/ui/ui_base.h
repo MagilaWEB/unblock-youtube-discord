@@ -5,37 +5,45 @@
 using namespace ultralight;
 
 class Ui;
+
 class UI_API UiBase final : public WindowListener,
-							private LoadListener,
-							private ViewListener
+                            public std::enable_shared_from_this<UiBase>,
+                            private LoadListener,
+                            private ViewListener
+
 {
-	std::unique_ptr<Ui> _ui;
+    std::shared_ptr<Ui> _ui;
 
-	IEngineAPI*		_engine;
-	RefPtr<Overlay> _overlay;
-
-public:
-	UiBase() = delete;
-	UiBase(IEngineAPI* engine);
-	~UiBase() override;
-
-	void OnAddConsoleMessage(View* caller, const ConsoleMessage& msg) override;
-
-	void OnWindowObjectReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const String& url) override;
-	void OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const String& url) override;
-
-	void OnResize(ultralight::Window* window, uint32_t width, uint32_t height) override;
-
-	void OnClose(Window* window) override;
-
-	void OnChangeCursor(View*, Cursor cursor) override { _engine->window()->SetCursor(cursor); }
-
-	const std::shared_ptr<File>& userSetting();
-
-	bool hasCyrillicOrSpaceInBinaryPath() const { return _engine->hasCyrillicOrSpaceInBinaryPath(); }
+    IEngineAPI* _engine;
+    RefPtr<Overlay> _overlay;
 
 public:
-	void	console(bool show);
-	void	runJsUpdate(const JSObject& obj, const JSArgs& args);
-	JSValue langText(const JSObject& obj, const JSArgs& args);
+    UiBase() = delete;
+    UiBase(IEngineAPI* engine);
+    UiBase(const UiBase&) = default;
+    UiBase& operator=(const UiBase&) = default;
+    ~UiBase() override;
+
+    void postConstruct();
+
+    void OnAddConsoleMessage(View* caller, const ConsoleMessage& msg) override;
+
+    void OnWindowObjectReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame,
+                             const String& url) override;
+    void OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const String& url) override;
+
+    void OnResize(ultralight::Window* window, uint32_t width, uint32_t height) override;
+
+    void OnClose(Window* window) override;
+
+    void OnChangeCursor(View*, Cursor cursor) override { _engine->window()->SetCursor(cursor); }
+
+    const std::shared_ptr<File>& userSetting();
+
+    bool hasCyrillicOrSpaceInBinaryPath() const { return _engine->hasCyrillicOrSpaceInBinaryPath(); }
+
+public:
+    void console(bool show);
+    void runJsUpdate(const JSObject& obj, const JSArgs& args);
+    JSValue langText(const JSObject& obj, const JSArgs& args);
 };

@@ -1,10 +1,18 @@
 #include "ui_base_element.h"
-#include "ui_check_box.h"
-#include "ui_input.h"
-#include "ui_secondary_window.h"
 #include "utils_ultralight.hpp"
 
 using namespace ultralight;
+
+View*												 BaseElement::_view;
+#ifdef __clang__
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Wglobal-constructors"
+#endif
+std::map<std::string, BaseElement*>			  BaseElement::_all_element;
+BaseElement::MapEvent							   BaseElement::_event_click;
+#ifdef __clang__
+	#pragma clang diagnostic pop
+#endif
 
 void BaseElement::runCodeToJS(const std::function<void()>& run_code)
 {

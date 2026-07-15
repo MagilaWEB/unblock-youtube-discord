@@ -6,9 +6,9 @@ void Ui::_removeApp()
 {
 	_remove_app->create("#unblock section .common", "str_button_remove");
 	_remove_app->addEventClick(
-		[this](JSArgs)
+		[ui_self = self](JSArgs)
 		{
-			_window_remove_app->show();
+			ui_self->_window_remove_app->show();
 			return false;
 		}
 	);
@@ -17,12 +17,12 @@ void Ui::_removeApp()
 	_window_remove_app->setType(SecondaryWindow::Type::YesNo);
 
 	_window_remove_app->addEventYesNo(
-		[this](JSArgs args)
+		[ui_self = self](JSArgs args)
 		{
 			if (JSToCPP<bool>(args[0]))
-				_removeAppRun();
+				ui_self->_removeAppRun();
 
-			_window_remove_app->hide();
+			ui_self->_window_remove_app->hide();
 			return true;
 		}
 	);
@@ -53,7 +53,7 @@ void Ui::_removeAppRun()
 {
 	_stoppingAllServices();
 
-	_unblock.dnsHosts(false);
+	_unblock->dnsHosts(false);
 	_ui_base->console(false);
 
 	std::string del_bat_path{ (Core::get().currentPath() / "del_unblock").string() + ".bat" };

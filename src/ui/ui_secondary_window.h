@@ -6,11 +6,11 @@ class SecondaryWindow final : public BaseElement
 	JSFunction _set_type;
 	JSFunction _set_description;
 
-	inline static std::vector<SecondaryWindow*> _all_window;
-	inline static MapEvent _event_yes_no;
-	inline static MapEvent _event_cancel;
+	static std::vector<SecondaryWindow*> _all_window;
+	static MapEvent _event_yes_no;
+	static MapEvent _event_cancel;
 
-	std::atomic_bool _is_show{ false };
+	std::atomic_bool _is_showing{ false };
 	std::atomic_bool _wait_show{ false };
 
 public:

@@ -1,28 +1,26 @@
 #include "ui.h"
 #include "ui_base.h"
 
-Ui::Ui(UiBase* ui_base) : _ui_base(ui_base)
+Ui::Ui(std::shared_ptr<UiBase> ui_base) : _ui_base(std::move(ui_base))
 {
 	_file_service_list = std::make_shared<File>();
 	_file_service_list->open({ Core::get().configsPath() / "service_setting" }, ".config", true);
 
-	_file_service_list->forLineParametersSection(
-		"LIST",
-		[this](std::string key, std::string /*value*/)
-		{
-			_unblock_list_enable_services.emplace(key, std::make_shared<CheckBox>(std::string{ "_unblock_to_list_" } + key));
-			return false;
-		}
-	);
+	_unblock = std::make_shared<Unblock>();
+	_unblock->serviceConfigFile(_file_service_list);
+}
 
-	_unblock.serviceConfigFile(_file_service_list);
+void Ui::postConstruct()
+{
+	self = shared_from_this();
+
+	_ui_dns_hosts = std::make_unique<UiDnsHosts>(self, _unblock);
+	_ui_proxy_tg = std::make_unique<UiProxyTg>(self, _unblock);
+	_ui_zapret2 = std::make_unique<UiZapret2>(self, _unblock, _file_service_list);
 }
 
 void Ui::_initializeAppState()
 {
-	_window_wait_response_from_server->create(Localization::Str{ "str_please_wait" }, "str_window_wait_response_from_server_description");
-	_window_wait_response_from_server->setType(SecondaryWindow::Type::Info);
-
 	_checkValidRootDirectory();
 
 	//_checkWhitelist();
@@ -33,16 +31,14 @@ void Ui::_initializeAppState()
 
 void Ui::_initializeSettings()
 {
-	_startInit();
 	_stopInit();
 
-	_initShowInfoSetting();
 	_settingInit();
 }
 
 void Ui::_initializeHome()
 {
-	_testingInit();
+	_ui_zapret2->testingInit();
 }
 
 void Ui::_initializeFooter()
@@ -51,10 +47,18 @@ void Ui::_initializeFooter()
 	_removeApp();
 }
 
+void Ui::_initializeWindowBase() const
+{
+	_window_wait_start_service->create(Localization::Str{ "str_please_wait" }, "str_window_service_start_wait_description");
+	_window_wait_start_service->setType(SecondaryWindow::Type::Info);
+}
+
 void Ui::initialize()
 {
 	if (_init)
 		return;
+
+	_initializeWindowBase();
 
 	_initializeAppState();
 	_initializeSettings();
@@ -66,7 +70,7 @@ void Ui::initialize()
 
 void Ui::jsUpdate()
 {
-	_settingDnsHostsUpdateInfoWindow();
+	_ui_dns_hosts->updateInfoWindow();
 	_updateAppProgressWindowInfo();
 }
 
@@ -91,24 +95,6 @@ void Ui::_footerElements()
 	);
 }
 
-void Ui::_tcpGlobalChange(bool state)
-{
-	if (state)
-	{
-		auto tcp_set_global = _ui_base->userSetting()->parameterSection<bool>("SUSTEM", "enable_tcp_global");
-		if ((!tcp_set_global) || (!tcp_set_global.value()))
-		{
-			system("netsh interface tcp set global timestamps=enabled");
-			_ui_base->userSetting()->writeSectionParameter("SUSTEM", "enable_tcp_global", "true");
-		}
-	}
-	else
-	{
-		system("netsh interface tcp set global timestamps=disabled");
-		_ui_base->userSetting()->writeSectionParameter("SUSTEM", "enable_tcp_global", "false");
-	}
-}
-
 void Ui::_checkConflictService()
 {
 	_window_warning_conflict_service->create(Localization::Str{ "str_warning" }, "");
@@ -116,7 +102,7 @@ void Ui::_checkConflictService()
 
 	auto description = Localization::Str{ "str_window_warning_conflict_service" }();
 
-	auto& conflict_service = _unblock.getConflictingServices();
+	auto& conflict_service = _unblock->getConflictingServices();
 	if (!conflict_service.empty())
 	{
 		std::string names_services;
@@ -129,7 +115,7 @@ void Ui::_checkConflictService()
 		_window_warning_conflict_service->show();
 
 		_window_warning_conflict_service->addEventYesNo(
-			[this, &conflict_service](JSArgs args)
+			[ui_self = self, &conflict_service](JSArgs args)
 			{
 				if (JSToCPP<bool>(args[0]))
 					for (auto& service : conflict_service)
@@ -137,7 +123,7 @@ void Ui::_checkConflictService()
 
 				conflict_service.clear();
 
-				_window_warning_conflict_service->hide();
+				ui_self->_window_warning_conflict_service->hide();
 
 				return true;
 			}
@@ -168,23 +154,22 @@ void Ui::_checkWhitelist()
 	}
 
 	Core::get().addTaskParallel(
-		[this]
+		[ui_self = self]
 		{
-			const bool state_internet = _unblock.testUrl("https://yandex.ru") || _unblock.testUrl("https://vk.com");
-			if (state_internet)
+			if (ui_self->_unblock->testUrl("https://yandex.ru") || ui_self->_unblock->testUrl("https://vk.com"))
 			{
 				const bool state_block =
-					_unblock.testUrl("https://google.com") || _unblock.testUrl("https://2ip.ru") || _unblock.testUrl("https://github.com");
+					ui_self->_unblock->testUrl("https://google.com") || ui_self->_unblock->testUrl("https://2ip.ru") || ui_self->_unblock->testUrl("https://github.com");
 
-				_window_wait_test_whitelist->hide();
+				ui_self->_window_wait_test_whitelist->hide();
 
 				if (!state_block)
 				{
-					_window_warning_whitelist->show();
-					_window_warning_whitelist->addEventOk(
-						[this](JSArgs)
+					ui_self->_window_warning_whitelist->show();
+					ui_self->_window_warning_whitelist->addEventOk(
+						[inner_self = ui_self](JSArgs)
 						{
-							_window_warning_whitelist->hide();
+							inner_self->_window_warning_whitelist->hide();
 							return true;
 						}
 					);
@@ -192,12 +177,12 @@ void Ui::_checkWhitelist()
 			}
 			else
 			{
-				_window_wait_test_whitelist->hide();
-				_window_warning_no_internet->show();
-				_window_warning_no_internet->addEventOk(
-					[this](JSArgs)
+				ui_self->_window_wait_test_whitelist->hide();
+				ui_self->_window_warning_no_internet->show();
+				ui_self->_window_warning_no_internet->addEventOk(
+					[inner_self = ui_self](JSArgs)
 					{
-						_window_warning_no_internet->hide();
+						inner_self->_window_warning_no_internet->hide();
 						return true;
 					}
 				);

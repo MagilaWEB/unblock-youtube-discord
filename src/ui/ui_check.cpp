@@ -12,10 +12,10 @@ void Ui::_checkValidRootDirectory()
 		_window_root_directory_error->setType(SecondaryWindow::Type::OK);
 
 		_window_root_directory_error->addEventOk(
-			[this](JSArgs)
+			[ui_self = self](JSArgs)
 			{
-				_ui_base->console(false);
-				_ui_base->OnClose(nullptr);
+				ui_self->_ui_base->console(false);
+				ui_self->_ui_base->OnClose(nullptr);
 				return false;
 			}
 		);

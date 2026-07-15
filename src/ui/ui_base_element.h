@@ -35,18 +35,18 @@ protected:
 	bool			  _created{ false };
 	bool			  _is_show{ true };
 
-	inline static View* _view;
-	inline static std::map<std::string, BaseElement*> _all_element;
+	static View*								  _view;
+	static std::map<std::string, BaseElement*> _all_element;
 
 	using MapEvent = std::map<std::string, std::vector<std::function<bool(JSArgs)>>>;
-	inline static MapEvent _event_click{};
+	static MapEvent _event_click;
 
 public:
 	BaseElement() = delete;
 	BaseElement(std::string_view name);
 	virtual ~BaseElement();
 
-	pcstr name() const { return _name.c_str(); }
+	[[nodiscard]] pcstr name() const { return _name.c_str(); }
 
 	static void	   runCodeToJS(const std::function<void()>& run_code);
 	static JSValue runCodeToJSResult(const std::function<JSValue()>& run_code);
@@ -57,8 +57,8 @@ public:
 	virtual void show();
 	virtual void hide();
 
-	bool isCreate() const;
-	bool isShow() const;
+	[[nodiscard]] bool isCreate() const;
+	[[nodiscard]] bool isShow() const;
 
 	void setTitle(Localization::Str title);
 

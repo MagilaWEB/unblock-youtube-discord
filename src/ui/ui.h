@@ -1,67 +1,56 @@
 #pragma once
 #include "ui_secondary_window.h"
-#include "ui_input.h"
 #include "ui_button.h"
 #include "ui_check_box.h"
-#include "ui_select_list.h"
-
-#include "ui_list_ul.h"
-
 #include "../unblock/unblock.h"
+#include "ui_dns_hosts.h"
+#include "ui_proxy_tg.h"
+#include "ui_zapret.h"
 
 class UiBase;
-class Ui final : public utils::DefaultInit
+class UiZapret2;
+class Ui final : public utils::DefaultInit, public std::enable_shared_from_this<Ui>
 {
-	std::shared_ptr<UiBase> _ui_base{ nullptr };
+	std::shared_ptr<UiBase> _ui_base;
 
-	Unblock _unblock;
+	std::shared_ptr<Unblock> _unblock;
 
 	// Setting
 	std::shared_ptr<File> _file_service_list;
 
-	std::atomic_bool _automatically_strategy_cancel{ false };
-	bool			 _init{ false };
+	bool _init{ false };
 
 	// Setting Common
 #ifndef DEBUG
 	CHECK_BOX(_show_console);
 #endif
+
+	// Setting update unblock app
 	CHECK_BOX(_enable_check_update_startup);
 	BUTTON(_start_check_update_app);
-	CHECK_BOX(_testing_domains_startup);
-	CHECK_BOX(_enable_dns_hosts);
-	BUTTON(_start_update_dns_hosts);
 
-	CHECK_BOX(_proxy_tg_enable);
-	BUTTON(_proxy_link_tg);
+	// Setting Whitelist
+	CHECK_BOX(_testing_domains_startup);
 
 	// Remove app
 	BUTTON(_remove_app);
 	SECONDARY_WINDOW(_window_remove_app);
 
-	// Setting Unblock
-	//CHECK_BOX(_unblock_enable);
-	//CHECK_BOX(_unblock_manual);
-	SELECT_LIST(_unblock_select_version_strategy);
-	SELECT_LIST(_unblock_select_config);
-
-	// Setting Unblock list enable services
-	std::map<std::string, std::shared_ptr<CheckBox>> _unblock_list_enable_services{};
+	std::unique_ptr<UiDnsHosts> _ui_dns_hosts;
+	std::unique_ptr<UiProxyTg> _ui_proxy_tg;
+	std::unique_ptr<UiZapret2> _ui_zapret2;
 
 	// Home
-	BUTTON(_start_zapret);
 	BUTTON(_stop_zapret);
 	BUTTON(_run_auto_config_zapret);
-	BUTTON(_start_testing_zapret);
-	BUTTON(_show_info_selected_service_setting);
 
+	// Service all stoping
 	BUTTON(_stop_service_all);
 
-	UL_LIST(_list_domain);
-	UL_LIST(_list_domain_to_modal);
-
+	// Root directory error
 	SECONDARY_WINDOW(_window_root_directory_error);
 
+	// Update unblock app
 	SECONDARY_WINDOW(_window_update_unblock);
 	SECONDARY_WINDOW(_window_wait_update_unblock);
 	SECONDARY_WINDOW(_window_error_update_unblock);
@@ -72,39 +61,37 @@ class Ui final : public utils::DefaultInit
 	SECONDARY_WINDOW(_window_warning_whitelist);
 	SECONDARY_WINDOW(_window_wait_test_whitelist);
 	SECONDARY_WINDOW(_window_warning_no_internet);
-
-	SECONDARY_WINDOW(_window_info_selected_service_setting);
-	SECONDARY_WINDOW(_window_wait_response_from_server);
 	SECONDARY_WINDOW(_window_wait_start_service);
 	SECONDARY_WINDOW(_window_wait_stop_service);
-	SECONDARY_WINDOW(_window_wait_testing);
-	SECONDARY_WINDOW(_window_wait_update_dns);
-
-	SECONDARY_WINDOW(_window_config_not_found);
-	SECONDARY_WINDOW(_window_config_found);
-	SECONDARY_WINDOW(_window_auto_start_wait);
-	SECONDARY_WINDOW(_window_continue_select_strategy);
-
-	SECONDARY_WINDOW(_window_configuration_selection_error);
-
-	SECONDARY_WINDOW(_window_to_warn_enable_dns_hosts);
 
 	// footer
 	BUTTON(_link_to_github);
 	BUTTON(_link_to_telegram);
 
 public:
-	Ui(UiBase* ui_base);
+	std::shared_ptr<Ui> self;
+
+	explicit Ui(std::shared_ptr<UiBase> ui_base);
 
 	void initialize();
+	void postConstruct();
 
 	void jsUpdate();
+
+	// Этот метод
+	const Ptr<SecondaryWindow>& getWindowWaitStartService() { return _window_wait_start_service; }
+	const Ptr<SecondaryWindow>& getWindowWaitStopService() { return _window_wait_stop_service; }
+
+	const Ptr<CheckBox>& getTestingDomainsStartup() const { return _testing_domains_startup; }
+
+	std::shared_ptr<UiBase>& uiBase() { return _ui_base; }
 
 private:
 	void _initializeAppState();
 	void _initializeSettings();
 	void _initializeHome();
 	void _initializeFooter();
+	void _initializeWindowBase() const;
 
 	void _checkConflictService();
 
@@ -112,8 +99,6 @@ private:
 
 	void _removeApp();
 	void _removeAppRun();
-
-	void _initShowInfoSetting();
 
 	void _checkWhitelist();
 
@@ -123,58 +108,15 @@ private:
 	void _updateAppWindow();
 	void _updateAppProgressWindowInfo();
 
-	// setting
+	// setting init and show info setting
 	void _settingInit();
 	void _settingShowConsole();
 	void _settingTestDomainsStartup();
-	void _settingEnableDnsHosts();
-	void _settingEnableDnsHostsUpdate();
-	void _settingEnableDnsHostsWarningUser();
-	void _settingDnsHostsUpdateInfoWindow();
-
-	void _settingEnableProxyTg();
-	void _settingEnableProxyLinkTg();
-
-	void _settingUnblockListEnableServices();
-	void _settingUnblockListEnableServicesUpdate();
-
-	void _settingUnblockSelectStrategyVersion();
-	void _settingUnblockSelectStrategyVersionUpdate();
-
-	void _settingUnblockEnableManual();
-	void _settingUnblockEnableManualUpdate();
-
-	void _settingUnblockEnableManualSelect();
-	void _settingUnblockEnableManualSelectUpdate();
-
-	// Testing
-	void _testingInit();
-	void _testingUpdate();
-	void _testingWindow();
-
-	// Testing methods base
-	void _testingServiceDomains();
-
-	// Starting services
-	void _startInit();
-	void _startUnblock();
-
-	// Starting services base methods
-	void	   _startServiceWindow();
-	void	   _clickStartService();
-	void	   _autoStart();
-	void	   _startServiceFromConfig();
-
-	// Starting services update button
-	void _buttonUpdate();
-
-	// Stopping services
+	// Stopping services methods
 	void _stopInit();
 	void _stoppingServices();
 	void _stoppingAllServices();
 
-	// base footer
+	// base footer 
 	void _footerElements();
-
-	void _tcpGlobalChange(bool state);
 };

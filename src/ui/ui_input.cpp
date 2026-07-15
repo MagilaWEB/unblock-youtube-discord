@@ -49,11 +49,10 @@ void Input::create(std::string_view selector, Types type, JSValue value, Localiz
 						_type,
 						name()
 					);
-					_event_click[name()].clear();
-					_created = true;
-					break;
 				}
 			}
+			_event_click[name()].clear();
+			_created = true;
 		}
 	);
 }

@@ -1,5 +1,16 @@
 #include "ui_secondary_window.h"
 
+#ifdef __clang__
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Wglobal-constructors"
+#endif
+std::vector<SecondaryWindow*> SecondaryWindow::_all_window;
+SecondaryWindow::MapEvent SecondaryWindow::_event_yes_no;
+SecondaryWindow::MapEvent SecondaryWindow::_event_cancel;
+#ifdef __clang__
+	#pragma clang diagnostic pop
+#endif
+
 SecondaryWindow::SecondaryWindow(std::string_view name) : BaseElement(name)
 {
 	_type = "secondary_window";
@@ -112,13 +123,13 @@ void SecondaryWindow::show()
 		}
 	}
 
-	_is_show = true;
+	_is_showing = true;
 	BaseElement::show();
 }
 
 void SecondaryWindow::hide()
 {
-	_is_show = false;
+	_is_showing = false;
 
 	if (waitShow())
 	{
@@ -141,7 +152,7 @@ void SecondaryWindow::hide()
 
 bool SecondaryWindow::isShow()
 {
-	return _is_show.load();
+	return _is_showing.load();
 }
 
 void SecondaryWindow::setWaitShow(bool state)

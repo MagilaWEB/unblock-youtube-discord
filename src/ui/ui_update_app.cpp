@@ -2,6 +2,10 @@
 #include "ui_base.h"
 #include "utils_ultralight.hpp"
 
+#ifdef __clang__
+	#pragma clang diagnostic ignored "-Wshadow-uncaptured-local"
+#endif
+
 void Ui::_updateApp()
 {
 	_updateAppWindow();
@@ -12,13 +16,13 @@ void Ui::_updateApp()
 		Localization::Str{ "str_checkbox_check_update_app_startup_description" }
 	);
 
-	auto result = _ui_base->userSetting()->parameterSection<bool>("SUSTEM", "check_update_app_startup");
+	auto result = _ui_base->userSetting()->parameterSection<bool>("SYSTEM", "check_update_app_startup");
 	_enable_check_update_startup->setState(result ? result.value() : true);
 
 	_enable_check_update_startup->addEventClick(
-		[this](JSArgs args)
+		[self = self](JSArgs args)
 		{
-			_ui_base->userSetting()->writeSectionParameter("SUSTEM", "check_update_app_startup", JSToCPP(args[0]));
+			self->_ui_base->userSetting()->writeSectionParameter("SYSTEM", "check_update_app_startup", JSToCPP(args[0]));
 			return false;
 		}
 	);
@@ -29,9 +33,9 @@ void Ui::_updateApp()
 	_start_check_update_app->create("#unblock section .common", "str_bottom_check_update_app_startup_title");
 
 	_start_check_update_app->addEventClick(
-		[this](JSArgs)
+		[self = self](JSArgs)
 		{
-			_checkAppUpdate();
+			self->_checkAppUpdate();
 			return false;
 		}
 	);
@@ -42,19 +46,19 @@ void Ui::_checkAppUpdate()
 	_window_wait_check_update_unblock->show();
 
 	Core::get().addTask(
-		[this]
+		[self = self]
 		{
-			if (auto new_version = _unblock.checkUpdate())
+			if (auto new_version = self->_unblock->checkUpdate())
 			{
-				_window_wait_check_update_unblock->hide();
+				self->_window_wait_check_update_unblock->hide();
 
 				static auto desc = Localization::Str{ "str_window_update_unblock" }();
-				_window_update_unblock->setDescription(utils::format(desc, new_version.value()));
-				_window_update_unblock->show();
+				self->_window_update_unblock->setDescription(utils::format(desc, new_version.value()));
+				self->_window_update_unblock->show();
 				return;
 			}
 
-			_window_wait_check_update_unblock->hide();
+			self->_window_wait_check_update_unblock->hide();
 		}
 	);
 }
@@ -75,30 +79,30 @@ void Ui::_updateAppWindow()
 
 	_window_update_unblock->setType(SecondaryWindow::Type::YesNo);
 	_window_update_unblock->addEventYesNo(
-		[this](JSArgs args)
+		[self = self](JSArgs args)
 		{
 			if (JSToCPP<bool>(args[0]))
 			{
-				_ui_base->console(false);
+				self->_ui_base->console(false);
 
 				Core::get().addTask(
-					[this]
+					[self = self]
 					{
-						_stoppingAllServices();
-						_window_update_unblock->hide();
-						_window_wait_update_unblock->show();
-						bool state = _unblock.appUpdate();
-						_window_wait_update_unblock->hide();
+						self->_stoppingAllServices();
+						self->_window_update_unblock->hide();
+						self->_window_wait_update_unblock->show();
+						bool state = self->_unblock->appUpdate();
+						self->_window_wait_update_unblock->hide();
 
 						if (state)
-							_ui_base->OnClose(nullptr);
+							self->_ui_base->OnClose(nullptr);
 						else
 						{
-							_window_error_update_unblock->show();
-							_window_error_update_unblock->addEventOk(
-								[this](JSArgs)
+							self->_window_error_update_unblock->show();
+							self->_window_error_update_unblock->addEventOk(
+								[self = self](JSArgs)
 								{
-									_window_error_update_unblock->hide();
+									self->_window_error_update_unblock->hide();
 									return true;
 								}
 							);
@@ -109,7 +113,7 @@ void Ui::_updateAppWindow()
 				return false;
 			}
 
-			_window_update_unblock->hide();
+			self->_window_update_unblock->hide();
 			return false;
 		}
 	);
@@ -121,8 +125,8 @@ void Ui::_updateAppProgressWindowInfo()
 		if (_window_wait_update_unblock->isShow())
 		{
 			auto disc_text = Localization::Str{ "str_window_wait_update_unblock" }();
-			float			   progress = _unblock.appUpdateProgress();
+			float			   progress = _unblock->appUpdateProgress();
 			_window_wait_update_unblock->setDescription(utils::format(disc_text, progress));
 		}
-	});
+	})
 }
