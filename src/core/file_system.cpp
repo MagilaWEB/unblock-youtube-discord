@@ -2,8 +2,8 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wglobal-constructors"
-static const std::regex& r_section_name = *new std::regex{ "\\[.*\\](?:.*|\\n)" };
-static const std::regex& reg_equally = *new std::regex{ "\\=" };
+static const std::regex r_section_name{ "\\[.*\\](?:.*|\\n)" };
+static const std::regex reg_equally{ "\\=" };
 #pragma clang diagnostic pop
 
 File::~File()

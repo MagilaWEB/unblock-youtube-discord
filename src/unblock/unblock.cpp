@@ -97,7 +97,7 @@ const std::vector<std::string>& Unblock::getStrategiesList()
 
 std::list<Service>& Unblock::getConflictingServices()
 {
-	static auto& conflicting_service = *new std::list<Service>();
+	static std::list<Service> conflicting_service;
 
 	Service::allService(
 		[&](std::string name_service)->void
@@ -206,10 +206,7 @@ start cmd /c del "%CURRENT_DIR%setup_update.bat"
 exit
 )" };
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wglobal-constructors"
-static HttpsLoad& load_7z = *new HttpsLoad{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" };
-#pragma clang diagnostic pop
+static HttpsLoad load_7z{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" };
 
 bool Unblock::appUpdate()
 {
@@ -223,8 +220,8 @@ bool Unblock::appUpdate()
 
 	try
 	{
-		static bit7z::Bit7zLibrary&	   lib{ *new bit7z::Bit7zLibrary{ "7za.dll" } };
-		static bit7z::BitFileExtractor& extractor{ *new bit7z::BitFileExtractor{ lib, bit7z::BitFormat::SevenZip } };
+		static bit7z::Bit7zLibrary	   lib{ "7za.dll" };
+		static bit7z::BitFileExtractor extractor{ lib, bit7z::BitFormat::SevenZip };
 
 		extractor.extract(path.string(), path.parent_path().string());
 	}

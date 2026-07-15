@@ -106,7 +106,7 @@ void StrategiesDPI::_saveStrategies(std::string_view str)
 
 void StrategiesDPI::_init_lua_to_zapret()
 {
-	static const std::filesystem::path& _lua_dir{ *new std::filesystem::path{ Core::get().binariesPath() / "lua" } };
+	static const std::filesystem::path _lua_dir{ Core::get().binariesPath() / "lua" };
 
 	auto iter = [this] { return std::ranges::find(_strategy_dpi, "%INIT_LUA%"); };
 	if (iter() != _strategy_dpi.end())
@@ -127,7 +127,7 @@ void StrategiesDPI::_blob_init_to_zapret()
 			if (data.init)
 				data.init = false;
 
-		static const std::regex& pattern{ *new std::regex{ R"(:blob=([^:]+)|:seqovl_pattern=([^:]+))" } };
+		static const std::regex pattern{ R"(:blob=([^:]+)|:seqovl_pattern=([^:]+))" };
 
 		auto& file_strategy = *_file_strategy_dpi;
 		for (auto& line : file_strategy)
@@ -207,7 +207,7 @@ void StrategiesDPI::_normalizeStrategyFinal()
 	{
 		_luaDesyncNumberStrategy(line);
 
-		static const std::regex& port_vars{ *new std::regex{ R"(%[^%]+%)" } };
+		static const std::regex port_vars{ R"(%[^%]+%)" };
 		line = std::regex_replace(line, port_vars, "");
 
 		_normalizeStrategyString(line);
@@ -241,7 +241,7 @@ void StrategiesDPI::_getAllPorts(std::string& str) const
 		{
 			auto replace_target = [&str, &name_service](const std::string& _text)
 			{
-				static const std::regex& reg_equally{ *new std::regex{ "\\:" } };
+				static const std::regex reg_equally{ "\\:" };
 				std::smatch				para;
 				if (std::regex_search(_text, para, reg_equally))
 				{

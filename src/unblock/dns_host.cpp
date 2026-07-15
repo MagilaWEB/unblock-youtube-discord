@@ -129,7 +129,7 @@ void DNSHost::update()
 			if (_cancel_update.load(std::memory_order_relaxed))
 				return;
 
-			static const std::regex& reg_equally{ *new std::regex{ R"(->)" } };
+			static const std::regex reg_equally{ R"(->)" };
 			std::smatch				para;
 			if (std::regex_search(domain, para, reg_equally))
 			{
@@ -166,7 +166,7 @@ void DNSHost::update()
 		local_hosts.open(Core::get().configsPath() / "hosts", "");
 		for (auto& line : local_hosts)
 		{
-			static const std::regex& ip_domain_regex{ *new std::regex{ R"(^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+([^\s]+))" } };
+			static const std::regex ip_domain_regex{ R"(^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+([^\s]+))" };
 			std::smatch				para;
 			if (std::regex_search(line, para, ip_domain_regex))
 			{
