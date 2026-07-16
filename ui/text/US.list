@@ -114,6 +114,9 @@ str_window_service_stop_wait_description=⏹ Stopping services...
 
 // Secondary Window Wait testing domain
 str_secondary_window_description_wait_domain=📡 Testing domains...
+str_window_info_testing=📋 Testing info
+str_secondary_window_description_info_domain=Domain test results:
+str_window_title_info_result=✅ Results: {}%
 
 // Secondary Window auto start wait
 str_window_auto_start_wait_description=🔍 Selecting configuration...

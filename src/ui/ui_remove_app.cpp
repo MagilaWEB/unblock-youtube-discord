@@ -51,7 +51,7 @@ exit
 
 void Ui::_removeAppRun()
 {
-	_stoppingAllServices();
+	_ui_unblock->stopAllServices();
 
 	_unblock->dnsHosts(false);
 	_ui_base->console(false);

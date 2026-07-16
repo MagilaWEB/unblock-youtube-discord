@@ -7,70 +7,72 @@
 
 class UNBLOCK_API Unblock final : public std::enable_shared_from_this<Unblock>
 {
-	Service _zapret{ "zapret2", "SvcHost.exe" };
-	Service _tg_ws_proxy{ "TgWsProxy", "SvcHost.exe" };
-	Service _win_divert{ "WinDivert" };
+    Service _zapret{"zapret2", "SvcHost.exe"};
+    Service _tg_ws_proxy{"TgWsProxy", "SvcHost.exe"};
+    Service _win_divert{"WinDivert"};
 
-	DomainTesting	   _domain_testing;
-	StrategiesDPI	   _strategies_dpi;
-	DNSHost			   _dns_hosts;
+    DomainTesting _domain_testing;
+    StrategiesDPI _strategies_dpi;
+    DNSHost _dns_hosts;
 
-	std::list<std::string> _section_opt_service_names{};
-	u32 _strategy{};
-	std::atomic_bool	   _zapret_dbg_run_end;
-	std::atomic_bool	   _zapret_dbg_run;
+    std::list<std::string> _section_opt_service_names{};
+    u32 _strategy{};
+    std::atomic_bool _zapret_dbg_run_end;
+    std::atomic_bool _zapret_dbg_run;
 
 public:
-	Unblock();
+    Unblock();
 
-	bool testUrl(std::string_view str_url);
+    bool testUrl(std::string_view str_url);
 
-	bool automaticallyStrategy();
+    bool automaticallyStrategy();
 
-	void serviceConfigFile(const std::shared_ptr<File>& config);
+    void serviceConfigFile(const std::shared_ptr<File>& config);
 
-	void changeStrategy(std::string_view name_config);
-	void changeDirVersionStrategy(std::string_view dir_version);
+    void changeStrategy(std::string_view name_config);
+    void changeDirVersionStrategy(std::string_view dir_version);
 
-	void addOptionalStrategies(std::string_view name);
-	void removeOptionalStrategies(std::string_view name);
-	void clearOptionalStrategies();
+    void addOptionalStrategies(std::string_view name);
+    void removeOptionalStrategies(std::string_view name);
+    void clearOptionalStrategies();
 
-	bool runTest();
+    bool runTest();
 
-	std::string getNameStrategies();
-	const std::vector<std::string>& getStrategies();
+    std::string getNameStrategies();
+    const std::vector<std::string>& getStrategies();
 
-	const std::vector<std::string>&							  getStrategiesList();
-	std::list<Service>&										  getConflictingServices();
+    const std::vector<std::string>& getStrategiesList();
+    std::list<Service>& getConflictingServices();
 
-	void startService();
-	void stopService();
-	void removeService();
-	bool activeService();
-	void checkStateServices(const std::function<void(std::string_view, bool)>& callback);
+    void startService();
+    void stopService();
+    void removeService();
+    bool activeService();
 
-	std::vector<std::string> listVersionStrategy();
+    std::vector<std::string> listVersionStrategy();
 
-	void						  dnsHosts(bool state);
-	void						  dnsHostsUpdate();
-	void						  dnsHostsCancelUpdate();
-	float						  dnsHostsUpdateProgress() const;
-	bool						  dnsHostsCheck() const;
-	const std::list<std::string>& dnsHostsListName();
+    void dnsHosts(bool state);
+    void dnsHostsUpdate();
+    void dnsHostsCancelUpdate();
+    float dnsHostsUpdateProgress() const;
+    bool dnsHostsCheck() const;
+    const std::list<std::string>& dnsHostsListName();
 
-	void localProxyTg(bool run = true);
-	bool localProxyTgIsRun();
-	void localProxyTgLinkRun();
+    void localProxyTg(bool run = true);
+    bool localProxyTgIsRun();
+    void localProxyTgLinkRun();
 
-	void testingDomain(
-		std::function<void(std::string_view, bool)>&& callback = [](std::string_view, bool) {}, bool base_test = true
-	);
-	void testingDomainCancel();
+    void testingDomain(
+        std::function<void(std::string_view, bool)>&& callback = [](std::string_view, bool)
+        {
+        }, bool base_test = true
+    );
+    void testingDomainCancel();
 
-	std::optional<std::string> checkUpdate();
-	bool					   appUpdate();
-	float					   appUpdateProgress() const;
+    std::optional<std::string> checkUpdate() const;
+    bool appUpdate();
+    float appUpdateProgress() const;
 
-	bool validDomain();
+    u32 domainSuccessRate() const;
+    bool validDomain() const;
 };

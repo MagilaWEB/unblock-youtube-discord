@@ -3,8 +3,6 @@
 #include "ui.h"
 #include "ui_base.h"
 
-#include "../unblock/unblock.h"
-
 #pragma clang diagnostic ignored "-Wshadow-uncaptured-local"
 
 UiUnblock::UiUnblock(std::shared_ptr<Ui> ui) : _ui(std::move(ui))
@@ -15,6 +13,7 @@ void UiUnblock::initialize()
 {
 	_showConsole();
 	_testDomainsStartup();
+	_stopService();
 }
 
 void UiUnblock::_showConsole()
@@ -54,4 +53,35 @@ void UiUnblock::_testDomainsStartup()
 			return false;
 		}
 	);
+}
+
+void UiUnblock::_stopService()
+{
+	_window_wait_stop_service->create(Localization::Str{ "str_please_wait" }, "str_window_service_stop_wait_description");
+	_window_wait_stop_service->setType(SecondaryWindow::Type::Info);
+
+	_stop_service_all->create("#unblock .common", "str_b_stop_service_all");
+	_stop_service_all->addEventClick(
+		[this](JSArgs)
+		{
+			_window_wait_stop_service->show();
+			Core::get().addTask(
+				[this]
+				{
+					stopAllServices();
+					_window_wait_stop_service->hide();
+				}
+			);
+
+			return false;
+		}
+	);
+}
+
+void UiUnblock::stopAllServices() const
+{
+	_ui->_unblock->removeService();
+	_ui->_unblock->localProxyTg(false);
+	_ui->_unblock->dnsHosts(false);
+	_ui->_ui_proxy_tg->getCheckBoxProxyTg()->setState(false);
 }

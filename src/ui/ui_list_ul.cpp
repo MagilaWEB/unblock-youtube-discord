@@ -21,6 +21,9 @@ void ListUl::initialize()
 	if (!_hide)
 		_hide = global_js["hideListUl"];
 
+	if (!_set_title)
+		_set_title = global_js["setTitleListUl"];
+
 	if (!_create_li)
 		_create_li = global_js["createListUlLiAdd"];
 

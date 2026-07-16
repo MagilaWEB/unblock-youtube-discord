@@ -5,8 +5,13 @@ class UL {
 		this.name = _name;
 		this.object_div = _object_div;
 		this.object_ul = _object_div.querySelector("ul");
+		this.title_h2 = _object_div.querySelector("h2");
 		this.array_list_li = [];
 		this.li_size = 0;
+	}
+
+	setTitle(_text) {
+		this.title_h2.textContent = _text;
 	}
 
 	show() {
@@ -184,6 +189,22 @@ function createListUl(_selector, _name, _title, _first) {
 
 	array_list_ul[_name] = new UL(_name, div);
 
+	return true;
+}
+
+/**
+ * Sets the title of a list ul element.
+ * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
+ * @param {*} _title Title text.
+ * @returns Returns false if an error occurs, and true if successful.
+ */
+function setTitleListUl(_name, _title) {
+	const ul_class = getListUl(_name);
+
+	if (ul_class === undefined)
+		return false;
+
+	ul_class.setTitle(_title);
 	return true;
 }
 

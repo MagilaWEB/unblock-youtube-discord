@@ -12,7 +12,6 @@ class File;
 class UiZapret2
 {
 	std::shared_ptr<Ui> _ui;
-	std::shared_ptr<Unblock> _unblock;
 	std::shared_ptr<File> _file_service_list;
 
 	// Select list for strategy version
@@ -36,14 +35,17 @@ class UiZapret2
 	SECONDARY_WINDOW(_window_configuration_selection_error);
 
 	std::atomic_bool _automatically_strategy_cancel{ false };
+	std::atomic_bool _domain_testing_cancel{ false };
 
 	// Testing
 	BUTTON(_start_testing_zapret);
 	SECONDARY_WINDOW(_window_wait_testing);
+	SECONDARY_WINDOW(_window_info_testing);
 	UL_LIST(_list_domain);
+	UL_LIST(_list_domain_info);
 
 public:
-	UiZapret2(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock);
+	UiZapret2(std::shared_ptr<Ui> ui);
 
 	const Ptr<SelectList>& getSelectVersionStrategy() const { return _select_version_strategy; }
 	const Ptr<SelectList>& getSelectConfig() const { return _select_config; }

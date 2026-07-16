@@ -163,7 +163,7 @@ void BaseElement::setTitle(Localization::Str title)
 			if (!_created)
 				return;
 
-			ASSERT_ARGS(_set_title({ name(), _title.data() }).ToBoolean() == true, "Couldn't setTitle a {} named [{}]", _type, name());
+			ASSERT_ARGS(_set_title({ name(), _title.c_str() }).ToBoolean() == true, "Couldn't setTitle a {} named [{}]", _type, name());
 		}
 	);
 }

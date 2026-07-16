@@ -31,14 +31,14 @@ void UiProxyTg::_enableProxyTg()
 					if (state)
 						_ui->getWindowWaitStartService()->show();
 					else
-						_ui->getWindowWaitStopService()->show();
+						_ui->getUiUnblock()->getWindowWaitStopService()->show();
 
 					_unblock->localProxyTg(state);
 
 					if (state)
 						_ui->getWindowWaitStartService()->hide();
 					else
-						_ui->getWindowWaitStopService()->hide();
+						_ui->getUiUnblock()->getWindowWaitStopService()->hide();
 				}
 			);
 

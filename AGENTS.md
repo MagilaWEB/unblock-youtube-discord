@@ -3,7 +3,7 @@
 
 - Использовать `--build _build_ai` вместо `_build`
 - Использовать `Ninja` вместо `VS`
-- Конфигурация: `configure-ai.bat` (использует `CMakePresets.json`)
+- Конфигурация: `configure-ninja-ai.bat` (использует `CMakePresets.json`)
 
 ## Style
 

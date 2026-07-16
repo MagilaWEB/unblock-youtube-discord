@@ -4,517 +4,528 @@
 #include "ui_base.h"
 #include "../unblock/unblock.h"
 
-UiZapret2::UiZapret2(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock)
-    : _ui(std::move(ui)), _unblock(std::move(unblock))
+UiZapret2::UiZapret2(std::shared_ptr<Ui> ui) : _ui(std::move(ui))
 {
-    _file_service_list = std::make_shared<File>();
-    _file_service_list->open({Core::get().configsPath() / "service_setting"}, ".config", true);
-    _unblock->serviceConfigFile(_file_service_list);
+	_file_service_list = std::make_shared<File>();
+	_file_service_list->open({ Core::get().configsPath() / "service_setting" }, ".config", true);
+	_ui->_unblock->serviceConfigFile(_file_service_list);
 
-    // Initialize services list from config
-    _file_service_list->forLineParametersSection(
-        "LIST",
-        [this](std::string key, std::string /*value*/)
-        {
-            _list_enable_services.emplace(key, std::make_shared<CheckBox>(std::string{"_unblock_to_list_"} + key));
-            return false;
-        }
-    );
+	// Initialize services list from config
+	_file_service_list->forLineParametersSection(
+		"LIST",
+		[this](std::string key, std::string /*value*/)
+		{
+			_list_enable_services.emplace(key, std::make_shared<CheckBox>(std::string{ "_unblock_to_list_" } + key));
+			return false;
+		}
+	);
 }
 
 void UiZapret2::initialize()
 {
-    _initMainControls();
-    _testingInit();
-    _selectStrategyVersion();
-    _selectConfig();
-    _listEnableServices();
+	_initMainControls();
+	_testingInit();
+	_selectStrategyVersion();
+	_selectConfig();
+	_listEnableServices();
 }
 
 void UiZapret2::_listEnableServices()
 {
-    for (auto& [name, check_box] : _list_enable_services)
-    {
-        check_box->create(
-            "#zapret .service",
-            std::string{"str_unblock_enable_" + name + "_title"},
-            Localization::Str{std::string{"str_unblock_enable_" + name + "_description"}}
-        );
+	for (auto& [name, check_box] : _list_enable_services)
+	{
+		check_box->create(
+			"#zapret .service",
+			std::string{ "str_unblock_enable_" + name + "_title" },
+			Localization::Str{ std::string{ "str_unblock_enable_" + name + "_description" } }
+		);
 
-        check_box->addEventClick(
-            [this, name](JSArgs args)
-            {
-                _ui->uiBase()->userConfig()->writeSectionParameter("UNBLOCK", (std::string{"enable_"} + name),
-                                                                   JSToCPP(args[0]));
+		check_box->addEventClick(
+			[this, name](JSArgs args)
+			{
+				_ui->uiBase()->userConfig()->writeSectionParameter("UNBLOCK", std::string{ "enable_" } + name, JSToCPP(args[0]));
 
-                _listEnableServicesUpdate();
-                return false;
-            }
-        );
-    }
+				_listEnableServicesUpdate();
+				return false;
+			}
+		);
+	}
 
-    _listEnableServicesUpdate();
+	_listEnableServicesUpdate();
 }
 
 void UiZapret2::_listEnableServicesUpdate()
 {
-    for (auto& [name, check_box] : _list_enable_services)
-    {
-        check_box->show();
+	for (auto& [name, check_box] : _list_enable_services)
+	{
+		check_box->show();
 
-        std::string setting_name{"enable_" + name};
+		std::string setting_name{ "enable_" + name };
 
-        if (auto result = _ui->uiBase()->userConfig()->parameterSection<bool>("UNBLOCK", setting_name))
-        {
-            if (result.value())
-                _unblock->addOptionalStrategies(name);
+		if (auto result = _ui->uiBase()->userConfig()->parameterSection<bool>("UNBLOCK", setting_name))
+		{
+			if (result.value())
+				_ui->_unblock->addOptionalStrategies(name);
 
-            check_box->setState(result.value());
-        }
-        else if (auto state = _file_service_list->parameterSection<bool>("LIST", name))
-        {
-            if (state.value())
-                _unblock->addOptionalStrategies(name);
+			check_box->setState(result.value());
+		}
+		else if (auto state = _file_service_list->parameterSection<bool>("LIST", name))
+		{
+			if (state.value())
+				_ui->_unblock->addOptionalStrategies(name);
 
-            check_box->setState(state.value());
-        }
-        else
-            Debug::warning(state.error());
+			check_box->setState(state.value());
+		}
+		else
+			Debug::warning(state.error());
 
-        if (check_box->getState())
-            _unblock->addOptionalStrategies(name);
-        else
-            _unblock->removeOptionalStrategies(name);
-    }
+		if (check_box->getState())
+			_ui->_unblock->addOptionalStrategies(name);
+		else
+			_ui->_unblock->removeOptionalStrategies(name);
+	}
 }
 
 void UiZapret2::_selectStrategyVersion()
 {
-    _select_version_strategy
-        ->create("#zapret .common", "str_select_version_strategy_title",
-                 Localization::Str{"str_select_version_strategy_description"});
-    _select_version_strategy->addEventChange(
-        [this](JSArgs args)
-        {
-            _ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy",
-                                                               JSToCPP(args[1]));
-            _selectStrategyVersionUpdate();
-            return false;
-        }
-    );
+	_select_version_strategy
+		->create("#zapret .common", "str_select_version_strategy_title", Localization::Str{ "str_select_version_strategy_description" });
+	_select_version_strategy->addEventChange(
+		[this](JSArgs args)
+		{
+			_ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy", JSToCPP(args[1]));
+			_selectStrategyVersionUpdate();
+			return false;
+		}
+	);
 
-    _selectStrategyVersionUpdate();
+	_selectStrategyVersionUpdate();
 }
 
 void UiZapret2::_selectStrategyVersionUpdate()
 {
-    if (!_select_version_strategy->isCreate())
-        return;
+	if (!_select_version_strategy->isCreate())
+		return;
 
-    _select_version_strategy->clear();
+	_select_version_strategy->clear();
 
-    _select_version_strategy->show();
+	_select_version_strategy->show();
 
-    auto strategy_dirs = _unblock->listVersionStrategy();
+	auto strategy_dirs = _ui->_unblock->listVersionStrategy();
 
-    for (u32 i = 0; i < strategy_dirs.size(); i++)
-        _select_version_strategy->createOption(i, strategy_dirs[i]);
+	for (u32 i = 0; i < strategy_dirs.size(); i++)
+		_select_version_strategy->createOption(i, strategy_dirs[i]);
 
-    if (auto strategy_version = _ui->uiBase()->userConfig()->parameterSection<std::string>(
-        "REMEMBER_CONFIGURATION", "version_strategy"))
-        _select_version_strategy->setSelectedOptionValue(strategy_version.value());
+	if (auto strategy_version = _ui->uiBase()->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "version_strategy"))
+		_select_version_strategy->setSelectedOptionValue(strategy_version.value());
 
-    _unblock->changeDirVersionStrategy(JSToCPP<std::string>(_select_version_strategy->getSelectedOptionValue()));
+	_ui->_unblock->changeDirVersionStrategy(JSToCPP<std::string>(_select_version_strategy->getSelectedOptionValue()));
 
-    _selectConfigUpdate();
+	_selectConfigUpdate();
 }
 
 void UiZapret2::_selectConfig()
 {
-    _select_config->create("#zapret .common", "str_select_config_title",
-                           Localization::Str{"str_select_config_description"});
-    _select_config->addEventChange(
-        [this](JSArgs args)
-        {
-            _ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", JSToCPP(args[1]));
-            return false;
-        }
-    );
+	_select_config->create("#zapret .common", "str_select_config_title", Localization::Str{ "str_select_config_description" });
+	_select_config->addEventChange(
+		[this](JSArgs args)
+		{
+			_ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", JSToCPP(args[1]));
+			return false;
+		}
+	);
 
-    _selectConfigUpdate();
+	_selectConfigUpdate();
 }
 
 void UiZapret2::_selectConfigUpdate()
 {
-    if (!_select_config->isCreate())
-        return;
+	if (!_select_config->isCreate())
+		return;
 
-    _select_config->clear();
+	_select_config->clear();
 
-    auto& strategies_list = _unblock->getStrategiesList();
+	auto& strategies_list = _ui->_unblock->getStrategiesList();
 
-    if (strategies_list.empty())
-        return;
+	if (strategies_list.empty())
+		return;
 
-    _select_config->show();
+	_select_config->show();
 
-    for (u32 i = 0; i < strategies_list.size(); i++)
-        _select_config->createOption(i, strategies_list[i]);
+	for (u32 i = 0; i < strategies_list.size(); i++)
+		_select_config->createOption(i, strategies_list[i]);
 
-    if (auto config = _ui->uiBase()->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
-    {
-        if (std::ranges::find(strategies_list, config.value()) != strategies_list.end())
-        {
-            _select_config->setSelectedOptionValue(config.value());
-            _ui->uiBase()->userConfig()
-               ->writeSectionParameter("REMEMBER_CONFIGURATION", "config",
-                                       JSToCPP(_select_config->getSelectedOptionValue()));
-        }
-        else
-        {
-            _ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", strategies_list[0]);
-            _select_config->setSelectedOptionValue(strategies_list[0]);
-        }
-    }
+	if (auto config = _ui->uiBase()->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
+	{
+		if (std::ranges::find(strategies_list, config.value()) != strategies_list.end())
+		{
+			_select_config->setSelectedOptionValue(config.value());
+			_ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", JSToCPP(_select_config->getSelectedOptionValue()));
+		}
+		else
+		{
+			_ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", strategies_list[0]);
+			_select_config->setSelectedOptionValue(strategies_list[0]);
+		}
+	}
 
-    _buttonUpdate();
+	_buttonUpdate();
 }
 
 void UiZapret2::_initMainControls()
 {
-    // Initialize start button
-    _start_button->create("#zapret .common", "str_b_start_zapret");
+	// Initialize start button
+	_start_button->create("#zapret .common", "str_b_start_zapret");
 
-    _start_button->addEventClick(
-        [this](JSArgs)
-        {
-            _clickStartService();
-            return false;
-        }
-    );
+	_start_button->addEventClick(
+		[this](JSArgs)
+		{
+			_clickStartService();
+			return false;
+		}
+	);
 
-    // Initialize windows
-    _window_config_not_found->create(Localization::Str{"str_window_config_not_found_title"},
-                                     "str_window_config_not_found_description");
-    _window_config_not_found->setType(SecondaryWindow::Type::OK);
-    _window_config_not_found->addEventOk(
-        [this](JSArgs)
-        {
-            _autoStart();
-            return false;
-        }
-    );
+	// Initialize windows
+	_window_config_not_found->create(Localization::Str{ "str_window_config_not_found_title" }, "str_window_config_not_found_description");
+	_window_config_not_found->setType(SecondaryWindow::Type::OK);
+	_window_config_not_found->addEventOk(
+		[this](JSArgs)
+		{
+			_autoStart();
+			return false;
+		}
+	);
 
-    _window_config_found->create(Localization::Str{"str_window_config_found_title"}, "");
-    _window_config_found->setType(SecondaryWindow::Type::YesNo);
-    _window_config_found->addEventYesNo(
-        [this](JSArgs args)
-        {
-            if (args[0].ToBoolean())
-                _autoStart();
-            else
-                _startServiceFromConfig();
+	_window_config_found->create(Localization::Str{ "str_window_config_found_title" }, "");
+	_window_config_found->setType(SecondaryWindow::Type::YesNo);
+	_window_config_found->addEventYesNo(
+		[this](JSArgs args)
+		{
+			if (args[0].ToBoolean())
+				_autoStart();
+			else
+				_startServiceFromConfig();
 
-            return false;
-        }
-    );
+			return false;
+		}
+	);
 
-    _window_auto_start_wait->create(Localization::Str{"str_please_wait"}, "str_window_auto_start_wait_description");
-    _window_auto_start_wait->setType(SecondaryWindow::Type::Wait);
-    _window_auto_start_wait->addEventCancel(
-        [this](JSArgs)
-        {
-            _automatically_strategy_cancel.store(true);
-            _unblock->testingDomainCancel();
-            return false;
-        }
-    );
+	_window_auto_start_wait->create(Localization::Str{ "str_please_wait" }, "str_window_auto_start_wait_description");
+	_window_auto_start_wait->setType(SecondaryWindow::Type::Wait);
+	_window_auto_start_wait->addEventCancel(
+		[this](JSArgs)
+		{
+			_automatically_strategy_cancel.store(true);
+			_ui->_unblock->testingDomainCancel();
+			return false;
+		}
+	);
 
-    _window_continue_select_strategy->create(Localization::Str{"str_window_continue_select_strategy_title"}, "");
-    _window_continue_select_strategy->setType(SecondaryWindow::Type::YesNo);
-    _window_continue_select_strategy->addEventYesNo(
-        [this](JSArgs args)
-        {
-            if (args[0].ToBoolean())
-                _autoStart();
+	_window_continue_select_strategy->create(Localization::Str{ "str_window_continue_select_strategy_title" }, "");
+	_window_continue_select_strategy->setType(SecondaryWindow::Type::YesNo);
+	_window_continue_select_strategy->addEventYesNo(
+		[this](JSArgs args)
+		{
+			if (args[0].ToBoolean())
+				_autoStart();
 
-            return false;
-        }
-    );
+			return false;
+		}
+	);
 
-    _window_configuration_selection_error->create(Localization::Str{"str_error"},
-                                                  "str_window_configuration_selection_error");
-    _window_configuration_selection_error->setType(SecondaryWindow::Type::OK);
+	_window_configuration_selection_error->create(Localization::Str{ "str_error" }, "str_window_configuration_selection_error");
+	_window_configuration_selection_error->setType(SecondaryWindow::Type::OK);
 
-    _stop_zapret->create("#zapret .common", "str_b_stop_zapret");
-    _stop_zapret->addEventClick(
-        [this](JSArgs)
-        {
-            _ui->getWindowWaitStopService()->show();
-            Core::get().addTask(
-                [this]
-                {
-                    _unblock->removeService();
-                    _ui->getWindowWaitStopService()->hide();
-                }
-            );
-            return false;
-        }
-    );
+	_stop_zapret->create("#zapret .common", "str_b_stop_zapret");
+	_stop_zapret->addEventClick(
+		[this](JSArgs)
+		{
+			_ui->getUiUnblock()->getWindowWaitStopService()->show();
+			Core::get().addTask(
+				[this]
+				{
+					_ui->_unblock->removeService();
+					_ui->getUiUnblock()->getWindowWaitStopService()->hide();
+					_buttonUpdate();
+				}
+			);
+			return false;
+		}
+	);
 
-    _run_auto_config_zapret->create("#zapret .common", "str_b_run_auto_config_zapret");
+	_run_auto_config_zapret->create("#zapret .common", "str_b_run_auto_config_zapret");
 
-    _run_auto_config_zapret->addEventClick(
-        [this](JSArgs)
-        {
-            _autoStart();
-            return false;
-        }
-    );
+	_run_auto_config_zapret->addEventClick(
+		[this](JSArgs)
+		{
+			_autoStart();
+			return false;
+		}
+	);
 }
 
 void UiZapret2::_testingInit()
 {
-    _start_testing_zapret->create("#zapret .common", "str_b_start_testing_zapret");
-    _start_testing_zapret->addEventClick(
-        [this](JSArgs)
-        {
-            if (_unblock->runTest())
-                return false;
+	_start_testing_zapret->create("#zapret .common", "str_b_start_testing_zapret");
+	_start_testing_zapret->addEventClick(
+		[this](JSArgs)
+		{
+			if (_ui->_unblock->runTest())
+				return false;
 
-            _testingServiceDomains();
-            return false;
-        }
-    );
+			_testingServiceDomains();
+			return false;
+		}
+	);
 
-    _initTestingWindow();
+	_initTestingWindow();
 }
 
 void UiZapret2::_buttonUpdate()
 {
-    if (auto config = _ui->uiBase()->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
-        if (_unblock->activeService())
-            getStartButton()->setTitle("str_b_restart_unblock");
-        else
-            getStartButton()->setTitle("str_b_start_zapret");
-    else
-        getStartButton()->setTitle("str_b_start_find_config");
+	if (auto config = _ui->uiBase()->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
+		if (_ui->_unblock->activeService())
+			getStartButton()->setTitle("str_b_restart_unblock");
+		else
+			getStartButton()->setTitle("str_b_start_zapret");
+	else
+		getStartButton()->setTitle("str_b_start_find_config");
 }
 
 void UiZapret2::_clickStartService()
 {
-    if (auto config = _ui->uiBase()->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
-    {
-        _startServiceFromConfig();
+	if (auto config = _ui->uiBase()->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
+	{
+		_startServiceFromConfig();
 
-        /*auto& strategy_list = _unblock.getStrategiesList();
-        if (std::ranges::find(strategy_list, config.value()) == strategy_list.end())
-        {
-            Debug::warning("config[{}] The specified strategy does not exist from the user's settings!", config.value());
+		/*auto& strategy_list = _unblock.getStrategiesList();
+		if (std::ranges::find(strategy_list, config.value()) == strategy_list.end())
+		{
+			Debug::warning("config[{}] The specified strategy does not exist from the user's settings!", config.value());
 
-            _ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", "");
+			_ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", "");
 
-            if (_unblock_select_config->isShow())
-                _unblock_select_config->setSelectedOptionValue(strategy_list[0]);
+			if (_unblock_select_config->isShow())
+				_unblock_select_config->setSelectedOptionValue(strategy_list[0]);
 
-            _window_config_not_found->show();
-            return;
-        }
+			_window_config_not_found->show();
+			return;
+		}
 
-        _window_config_found->setDescription(utils::format(
-            Localization::Str{ "str_window_config_found_description" }(),
-            config.value(),
-            JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue())
-        ));
+		_window_config_found->setDescription(utils::format(
+			Localization::Str{ "str_window_config_found_description" }(),
+			config.value(),
+			JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue())
+		));
 
-        _window_config_found->show();*/
-        return;
-    }
+		_window_config_found->show();*/
+		return;
+	}
 
-    _window_config_not_found->show();
+	_window_config_not_found->show();
 }
-
 
 void UiZapret2::_autoStart()
 {
-    _tcpGlobalChange(true);
+	_tcpGlobalChange(true);
 
-    Core::get().addTask(
-        [this]
-        {
-            InputConsole::textOk(Localization::Str{"str_beginning_auto_selection"}());
+	Core::get().addTask(
+		[this]
+		{
+			InputConsole::textOk(Localization::Str{ "str_beginning_auto_selection" }());
 
-            _window_auto_start_wait->setDescription("str_window_auto_start_wait_description");
-            _window_auto_start_wait->show();
+			_window_auto_start_wait->setDescription("str_window_auto_start_wait_description");
+			_window_auto_start_wait->show();
 
-            while (_autoStartTryNext())
-            {
-                if (_automatically_strategy_cancel)
-                {
-                    _unblock->stopService();
-                    break;
-                }
+			while (_autoStartTryNext())
+			{
+				if (_automatically_strategy_cancel)
+				{
+					_ui->_unblock->stopService();
+					break;
+				}
 
-                _unblock->startService();
+				_ui->_unblock->startService();
 
-                auto strategy_name = _unblock->getNameStrategies();
-                auto version_str = JSToCPP(_select_version_strategy->getSelectedOptionValue());
+				auto strategy_name = _ui->_unblock->getNameStrategies();
+				auto version_str   = JSToCPP(_select_version_strategy->getSelectedOptionValue());
 
-                auto text_desc =
-                    utils::format(Localization::Str{"str_window_auto_start_wait_name_strategy_description"}(),
-                                  strategy_name, version_str);
+				auto text_desc =
+					utils::format(Localization::Str{ "str_window_auto_start_wait_name_strategy_description" }(), strategy_name, version_str);
 
-                text_desc.insert(0, "\n");
-                text_desc.insert(0, Localization::Str{"str_window_auto_start_wait_description"}());
+				text_desc.insert(0, "\n");
+				text_desc.insert(0, Localization::Str{ "str_window_auto_start_wait_description" }());
 
-                _window_auto_start_wait->setDescription(text_desc);
+				_window_auto_start_wait->setDescription(text_desc);
 
-                _unblock->testingDomain();
+				_ui->_unblock->testingDomain();
 
-                if (!_automatically_strategy_cancel && _unblock->validDomain())
-                {
-                    _ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config",
-                                                                       strategy_name);
+				if (!_automatically_strategy_cancel && _ui->_unblock->validDomain())
+				{
+					_ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", strategy_name);
 
-                    _window_continue_select_strategy->setDescription(
-                        utils::format(Localization::Str{"str_window_continue_select_strategy_description"}(),
-                                      strategy_name, version_str));
-                    _window_continue_select_strategy->show();
-                    break;
-                }
-            }
+					_window_continue_select_strategy->setDescription(
+						utils::format(Localization::Str{ "str_window_continue_select_strategy_description" }(), strategy_name, version_str)
+					);
+					_window_continue_select_strategy->show();
+					break;
+				}
+			}
 
-            _buttonUpdate();
+			_buttonUpdate();
 
-            _automatically_strategy_cancel = false;
-            _window_auto_start_wait->hide();
-        }
-    );
+			_automatically_strategy_cancel = false;
+			_window_auto_start_wait->hide();
+		}
+	);
 }
 
 bool UiZapret2::_autoStartTryNext() const
 {
-    if (_unblock->automaticallyStrategy())
-        return true;
+	if (_ui->_unblock->automaticallyStrategy())
+		return true;
 
-    auto strategy_dirs = _unblock->listVersionStrategy();
+	auto strategy_dirs = _ui->_unblock->listVersionStrategy();
 
-    auto it = std::ranges::find(strategy_dirs,
-                                JSToCPP<std::string>(_select_version_strategy->getSelectedOptionValue()));
+	auto it = std::ranges::find(strategy_dirs, JSToCPP<std::string>(_select_version_strategy->getSelectedOptionValue()));
 
-    auto save_version = [this](std::string version)
-    {
-        _select_version_strategy->setSelectedOptionValue(version);
-        _unblock->changeDirVersionStrategy(version);
-        _ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy", version);
-    };
+	auto save_version = [this](std::string version)
+	{
+		_select_version_strategy->setSelectedOptionValue(version);
+		_ui->_unblock->changeDirVersionStrategy(version);
+		_ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy", version);
+	};
 
-    if (it != strategy_dirs.end())
-    {
-        if (++it != strategy_dirs.end())
-        {
-            save_version(*it);
-            return true;
-        }
-    }
+	if (it != strategy_dirs.end())
+	{
+		if (++it != strategy_dirs.end())
+		{
+			save_version(*it);
+			return true;
+		}
+	}
 
-    save_version(strategy_dirs.front());
+	save_version(strategy_dirs.front());
 
-    _window_configuration_selection_error->show();
-    _window_configuration_selection_error->addEventOk(
-        [this](JSArgs)
-        {
-            _window_configuration_selection_error->hide();
-            return true;
-        }
-    );
+	_window_configuration_selection_error->show();
+	_window_configuration_selection_error->addEventOk(
+		[this](JSArgs)
+		{
+			_window_configuration_selection_error->hide();
+			return true;
+		}
+	);
 
-    return false;
+	return false;
 }
 
 void UiZapret2::_startServiceFromConfig()
 {
-    Core::get().addTask(
-        [this]
-        {
-            _ui->getWindowWaitStartService()->show();
+	Core::get().addTask(
+		[this]
+		{
+			_ui->getWindowWaitStartService()->show();
 
-            _tcpGlobalChange(true);
+			_tcpGlobalChange(true);
 
-            if (_select_config->isShow())
-                _unblock->changeStrategy(JSToCPP(_select_config->getSelectedOptionValue()));
-            else if (auto config = _ui->uiBase()->userConfig()->parameterSection<std::string>(
-                "REMEMBER_CONFIGURATION", "config"))
-                _unblock->changeStrategy(config.value());
-            else
-                Debug::fatal("REMEMBER_CONFIGURATION parameter config = null");
+			if (_select_config->isShow())
+				_ui->_unblock->changeStrategy(JSToCPP(_select_config->getSelectedOptionValue()));
+			else if (auto config = _ui->uiBase()->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
+				_ui->_unblock->changeStrategy(config.value());
+			else
+				Debug::fatal("REMEMBER_CONFIGURATION parameter config = null");
 
-            _unblock->startService();
-            _buttonUpdate();
-            _ui->getWindowWaitStartService()->hide();
-        }
-    );
+			_ui->_unblock->startService();
+			_buttonUpdate();
+			_ui->getWindowWaitStartService()->hide();
+		}
+	);
 }
 
 void UiZapret2::_tcpGlobalChange(bool state) const
 {
-    if (state == true)
-    {
-        auto tcp_set_global = _ui->uiBase()->userConfig()->parameterSection<bool>("SYSTEM", "enable_tcp_global");
-        if ((!tcp_set_global) || (!tcp_set_global.value()))
-        {
-            system("netsh interface tcp set global timestamps=enabled");
-            _ui->uiBase()->userConfig()->writeSectionParameter("SYSTEM", "enable_tcp_global", "true");
-        }
+	if (!state)
+	{
+		system("netsh interface tcp set global timestamps=disabled");
+		_ui->uiBase()->userConfig()->writeSectionParameter("SYSTEM", "enable_tcp_global", "false");
+		return;
+	}
 
-        return;
-    }
-
-    system("netsh interface tcp set global timestamps=disabled");
-    _ui->uiBase()->userConfig()->writeSectionParameter("SYSTEM", "enable_tcp_global", "false");
+	auto tcp_set_global = _ui->uiBase()->userConfig()->parameterSection<bool>("SYSTEM", "enable_tcp_global");
+	if ((!tcp_set_global) || (!tcp_set_global.value()))
+	{
+		system("netsh interface tcp set global timestamps=enabled");
+		_ui->uiBase()->userConfig()->writeSectionParameter("SYSTEM", "enable_tcp_global", "true");
+	}
 }
 
 void UiZapret2::_initTestingWindow()
 {
-    _window_wait_testing->create(Localization::Str{"str_please_wait"}, "str_secondary_window_description_wait_domain");
-    _window_wait_testing->setType(SecondaryWindow::Type::Wait);
+	_window_wait_testing->create(Localization::Str{ "str_please_wait" }, "str_secondary_window_description_wait_domain");
+	_window_wait_testing->setType(SecondaryWindow::Type::Wait);
 
-    _list_domain->create("#_window_wait_testing .description", "str_h2_verified_domains");
+	_list_domain->create("#_window_wait_testing .description", "str_h2_verified_domains");
 
-    _window_wait_testing->addEventCancel(
-        [this](JSArgs)
-        {
-            _unblock->testingDomainCancel();
-            return false;
-        }
-    );
+	_window_wait_testing->addEventCancel(
+		[this](JSArgs)
+		{
+			_ui->_unblock->testingDomainCancel();
+			_domain_testing_cancel.store(true);
+			return false;
+		}
+	);
 
-    if (_ui->getTestingDomainsStartup()->getState())
-        _testingServiceDomains();
+	_window_info_testing->create(Localization::Str{ "str_window_info_testing" }, "str_secondary_window_description_info_domain");
+	_window_info_testing->setType(SecondaryWindow::Type::OK);
+
+	_window_info_testing->addEventOk(
+		[this](JSArgs)
+		{
+			_window_info_testing->hide();
+			_list_domain_info->clear();
+			return false;
+		}
+	);
+
+	_list_domain_info->create("#_window_info_testing .description", "");
+
+	if (_ui->getTestingDomainsStartup()->getState())
+		_testingServiceDomains();
 }
 
 void UiZapret2::_testingServiceDomains()
 {
-    _window_wait_testing->show();
+	_window_wait_testing->show();
 
-    Core::get().addTaskParallel(
-        [this]
-        {
-            _unblock->testingDomain(
-                [this](std::string_view url, bool state)
-                {
-                    _list_domain->createLiSuccess(url, state);
-                },
-                false
-            );
-        }
-    );
+	Core::get().addTaskParallel(
+		[this]
+		{
+			_ui->_unblock->testingDomain(
+				[this](std::string_view url, bool state)
+				{
+					_list_domain->createLiSuccess(url, state);
+					_list_domain_info->createLiSuccess(url, state);
+				},
+				false
+			);
+		}
+	);
 
-    Core::get().taskComplete(
-        [this]
-        {
-            _window_wait_testing->hide();
-            _list_domain->clear();
-        }
-    );
+	Core::get().taskComplete(
+		[this]
+		{
+			_window_wait_testing->hide();
+			_list_domain->clear();
+
+			if (!_domain_testing_cancel.load())
+			{
+				_list_domain_info->setTitle(utils::format(Localization::Str{ "str_window_title_info_result" }(), _ui->_unblock->domainSuccessRate()));
+
+				_window_info_testing->show();
+				return;
+			}
+
+			_domain_testing_cancel.store(false);
+		}
+	);
 }

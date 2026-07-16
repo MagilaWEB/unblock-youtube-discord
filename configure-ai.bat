@@ -13,8 +13,8 @@ mkdir %BUILD_DIR%
 
 echo Configuring build...
 
-:: Run CMake
-cmake -S . -B %BUILD_DIR% %1 %2 %3
+:: Run CMake with Ninja + Clang preset
+cmake -S . -B %BUILD_DIR% --preset debug %1 %2 %3
 if %ERRORLEVEL% neq 0 (
 	echo Error: CMake failed to configure the project.
 	pause

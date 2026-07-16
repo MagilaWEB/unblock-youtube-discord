@@ -114,6 +114,9 @@ str_window_service_stop_wait_description=⏹ Остановка служб...
 
 // Secondary Window Wait testing domain
 str_secondary_window_description_wait_domain=📡 Тестирование доменов...
+str_window_info_testing=📋 Информация о тестировании
+str_secondary_window_description_info_domain=Результаты тестирования доменов:
+str_window_title_info_result=✅ Результаты: {}%
 
 // Secondary Window auto start wait
 str_window_auto_start_wait_description=🔍 Подбор конфигурации...

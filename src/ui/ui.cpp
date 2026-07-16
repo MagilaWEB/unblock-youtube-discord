@@ -12,7 +12,7 @@ void Ui::postConstruct()
 
 	_ui_dns_hosts = std::make_unique<UiDnsHosts>(self, _unblock);
 	_ui_proxy_tg = std::make_unique<UiProxyTg>(self, _unblock);
-	_ui_zapret2 = std::make_unique<UiZapret2>(self, _unblock);
+	_ui_zapret2 = std::make_unique<UiZapret2>(self);
 	_ui_unblock = std::make_unique<UiUnblock>(self);
 }
 
@@ -28,8 +28,6 @@ void Ui::_initializeAppState()
 
 void Ui::_initComponents()
 {
-	_stopInit();
-
 	_ui_unblock->initialize();
 	_ui_dns_hosts->initialize();
 	_ui_proxy_tg->initialize();

@@ -86,7 +86,7 @@ void Ui::_updateAppWindow()
 				Core::get().addTask(
 					[self = self]
 					{
-						self->_stoppingAllServices();
+						self->_ui_unblock->stopAllServices();
 						self->_window_update_unblock->hide();
 						self->_window_wait_update_unblock->show();
 						bool state = self->_unblock->appUpdate();

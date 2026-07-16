@@ -11,6 +11,8 @@
 class UiBase;
 class Ui final : public utils::DefaultInit, public std::enable_shared_from_this<Ui>
 {
+	friend class UiUnblock;
+	friend class UiZapret2;
 	std::shared_ptr<UiBase> _ui_base;
 
 	std::shared_ptr<Unblock> _unblock;
@@ -30,9 +32,6 @@ class Ui final : public utils::DefaultInit, public std::enable_shared_from_this<
 	std::unique_ptr<UiZapret2> _ui_zapret2;
 	std::unique_ptr<UiUnblock> _ui_unblock;
 
-	// Service all stoping
-	BUTTON(_stop_service_all);
-
 	// Root directory error
 	SECONDARY_WINDOW(_window_root_directory_error);
 
@@ -48,7 +47,6 @@ class Ui final : public utils::DefaultInit, public std::enable_shared_from_this<
 	SECONDARY_WINDOW(_window_wait_test_whitelist);
 	SECONDARY_WINDOW(_window_warning_no_internet);
 	SECONDARY_WINDOW(_window_wait_start_service);
-	SECONDARY_WINDOW(_window_wait_stop_service);
 
 	// footer
 	BUTTON(_link_to_github);
@@ -66,7 +64,6 @@ public:
 
 	// Этот метод
 	const Ptr<SecondaryWindow>& getWindowWaitStartService() { return _window_wait_start_service; }
-	const Ptr<SecondaryWindow>& getWindowWaitStopService() { return _window_wait_stop_service; }
 
 	const Ptr<CheckBox>& getTestingDomainsStartup() const { return _ui_unblock->getTestingDomainsStartup(); }
 
@@ -94,11 +91,6 @@ private:
 	void _checkAppUpdate();
 	void _updateAppWindow();
 	void _updateAppProgressWindowInfo();
-
-	// Stopping services methods
-	void _stopInit();
-	void _stoppingServices();
-	void _stoppingAllServices();
 
 	// base footer 
 	void _footerElements();
