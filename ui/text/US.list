@@ -1,7 +1,8 @@
 // NAV
 str_h2_zapret2=Zapret2
-str_h2_home=Home
-str_h2_setting=Settings
+str_h2_unblock=Unblock
+str_h2_local_dns=Local DNS
+str_h2_tg_ws_proxy=Telegram WS Proxy
 
 // Footer BUTTON
 str_link_to_github=↗ GitHub
@@ -19,7 +20,6 @@ str_b_start_find_config=🔍 Find Config
 
 // console text
 str_console_selected_config=Configuration selected [{}].
-str_console_not_find_fake_key=fake key [{}] not found! Available keys [{}].
 
 // console input
 str_console_input_success=Success: {}
@@ -28,7 +28,7 @@ str_console_input_warning=Warning: {}
 str_console_input_please=Please, {}:
 str_console_input_error=Error: {}
 str_console_input_forbidden_characters=You can only enter 0 or 1!
-str_console_input_get_string=enter text and press Enter
+
 str_console_input_pause={} Press Enter to continue
 str_console_input_get_u32=enter a number and press Enter (integer value only)
 str_console_input_get_u32_invalid_argument=You can only enter integer values!
@@ -69,16 +69,9 @@ str_success_url=✅ Successful access: {}
 str_please_wait=⏳ Please wait...
 str_warning=⚠ Warning
 str_error=❌ Error
-str_info=ℹ Info
-str_not_selected=◌ Not selected
 
 str_window_wait_response_from_server_description=⏳ Waiting for server response...
 Loading data. This may take a few seconds.
-
-str_show_info_selected_service_setting=📋 Current settings
-str_window_info_selected_service_setting=📋 Current settings:
-├ Zapret2 config: [{}]
-└ Zapret2 config version: [{}]
 
 str_warning_copy_application_running=Unblock is already running. Cannot start another instance.
 
@@ -92,10 +85,7 @@ This action is irreversible. Are you sure you want to continue?
 str_beginning_auto_selection=🔍 Starting automatic configuration selection
 
 // BLOCK HOME
-str_h2_active_service=📊 Active services:
-
 str_h2_verified_domains=✅ Available domains (Zapret):
-str_h2_verified_domains_video=🎥 YouTube (Zapret):
 
 // Check update app startup
 str_checkbox_check_update_app_startup_title=🔄 Check for updates at startup
@@ -164,10 +154,6 @@ This process may take a while.
 
 // Secondary Window config found
 str_window_config_found_title=📂 Previous configuration found
-str_window_config_found_proxy_description=📂 Previous configuration found: [{}]
-Start automatic selection of a new configuration?
-Yes — look for another option
-No — use current
 
 str_window_config_found_description=📂 Previous configuration found:
 ├ Config: [{}]
@@ -218,7 +204,6 @@ Unblock cannot function without network access.
 str_button_start_dns_hosts_update_title=🔄 Update local DNS
 
 // Zapret titles blocks
-str_zapret_common_title=⚙ General
 str_zapret_service_title=🔓 Service
 
 // Setting common show console
@@ -246,20 +231,10 @@ str_checkbox_enable_proxy_tg_description=🔒 Local proxy for Telegram
 Creates a proxy server on your device. It does not connect to external servers and works locally to bypass blocks.
 str_button_proxy_link_tg_title=🔗 Connect proxy to Telegram
 
-// Setting checkbox zapret winws enable
-str_unblock_enable_title=🔓 Enable Zapret2 (winws2)
-str_unblock_enable_description=Primary bypass mode based on the Zapret2 DPI evader (winws2).
-Analyzes and modifies network packets in real time, altering TLS handshake parameters (ClientHello) and other signatures.
-Bypasses most types of blocking without redirecting traffic to external servers.
-Works locally and requires no additional proxies.
-
 // Setting checkbox unblock enable services
 str_unblock_enable_discord_title=🎤 Discord
 str_unblock_enable_discord_description=Bypass Discord blocking.
 → Enable together with Cloudflare.
-
-str_unblock_enable_messengers_title=💬 Messengers
-str_unblock_enable_messengers_description=Bypass blocking for popular messengers (Telegram, Signal).
 
 str_unblock_enable_cloudflare_title=☁ Cloudflare
 str_unblock_enable_cloudflare_description=Bypass Cloudflare blocking — a protection service used by many websites.
@@ -301,10 +276,6 @@ str_unblock_enable_amazon_description=Bypass blocking of Amazon (website and AWS
 str_unblock_enable_tld_title=🌐 TLD filtering mode
 str_unblock_enable_tld_description=TLD filtering:
 When enabled, blocking bypass is applied to all domain zones listed in configs\blacklist\tld.list (com, net, ua, and others).
-
-// Setting checkbox manual enable
-str_manual_title=✋ Manual configuration selection
-str_manual_description=Enables manual selection → disables auto‑selection.
 
 // Setting manual config
 str_select_config_title=📂 Select configuration

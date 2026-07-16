@@ -1,7 +1,8 @@
 // NAV
 str_h2_zapret2=🔓 Zapret2
-str_h2_home=Главная
-str_h2_setting=Настройки
+str_h2_unblock=Unblock
+str_h2_local_dns=Локальный DNS
+str_h2_tg_ws_proxy=Telegram WS прокси
 
 // Footer BUTTON
 str_link_to_github=↗ GitHub
@@ -19,7 +20,6 @@ str_b_start_find_config=🔍 Подобрать конфиг
 
 // console text
 str_console_selected_config=Выбрана конфигурация [{}].
-str_console_not_find_fake_key=fake ключ [{}] не найден! Доступные ключи [{}].
 
 // console Input
 str_console_input_success=Успех: {}
@@ -28,7 +28,7 @@ str_console_input_warning=Предупреждение: {}
 str_console_input_please=Пожалуйста, {}:
 str_console_input_error=Ошибка: {}
 str_console_input_forbidden_characters=Ввести можно только 0 или 1!
-str_console_input_get_string=введите текст и нажмите Enter
+
 str_console_input_pause={} Нажмите enter чтобы продолжить
 str_console_input_get_u32=введите число и нажмите Enter (Только целочисленные значения)
 str_console_input_get_u32_invalid_argument=Ввести можно только целочисленные значения!
@@ -69,16 +69,9 @@ str_success_url=✅ Успешный доступ: {}
 str_please_wait=⏳ Подождите...
 str_warning=⚠ Внимание
 str_error=❌ Ошибка
-str_info=ℹ Информация
-str_not_selected=◌ Не выбрано
 
 str_window_wait_response_from_server_description=⏳ Ожидание ответа от сервера...
 Загрузка данных. Это может занять несколько секунд.
-
-str_show_info_selected_service_setting=📋 Текущие настройки
-str_window_info_selected_service_setting=📋 Текущие настройки:
-├ Zapret2 конфигурация: [{}]
-└ Zapret2 конфиг версия: [{}]
 
 str_warning_copy_application_running=Unblock уже запущен. Повторный запуск невозможен.
 
@@ -92,10 +85,7 @@ str_remove_app_description=🗑 Удаление Unblock
 str_beginning_auto_selection=🔍 Начат авто-подбор конфигурации
 
 // BLOCK HOME
-str_h2_active_service=📊 Активные службы:
-
 str_h2_verified_domains=✅ Доступные домены (Zapret):
-str_h2_verified_domains_video=🎥 YouTube (Zapret):
 
 // Check update app startup
 str_checkbox_check_update_app_startup_title=🔄 Проверять обновления при запуске
@@ -164,10 +154,6 @@ str_window_config_not_found_description=Конфигурационный фай�
 
 // Secondary Window config found
 str_window_config_found_title=📂 Найдена предыдущая конфигурация
-str_window_config_found_proxy_description=📂 Найдена предыдущая конфигурация: [{}]
-Запустить автоматический подбор новой конфигурации?
-Да — искать другой вариант
-Нет — использовать текущий
 
 str_window_config_found_description=📂 Найдена предыдущая конфигурация:
 ├ Конфиг: [{}]
@@ -218,7 +204,6 @@ Unblock не сможет работать без доступа в сеть.
 str_button_start_dns_hosts_update_title=🔄 Обновить локальный DNS
 
 // Zapret titles blocks
-str_zapret_common_title=⚙ Общие
 str_zapret_service_title=🔓 Сервисы
 
 // Setting common show console
@@ -246,20 +231,10 @@ str_checkbox_enable_proxy_tg_description=🔒 Локальный прокси д
 Создаёт прокси-сервер на вашем устройстве. Он не подключается к сторонним серверам и работает только локально для обхода блокировок.
 str_button_proxy_link_tg_title=🔗 Подключить прокси к Telegram
 
-// Setting checkbox zapret winws2 enable
-str_unblock_enable_title=🔓 Включить Zapret2 (winws2)
-str_unblock_enable_description=Основной режим обхода блокировок на основе DPI-обходчика Zapret2 (winws2).
-Анализирует и модифицирует сетевые пакеты в реальном времени, подменяя параметры TLS-рукопожатия (ClientHello) и другие сигнатуры.
-Позволяет обходить большинство видов блокировок без перенаправления трафика на сторонние серверы.
-Работает локально и не требует дополнительных прокси.
-
 // Setting checkbox unblock enable services
 str_unblock_enable_discord_title=🎤 Discord
 str_unblock_enable_discord_description=Обход блокировки Discord.
 → Включайте вместе с Cloudflare.
-
-str_unblock_enable_messengers_title=💬 Мессенджеры
-str_unblock_enable_messengers_description=Обход блокировки популярных мессенджеров (Telegram, Signal).
 
 str_unblock_enable_cloudflare_title=☁ Cloudflare
 str_unblock_enable_cloudflare_description=Обход блокировок Cloudflare — защитного сервиса, который используют многие сайты.
@@ -301,10 +276,6 @@ str_unblock_enable_amazon_description=Обход блокировки Amazon (в
 str_unblock_enable_tld_title=🌐 Режим TLD-фильтрация
 str_unblock_enable_tld_description=TLD-фильтрация: 
 При включении обход блокировок применяется ко всем доменным зонам из списка configs\blacklist\tld.list (com, net, ua и другие).
-
-// Setting checkbox manual enable
-str_manual_title=✋ Ручной выбор конфигурации
-str_manual_description=Включает ручной выбор → отключает авто-подбор.
 
 // Setting manual config
 str_select_config_title=📂 Выбор конфигурации

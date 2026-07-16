@@ -8,12 +8,28 @@
     border                    : 1px solid rgba(255, 255, 255, 0.10);
     border-bottom-right-radius: 6px;
     padding                   : .3vw;
+    box-shadow                : 1px 1px 32px rgba(0, 0, 0, 0.55);
+    transform                 : scale(0.5);
+    transform-origin          : top left;
+    opacity                   : 0.4;
+    transition                : transform 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1),
+                                opacity 0.35s ease,
+                                box-shadow 0.2s ease;
+}
+
+.nav::before {
+    content   : '';
+    position  : absolute;
+    top       : -3vw;
+    left      : -3vw;
+    right     : -3vw;
+    bottom    : -3vw;
 }
 
 .nav:hover {
-    background-color: rgba(45, 50, 70, 0.88);
-    box-shadow      : 8px 8px 32px rgba(0, 0, 0, 0.55);
-    border-color    : rgba(255, 255, 255, 0.20);
+    transform         : scale(1);
+    opacity           : 1;
+    box-shadow        : 8px 8px 32px rgba(0, 0, 0, 0.55);
 }
 
 .nav ul {
@@ -26,14 +42,15 @@
     position: relative;
 }
 
-.nav li:first-child::after {
+.nav li:not(:last-child)::after {
     margin-left: .14cm;
     content    : "|";
+    font-size: 2vw;
     opacity    : 0.45;
     transition : opacity 0.2s ease;
 }
 
-.nav:hover li:first-child::after {
+.nav:hover li::after {
     opacity: 0.7;
 }
 
@@ -46,28 +63,29 @@
     display        : inline-block;
     transition     : color 0.2s ease, transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1), text-shadow 0.2s ease;
     position       : relative;
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
 }
 
-.nav li a::before {
-    content         : '';
-    position        : absolute;
-    bottom          : 0;
-    left            : 0;
-    width           : 0;
-    height          : 2px;
-    background-color: #ffffff;
-    transition      : width 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-    border-radius   : 2px;
+.nav li a:not(#active)::before {
+    content      : '';
+    position     : absolute;
+    bottom       : -2px;
+    left         : 0;
+    width        : 100%;
+    height       : 2px;
+    background   : linear-gradient(90deg, transparent, #fff, transparent);
+    border-radius: 2px;
+    transition     : transform 0.2s ease;
+    transform: scaleX(0);
 }
 
 .nav li a:hover {
     color      : #ffffff;
     transform  : translateY(-1px);
-    text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
 }
 
-.nav li a:hover::before {
-    width: 100%;
+.nav li a:not(#active):hover::before {
+    transform: scaleX(1);
 }
 
 .nav li #active {
@@ -93,12 +111,12 @@
 
     0%,
     100% {
-        opacity  : 0.4;
-        transform: scaleX(0.8);
+        opacity  : 1;
+        transform: scaleX(1);
     }
 
     50% {
-        opacity  : 1;
-        transform: scaleX(1);
+        opacity  : 0.4;
+        transform: scaleX(0.8);
     }
 }
