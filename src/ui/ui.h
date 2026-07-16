@@ -15,12 +15,9 @@ class Ui final : public utils::DefaultInit, public std::enable_shared_from_this<
 
 	std::shared_ptr<Unblock> _unblock;
 
-	// Setting
-	std::shared_ptr<File> _file_service_list;
-
 	bool _init{ false };
 
-	// Setting update unblock app
+	// Update unblock app
 	CHECK_BOX(_enable_check_update_startup);
 	BUTTON(_start_check_update_app);
 
@@ -32,10 +29,6 @@ class Ui final : public utils::DefaultInit, public std::enable_shared_from_this<
 	std::unique_ptr<UiProxyTg> _ui_proxy_tg;
 	std::unique_ptr<UiZapret2> _ui_zapret2;
 	std::unique_ptr<UiUnblock> _ui_unblock;
-
-	// Home
-	BUTTON(_stop_zapret);
-	BUTTON(_run_auto_config_zapret);
 
 	// Service all stoping
 	BUTTON(_stop_service_all);
@@ -83,8 +76,7 @@ public:
 
 private:
 	void _initializeAppState();
-	void _initializeSettings();
-	void _initializeHome();
+	void _initComponents();
 	void _initializeFooter();
 	void _initializeWindowBase() const;
 

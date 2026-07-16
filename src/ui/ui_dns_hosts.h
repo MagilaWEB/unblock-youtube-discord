@@ -26,7 +26,7 @@ public:
 	void updateInfoWindow();
 
 private:
-	void _settingEnableDnsHosts();
-	void _settingEnableDnsHostsUpdate();
-	void _settingEnableDnsHostsWarningUser();
+	void _enableDnsHosts();
+	void _enableDnsHostsUpdate();
+	void _enableDnsHostsWarningUser();
 };

@@ -15,10 +15,10 @@ void UiDnsHosts::initialize()
 											  "str_window_wait_response_from_server_description");
 	_window_wait_response_from_server->setType(SecondaryWindow::Type::Info);
 
-	_settingEnableDnsHosts();
+	_enableDnsHosts();
 }
 
-void UiDnsHosts::_settingEnableDnsHosts()
+void UiDnsHosts::_enableDnsHosts()
 {
 	_window_to_warn_enable_dns_hosts->create(Localization::Str{"str_warning"}, "");
 
@@ -26,8 +26,8 @@ void UiDnsHosts::_settingEnableDnsHosts()
 	_window_to_warn_enable_dns_hosts->addEventYesNo(
 		[this](JSArgs args)
 		{
-			_ui->uiBase()->userSetting()->writeSectionParameter("SYSTEM", "enable_dns_hosts", JSToCPP(args[0]));
-			_settingEnableDnsHostsUpdate();
+			_ui->uiBase()->userConfig()->writeSectionParameter("SYSTEM", "enable_dns_hosts", JSToCPP(args[0]));
+			_enableDnsHostsUpdate();
 			_window_to_warn_enable_dns_hosts->hide();
 			return false;
 		}
@@ -52,12 +52,12 @@ void UiDnsHosts::_settingEnableDnsHosts()
 		{
 			if (JSToCPP<bool>(args[0]))
 			{
-				_settingEnableDnsHostsWarningUser();
+				_enableDnsHostsWarningUser();
 				return false;
 			}
 
-			_ui->uiBase()->userSetting()->writeSectionParameter("SYSTEM", "enable_dns_hosts", "false");
-			_settingEnableDnsHostsUpdate();
+			_ui->uiBase()->userConfig()->writeSectionParameter("SYSTEM", "enable_dns_hosts", "false");
+			_enableDnsHostsUpdate();
 			return false;
 		}
 	);
@@ -81,7 +81,7 @@ void UiDnsHosts::_settingEnableDnsHosts()
 		}
 	);
 
-	_settingEnableDnsHostsUpdate();
+	_enableDnsHostsUpdate();
 }
 
 void UiDnsHosts::updateInfoWindow()
@@ -96,9 +96,9 @@ void UiDnsHosts::updateInfoWindow()
 	})
 }
 
-void UiDnsHosts::_settingEnableDnsHostsUpdate()
+void UiDnsHosts::_enableDnsHostsUpdate()
 {
-	auto result = _ui->uiBase()->userSetting()->parameterSection<bool>("SYSTEM", "enable_dns_hosts");
+	auto result = _ui->uiBase()->userConfig()->parameterSection<bool>("SYSTEM", "enable_dns_hosts");
 	if (result)
 	{
 		const bool state = result.value();
@@ -131,11 +131,11 @@ void UiDnsHosts::_settingEnableDnsHostsUpdate()
 	else
 	{
 		_start_update_dns_hosts->hide();
-		_settingEnableDnsHostsWarningUser();
+		_enableDnsHostsWarningUser();
 	}
 }
 
-void UiDnsHosts::_settingEnableDnsHostsWarningUser()
+void UiDnsHosts::_enableDnsHostsWarningUser()
 {
 	static std::string description{Localization::Str{"str_window_to_warn_enable_dns_hosts_description"}()};
 

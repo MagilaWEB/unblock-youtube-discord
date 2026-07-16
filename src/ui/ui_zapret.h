@@ -24,6 +24,8 @@ class UiZapret2
 
 	// Start button
 	BUTTON(_start_button);
+	BUTTON(_run_auto_config_zapret);
+	BUTTON(_stop_zapret);
 
 	// Windows for strategy/config selection
 	SECONDARY_WINDOW(_window_config_not_found);
@@ -41,7 +43,7 @@ class UiZapret2
 	UL_LIST(_list_domain);
 
 public:
-	UiZapret2(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock, std::shared_ptr<File> file_service_list);
+	UiZapret2(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock);
 
 	const Ptr<SelectList>& getSelectVersionStrategy() const { return _select_version_strategy; }
 	const Ptr<SelectList>& getSelectConfig() const { return _select_config; }
@@ -55,32 +57,31 @@ public:
 
 	void initialize();
 
-
-	void testingInit();
-	void testingUpdate() const;
-
 private:
-	void _settingListEnableServices();
-	void _settingListEnableServicesUpdate();
+	void _listEnableServices();
+	void _listEnableServicesUpdate();
 
-	void _settingSelectStrategyVersion();
-	void _settingSelectStrategyVersionUpdate();
+	void _selectStrategyVersion();
+	void _selectStrategyVersionUpdate();
 
-	void _settingSelectConfig();
-	void _settingSelectConfigUpdate();
+	void _selectConfig();
+	void _selectConfigUpdate();
 
-	void _startInit();
+	void _initMainControls();
+
+	void _testingInit();
 
 	void _buttonUpdate();
 
 	void _clickStartService();
 
 	void _autoStart();
+	bool _autoStartTryNext() const;
 
 	void _startServiceFromConfig();
 
 	void _tcpGlobalChange(bool state = false) const;
 
-	void _testingWindow();
+	void _initTestingWindow();
 	void _testingServiceDomains();
 };

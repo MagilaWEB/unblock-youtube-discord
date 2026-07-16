@@ -38,7 +38,7 @@ public:
 
     void OnChangeCursor(View*, Cursor cursor) override { _engine->window()->SetCursor(cursor); }
 
-    const std::shared_ptr<File>& userSetting();
+    const std::shared_ptr<File>& userConfig();
 
     bool hasCyrillicOrSpaceInBinaryPath() const { return _engine->hasCyrillicOrSpaceInBinaryPath(); }
 

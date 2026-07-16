@@ -14,13 +14,13 @@ void Ui::_updateApp()
 		Localization::Str{ "str_checkbox_check_update_app_startup_description" }
 	);
 
-	auto result = _ui_base->userSetting()->parameterSection<bool>("SYSTEM", "check_update_app_startup");
+	auto result = _ui_base->userConfig()->parameterSection<bool>("SYSTEM", "check_update_app_startup");
 	_enable_check_update_startup->setState(result ? result.value() : true);
 
 	_enable_check_update_startup->addEventClick(
 		[self = self](JSArgs args)
 		{
-			self->_ui_base->userSetting()->writeSectionParameter("SYSTEM", "check_update_app_startup", JSToCPP(args[0]));
+			self->_ui_base->userConfig()->writeSectionParameter("SYSTEM", "check_update_app_startup", JSToCPP(args[0]));
 			return false;
 		}
 	);

@@ -49,7 +49,7 @@ void UiBase::OnClose(ultralight::Window*)
 }
 
 // ------------------ JS callbacks ------------------
-const std::shared_ptr<File>& UiBase::userSetting()
+const std::shared_ptr<File>& UiBase::userConfig()
 {
 	return _engine->userConfig();
 }

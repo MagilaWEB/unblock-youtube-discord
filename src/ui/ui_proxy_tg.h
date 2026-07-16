@@ -22,6 +22,6 @@ public:
 	const Ptr<CheckBox>& getCheckBoxProxyTg() const { return _proxy_tg_enable; }
 
 private:
-	void _settingEnableProxyTg();
-	void _settingEnableProxyLinkTg();
+	void _enableProxyTg();
+	void _enableProxyLinkTg();
 };

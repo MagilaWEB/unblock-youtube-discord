@@ -11,11 +11,11 @@ UiProxyTg::UiProxyTg(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock)
 
 void UiProxyTg::initialize()
 {
-	_settingEnableProxyTg();
-	_settingEnableProxyLinkTg();
+	_enableProxyTg();
+	_enableProxyLinkTg();
 }
 
-void UiProxyTg::_settingEnableProxyTg()
+void UiProxyTg::_enableProxyTg()
 {
 	_proxy_tg_enable
 		->create("#tg_ws_proxy section .common", "str_checkbox_enable_proxy_tg_title",
@@ -47,7 +47,7 @@ void UiProxyTg::_settingEnableProxyTg()
 	);
 }
 
-void UiProxyTg::_settingEnableProxyLinkTg()
+void UiProxyTg::_enableProxyLinkTg()
 {
 	_proxy_link_tg->create("#tg_ws_proxy section .common", "str_button_proxy_link_tg_title");
 

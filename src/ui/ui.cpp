@@ -3,11 +3,7 @@
 
 Ui::Ui(std::shared_ptr<UiBase> ui_base) : _ui_base(std::move(ui_base))
 {
-	_file_service_list = std::make_shared<File>();
-	_file_service_list->open({ Core::get().configsPath() / "service_setting" }, ".config", true);
-
 	_unblock = std::make_shared<Unblock>();
-	_unblock->serviceConfigFile(_file_service_list);
 }
 
 void Ui::postConstruct()
@@ -16,7 +12,7 @@ void Ui::postConstruct()
 
 	_ui_dns_hosts = std::make_unique<UiDnsHosts>(self, _unblock);
 	_ui_proxy_tg = std::make_unique<UiProxyTg>(self, _unblock);
-	_ui_zapret2 = std::make_unique<UiZapret2>(self, _unblock, _file_service_list);
+	_ui_zapret2 = std::make_unique<UiZapret2>(self, _unblock);
 	_ui_unblock = std::make_unique<UiUnblock>(self);
 }
 
@@ -30,7 +26,7 @@ void Ui::_initializeAppState()
 	_checkConflictService();
 }
 
-void Ui::_initializeSettings()
+void Ui::_initComponents()
 {
 	_stopInit();
 
@@ -40,11 +36,6 @@ void Ui::_initializeSettings()
 
 	if (_ui_zapret2)
 		_ui_zapret2->initialize();
-}
-
-void Ui::_initializeHome()
-{
-	_ui_zapret2->testingInit();
 }
 
 void Ui::_initializeFooter()
@@ -67,8 +58,7 @@ void Ui::initialize()
 	_initializeWindowBase();
 
 	_initializeAppState();
-	_initializeSettings();
-	_initializeHome();
+	_initComponents();
 	_initializeFooter();
 
 	_init = true;
