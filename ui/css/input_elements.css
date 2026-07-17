@@ -32,6 +32,7 @@
 .select_list .label {
     position        : absolute;
     width           : 14vw;
+    min-width       : 14vw;
     height          : 100%;
     border-radius   : 9px;
     color           : #f0f0f0;
@@ -72,20 +73,26 @@
     animation: selectLabelHoverBegin 300ms ease-in-out forwards;
 }
 
+.select_list .label:not(:focus):hover {
+    z-index: 2;
+    width  : fit-content;
+}
+
+.select_list .label:focus {
+    animation: selectLabelFocusBegin 200ms ease-in-out forwards;
+}
+
 @keyframes selectLabelHoverBegin {
     to {
-        background-color: rgba(48, 56, 79, 0.92);
+        background-color: rgb(48, 56, 79);
+        box-shadow      : 6px 0 12px -4px rgba(0, 0, 0, 0.5);
     }
 }
 
 @keyframes selectLabelHoverEnd {
     from {
-        background-color: rgba(48, 56, 79, 0.92);
+        background-color: rgba(48, 56, 79, 0.845);
     }
-}
-
-.select_list .label:focus {
-    animation: selectLabelFocusBegin 200ms ease-in-out forwards;
 }
 
 @keyframes selectLabelFocusBegin {

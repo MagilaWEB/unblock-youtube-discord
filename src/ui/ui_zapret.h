@@ -26,9 +26,7 @@ class UiZapret2
 	BUTTON(_run_auto_config_zapret);
 	BUTTON(_stop_zapret);
 
-	// Windows for strategy/config selection
-	SECONDARY_WINDOW(_window_config_not_found);
-	SECONDARY_WINDOW(_window_config_found);
+	// Windows for strategy/config selection;
 	SECONDARY_WINDOW(_window_auto_start_wait);
 	SECONDARY_WINDOW(_window_continue_select_strategy);
 
@@ -51,8 +49,6 @@ public:
 	const Ptr<SelectList>& getSelectConfig() const { return _select_config; }
 
 	const Ptr<Button>&			getStartButton() { return _start_button; }
-	const Ptr<SecondaryWindow>& getWindowConfigNotFound() { return _window_config_not_found; }
-	const Ptr<SecondaryWindow>& getWindowConfigFound() { return _window_config_found; }
 	const Ptr<SecondaryWindow>& getWindowAutoStartWait() { return _window_auto_start_wait; }
 	const Ptr<SecondaryWindow>& getWindowContinueSelectStrategy() { return _window_continue_select_strategy; }
 	const Ptr<SecondaryWindow>& getWindowConfigurationSelectionError() { return _window_configuration_selection_error; }

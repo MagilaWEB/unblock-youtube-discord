@@ -2,7 +2,7 @@
 str_h2_zapret2=Zapret2
 str_h2_unblock=Unblock
 str_h2_local_dns=Local DNS
-str_h2_tg_ws_proxy=Telegram WS Proxy
+str_h2_tg_ws_proxy=Telegram Proxy
 
 // Footer BUTTON
 str_link_to_github=↗ GitHub
@@ -16,7 +16,6 @@ str_b_run_auto_config_zapret=⚙️ Auto-config Zapret
 str_b_stop_service_all=⏹ Stop all Services
 
 str_b_start_testing_zapret=🧪 Test
-str_b_start_find_config=🔍 Find Config
 
 // console text
 str_console_selected_config=Configuration selected [{}].
@@ -147,23 +146,6 @@ Do not close the application. It will restart automatically when finished.
 
 str_window_check_update_unblock=🔍 Checking for updates...
 Looking for available Unblock updates.
-
-// Secondary Window config not found
-str_window_config_not_found_title=📭 No configuration selected
-str_window_config_not_found_description=Configuration file not found.
-This could be the first launch or the file may have been deleted.
-Automatic selection of the optimal configuration for your provider will now start.
-This process may take a while.
-
-// Secondary Window config found
-str_window_config_found_title=📂 Previous configuration found
-
-str_window_config_found_description=📂 Previous configuration found:
-├ Config: [{}]
-└ Version: [{}]
-Start automatic selection of a new configuration?
-Yes — look for another option
-No — use current
 
 // Secondary Window continue select strategy
 str_window_continue_select_strategy_title=✅ Configuration selected

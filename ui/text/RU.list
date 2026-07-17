@@ -2,7 +2,7 @@
 str_h2_zapret2=🔓 Zapret2
 str_h2_unblock=Unblock
 str_h2_local_dns=Локальный DNS
-str_h2_tg_ws_proxy=Telegram WS прокси
+str_h2_tg_ws_proxy=Telegram прокси
 
 // Footer BUTTON
 str_link_to_github=↗ GitHub
@@ -16,7 +16,6 @@ str_b_run_auto_config_zapret=⚙️ Автоподбор Zapret
 str_b_stop_service_all=⏹ Остановить все службы
 
 str_b_start_testing_zapret=🧪 Тестировать
-str_b_start_find_config=🔍 Подобрать конфиг
 
 // console text
 str_console_selected_config=Выбрана конфигурация [{}].
@@ -147,23 +146,6 @@ str_window_wait_update_unblock=⏳ Выполняется загрузка об�
 
 str_window_check_update_unblock=🔍 Проверка обновлений...
 Ищем доступные обновления для Unblock.
-
-// Secondary Window config not found
-str_window_config_not_found_title=📭 Конфигурация не выбрана
-str_window_config_not_found_description=Конфигурационный файл не найден.
-Это может быть первый запуск программы или файл был удалён.
-Будет автоматически запущен подбор оптимальной конфигурации для вашего провайдера.
-Процесс займёт некоторое время.
-
-// Secondary Window config found
-str_window_config_found_title=📂 Найдена предыдущая конфигурация
-
-str_window_config_found_description=📂 Найдена предыдущая конфигурация:
-├ Конфиг: [{}]
-└ Версия: [{}]
-Запустить автоматический подбор новой конфигурации?
-Да — искать другой вариант
-Нет — использовать текущий
 
 // Secondary Window continue select strategy
 str_window_continue_select_strategy_title=✅ Конфигурация подобрана

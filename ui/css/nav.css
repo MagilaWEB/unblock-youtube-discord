@@ -9,9 +9,9 @@
     border-bottom-right-radius: 6px;
     padding                   : .3vw;
     box-shadow                : 1px 1px 32px rgba(0, 0, 0, 0.55);
-    transform                 : scale(0.5);
+    transform                 : scale(0.7);
     transform-origin          : top left;
-    opacity                   : 0.4;
+    opacity                   : 0.7;
     transition                : transform 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1),
                                 opacity 0.35s ease,
                                 box-shadow 0.2s ease;

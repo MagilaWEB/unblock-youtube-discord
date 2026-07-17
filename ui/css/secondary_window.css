@@ -7,13 +7,14 @@
 	width           : 100%;
 	height          : 100%;
 	background-color: rgba(0, 0, 0, 0.42);
+	transition      : opacity 800ms;
 	will-change     : transform, opacity;
 	contain         : layout style paint;
 }
 
 .secondary_window.show {
-	visibility: visible;
 	opacity   : 1;
+	visibility: visible;
 }
 
 .secondary_window .content {
@@ -111,17 +112,6 @@
 	animation: borderGlow 4s ease-in-out 0.5s infinite;
 }
 
-.secondary_window.show .content .title {
-	animation: fadeSlideUp 0.4s ease-out 0.05s forwards, gentleSway 4s ease-in-out 0.6s infinite;
-	opacity  : 0;
-	transform: translateY(3vw) translateZ(0);
-}
-
-.secondary_window.show .content .description {
-	animation: fadeSlideUp 0.4s ease-out 0.15s forwards, gentleBreathing 4s ease-in-out 0.5s infinite;
-	opacity  : 0;
-	transform: translateY(3vw) translateZ(0);
-}
 
 .secondary_window.show .content .elements {
 	animation: fadeSlideUp 0.4s ease-out 0.25s forwards;

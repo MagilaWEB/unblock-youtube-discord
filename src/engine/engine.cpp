@@ -40,9 +40,12 @@ void Engine::initialize()
 
 	Config config{};
 	config.effect_quality		 = EffectQuality::Low;
-	config.memory_cache_size	 = 128 * 1'024 * 1'024;
+	config.memory_cache_size	 = 64 * 1'024 * 1'024;
 	config.animation_timer_delay = 1.0 / 30.0;
 	config.max_update_time		 = 1.0 / 60.0;
+	config.override_ram_size	 = 2u * 1024 * 1024 * 1024;
+	config.recycle_delay		 = 2.0;
+	config.min_large_heap_size	 = 16 * 1024 * 1024;
 
 	Settings setting{};
 

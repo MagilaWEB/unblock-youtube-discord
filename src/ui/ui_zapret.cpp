@@ -185,31 +185,6 @@ void UiZapret2::_initMainControls()
 		}
 	);
 
-	// Initialize windows
-	_window_config_not_found->create(Localization::Str{ "str_window_config_not_found_title" }, "str_window_config_not_found_description");
-	_window_config_not_found->setType(SecondaryWindow::Type::OK);
-	_window_config_not_found->addEventOk(
-		[this](JSArgs)
-		{
-			_autoStart();
-			return false;
-		}
-	);
-
-	_window_config_found->create(Localization::Str{ "str_window_config_found_title" }, "");
-	_window_config_found->setType(SecondaryWindow::Type::YesNo);
-	_window_config_found->addEventYesNo(
-		[this](JSArgs args)
-		{
-			if (args[0].ToBoolean())
-				_autoStart();
-			else
-				_startServiceFromConfig();
-
-			return false;
-		}
-	);
-
 	_window_auto_start_wait->create(Localization::Str{ "str_please_wait" }, "str_window_auto_start_wait_description");
 	_window_auto_start_wait->setType(SecondaryWindow::Type::Wait);
 	_window_auto_start_wait->addEventCancel(
@@ -283,46 +258,29 @@ void UiZapret2::_testingInit()
 
 void UiZapret2::_buttonUpdate()
 {
-	if (auto config = _ui->uiBase()->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
-		if (_ui->_unblock->activeService())
-			getStartButton()->setTitle("str_b_restart_unblock");
-		else
-			getStartButton()->setTitle("str_b_start_zapret");
+	if (_ui->_unblock->activeService())
+		getStartButton()->setTitle("str_b_restart_unblock");
 	else
-		getStartButton()->setTitle("str_b_start_find_config");
+		getStartButton()->setTitle("str_b_start_zapret");
 }
 
 void UiZapret2::_clickStartService()
 {
 	if (auto config = _ui->uiBase()->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
 	{
-		_startServiceFromConfig();
-
-		/*auto& strategy_list = _unblock.getStrategiesList();
+		auto& strategy_list = _ui->_unblock->getStrategiesList();
 		if (std::ranges::find(strategy_list, config.value()) == strategy_list.end())
 		{
 			Debug::warning("config[{}] The specified strategy does not exist from the user's settings!", config.value());
 
 			_ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", "");
 
-			if (_unblock_select_config->isShow())
-				_unblock_select_config->setSelectedOptionValue(strategy_list[0]);
-
-			_window_config_not_found->show();
-			return;
+	
+			_select_config->setSelectedOptionValue(strategy_list[0]);
 		}
-
-		_window_config_found->setDescription(utils::format(
-			Localization::Str{ "str_window_config_found_description" }(),
-			config.value(),
-			JSToCPP(_unblock_select_version_strategy->getSelectedOptionValue())
-		));
-
-		_window_config_found->show();*/
-		return;
 	}
 
-	_window_config_not_found->show();
+	_startServiceFromConfig();
 }
 
 void UiZapret2::_autoStart()
