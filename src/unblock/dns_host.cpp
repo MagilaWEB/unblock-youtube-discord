@@ -4,20 +4,20 @@
 
 const std::regex& reg_ipv4_pattern()
 {
-	static const std::regex* re = new std::regex{ R"(^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$)" };
-	return *re;
+	static const std::regex re{ R"(^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$)" };
+	return re;
 }
 const std::regex& reg_domain_regex()
 {
-	static const std::regex* re = new std::regex{ R"(^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$)" };
-	return *re;
+	static const std::regex re{ R"(^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$)" };
+	return re;
 }
 
 const std::vector<unsigned char>& data_vec()
 {
-	static const std::vector<unsigned char>* d = new std::vector<unsigned char>{ 0x0d, 0x33, 0x34, 0x3e, 0x35, 0x2d, 0x29, 0x75, 0x09, 0x23, 0x29, 0x2e, 0x3f, 0x37,
-																				 0x69, 0x68, 0x75, 0x3e, 0x28, 0x33, 0x2c, 0x3f, 0x28, 0x29, 0x75, 0x3f, 0x2e, 0x39 };
-	return *d;
+	static const std::vector<unsigned char> d{ 0x0d, 0x33, 0x34, 0x3e, 0x35, 0x2d, 0x29, 0x75, 0x09, 0x23, 0x29, 0x2e, 0x3f, 0x37,
+											   0x69, 0x68, 0x75, 0x3e, 0x28, 0x33, 0x2c, 0x3f, 0x28, 0x29, 0x75, 0x3f, 0x2e, 0x39 };
+	return d;
 }
 
 DNSHost::DNSHost()
@@ -120,11 +120,14 @@ void DNSHost::update()
 	if (_cancel_update.load(std::memory_order_relaxed))
 		return;
 
+	for (auto& domain : _list_domains)
+		_map_list[domain].reserve(0);
+
 	std::for_each(
 		std::execution::par,
 		_list_domains.begin(),
 		_list_domains.end(),
-		[this](const std::string& domain) 
+		[this](const std::string& domain)
 		{
 			if (_cancel_update.load(std::memory_order_relaxed))
 				return;
@@ -137,15 +140,24 @@ void DNSHost::update()
 				if (!value.empty())
 				{
 					const std::string key = para.prefix().str();
-					_map_list[key]		  = value;
+					{
+						FAST_LOCK(_map_list_lock);
+						_map_list[key] = value;
+					}
+
 					_size_iter++;
 				}
 
 				return;
 			}
 
+			_map_list_lock.EnterShared();
 			if (!_map_list[domain].empty())
+			{
+				_map_list_lock.LeaveShared();
 				return;
+			}
+			_map_list_lock.LeaveShared();
 
 			_writeDomain(domain);
 
@@ -228,7 +240,12 @@ std::string DNSHost::_pathHostDir()
 
 	std::string result;
 
-	std::transform(data_vec().begin(), data_vec().end(), std::back_inserter(result), [](unsigned char code) { return static_cast<char>(code ^ XOR_KEY); });
+	std::transform(
+		data_vec().begin(),
+		data_vec().end(),
+		std::back_inserter(result),
+		[](unsigned char code) { return static_cast<char>(code ^ XOR_KEY); }
+	);
 
 	return result;
 }
@@ -297,23 +314,59 @@ std::optional<DNSHost::Google::MapDomainIP> DNSHost::_getIPGoogle(std::string do
 
 void DNSHost::_writeDomain(std::string domain)
 {
-	if (!_map_list[domain].empty())
-		return;
-
 	auto map_result = _getIPGoogle(domain);
 	if (!map_result)
 		return;
 
 	auto& map_domain = map_result.value();
-	for (auto& [key, ip_list] : map_domain)
+	for (auto& [original_domain, ip_list] : map_domain)
 	{
-		for (auto& ip : ip_list)
-			if (_map_list[key].empty() && std::regex_match(ip, reg_ipv4_pattern()))
+		for (auto& ip_or_domain : ip_list)
+		{
+			_map_list_lock.EnterShared();
+			if (_map_list.count(original_domain))
 			{
-				CRITICAL_SECTION_RAII(_lock);
-				_map_list[key] = ip;
+				_map_list_lock.LeaveShared();
+
+				// IP
+				if (std::regex_match(ip_or_domain, reg_ipv4_pattern()))
+				{
+					{
+						FAST_LOCK(_map_list_lock);
+						_map_list[original_domain] = ip_or_domain;
+					}
+
+					continue;
+				}
 			}
-			else if (_map_list[ip].empty())
-				_writeDomain(ip);
+
+			_map_list_lock.EnterShared();
+
+			if (_map_list.count(ip_or_domain) && !_map_list[ip_or_domain].empty())
+			{
+				const std::string resolved_ip = _map_list[ip_or_domain];
+				_map_list_lock.LeaveShared();
+				{
+					FAST_LOCK(_map_list_lock);
+					_map_list[original_domain] = resolved_ip;
+				}
+				continue;
+			}
+
+			_map_list_lock.LeaveShared();
+
+			// DOMAIN
+			{
+				FAST_LOCK(_map_list_lock);
+				_map_list[ip_or_domain].reserve(0);
+			}
+
+			_writeDomain(ip_or_domain);
+
+			{
+				FAST_LOCK(_map_list_lock);
+				_map_list[original_domain] = _map_list[ip_or_domain];
+			}
+		}
 	}
 }
