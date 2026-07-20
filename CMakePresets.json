@@ -3,9 +3,9 @@
   "configurePresets": [
     {
       "name": "debug",
-      "displayName": "Ninja Clang Debug",
+      "displayName": "Ninja Debug",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/_build/${presetName}",
+      "binaryDir": "${sourceDir}/_build/debug",
 
       "architecture": {
         "value": "x64",
@@ -14,21 +14,22 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_C_COMPILER": "clang",
-        "CMAKE_CXX_COMPILER": "clang++"
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       },
       "vendor": {
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
           "hostOS": [ "Windows" ],
-          "intelliSenseMode": "windows-clang-x64",
-          "enableMicrosoftCodeAnalysis": false,
-          "enableClangTidyCodeAnalysis": true
+          "intelliSenseMode": "windows-clang-x64"
+
         }
       }
     },
     {
       "name": "release",
       "inherits": "debug",
-      "displayName": "Ninja Clang Release",
+      "displayName": "Ninja Release",
+      "binaryDir": "${sourceDir}/_build/release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
@@ -36,7 +37,8 @@
     {
       "name": "debug-min",
       "inherits": "debug",
-      "displayName": "Ninja Clang Debug (no tests)",
+      "displayName": "Ninja Debug (no tests)",
+      "binaryDir": "${sourceDir}/_build/debug-min",
       "cacheVariables": {
         "BUILD_TESTS": "OFF"
       }
@@ -44,7 +46,8 @@
     {
       "name": "release-min",
       "inherits": "release",
-      "displayName": "Ninja Clang Release (no tests)",
+      "displayName": "Ninja Release (no tests)",
+      "binaryDir": "${sourceDir}/_build/release-min",
       "cacheVariables": {
         "BUILD_TESTS": "OFF"
       }
