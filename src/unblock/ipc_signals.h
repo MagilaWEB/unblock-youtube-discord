@@ -37,15 +37,20 @@ class IPCSignals
 {
 public:
 	[[nodiscard]] static IPCSignals& get();
-
 	[[nodiscard]] std::optional<std::string> getString(std::string_view name);
 	[[nodiscard]] std::optional<bool>		 getBool(std::string_view name);
 	[[nodiscard]] std::optional<float>		 getFloat(std::string_view name);
 	[[nodiscard]] std::optional<uint32_t>	 getU32(std::string_view name);
 	[[nodiscard]] bool						 has(std::string_view name, std::string_view value);
-
 	void clear(std::string_view name);
 	void clearAll();
+
+	IPCSignals(const IPCSignals&)			 = delete;
+	IPCSignals& operator=(const IPCSignals&) = delete;
+
+private:
+	IPCSignals();
+	~IPCSignals();
 
 private:
 	struct Entry
@@ -74,11 +79,6 @@ private:
 	std::thread				_listener;
 	std::atomic<bool>		_stop{ false };
 	std::chrono::seconds	_ttl{ 300 };
-
-	IPCSignals();
-	~IPCSignals();
-	IPCSignals(const IPCSignals&)			 = delete;
-	IPCSignals& operator=(const IPCSignals&) = delete;
 
 	static bool				   _isValidType(std::string_view t);
 	static bool				   _isValidName(std::string_view n);

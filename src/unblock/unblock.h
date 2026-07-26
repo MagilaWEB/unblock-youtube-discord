@@ -2,6 +2,7 @@
 #include "strategies_dpi.h"
 #include "domain_testing.h"
 #include "dns_host.h"
+#include "ipc_signals.h"
 
 #include "../core/service.h"
 
@@ -75,4 +76,6 @@ public:
 
     u32 domainSuccessRate() const;
     bool validDomain() const;
+
+    IPCSignals& ipc() { return IPCSignals::get(); }
 };

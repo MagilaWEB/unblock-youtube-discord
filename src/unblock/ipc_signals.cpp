@@ -19,7 +19,7 @@ IPCSignals::IPCSignals()
 	addr.sin_port		 = htons(9'999);
 	addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
-	if (bind(sock->fd, (sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR)
+	if (bind(sock->fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == SOCKET_ERROR)
 	{
 		Debug::warning("IPC: port 9999 is busy — IPC disabled");
 		return;
@@ -42,7 +42,7 @@ IPCSignals::~IPCSignals()
 		loopback.sin_family		 = AF_INET;
 		loopback.sin_port		 = htons(9'999);
 		loopback.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-		sendto(_sock->fd, "", 1, 0, (sockaddr*)&loopback, sizeof(loopback));
+		sendto(_sock->fd, "", 1, 0, reinterpret_cast<sockaddr*>(&loopback), sizeof(loopback));
 	}
 
 	if (_listener.joinable())

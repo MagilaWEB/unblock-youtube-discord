@@ -276,7 +276,6 @@ void UiZapret2::_clickStartService()
 
 			_ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", "");
 
-	
 			_select_config->setSelectedOptionValue(strategy_list[0]);
 		}
 	}
@@ -307,7 +306,7 @@ void UiZapret2::_autoStart()
 				_ui->_unblock->startService();
 
 				auto strategy_name = _ui->_unblock->getNameStrategies();
-				auto version_str   = JSToCPP(_select_version_strategy->getSelectedOptionValue());
+				auto version_str   = JSToCPP<std::string>(_select_version_strategy->getSelectedOptionValue());
 
 				auto text_desc =
 					utils::format(Localization::Str{ "str_window_auto_start_wait_name_strategy_description" }(), strategy_name, version_str);
@@ -371,6 +370,15 @@ bool UiZapret2::_autoStartTryNext() const
 		[this](JSArgs)
 		{
 			_window_configuration_selection_error->hide();
+
+			_ui->getUiUnblock()->getWindowWaitStopService()->show();
+			Core::get().addTask(
+				[this]
+				{
+					_ui->_unblock->removeService();
+					_ui->getUiUnblock()->getWindowWaitStopService()->hide();
+				}
+			);
 			return true;
 		}
 	);

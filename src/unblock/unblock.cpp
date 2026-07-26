@@ -1,11 +1,13 @@
 #include "unblock.h"
 #include "../engine/version.hpp"
 #include "domain_testing.h"
+#include "ipc_signals.h"
 #include <bit7z/bitfileextractor.hpp>
 #include <curl/curl.h>
 
 Unblock::Unblock()
 {
+	(void)IPCSignals::get();
 	_zapret.open();
 	_win_divert.open();
 	_tg_ws_proxy.open();

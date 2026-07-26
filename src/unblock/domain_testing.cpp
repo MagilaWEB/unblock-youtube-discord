@@ -251,6 +251,7 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 				domain.result_time_sec = total_time;
 				return true;
 			}
+			
 		}
 		else if (!obj->isResetConect())
 			break;
