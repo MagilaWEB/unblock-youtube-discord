@@ -1,5 +1,6 @@
 #include "domain_testing.h"
 #include "curl/curl.h"
+#include "ipc_signals.h"
 
 static size_t progress_callback(void* clientp, curl_off_t /*dltotal*/, curl_off_t /*dlnow*/, curl_off_t /*ultotal*/, curl_off_t /*ulnow*/)
 {
@@ -9,8 +10,8 @@ static size_t progress_callback(void* clientp, curl_off_t /*dltotal*/, curl_off_
 		if (domain->isCancelTesting())
 			return CURLE_COULDNT_CONNECT;
 
-		//const u32 error_rate = domain->errorRate();
-		//if (error_rate >= MAX_ERROR_CONECTION)
+		// const u32 error_rate = domain->errorRate();
+		// if (error_rate >= MAX_ERROR_CONECTION)
 		//	return CURLE_COULDNT_CONNECT;
 	}
 
@@ -40,8 +41,8 @@ DomainTesting::DomainTesting()
 		if (res == CURLE_OK)
 		{
 			curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &total_time);
-			const u32 time_sec = static_cast<u32>(total_time * 10) + 5;
-			_max_wait_testing.store(time_sec > 10 ? 10 : time_sec);
+			const u32 time_sec = static_cast<u32>(total_time * 5) + 5;
+			_max_wait_testing.store(time_sec > 8 ? 8 : time_sec);
 
 			curl_easy_cleanup(curl);
 			init_timer_wait_testing = true;
@@ -69,12 +70,13 @@ void DomainTesting::changeProxy(std::string_view ip, u32 port)
 	_proxyPORT = port;
 }
 
-void DomainTesting::test(bool base_test, std::function<void(std::string url, bool state)>&& callback)
+void DomainTesting::test(bool base_test, std::function<void(std::string url, bool state)>&& callback, bool reset_test)
 {
 	Debug::info("Start test domain.");
 
 	_is_testing		= true;
 	_cancel_testing = false;
+	_reset_test		= reset_test;
 	_domain_error = _domain_ok = 0;
 
 	if (base_test)
@@ -212,15 +214,29 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 
 	curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
 
-	constexpr u32						MAX_QUICK_RETRIES{ 100 };
-	constexpr std::chrono::milliseconds RETRY_DELAY{ 20 };
-	constexpr double					CONNECT_TIME_THRESHOLD = 1.5;
-	constexpr u32						MAX_TIME_NULL{ 3 };
+	auto& ipc = IPCSignals::get();
 
-	for (u32 attempt = 0, COUNT_TIME_NULL = 0; attempt < MAX_QUICK_RETRIES; ++attempt)
+	while (true)
 	{
 		if (obj && obj->isCancelTesting())
 			break;
+
+		if (obj->isResetConect())
+		{
+			auto host = [&]() -> std::string
+			{
+				std::smatch m;
+				return std::regex_search(domain.url, m, std::regex{ R"(://([^/?#]+))" }) && m.size() > 1 ? m[1].str() : "";
+			}();
+
+			if (!host.empty() && ipc.has("exhausted", host))
+			{
+#ifdef DEBUG
+				Debug::info("ZAPRET2: exhausted for url[{}]", domain.url);
+#endif
+				break;
+			}
+		}
 
 		CURLcode res = curl_easy_perform(domain.curl);
 
@@ -236,45 +252,8 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 				return true;
 			}
 		}
-
-		if (res != CURLE_ABORTED_BY_CALLBACK)
-		{
-			double connect_time = 0.0;
-			curl_easy_getinfo(domain.curl, CURLINFO_CONNECT_TIME, &connect_time);
-
-			// Criteria for "active connection reset" (zapret2 changes strategy):
-			bool is_zapret_reset = false;
-			if (res == CURLE_SSL_CONNECT_ERROR || res == CURLE_COULDNT_CONNECT || res == CURLE_GOT_NOTHING || res == CURLE_RECV_ERROR)
-			{
-#ifdef DEBUG
-				Debug::info("is reset zapret? connect result[{}] time[{}] url[{}]", static_cast<u32>(res), connect_time, domain.url);
-#endif
-				u32 os_errno = 0;
-				curl_easy_getinfo(domain.curl, CURLINFO_OS_ERRNO, &os_errno);
-				is_zapret_reset = (connect_time < CONNECT_TIME_THRESHOLD) || (os_errno == WSAECONNRESET);
-			}
-
-			// If the connection time is 0, then the resource is unavailable or some other unknown reason, but this is not always the case,
-			// you need to make sure several times, usually two attempts are enough.
-			if (connect_time < std::numeric_limits<double>::epsilon())
-			{
-				COUNT_TIME_NULL++;
-#ifdef DEBUG
-				Debug::info("curl connect_time == 0 result[{}] COUNT_TIME_NULL[{}] url[{}]", static_cast<u32>(res), COUNT_TIME_NULL, domain.url);
-#endif
-			}
-
-			if (!is_zapret_reset || (COUNT_TIME_NULL > MAX_TIME_NULL))
-			{
-#ifdef DEBUG
-				Debug::info("no reset zapret! curl result[{}] COUNT_TIME_NULL[{}] url[{}]", static_cast<u32>(res), COUNT_TIME_NULL, domain.url);
-#endif
-				break;
-			}
-		}
-
-		if (obj && !obj->isCancelTesting())
-			std::this_thread::sleep_for(RETRY_DELAY);
+		else if (!obj->isResetConect())
+			break;
 	}
 
 	double total_time = 0.0;

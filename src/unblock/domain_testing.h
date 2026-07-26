@@ -19,7 +19,9 @@ public:
 
 	void loadDomain();
 
-	void test(bool base_test, std::function<void(std::string url, bool state)>&& callback);
+	void test(
+		bool base_test, std::function<void(std::string url, bool state)>&& callback = [](std::string, bool) {}, bool reset_test = false
+	);
 
 	void changeProxy(std::string_view ip, u32 port);
 	void changeOptionalServices(std::list<std::string> list_services);
@@ -28,6 +30,7 @@ public:
 
 	inline bool isTesting() { return _is_testing.load(); }
 	inline bool isCancelTesting() { return _cancel_testing.load(); }
+	inline bool isResetConect() { return _reset_test.load(); } 
 
 	u32	 successRate() const;
 	u32	 errorRate() const;
@@ -48,6 +51,8 @@ private:
 	std::list<CurlDomain>  _list_domain{};
 	std::list<std::string> _section_opt_service_names{};
 
+	inline static std::filesystem::path _zapret_exhausted{};
+
 	std::string _proxyIP{ "127.0.0.1" };
 	u32			_proxyPORT{ 1'080 };
 
@@ -55,4 +60,5 @@ private:
 	std::atomic_uint _domain_error{ 0 };
 	std::atomic_bool _is_testing{ false };
 	std::atomic_bool _cancel_testing{ false };
+	std::atomic_bool _reset_test{ false };
 };
