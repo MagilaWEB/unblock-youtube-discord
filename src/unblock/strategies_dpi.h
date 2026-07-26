@@ -20,6 +20,7 @@ public:
 private:
 	std::map<std::string, FakeBinParam> _fake_bin_params{};
 	std::list<std::string>				_section_opt_service_names{};
+	u32									_max_strategy_count{ 0 };
 
 public:
 	StrategiesDPI();
@@ -29,6 +30,7 @@ public:
 
 	void changeDirVersion(std::string_view dir_version) override;
 	void changeOptionalServices(std::list<std::string> list_service);
+	u32	 getMaxStrategyCount() const;
 
 private:
 	void _uploadStrategies() override;
