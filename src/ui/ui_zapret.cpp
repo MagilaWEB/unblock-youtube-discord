@@ -170,6 +170,7 @@ void UiZapret2::_selectConfigUpdate()
 	}
 
 	_buttonUpdate();
+	_ui->_unblock->changeStrategy(JSToCPP(_select_config->getSelectedOptionValue()));
 }
 
 void UiZapret2::_initMainControls()
@@ -386,12 +387,7 @@ void UiZapret2::_startServiceFromConfig()
 
 			_tcpGlobalChange(true);
 
-			if (_select_config->isShow())
-				_ui->_unblock->changeStrategy(JSToCPP(_select_config->getSelectedOptionValue()));
-			else if (auto config = _ui->uiBase()->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
-				_ui->_unblock->changeStrategy(config.value());
-			else
-				Debug::fatal("REMEMBER_CONFIGURATION parameter config = null");
+			_ui->_unblock->changeStrategy(JSToCPP(_select_config->getSelectedOptionValue()));
 
 			_ui->_unblock->startService();
 			_buttonUpdate();
@@ -482,6 +478,8 @@ void UiZapret2::_testingServiceDomains()
 				_window_info_testing->show();
 				return;
 			}
+			else
+				_list_domain_info->clear();
 
 			_domain_testing_cancel.store(false);
 		}

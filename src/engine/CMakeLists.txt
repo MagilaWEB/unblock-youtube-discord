@@ -14,7 +14,12 @@ if(CUPY_LIBS_DLL_TO_BIN)
         COMMAND ${CMAKE_COMMAND} -E echo "Cleanup complete"
         COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/winws2.exe || ${CMAKE_COMMAND} -E echo "Warning: failed to remove winws2.exe (maybe in use)"
         COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/cygwin1.dll || ${CMAKE_COMMAND} -E echo "Warning: failed to remove cygwin1.dll (maybe in use)"
-        COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_SOURCE_DIR}/binaries/lua
+        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-lib.lua
+        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-auto.lua
+        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-antidpi.lua
+        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-obfs.lua
+        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-pcap.lua
+        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-tests.lua
         COMMENT "Global pre-build cleanup"
     )
 endif()
@@ -86,5 +91,9 @@ if(CUPY_LIBS_DLL_TO_BIN)
             ${ZAPRET2_BIN}/cygwin1.dll ${CMAKE_SOURCE_DIR}/binaries || ${CMAKE_COMMAND} -E echo "Warning: failed to copy cygwin1.dll (maybe in use)"
         COMMAND ${CMAKE_COMMAND} -E copy_directory 
             ${ZAPRET2_LUA}/ ${CMAKE_SOURCE_DIR}/binaries/lua
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_SOURCE_DIR}/resources/lua/unblock_auto_strategy.lua ${CMAKE_SOURCE_DIR}/binaries/lua/unblock_auto_strategy.lua
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_SOURCE_DIR}/resources/lua/unblock_signal.lua ${CMAKE_SOURCE_DIR}/binaries/lua/unblock_signal.lua
     )
 endif()

@@ -23,6 +23,7 @@ class CORE_API Core final
 	std::filesystem::path _binaries_path{};
 	std::filesystem::path _configs_path{};
 	std::filesystem::path _user_path{};
+	std::filesystem::path _temp_path{};
 
 public:
 	Core(Core&&) = delete;
@@ -39,6 +40,7 @@ public:
 	std::filesystem::path binariesPath() const;
 	std::filesystem::path configsPath() const;
 	std::filesystem::path userPath() const;
+	std::filesystem::path tempPath() const;
 
 	std::vector<std::string> exec(std::string cmd);
 	void					 exec_parallel(std::string cmd, std::function<bool(std::string)>&& callback);

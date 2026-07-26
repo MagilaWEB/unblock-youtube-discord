@@ -31,6 +31,8 @@
 
 	if (!std::filesystem::exists(_user_path))
 		std::filesystem::create_directories(_user_path);
+
+	_temp_path = std::filesystem::temp_directory_path();
 }
 
 Core& Core::get()
@@ -133,6 +135,11 @@ std::filesystem::path Core::configsPath() const
 std::filesystem::path Core::userPath() const
 {
 	return _user_path;
+}
+
+std::filesystem::path Core::tempPath() const
+{
+	return _temp_path;
 }
 
 std::vector<std::string> Core::exec(std::string cmd)
