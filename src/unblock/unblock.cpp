@@ -391,6 +391,44 @@ void Unblock::stopService()
 
 void Unblock::startService()
 {
+	// send domain list to zapret-helper
+	{
+		File f;
+		f.open(Core::get().configsPath() / "domain_test", ".list", true);
+		if (f.isOpen())
+		{
+			std::string list = "LIST:";
+			for (auto& line : f)
+				if (!line.empty() && !line.starts_with("//"))
+				{
+					auto url = line;
+					auto pos = url.find("://");
+					if (pos != std::string::npos)	url.erase(0, pos + 3);
+					pos = url.find('/');
+					if (pos != std::string::npos)	url.erase(pos);
+					if (!url.empty())
+					{
+						list += url;
+						list += ':';
+					}
+				}
+			if (!list.empty())
+			{
+				list.pop_back();
+				auto sock = socket(AF_INET, SOCK_DGRAM, 0);
+				if (sock != INVALID_SOCKET)
+				{
+					sockaddr_in addr{};
+					addr.sin_family = AF_INET;
+					addr.sin_port = htons(10000);
+					addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+					sendto(sock, list.c_str(), static_cast<int>(list.size()), 0, (sockaddr*)&addr, sizeof(addr));
+					closesocket(sock);
+				}
+			}
+		}
+	}
+
 	_zapret.remove();
 
 	auto& list = _strategies_dpi.getStrategy();
