@@ -41,8 +41,8 @@ DomainTesting::DomainTesting()
 		if (res == CURLE_OK)
 		{
 			curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &total_time);
-			const u32 time_sec = static_cast<u32>(total_time * 5) + 5;
-			_max_wait_testing.store(time_sec > 8 ? 8 : time_sec);
+			const u32 time_sec = static_cast<u32>(total_time * 10) + 5;
+			_max_wait_testing.store(time_sec > 10 ? 10 : time_sec);
 
 			curl_easy_cleanup(curl);
 			init_timer_wait_testing = true;
@@ -198,7 +198,7 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 	curl_easy_setopt(domain.curl, CURLOPT_FRESH_CONNECT, 1L);
 	curl_easy_setopt(domain.curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(domain.curl, CURLOPT_MAXREDIRS, 10L);
-	curl_easy_setopt(domain.curl, CURLOPT_NOBODY, 1L);
+	curl_easy_setopt(domain.curl, CURLOPT_NOBODY, 0L);
 	curl_easy_setopt(domain.curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_DEFAULT);
 
 	curl_easy_setopt(domain.curl, CURLOPT_SSL_VERIFYHOST, 0L);
@@ -255,6 +255,26 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 		}
 		else if (!obj->isResetConect())
 			break;
+	}
+
+	// send FAIL signal to zapret IPC
+	{
+		auto pos_s = domain.url.find("://");
+		pos_s = (pos_s == std::string::npos) ? 0 : pos_s + 3;
+		auto pos_e = domain.url.find_first_of("/?", pos_s);
+		auto host = domain.url.substr(pos_s, pos_e == std::string::npos ? pos_e : pos_e - pos_s);
+		if (!host.empty()) {
+			auto msg = std::format("FAIL:{}", host);
+			auto sock = socket(AF_INET, SOCK_DGRAM, 0);
+			if (sock != INVALID_SOCKET) {
+				sockaddr_in addr{};
+				addr.sin_family = AF_INET;
+				addr.sin_port = htons(9999);
+				addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+				sendto(sock, msg.c_str(), static_cast<int>(msg.size()), 0, (sockaddr*)&addr, sizeof(addr));
+				closesocket(sock);
+			}
+		}
 	}
 
 	double total_time = 0.0;
