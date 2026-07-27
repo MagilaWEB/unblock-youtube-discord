@@ -8,6 +8,7 @@
 Unblock::Unblock()
 {
 	(void)IPCSignals::get();
+
 	_zapret.open();
 	_win_divert.open();
 	_tg_ws_proxy.open();

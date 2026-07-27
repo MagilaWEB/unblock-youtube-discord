@@ -76,6 +76,4 @@ public:
 
     u32 domainSuccessRate() const;
     bool validDomain() const;
-
-    IPCSignals& ipc() { return IPCSignals::get(); }
 };
