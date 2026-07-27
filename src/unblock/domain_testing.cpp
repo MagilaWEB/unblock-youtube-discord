@@ -200,8 +200,19 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 	curl_easy_setopt(domain.curl, CURLOPT_MAXREDIRS, 10L);
 	curl_easy_setopt(domain.curl, CURLOPT_NOBODY, 0L);
 	curl_easy_setopt(domain.curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_DEFAULT);
+	curl_easy_setopt(domain.curl, CURLOPT_SSL_VERIFYPEER, 0L);
+	curl_easy_setopt(domain.curl, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36");
+	curl_easy_setopt(domain.curl, CURLOPT_ACCEPT_ENCODING, "");
 
-	curl_easy_setopt(domain.curl, CURLOPT_SSL_VERIFYHOST, 0L);
+	struct curl_slist* headers = nullptr;
+	headers = curl_slist_append(headers, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+	headers = curl_slist_append(headers, "Accept-Language: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7");
+	headers = curl_slist_append(headers, "Cache-Control: no-cache");
+	headers = curl_slist_append(headers, "Sec-Fetch-Dest: document");
+	headers = curl_slist_append(headers, "Sec-Fetch-Mode: navigate");
+	headers = curl_slist_append(headers, "Sec-Fetch-Site: none");
+	headers = curl_slist_append(headers, "Upgrade-Insecure-Requests: 1");
+	curl_easy_setopt(domain.curl, CURLOPT_HTTPHEADER, headers);
 
 	u32 timeout = _max_wait_testing.load();
 	curl_easy_setopt(domain.curl, CURLOPT_CONNECTTIMEOUT, timeout);
@@ -221,22 +232,32 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 		if (obj && obj->isCancelTesting())
 			break;
 
-		if (obj->isResetConect())
+		auto get_host = [&]() -> std::string
 		{
-			auto host = [&]() -> std::string
-			{
-				std::smatch m;
-				return std::regex_search(domain.url, m, std::regex{ R"(://([^/?#]+))" }) && m.size() > 1 ? m[1].str() : "";
-			}();
+			std::smatch m;
+			return std::regex_search(domain.url, m, std::regex{ R"(://([^/?#]+))" }) && m.size() > 1 ? m[1].str() : "";
+		};
 
-			if (!host.empty() && ipc.has("exhausted", host))
+		auto zapret_ckeck = [&]
+		{
+			if (obj->isResetConect())
 			{
+				auto host = get_host();
+
+				if (!host.empty() && ipc.has("exhausted", host))
+				{
 #ifdef DEBUG
-				Debug::info("ZAPRET2: exhausted for url[{}]", domain.url);
+					Debug::info("ZAPRET2: exhausted for url[{}]", domain.url);
 #endif
-				break;
+					return true;
+				}
 			}
-		}
+
+			return false;
+		};
+
+		if (zapret_ckeck())
+			break;
 
 		CURLcode res = curl_easy_perform(domain.curl);
 
@@ -246,37 +267,30 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 			curl_easy_getinfo(domain.curl, CURLINFO_RESPONSE_CODE, &http_code);
 			if (http_code > 0)
 			{
+				if (zapret_ckeck())
+					break;
+
+				if (obj->isResetConect())
+				{
+					auto host = get_host();
+
+					if (!host.empty() && ipc.has("host_fail", host))
+						continue;
+				}
+
 				double total_time = 0.0;
 				curl_easy_getinfo(domain.curl, CURLINFO_TOTAL_TIME, &total_time);
 				domain.result_time_sec = total_time;
 				return true;
 			}
-			
 		}
 		else if (!obj->isResetConect())
 			break;
+
+		Debug::info("curl result code[{}], url[{}]", static_cast<u32>(res), domain.url);
 	}
 
-	// send FAIL signal to zapret IPC
-	{
-		auto pos_s = domain.url.find("://");
-		pos_s = (pos_s == std::string::npos) ? 0 : pos_s + 3;
-		auto pos_e = domain.url.find_first_of("/?", pos_s);
-		auto host = domain.url.substr(pos_s, pos_e == std::string::npos ? pos_e : pos_e - pos_s);
-		if (!host.empty()) {
-			auto msg = std::format("FAIL:{}", host);
-			auto sock = socket(AF_INET, SOCK_DGRAM, 0);
-			if (sock != INVALID_SOCKET) {
-				sockaddr_in addr{};
-				addr.sin_family = AF_INET;
-				addr.sin_port = htons(9999);
-				addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-				sendto(sock, msg.c_str(), static_cast<int>(msg.size()), 0, (sockaddr*)&addr, sizeof(addr));
-				closesocket(sock);
-			}
-		}
-	}
-
+	curl_slist_free_all(headers);
 	double total_time = 0.0;
 	curl_easy_getinfo(domain.curl, CURLINFO_TOTAL_TIME, &total_time);
 	domain.result_time_sec = total_time;
