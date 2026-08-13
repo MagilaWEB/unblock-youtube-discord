@@ -231,6 +231,12 @@ void StrategiesDPI::_normalizeStrategyFinal()
 	while (_strategy_dpi.back().starts_with("--new"))
 		_strategy_dpi.pop_back();
 
+	_strategy_dpi.push_back("--new");
+	_strategy_dpi.push_back("--filter-udp=10000");
+	_strategy_dpi.push_back("--ipset-ip=127.0.0.1/32");
+	_strategy_dpi.push_back("--payload=all");
+	_strategy_dpi.push_back("--lua-desync=zcheck");
+
 	for (auto& line : _strategy_dpi)
 		Debug::ok("{}", line);
 }
