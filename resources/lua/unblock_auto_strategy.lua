@@ -98,7 +98,7 @@ function auto_strategy(ctx, desync)
     end
 
     if not hrec.nstrategy then
-        hrec.nstrategy = 1
+        hrec.nstrategy = 0
     end
 
     if hrec.ctstrategy == 0 then
@@ -293,7 +293,7 @@ function auto_strategy(ctx, desync)
             verdict = plan_instance_execute(desync, verdict, inst)
         end
     end
-    
+
     return verdict
 end
 
