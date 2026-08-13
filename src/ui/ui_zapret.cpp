@@ -426,7 +426,7 @@ void UiZapret2::_initTestingWindow()
 	_window_wait_testing->create(Localization::Str{ "str_please_wait" }, "str_secondary_window_description_wait_domain");
 	_window_wait_testing->setType(SecondaryWindow::Type::Wait);
 
-	_list_domain->create("#_window_wait_testing .description", "str_h2_verified_domains");
+	_list_host->create("#_window_wait_testing .description", "str_h2_verified_domains");
 
 	_window_wait_testing->addEventCancel(
 		[this](JSArgs)
@@ -444,12 +444,12 @@ void UiZapret2::_initTestingWindow()
 		[this](JSArgs)
 		{
 			_window_info_testing->hide();
-			_list_domain_info->clear();
+			_list_host_info->clear();
 			return false;
 		}
 	);
 
-	_list_domain_info->create("#_window_info_testing .description", "");
+	_list_host_info->create("#_window_info_testing .description", "");
 
 	if (_ui->getTestingDomainsStartup()->getState())
 		_testingServiceDomains();
@@ -465,8 +465,8 @@ void UiZapret2::_testingServiceDomains()
 			_ui->_unblock->testingDomain(
 				[this](std::string_view url, bool state)
 				{
-					_list_domain->createLiSuccess(url, state);
-					_list_domain_info->createLiSuccess(url, state);
+					_list_host->createLiSuccess(url, state);
+					_list_host_info->createLiSuccess(url, state);
 				},
 				false
 			);
@@ -477,17 +477,17 @@ void UiZapret2::_testingServiceDomains()
 		[this]
 		{
 			_window_wait_testing->hide();
-			_list_domain->clear();
+			_list_host->clear();
 
 			if (!_domain_testing_cancel.load())
 			{
-				_list_domain_info->setTitle(utils::format(Localization::Str{ "str_window_title_info_result" }(), _ui->_unblock->domainSuccessRate()));
+				_list_host_info->setTitle(utils::format(Localization::Str{ "str_window_title_info_result" }(), _ui->_unblock->domainSuccessRate()));
 
 				_window_info_testing->show();
 				return;
 			}
 			else
-				_list_domain_info->clear();
+				_list_host_info->clear();
 
 			_domain_testing_cancel.store(false);
 		}

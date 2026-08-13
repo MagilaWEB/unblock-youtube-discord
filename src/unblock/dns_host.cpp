@@ -104,7 +104,7 @@ void DNSHost::update()
 	_cancel_update.store(false);
 	_map_list.clear();
 
-	_list_domains.clear();
+	_list_hosts.clear();
 
 	for (auto& entry : std::filesystem::directory_iterator(_dir_dns_hosts))
 	{
@@ -113,20 +113,20 @@ void DNSHost::update()
 
 		for (auto& line : file)
 			if (!line.empty())
-				if (std::ranges::find(_list_domains, line) == _list_domains.end())
-					_list_domains.push_back(line);
+				if (std::ranges::find(_list_hosts, line) == _list_hosts.end())
+					_list_hosts.push_back(line);
 	}
 
 	if (_cancel_update.load(std::memory_order_relaxed))
 		return;
 
-	for (auto& domain : _list_domains)
+	for (auto& domain : _list_hosts)
 		_map_list[domain].reserve(0);
 
 	std::for_each(
 		std::execution::par,
-		_list_domains.begin(),
-		_list_domains.end(),
+		_list_hosts.begin(),
+		_list_hosts.end(),
 		[this](const std::string& domain)
 		{
 			if (_cancel_update.load(std::memory_order_relaxed))
@@ -231,7 +231,7 @@ void DNSHost::cancel()
 
 float DNSHost::percentageCompletion() const
 {
-	return (static_cast<float>(_size_iter.load()) / static_cast<float>(_list_domains.size())) * 100.f;
+	return (static_cast<float>(_size_iter.load()) / static_cast<float>(_list_hosts.size())) * 100.f;
 }
 
 std::string DNSHost::_pathHostDir()

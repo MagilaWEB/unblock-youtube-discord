@@ -17,7 +17,7 @@ class DNSHost final : public utils::DefaultInit
 	File _file_hosts_backup;
 	File _file_hosts_user;
 
-	std::list<std::string>			   _list_domains{};
+	std::list<std::string>			   _list_hosts{};
 	std::list<std::string>			   _list_dns_hosts_file_name{};
 	std::map<std::string, std::string> _map_list{};
 	FastLock						   _map_list_lock;

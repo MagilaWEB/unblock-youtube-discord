@@ -39,8 +39,8 @@ class UiZapret2
 	BUTTON(_start_testing_zapret);
 	SECONDARY_WINDOW(_window_wait_testing);
 	SECONDARY_WINDOW(_window_info_testing);
-	UL_LIST(_list_domain);
-	UL_LIST(_list_domain_info);
+	UL_LIST(_list_host);
+	UL_LIST(_list_host_info);
 
 public:
 	UiZapret2(std::shared_ptr<Ui> ui);
