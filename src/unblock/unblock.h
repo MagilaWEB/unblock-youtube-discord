@@ -9,6 +9,7 @@
 class UNBLOCK_API Unblock final : public std::enable_shared_from_this<Unblock>
 {
     Service _zapret{"zapret2", "SvcHost.exe"};
+	Service _zapret_helper{ "zapret2_helper", "SvcHost.exe" };
     Service _tg_ws_proxy{"TgWsProxy", "SvcHost.exe"};
     Service _win_divert{"WinDivert"};
 

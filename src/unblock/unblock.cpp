@@ -8,7 +8,7 @@
 Unblock::Unblock()
 {
 	(void)IPCSignals::get();
-
+	_zapret_helper.open();
 	_zapret.open();
 	_win_divert.open();
 	_tg_ws_proxy.open();
@@ -360,80 +360,30 @@ void Unblock::localProxyTgLinkRun()
 
 void Unblock::removeService()
 {
-#ifdef DEBUG_RUN_ZAPRET	   // #ifdef DEBUG
-	if (_zapret_dbg_run.load())
-	{
-		_zapret_dbg_run_end.store(true);
-
-		while (_zapret_dbg_run.load())
-			std::this_thread::yield();
-	}
-#endif
-
 	_zapret.remove();
+	_zapret_helper.remove();
 	_win_divert.remove();
 }
 
 void Unblock::stopService()
 {
-#ifdef DEBUG_RUN_ZAPRET	   // #ifdef DEBUG
-	if (_zapret_dbg_run.load())
-	{
-		_zapret_dbg_run_end.store(true);
-
-		while (_zapret_dbg_run.load())
-			std::this_thread::yield();
-	}
-#endif
-
 	_zapret.stop();
+	_zapret_helper.stop();
 }
 
 void Unblock::startService()
 {
-	// send domain list to zapret-helper
-	{
-		File f;
-		f.open(Core::get().configsPath() / "domain_test", ".list", true);
-		if (f.isOpen())
-		{
-			std::string list = "LIST:";
-			for (auto& line : f)
-				if (!line.empty() && !line.starts_with("//"))
-				{
-					auto url = line;
-					auto pos = url.find("://");
-					if (pos != std::string::npos)	url.erase(0, pos + 3);
-					pos = url.find('/');
-					if (pos != std::string::npos)	url.erase(pos);
-					if (!url.empty())
-					{
-						list += url;
-						list += ':';
-					}
-				}
-			if (!list.empty())
-			{
-				list.pop_back();
-				auto sock = socket(AF_INET, SOCK_DGRAM, 0);
-				if (sock != INVALID_SOCKET)
-				{
-					sockaddr_in addr{};
-					addr.sin_family = AF_INET;
-					addr.sin_port = htons(10000);
-					addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-					sendto(sock, list.c_str(), static_cast<int>(list.size()), 0, (sockaddr*)&addr, sizeof(addr));
-					closesocket(sock);
-				}
-			}
-		}
-	}
-
 	_zapret.remove();
+	_zapret_helper.remove();
 
 	auto& list = _strategies_dpi.getStrategy();
 	if (!list.empty())
 	{
+		_zapret_helper.setDescription(Localization::Str{ "str_service_zapret_description" }());
+		_zapret_helper.setArgs({ (Core::get().binPath() / "zapret_helper.exe").string() });
+		_zapret_helper.create();
+		_zapret_helper.start();
+
 		_zapret.setDescription(Localization::Str{ "str_service_zapret_description" }());
 		std::vector<std::string> args{};
 		args.reserve(list.size() + 1);
@@ -444,48 +394,40 @@ void Unblock::startService()
 
 		_zapret.setArgs(args);
 		_zapret.create();
-
-#ifdef DEBUG_RUN_ZAPRET	   // #ifdef DEBUG
-		auto&		service_config = _zapret.getConfig();
-		auto&		path		   = service_config.binary_path;
-		std::string command		   = path;
-
-		command = std::regex_replace(command, std::regex{ "\"" }, "");
-		command = std::regex_replace(command, std::regex{ "--wf-tcp-in" }, "--debug --wf-tcp-in");
-
-		if (_zapret_dbg_run.load())
-		{
-			_zapret_dbg_run_end.store(true);
-
-			while (_zapret_dbg_run.load())
-				std::this_thread::yield();
-		}
-
-		Core::get().exec_parallel(
-			command,
-			[this](std::string str)
-			{
-				if (_zapret_dbg_run_end.load())
-				{
-					_zapret_dbg_run_end.store(false);
-					_zapret_dbg_run.store(false);
-					return true;
-				}
-
-				if (!_zapret_dbg_run.load())
-					_zapret_dbg_run.store(true);
-
-				if (str == "EXIT")
-				{
-					_zapret_dbg_run.store(false);
-					_zapret_dbg_run_end.store(false);
-				}
-
-				return false;
-			}
-		);
-#else
 		_zapret.start();
-#endif
 	}
+
+	// send domain list to zapret-helper
+	{
+		auto		list_host = _domain_testing.listHost();
+		std::string list	  = "LIST:";
+
+		if (!list_host.empty())
+		{
+			for (auto& line : list_host)
+			{
+				auto host = [&]() -> std::string
+				{
+					std::smatch m;
+					return std::regex_search(line, m, std::regex{ R"(://([^/?#]+))" }) && m.size() > 1 ? m[1].str() : "";
+				}();
+
+				list += host;
+				list += ':';
+			}
+
+			list.pop_back();
+			auto sock = socket(AF_INET, SOCK_DGRAM, 0);
+			if (sock != INVALID_SOCKET)
+			{
+				sockaddr_in addr{};
+				addr.sin_family		 = AF_INET;
+				addr.sin_port		 = htons(10'000);
+				addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+				sendto(sock, list.c_str(), static_cast<int>(list.size()), 0, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
+				closesocket(sock);
+			}
+		}
+	}
+
 }
