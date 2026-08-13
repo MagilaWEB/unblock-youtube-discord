@@ -41,7 +41,7 @@ DomainTesting::DomainTesting()
 		if (res == CURLE_OK)
 		{
 			curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &total_time);
-			const u32 time_sec = static_cast<u32>(total_time * 10) + 5;
+			const u32 time_sec = static_cast<u32>(total_time * 10) + 3;
 			_max_wait_testing.store(time_sec > 10 ? 10 : time_sec);
 
 			curl_easy_cleanup(curl);
@@ -90,8 +90,8 @@ void DomainTesting::test(bool base_test, std::function<void(std::string url, boo
 		bool state{ false };
 		std::for_each(
 			std::execution::par,
-			_list_domain.begin(),
-			_list_domain.end(),
+			_list_host.begin(),
+			_list_host.end(),
 			[this, &state](CurlDomain& domain)
 			{
 				if (isConnectionUrl(this, domain))
@@ -105,7 +105,7 @@ void DomainTesting::test(bool base_test, std::function<void(std::string url, boo
 					_domain_error++;
 				}
 
-				if (_domain_ok.load() == _list_domain.size())
+				if (_domain_ok.load() == _list_host.size())
 					state = true;
 			}
 		);
@@ -126,8 +126,8 @@ void DomainTesting::test(bool base_test, std::function<void(std::string url, boo
 
 	std::for_each(
 		std::execution::par,
-		_list_domain.begin(),
-		_list_domain.end(),
+		_list_host.begin(),
+		_list_host.end(),
 		[this, callback](CurlDomain& domain)
 		{
 			if (errorRate() >= MAX_ERROR_CONECTION)
@@ -175,17 +175,17 @@ void DomainTesting::cancelTesting()
 
 u32 DomainTesting::successRate() const
 {
-	return static_cast<u32>((static_cast<float>(_domain_ok.load()) / static_cast<float>(_list_domain.size())) * 100.f);
+	return static_cast<u32>((static_cast<float>(_domain_ok.load()) / static_cast<float>(_list_host.size())) * 100.f);
 }
 
 u32 DomainTesting::errorRate() const
 {
-	return static_cast<u32>((static_cast<float>(_domain_error.load()) / static_cast<float>(_list_domain.size())) * 100.f);
+	return static_cast<u32>((static_cast<float>(_domain_error.load()) / static_cast<float>(_list_host.size())) * 100.f);
 }
 
 void DomainTesting::printTestInfo() const
 {
-	InputConsole::textInfo(Localization::Str{ "str_result_url_testing" }(), _domain_ok.load(), _list_domain.size(), successRate());
+	InputConsole::textInfo(Localization::Str{ "str_result_url_testing" }(), _domain_ok.load(), _list_host.size(), successRate());
 }
 
 bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
@@ -201,17 +201,21 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 	curl_easy_setopt(domain.curl, CURLOPT_NOBODY, 0L);
 	curl_easy_setopt(domain.curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_DEFAULT);
 	curl_easy_setopt(domain.curl, CURLOPT_SSL_VERIFYPEER, 0L);
-	curl_easy_setopt(domain.curl, CURLOPT_USERAGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36");
+	curl_easy_setopt(
+		domain.curl,
+		CURLOPT_USERAGENT,
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+	);
 	curl_easy_setopt(domain.curl, CURLOPT_ACCEPT_ENCODING, "");
 
 	struct curl_slist* headers = nullptr;
-	headers = curl_slist_append(headers, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-	headers = curl_slist_append(headers, "Accept-Language: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7");
-	headers = curl_slist_append(headers, "Cache-Control: no-cache");
-	headers = curl_slist_append(headers, "Sec-Fetch-Dest: document");
-	headers = curl_slist_append(headers, "Sec-Fetch-Mode: navigate");
-	headers = curl_slist_append(headers, "Sec-Fetch-Site: none");
-	headers = curl_slist_append(headers, "Upgrade-Insecure-Requests: 1");
+	headers					   = curl_slist_append(headers, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+	headers					   = curl_slist_append(headers, "Accept-Language: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7");
+	headers					   = curl_slist_append(headers, "Cache-Control: no-cache");
+	headers					   = curl_slist_append(headers, "Sec-Fetch-Dest: document");
+	headers					   = curl_slist_append(headers, "Sec-Fetch-Mode: navigate");
+	headers					   = curl_slist_append(headers, "Sec-Fetch-Site: none");
+	headers					   = curl_slist_append(headers, "Upgrade-Insecure-Requests: 1");
 	curl_easy_setopt(domain.curl, CURLOPT_HTTPHEADER, headers);
 
 	u32 timeout = _max_wait_testing.load();
@@ -267,17 +271,6 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 			curl_easy_getinfo(domain.curl, CURLINFO_RESPONSE_CODE, &http_code);
 			if (http_code > 0)
 			{
-				if (zapret_ckeck())
-					break;
-
-				if (obj->isResetConect())
-				{
-					auto host = get_host();
-
-					if (!host.empty() && ipc.has("host_fail", host))
-						continue;
-				}
-
 				double total_time = 0.0;
 				curl_easy_getinfo(domain.curl, CURLINFO_TOTAL_TIME, &total_time);
 				domain.result_time_sec = total_time;
@@ -297,10 +290,56 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 	return false;
 }
 
+std::vector<std::string> DomainTesting::listHost(bool all)
+{
+	std::vector<std::string> list_host;
+	if (all)
+	{
+		if (_loadFile("all"))
+		{
+			if (_file_test_host.isOpen())
+			{
+				for (auto& str : _file_test_host)
+				{
+					if (str.empty())
+						continue;
+
+					list_host.emplace_back(str);
+				}
+			}
+
+			_file_test_host.close();
+		}
+
+		return list_host;
+	}
+
+	for (auto& name : _section_opt_service_names)
+	{
+		if (_loadFile(name))
+		{
+			if (_file_test_host.isOpen())
+			{
+				for (auto& str : _file_test_host)
+				{
+					if (str.empty())
+						continue;
+
+					list_host.emplace_back(str);
+				}
+			}
+
+			_file_test_host.close();
+		}
+	}
+
+	return list_host;
+}
+
 bool DomainTesting::_loadFile(std::filesystem::path file)
 {
-	_file_test_domain.open(Core::get().configsPath() / "domain_test" / file.string(), ".list", true);
-	return _file_test_domain.isOpen() && !_file_test_domain.empty();
+	_file_test_host.open(Core::get().configsPath() / "domain_test" / file.string(), ".list", true);
+	return _file_test_host.isOpen() && !_file_test_host.empty();
 }
 
 void DomainTesting::_genericURLS(std::string base_name)
@@ -326,25 +365,25 @@ void DomainTesting::_genericURLS(std::string base_name)
 
 void DomainTesting::_appendURLS()
 {
-	if (_file_test_domain.isOpen())
+	if (_file_test_host.isOpen())
 	{
-		for (auto& str : _file_test_domain)
+		for (auto& str : _file_test_host)
 		{
 			if (str.empty())
 				continue;
 
-			_list_domain.emplace_back(CurlDomain{ curl_easy_init(), str });
+			_list_host.emplace_back(CurlDomain{ curl_easy_init(), str });
 		}
 	}
 
-	_file_test_domain.close();
+	_file_test_host.close();
 }
 
 void DomainTesting::_clearURLS()
 {
-	for (auto& curl_domain : _list_domain)
+	for (auto& curl_domain : _list_host)
 		if (curl_domain.curl)
 			curl_easy_cleanup(curl_domain.curl);
 
-	_list_domain.clear();
+	_list_host.clear();
 }

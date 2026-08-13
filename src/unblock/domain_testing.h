@@ -38,6 +38,8 @@ public:
 
 	static bool isConnectionUrl(DomainTesting* obj, CurlDomain& domain);
 
+	std::vector<std::string> listHost(bool all = false);
+
 private:
 	bool _loadFile(std::filesystem::path file);
 	void _genericURLS(std::string base_name = "");
@@ -47,8 +49,8 @@ private:
 private:
 	inline static std::atomic_uint _max_wait_testing{ 0 };
 
-	File				   _file_test_domain{ false };
-	std::list<CurlDomain>  _list_domain{};
+	File				   _file_test_host{ false };
+	std::list<CurlDomain>  _list_host{};
 	std::list<std::string> _section_opt_service_names{};
 
 	inline static std::filesystem::path _zapret_exhausted{};
