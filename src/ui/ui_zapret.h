@@ -42,6 +42,10 @@ class UiZapret2
 	UL_LIST(_list_host);
 	UL_LIST(_list_host_info);
 
+	// Hosts currently being checked by zapret-helper
+	UL_LIST(_list_helper_checking);
+	std::vector<std::string> _last_helper_checking;
+
 public:
 	UiZapret2(std::shared_ptr<Ui> ui);
 
@@ -54,6 +58,9 @@ public:
 	const Ptr<SecondaryWindow>& getWindowConfigurationSelectionError() { return _window_configuration_selection_error; }
 
 	void initialize();
+
+	/** Обновить список хостов, которые zapret-helper проверяет (тик из Ui::jsUpdate). */
+	void updateHelperChecking();
 
 private:
 	void _listEnableServices();
@@ -82,4 +89,6 @@ private:
 
 	void _initTestingWindow();
 	void _testingServiceDomains();
+
+	void _initHelperChecking();
 };

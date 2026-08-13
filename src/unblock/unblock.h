@@ -4,6 +4,8 @@
 #include "dns_host.h"
 #include "ipc_signals.h"
 
+#include <unordered_set>
+
 #include "../core/service.h"
 
 class UNBLOCK_API Unblock final : public std::enable_shared_from_this<Unblock>
@@ -21,6 +23,9 @@ class UNBLOCK_API Unblock final : public std::enable_shared_from_this<Unblock>
     u32 _strategy{};
     std::atomic_bool _zapret_dbg_run_end;
     std::atomic_bool _zapret_dbg_run;
+
+    // Accessed only from the JS thread (via Ui::jsUpdate)
+    std::unordered_set<std::string> _helper_checking;
 
 public:
     Unblock();
@@ -50,6 +55,8 @@ public:
     void stopService();
     void removeService();
     bool activeService();
+
+    std::vector<std::string> helperCheckingHosts();
 
     std::vector<std::string> listVersionStrategy();
 

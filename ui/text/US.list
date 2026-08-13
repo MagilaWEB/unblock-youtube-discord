@@ -190,6 +190,7 @@ str_button_start_dns_hosts_update_title=🔄 Update local DNS
 
 // Zapret titles blocks
 str_zapret_service_title=🔓 Service
+str_zapret_helper_checking_title=🔍 Hosts being checked (Zapret Helper):
 
 // Setting common show console
 str_checkbox_show_console_title=📟 Show console

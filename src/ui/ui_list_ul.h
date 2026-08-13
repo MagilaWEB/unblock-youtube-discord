@@ -18,8 +18,6 @@ public:
 
 	void createLi(Localization::Str text);
 	void createLiSuccess(Localization::Str text, bool state = false);
-	void addClass(std::string name_class);
-	void removeClass(std::string name_class);
 	void addClass(std::string_view name_class);
 	void removeClass(std::string_view name_class);
 

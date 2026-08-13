@@ -69,6 +69,9 @@ void ZapretHelper::_checkHost(std::string_view host) const
 	_send(std::format("CHECK:{}", host), c_receive_port);
 
 	const auto result = CurlClient::checkHost(std::string{ host });
+
+	_send(std::format("STRING:helper_done:{}", host), c_log_port);
+
 	if (result)
 	{
 		_log(std::format("ok {} http={}", host, result.value()));
@@ -96,6 +99,7 @@ void ZapretHelper::_workerLoop()
 				auto it_host = _queue.begin();
 				if (!_active.contains(*it_host))
 				{
+					_send(std::format("STRING:helper_checking:{}", *it_host), c_log_port);
 					_active.insert(*it_host);
 					batch.emplace_back(*it_host);
 					_queue.erase(it_host);

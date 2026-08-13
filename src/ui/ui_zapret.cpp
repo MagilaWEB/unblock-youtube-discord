@@ -28,6 +28,7 @@ void UiZapret2::initialize()
 	_selectStrategyVersion();
 	_selectConfig();
 	_listEnableServices();
+	_initHelperChecking();
 }
 
 void UiZapret2::_listEnableServices()
@@ -492,4 +493,27 @@ void UiZapret2::_testingServiceDomains()
 			_domain_testing_cancel.store(false);
 		}
 	);
+}
+
+void UiZapret2::_initHelperChecking()
+{
+	_list_helper_checking->create("#zapret section", Localization::Str{ "str_zapret_helper_checking_title" });
+}
+
+void UiZapret2::updateHelperChecking()
+{
+	if (!_list_helper_checking->isCreate())
+		return;
+
+	auto hosts = _ui->_unblock->helperCheckingHosts();
+	std::ranges::sort(hosts);
+
+	if (hosts == _last_helper_checking)
+		return;
+
+	_last_helper_checking = hosts;
+
+	_list_helper_checking->clear();
+	for (auto& host : hosts)
+		_list_helper_checking->createLi(Localization::Str{ host });
 }

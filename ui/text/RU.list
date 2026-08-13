@@ -190,6 +190,7 @@ str_button_start_dns_hosts_update_title=🔄 Обновить локальный
 
 // Zapret titles blocks
 str_zapret_service_title=🔓 Сервисы
+str_zapret_helper_checking_title=🔍 Хосты на проверке (Zapret Помощник):
 
 // Setting common show console
 str_checkbox_show_console_title=📟 Показывать консоль

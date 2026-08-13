@@ -273,6 +273,19 @@ bool Unblock::activeService()
 	return _zapret.isRun();
 }
 
+std::vector<std::string> Unblock::helperCheckingHosts()
+{
+	auto& ipc = IPCSignals::get();
+
+	while (auto host = ipc.getString("helper_checking"))
+		_helper_checking.insert(std::move(*host));
+
+	while (auto host = ipc.getString("helper_done"))
+		_helper_checking.erase(*host);
+
+	return { _helper_checking.begin(), _helper_checking.end() };
+}
+
 std::vector<std::string> Unblock::listVersionStrategy()
 {
 	std::vector<std::string> strategy_dirs{};
