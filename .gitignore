@@ -11,4 +11,4 @@ update
 .vscode
 .idea
 *.log
-lua
+binaries/lua/*.lua
