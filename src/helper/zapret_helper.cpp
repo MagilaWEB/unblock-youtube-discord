@@ -1,0 +1,168 @@
+#include "zapret_helper.h"
+
+#include <cctype>
+#include <execution>
+#include <format>
+#include <ranges>
+#include <vector>
+
+ZapretHelper::~ZapretHelper()
+{
+	_running = false;
+	if (_worker.joinable())
+		_worker.join();
+}
+
+bool ZapretHelper::_isValidHost(std::string_view host)
+{
+	return !host.empty() && std::ranges::any_of(host, [](char ch) { return std::isalpha(static_cast<unsigned char>(ch)); });
+}
+
+void ZapretHelper::_send(std::string_view message, u32 port) const
+{
+	std::lock_guard lock(_send_mutex);
+	_socket.sendTo(message, _target_ip, port);
+}
+
+void ZapretHelper::_log(std::string_view text) const
+{
+	_send(std::format("LOG:INFO:helper:{}", text), c_log_port);
+}
+
+void ZapretHelper::_addHosts(std::string_view hosts)
+{
+	while (!hosts.empty())
+	{
+		const auto pos	= hosts.find(':');
+		const auto host = hosts.substr(0, pos);
+		if (_isValidHost(host))
+		{
+			_known_hosts.insert(std::string{ host });
+			_queue.insert(std::string{ host });
+		}
+
+		if (pos == std::string_view::npos)
+			break;
+
+		hosts.remove_prefix(pos + 1);
+	}
+}
+
+void ZapretHelper::_handleMessage(std::string_view message)
+{
+	if (message.starts_with("LIST:"))
+	{
+		std::lock_guard lock(_mutex);
+		_addHosts(message.substr(5));
+		_log(std::format("list added {} hosts", _queue.size()));
+	}
+	else if (message.starts_with("CHECK:"))
+	{
+		std::lock_guard lock(_mutex);
+		_addHosts(message.substr(6));
+	}
+}
+
+void ZapretHelper::_checkHost(std::string_view host) const
+{
+	_log(std::format("check {}", host));
+	_send(std::format("CHECK:{}", host), c_receive_port);
+
+	const auto result = CurlClient::checkHost(std::string{ host });
+	if (result)
+	{
+		_log(std::format("ok {} http={}", host, result.value()));
+		_send(std::format("OK:{}", host), c_receive_port);
+	}
+	else
+	{
+		_log(std::format("fail {} curl={}", host, result.error()));
+		_send(std::format("FAIL:{}", host), c_receive_port);
+	}
+}
+
+void ZapretHelper::_workerLoop()
+{
+	using namespace std::chrono;
+
+	while (_running)
+	{
+		std::vector<std::string> batch;
+		batch.reserve(c_batch_size);
+		{
+			std::lock_guard lock(_mutex);
+			while (!_queue.empty() && batch.size() < c_batch_size)
+			{
+				auto it_host = _queue.begin();
+				if (!_active.contains(*it_host))
+				{
+					_active.insert(*it_host);
+					batch.emplace_back(*it_host);
+					_queue.erase(it_host);
+				}
+			}
+		}
+
+		if (_queue.empty())
+		{
+			const auto now = steady_clock::now();
+			if (now - _last_recheck > c_recheck_interval)
+			{
+				std::lock_guard lock(_mutex);
+				for (const auto& host : _known_hosts)
+					if (!_active.contains(host))
+						_queue.insert(host);
+
+				_last_recheck = now;
+			}
+
+			std::this_thread::sleep_for(c_sleep_short);
+			continue;
+		}
+
+		if (batch.empty())
+		{
+			std::this_thread::sleep_for(c_sleep_short);
+			continue;
+		}
+
+		std::for_each(
+			std::execution::par,
+			batch.begin(),
+			batch.end(),
+			[this](std::string& host)
+			{
+				_checkHost(host);
+				std::lock_guard lock(_mutex);
+				_active.erase(host);
+			}
+		);
+	}
+}
+
+int ZapretHelper::run()
+{
+	if (!_socket.create() || !_socket.bind(c_receive_port) || !_socket.nonBlocking())
+		return 1;
+
+	_worker = std::thread{ [this] { _workerLoop(); } };
+
+	while (_running)
+	{
+		sockaddr_in from{};
+		const int	n = _socket.recvFrom(_buffer.data(), static_cast<int>(_buffer.size()) - 1, from);
+		if (n <= 0)
+		{
+			std::this_thread::sleep_for(c_sleep_short);
+			continue;
+		}
+
+		_handleMessage(std::string_view{ _buffer.data(), static_cast<size_t>(n) });
+	}
+
+	_running = false;
+	if (_worker.joinable())
+		_worker.join();
+
+	return 0;
+}
