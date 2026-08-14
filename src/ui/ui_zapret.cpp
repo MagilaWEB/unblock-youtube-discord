@@ -29,6 +29,7 @@ void UiZapret2::initialize()
 	_selectConfig();
 	_listEnableServices();
 	_initHelperChecking();
+	_initHelperSeen();
 }
 
 void UiZapret2::_listEnableServices()
@@ -516,4 +517,27 @@ void UiZapret2::updateHelperChecking()
 	_list_helper_checking->clear();
 	for (auto& host : hosts)
 		_list_helper_checking->createLi(Localization::Str{ host });
+}
+
+void UiZapret2::_initHelperSeen()
+{
+	_list_helper_seen->create("#zapret section", Localization::Str{ "str_zapret_helper_seen_title" });
+}
+
+void UiZapret2::updateHelperSeen()
+{
+	if (!_list_helper_seen->isCreate())
+		return;
+
+	auto hosts = _ui->_unblock->helperSeenHosts();
+	std::ranges::sort(hosts);
+
+	if (hosts == _last_helper_seen)
+		return;
+
+	_last_helper_seen = hosts;
+
+	_list_helper_seen->clear();
+	for (auto& host : hosts)
+		_list_helper_seen->createLi(Localization::Str{ host });
 }

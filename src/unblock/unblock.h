@@ -26,6 +26,7 @@ class UNBLOCK_API Unblock final : public std::enable_shared_from_this<Unblock>
 
     // Accessed only from the JS thread (via Ui::jsUpdate)
     std::unordered_set<std::string> _helper_checking;
+    std::unordered_set<std::string> _helper_seen;
 
 public:
     Unblock();
@@ -57,6 +58,7 @@ public:
     bool activeService();
 
     std::vector<std::string> helperCheckingHosts();
+    std::vector<std::string> helperSeenHosts();
 
     std::vector<std::string> listVersionStrategy();
 

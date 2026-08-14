@@ -286,6 +286,16 @@ std::vector<std::string> Unblock::helperCheckingHosts()
 	return { _helper_checking.begin(), _helper_checking.end() };
 }
 
+std::vector<std::string> Unblock::helperSeenHosts()
+{
+	auto& ipc = IPCSignals::get();
+
+	while (auto host = ipc.getString("helper_seen"))
+		_helper_seen.insert(std::move(*host));
+
+	return { _helper_seen.begin(), _helper_seen.end() };
+}
+
 std::vector<std::string> Unblock::listVersionStrategy()
 {
 	std::vector<std::string> strategy_dirs{};
@@ -373,6 +383,8 @@ void Unblock::localProxyTgLinkRun()
 
 void Unblock::removeService()
 {
+	_helper_seen.clear();
+	_helper_checking.clear();
 	_zapret.remove();
 	_zapret_helper.remove();
 	_win_divert.remove();
@@ -380,12 +392,16 @@ void Unblock::removeService()
 
 void Unblock::stopService()
 {
+	_helper_seen.clear();
+	_helper_checking.clear();
 	_zapret.stop();
 	_zapret_helper.stop();
 }
 
 void Unblock::startService()
 {
+	_helper_seen.clear();
+	_helper_checking.clear();
 	_zapret.remove();
 	_zapret_helper.remove();
 

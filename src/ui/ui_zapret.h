@@ -46,6 +46,10 @@ class UiZapret2
 	UL_LIST(_list_helper_checking);
 	std::vector<std::string> _last_helper_checking;
 
+	// Hosts that have been checked by zapret-helper at least once
+	UL_LIST(_list_helper_seen);
+	std::vector<std::string> _last_helper_seen;
+
 public:
 	UiZapret2(std::shared_ptr<Ui> ui);
 
@@ -61,6 +65,9 @@ public:
 
 	/** Обновить список хостов, которые zapret-helper проверяет (тик из Ui::jsUpdate). */
 	void updateHelperChecking();
+
+	/** Обновить список хостов, которые когда-либо проверялись через zapret (тик из Ui::jsUpdate). */
+	void updateHelperSeen();
 
 private:
 	void _listEnableServices();
@@ -91,4 +98,5 @@ private:
 	void _testingServiceDomains();
 
 	void _initHelperChecking();
+	void _initHelperSeen();
 };
