@@ -94,6 +94,7 @@ void UiZapret2::_selectStrategyVersion()
 {
 	_select_version_strategy
 		->create("#zapret .common", "str_select_version_strategy_title", Localization::Str{ "str_select_version_strategy_description" });
+	_select_version_strategy->addTutorialStep("str_tour_version_strategy_title", "str_tour_version_strategy_description", 3);
 	_select_version_strategy->addEventChange(
 		[this](JSArgs args)
 		{
@@ -131,6 +132,7 @@ void UiZapret2::_selectStrategyVersionUpdate()
 void UiZapret2::_selectConfig()
 {
 	_select_config->create("#zapret .common", "str_select_config_title", Localization::Str{ "str_select_config_description" });
+	_select_config->addTutorialStep("str_tour_config_title", "str_tour_config_description", 4);
 	_select_config->addEventChange(
 		[this](JSArgs args)
 		{
@@ -181,6 +183,7 @@ void UiZapret2::_initMainControls()
 {
 	// Initialize start button
 	_start_button->create("#zapret .common", "str_b_start_zapret");
+	_start_button->addTutorialStep("str_tour_start_button_title", "str_tour_start_button_description", 1);
 
 	_start_button->addEventClick(
 		[this](JSArgs)
@@ -234,6 +237,7 @@ void UiZapret2::_initMainControls()
 	);
 
 	_run_auto_config_zapret->create("#zapret .common", "str_b_run_auto_config_zapret");
+	_run_auto_config_zapret->addTutorialStep("str_tour_auto_config_title", "str_tour_auto_config_description", 2);
 
 	_run_auto_config_zapret->addEventClick(
 		[this](JSArgs)
@@ -247,6 +251,7 @@ void UiZapret2::_initMainControls()
 void UiZapret2::_testingInit()
 {
 	_start_testing_zapret->create("#zapret .common", "str_b_start_testing_zapret");
+	_start_testing_zapret->addTutorialStep("str_tour_testing_title", "str_tour_testing_description", 6);
 	_start_testing_zapret->addEventClick(
 		[this](JSArgs)
 		{

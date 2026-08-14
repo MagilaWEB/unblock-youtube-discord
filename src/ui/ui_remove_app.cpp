@@ -5,6 +5,7 @@
 void Ui::_removeApp()
 {
 	_remove_app->create("#unblock section .common", "str_button_remove");
+	_remove_app->addTutorialStep("str_tour_remove_app_title", "str_tour_remove_app_description", 14);
 	_remove_app->addEventClick(
 		[ui_self = self](JSArgs)
 		{

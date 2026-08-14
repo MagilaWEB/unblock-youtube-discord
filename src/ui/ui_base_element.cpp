@@ -184,6 +184,27 @@ void BaseElement::addEventClick(std::function<bool(JSArgs)>&& callback)
 	);
 }
 
+void BaseElement::addTutorialStep(Localization::Str title, Localization::Str description, u32 priority)
+{
+	const auto title_id = title._str_id;
+	const auto desc_id  = description._str_id;
+
+	runCodeToJS(
+		[this, title_id, desc_id, priority]
+		{
+			auto global_js = JSGlobalObject();
+			auto prop	   = global_js["registerTutorialStep"];
+			if (prop.IsFunction())
+			{
+				JSFunction fn = prop;
+				fn({ name(), title_id.c_str(), desc_id.c_str(), priority, _type });
+			}
+			else
+				Debug::warning("registerTutorialStep is not defined, the tutorial step [{}] was not registered", name());
+		}
+	);
+}
+
 bool BaseElement::eventCPP(const JSArgs& args, MapEvent& map_event)
 {
 	auto& events = map_event[JSToCPP<std::string>(static_cast<String>(args[0].ToString()))];

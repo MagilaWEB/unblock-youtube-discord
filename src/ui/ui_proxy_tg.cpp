@@ -20,6 +20,7 @@ void UiProxyTg::_enableProxyTg()
 	_proxy_tg_enable
 		->create("#tg_ws_proxy section .common", "str_checkbox_enable_proxy_tg_title",
 				 Localization::Str{"str_checkbox_enable_proxy_tg_description"});
+	_proxy_tg_enable->addTutorialStep("str_tour_proxy_tg_title", "str_tour_proxy_tg_description", 12);
 	_proxy_tg_enable->setState(_unblock->localProxyTgIsRun());
 	_proxy_tg_enable->addEventClick(
 		[this](JSArgs args)
@@ -50,6 +51,7 @@ void UiProxyTg::_enableProxyTg()
 void UiProxyTg::_enableProxyLinkTg()
 {
 	_proxy_link_tg->create("#tg_ws_proxy section .common", "str_button_proxy_link_tg_title");
+	_proxy_link_tg->addTutorialStep("str_tour_proxy_link_title", "str_tour_proxy_link_description", 13);
 
 	_proxy_link_tg->addEventClick(
 		[this](JSArgs)

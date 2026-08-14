@@ -47,6 +47,7 @@ void UiDnsHosts::_enableDnsHosts()
 	_enable_dns_hosts
 		->create("#local_dns section .common", "str_checkbox_enable_dns_hosts_title",
 				 Localization::Str{"str_checkbox_enable_dns_hosts_description"});
+	_enable_dns_hosts->addTutorialStep("str_tour_dns_hosts_title", "str_tour_dns_hosts_description", 10);
 	_enable_dns_hosts->addEventClick(
 		[this](JSArgs args)
 		{
@@ -63,6 +64,7 @@ void UiDnsHosts::_enableDnsHosts()
 	);
 
 	_start_update_dns_hosts->create("#local_dns section .common", "str_button_start_dns_hosts_update_title");
+	_start_update_dns_hosts->addTutorialStep("str_tour_update_dns_title", "str_tour_update_dns_description", 11);
 
 	_start_update_dns_hosts->addEventClick(
 		[this](JSArgs)
