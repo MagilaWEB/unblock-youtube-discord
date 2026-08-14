@@ -2,20 +2,18 @@
 -- Автор: MagilaWEB (МогилныйПатчер)
 --
 -- Как работает:
---   1. Первое подключение к хосту — стратегия 1
---   2. Ошибка (RST, 16KB, redirect, retrans) → check_fails()
---   3. После fails=3 — do_switch() → следующая стратегия
---   4. Новое подключение без success → stall → check_fails()
---   5. Входящие не растут > 3с → clock stall → check_fails()
---   6. При успехе — CHECK:host_or_ip на helper для верификации
---   7. Helper ответил FAIL → стратегия бракуется
---   8. Все 145 стратегий → прямой трафик (hrec.nstrategy == 0)
---   9. Через time секунд — сброс на стратегию 1, цикл заново
+--   1. Сначала пробуем прямое соединение (direct, nstrategy = 0)
+--   2. Ошибка (RST, 16KB, redirect, retrans) → перебор стратегий 1..N
+--   3. При подтверждении соединения (CONFIRMED) хост проверяется через zapret-helper
+--   4. Helper ответил OK → стратегия закрепляется (fixed_strategy), применяется всегда
+--   5. Закреплённая стратегия не меняется при локальных сбоях — ждём FAIL от helper
+--   6. Helper ответил FAIL → фиксация снимается, перебор начинается заново с direct
+--   7. Все стратегии перебраны (exhausted) → прямой трафик
 --
 -- Перебор: 1, 2, 3, 4, ..., N (последовательно)
 -- Параметры (через --lua-desync=auto_strategy:fails=3:...):
 --   fails=N     — ошибок до переключения (по умолч. 3)
---   time=N      — время через которое произойдет сброс ошибок (по умолч. 100 сек)
+--   time=N      — время через которое произойдет сброс ошибок (по умолч. 60 сек)
 --   maxseq=N    — макс. seq для проверок (по умолч. 32768)
 --   reset       — отправлять RST при ошибке
 function auto_host_record(desync)
@@ -101,6 +99,11 @@ function auto_strategy(ctx, desync)
         hrec.nstrategy = 0
     end
 
+    -- закреплённая стратегия применяется всегда, пока helper не вернёт FAIL
+    if hrec.fixed_strategy and hrec.fixed_strategy > 0 then
+        hrec.nstrategy = hrec.fixed_strategy
+    end
+
     if hrec.ctstrategy == 0 then
         return
     end
@@ -180,6 +183,11 @@ function auto_strategy(ctx, desync)
         end
 
         local function do_switch(reason)
+            -- закреплённую стратегию локальными сбоями не меняем, ждём FAIL от helper
+            if hrec.fixed_strategy then
+                return
+            end
+
             ULOG("WARNING", "zapret:auto_strategy: FAIL " .. strategy_name() .. " " .. reason .. "->" .. host_or_ip ..
                 ":" .. dport)
 
@@ -203,7 +211,14 @@ function auto_strategy(ctx, desync)
             if host_name and _G.zapret_ipc[host_name] == "FAIL" then
                 _G.zapret_ipc[host_name] = nil
                 _G.zapret_checking[host_name] = nil
-                do_switch("FAIL")
+
+                if hrec.fixed_strategy then
+                    hrec.fixed_strategy = nil
+                    hrec.nstrategy = 0
+                else
+                    do_switch("FAIL")
+                end
+
                 reset_conection()
                 send_signal("CHECK", host_name, nil, 10000)
                 return
@@ -288,6 +303,7 @@ function auto_strategy(ctx, desync)
                 if hrec.nstrategy ~= 0 then
                     if _G.zapret_ipc[host_name] == "OK" then
                         _G.zapret_checking[host_name] = nil
+                        hrec.fixed_strategy = hrec.nstrategy
                         ULOG("OK",
                             "zapret:auto_strategy: CONFIRMED " .. strategy_name() .. "->" .. host_name .. ":" .. dport)
                         send_signal("STAT", host_name, strategy_name(), 10000)
