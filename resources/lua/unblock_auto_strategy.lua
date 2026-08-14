@@ -140,8 +140,8 @@ function auto_strategy(ctx, desync)
                                 dis.ip6.ip6_flow = (desync.track and desync.track.pos.reverse.ip6_flow) and
                                                        desync.track.pos.reverse.ip6_flow or 0x60000000;
                             end
-                            ULOG("INFO", "zapret:reset_conection: " .. strategy_name() .. "->" .. host_or_ip ..
-                                ":" .. dport)
+                            ULOG("INFO",
+                                "zapret:reset_conection: " .. strategy_name() .. "->" .. host_or_ip .. ":" .. dport)
 
                             rawsend_dissect(dis, {
                                 ifout = desync.ifin or 0
@@ -180,8 +180,8 @@ function auto_strategy(ctx, desync)
         end
 
         local function do_switch(reason)
-            ULOG("WARNING",
-                "zapret:auto_strategy: FAIL " .. strategy_name() .. " " .. reason .. "->" .. host_or_ip .. ":" .. dport)
+            ULOG("WARNING", "zapret:auto_strategy: FAIL " .. strategy_name() .. " " .. reason .. "->" .. host_or_ip ..
+                ":" .. dport)
 
             if hrec.nstrategy < hrec.ctstrategy then
                 hrec.nstrategy = hrec.nstrategy + 1
@@ -209,10 +209,18 @@ function auto_strategy(ctx, desync)
                 return
             end
 
+            local function fail_zapret()
+                if _G.zapret_ipc[host_name] == "OK" then
+                    _G.zapret_checking[host_name] = nil
+                    _G.zapret_ipc[host_name] = "FAIL"
+                end
+            end
+
             if desync.outgoing and is_retransmission(desync) then
                 reset_conection()
 
                 if check_fails() then
+                    fail_zapret()
                     do_switch("is_retransmission")
                 end
 
@@ -222,8 +230,10 @@ function auto_strategy(ctx, desync)
             local seq = pos_get(desync, 's')
             if bitand(desync.dis.tcp.th_flags, TH_RST) ~= 0 and seq >= 1 and seq <= 8192 then
                 reset_conection()
+                fail_zapret()
 
                 if check_fails() then
+
                     do_switch("RST")
                 end
 
@@ -234,6 +244,7 @@ function auto_strategy(ctx, desync)
             local plen = payload and #payload or 0
             if plen >= 16000 then
                 reset_conection()
+                fail_zapret()
 
                 if check_fails() then
                     do_switch("DPI16KB")
@@ -248,6 +259,7 @@ function auto_strategy(ctx, desync)
                     local idx_loc = array_field_search(hdis.headers, "header_low", "location")
                     if idx_loc and is_dpi_redirect(desync.track.hostname, hdis.headers[idx_loc].value) then
                         reset_conection()
+                        fail_zapret()
 
                         if check_fails() then
                             do_switch("DPI_redirect")
@@ -259,15 +271,19 @@ function auto_strategy(ctx, desync)
             end
 
             if host_name then
-                if _G.zapret_ipc[host_name] == "OK" then
-                    _G.zapret_checking[host_name] = nil
+                if hrec.nstrategy ~= 0 then
+                    if _G.zapret_ipc[host_name] == "OK" then
+                        _G.zapret_checking[host_name] = nil
+                        ULOG("OK",
+                            "zapret:auto_strategy: CONFIRMED " .. strategy_name() .. "->" .. host_name .. ":" .. dport)
+                    elseif not _G.zapret_checking[host_name] then
+                        _G.zapret_checking[host_name] = true
+                        send_signal("CHECK", host_name, nil, 10000)
+                        ULOG("INFO", "zapret-helper:check " .. host_name)
+                    end
+                else
                     ULOG("OK",
-                        "zapret:auto_strategy: CONFIRMED " .. strategy_name() .. "->" .. host_name .. ":" ..
-                            dport)
-                elseif not _G.zapret_checking[host_name] then
-                    _G.zapret_checking[host_name] = true
-                    send_signal("CHECK", host_name, nil, 10000)
-                    ULOG("INFO", "zapret-helper:check " .. host_name)
+                        "zapret:auto_strategy: CONFIRMED " .. strategy_name() .. "->" .. host_name .. ":" .. dport)
                 end
             end
         end
@@ -282,8 +298,7 @@ function auto_strategy(ctx, desync)
                 end
             else
                 ULOG("OK",
-                    "zapret:auto_strategy:UDP CONFIRMED " .. strategy_name() .. "->" .. host_or_ip .. ":" ..
-                        dport)
+                    "zapret:auto_strategy:UDP CONFIRMED " .. strategy_name() .. "->" .. host_or_ip .. ":" .. dport)
             end
 
             -- ULOG("INFO", "zapret:udp out=" .. pos_out .. " in=" .. pos_in .. " " .. host_or_ip(desync))
