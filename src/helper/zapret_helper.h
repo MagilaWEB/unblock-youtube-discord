@@ -22,7 +22,6 @@ class ZapretHelper
 	inline static constexpr u32	   c_receive_port{ 10'000 };
 	inline static constexpr u32	   c_ipc_port{ 9'999 };
 	inline static constexpr size_t c_receive_buffer_size{ 65'536 };
-	inline static constexpr size_t c_batch_size{ 24 };
 	inline static constexpr auto   c_recheck_interval{ std::chrono::minutes(1) };
 	inline static constexpr auto   c_sleep_short{ std::chrono::milliseconds(150) };
 
