@@ -57,10 +57,10 @@ void ZapretHelper::_handleMessage(std::string_view message)
 	else if (message.starts_with("STAT:"))
 	{
 		std::lock_guard lock(_mutex);
-		const auto rest	 = message.substr(5);
-		const auto pos	 = rest.find(':');
-		const auto host	 = rest.substr(0, pos);
-		const auto strat = (pos != std::string_view::npos) ? rest.substr(pos + 1) : std::string_view{};
+		const auto		rest  = message.substr(5);
+		const auto		pos	  = rest.find(':');
+		const auto		host  = rest.substr(0, pos);
+		const auto		strat = (pos != std::string_view::npos) ? rest.substr(pos + 1) : std::string_view{};
 		if (_isValidHost(host) && !strat.empty())
 		{
 			_valid[std::string{ host }] = std::string{ strat };
@@ -73,10 +73,10 @@ void ZapretHelper::_handleMessage(std::string_view message)
 	else if (message.starts_with("ERR:"))
 	{
 		std::lock_guard lock(_mutex);
-		const auto rest	 = message.substr(4);
-		const auto pos	 = rest.find(':');
-		const auto host	 = rest.substr(0, pos);
-		const auto strat = (pos != std::string_view::npos) ? rest.substr(pos + 1) : std::string_view{};
+		const auto		rest  = message.substr(4);
+		const auto		pos	  = rest.find(':');
+		const auto		host  = rest.substr(0, pos);
+		const auto		strat = (pos != std::string_view::npos) ? rest.substr(pos + 1) : std::string_view{};
 		if (_isValidHost(host))
 		{
 			_error_hosts[std::string{ host }] = std::string{ strat };
@@ -84,7 +84,6 @@ void ZapretHelper::_handleMessage(std::string_view message)
 		}
 	}
 }
-
 
 void ZapretHelper::_checkHost(std::string_view host) const
 {
@@ -135,6 +134,10 @@ void ZapretHelper::_workerLoop()
 			if (now - _last_recheck > c_recheck_interval)
 			{
 				std::lock_guard lock(_mutex);
+				for (auto& [host, strategy] : _error_hosts)
+					if (!_known_hosts.contains(host))
+						_known_hosts.insert(host);
+
 				for (const auto& host : _known_hosts)
 					if (!_active.contains(host))
 						_queue.insert(host);

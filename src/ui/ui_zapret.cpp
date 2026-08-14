@@ -500,7 +500,7 @@ void UiZapret2::_testingServiceDomains()
 
 void UiZapret2::_initHelperChecking()
 {
-	_list_helper_checking->create("#zapret section", Localization::Str{ "str_zapret_helper_checking_title" });
+	_list_helper_checking->create("#zapret section", utils::format(Localization::Str{ "str_zapret_helper_checking_title" }(), 0));
 }
 
 void UiZapret2::updateHelperChecking()
@@ -516,6 +516,7 @@ void UiZapret2::updateHelperChecking()
 
 	_last_helper_checking = hosts;
 
+	_list_helper_checking->setTitle(utils::format(Localization::Str{ "str_zapret_helper_checking_title" }(), hosts.size()));
 	_list_helper_checking->clear();
 	for (auto& host : hosts)
 		_list_helper_checking->createLi(Localization::Str{ host });
@@ -523,7 +524,7 @@ void UiZapret2::updateHelperChecking()
 
 void UiZapret2::_initHelperSeen()
 {
-	_list_helper_seen->create("#zapret section", Localization::Str{ "str_zapret_helper_seen_title" });
+	_list_helper_seen->create("#zapret section", utils::format(Localization::Str{ "str_zapret_helper_seen_title" }(), 0));
 }
 
 void UiZapret2::updateHelperSeen()
@@ -539,6 +540,7 @@ void UiZapret2::updateHelperSeen()
 
 	_last_helper_seen = hosts;
 
+	_list_helper_seen->setTitle(utils::format(Localization::Str{ "str_zapret_helper_seen_title" }(), hosts.size()));
 	_list_helper_seen->clear();
 	for (auto& host : hosts)
 		_list_helper_seen->createLi(Localization::Str{ host });
@@ -546,7 +548,7 @@ void UiZapret2::updateHelperSeen()
 
 void UiZapret2::_initHelperValid()
 {
-	_list_helper_valid->create("#zapret section", Localization::Str{ "str_zapret_helper_valid_title" });
+	_list_helper_valid->create("#zapret section", utils::format(Localization::Str{ "str_zapret_helper_valid_title" }(), 0));
 }
 
 void UiZapret2::updateHelperValid()
@@ -562,6 +564,7 @@ void UiZapret2::updateHelperValid()
 
 	_last_helper_valid = entries;
 
+	_list_helper_valid->setTitle(utils::format(Localization::Str{ "str_zapret_helper_valid_title" }(), entries.size()));
 	_list_helper_valid->clear();
 	for (auto& [host, strategy] : entries)
 		_list_helper_valid->createLiSuccess(utils::format(Localization::Str{ "str_zapret_helper_valid_item" }(), host, strategy), true);
@@ -569,7 +572,7 @@ void UiZapret2::updateHelperValid()
 
 void UiZapret2::_initHelperError()
 {
-	_list_helper_error->create("#zapret section", Localization::Str{ "str_zapret_helper_error_title" });
+	_list_helper_error->create("#zapret section", utils::format(Localization::Str{ "str_zapret_helper_error_title" }(), 0));
 }
 
 void UiZapret2::updateHelperError()
@@ -585,6 +588,7 @@ void UiZapret2::updateHelperError()
 
 	_last_helper_error = entries;
 
+	_list_helper_error->setTitle(utils::format(Localization::Str{ "str_zapret_helper_error_title" }(), entries.size()));
 	_list_helper_error->clear();
 	for (auto& [host, strategy] : entries)
 		_list_helper_error->createLiSuccess(utils::format(Localization::Str{ "str_zapret_helper_error_item" }(), host, strategy));

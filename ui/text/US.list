@@ -190,10 +190,10 @@ str_button_start_dns_hosts_update_title=🔄 Update local DNS
 
 // Zapret titles blocks
 str_zapret_service_title=🔓 Service
-str_zapret_helper_checking_title=🔍 Hosts being checked (Zapret Helper):
-str_zapret_helper_seen_title=🔍 Hosts processed through Zapret:
-str_zapret_helper_valid_title=🔍 Working hosts:
-str_zapret_helper_error_title=🔍 Hosts with errors:
+str_zapret_helper_checking_title=🔍 Hosts being checked ({}):
+str_zapret_helper_seen_title=🔍 Hosts processed through Zapret ({}):
+str_zapret_helper_valid_title=🔍 Working hosts ({}):
+str_zapret_helper_error_title=🔍 Hosts with errors ({}):
 str_zapret_helper_error_item={} - {}
 str_zapret_helper_valid_item={} - {}
 
