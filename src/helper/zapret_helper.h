@@ -31,7 +31,7 @@ class ZapretHelper
 	std::unordered_set<std::string>			_active;
 	std::unordered_set<std::string>			_known_hosts;
 	std::unordered_map<std::string, std::string> _error_hosts;
-	std::unordered_map<std::string, std::string> _strategy;
+	std::unordered_map<std::string, std::string> _valid;
 	UdpSocket								_socket;
 	std::array<char, c_receive_buffer_size> _buffer{};
 	std::thread								_worker;

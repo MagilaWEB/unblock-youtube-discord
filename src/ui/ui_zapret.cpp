@@ -30,7 +30,7 @@ void UiZapret2::initialize()
 	_listEnableServices();
 	_initHelperChecking();
 	_initHelperSeen();
-	_initHelperStrategy();
+	_initHelperValid();
 	_initHelperError();
 }
 
@@ -544,27 +544,27 @@ void UiZapret2::updateHelperSeen()
 		_list_helper_seen->createLi(Localization::Str{ host });
 }
 
-void UiZapret2::_initHelperStrategy()
+void UiZapret2::_initHelperValid()
 {
-	_list_helper_strategy->create("#zapret section", Localization::Str{ "str_zapret_helper_strategy_title" });
+	_list_helper_valid->create("#zapret section", Localization::Str{ "str_zapret_helper_valid_title" });
 }
 
-void UiZapret2::updateHelperStrategy()
+void UiZapret2::updateHelperValid()
 {
-	if (!_list_helper_strategy->isCreate())
+	if (!_list_helper_valid->isCreate())
 		return;
 
-	auto entries = _ui->_unblock->helperHostStrategies();
+	auto entries = _ui->_unblock->helperValidHosts();
 	std::ranges::sort(entries);
 
-	if (entries == _last_helper_strategy)
+	if (entries == _last_helper_valid)
 		return;
 
-	_last_helper_strategy = entries;
+	_last_helper_valid = entries;
 
-	_list_helper_strategy->clear();
+	_list_helper_valid->clear();
 	for (auto& [host, strategy] : entries)
-		_list_helper_strategy->createLiSuccess(utils::format(Localization::Str{ "str_zapret_helper_strategy_item" }(), host, strategy), true);
+		_list_helper_valid->createLiSuccess(utils::format(Localization::Str{ "str_zapret_helper_valid_item" }(), host, strategy), true);
 }
 
 void UiZapret2::_initHelperError()
@@ -587,5 +587,5 @@ void UiZapret2::updateHelperError()
 
 	_list_helper_error->clear();
 	for (auto& [host, strategy] : entries)
-		_list_helper_error->createLiSuccess(utils::format(Localization::Str{ "str_zapret_helper_strategy_item" }(), host, strategy));
+		_list_helper_error->createLiSuccess(utils::format(Localization::Str{ "str_zapret_helper_error_item" }(), host, strategy));
 }

@@ -67,7 +67,7 @@ void Ui::jsUpdate()
 	_ui_dns_hosts->updateInfoWindow();
 	_ui_zapret2->updateHelperChecking();
 	_ui_zapret2->updateHelperSeen();
-	_ui_zapret2->updateHelperStrategy();
+	_ui_zapret2->updateHelperValid();
 	_ui_zapret2->updateHelperError();
 	_updateAppProgressWindowInfo();
 }

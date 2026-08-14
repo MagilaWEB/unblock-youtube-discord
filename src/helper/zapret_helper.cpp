@@ -63,8 +63,8 @@ void ZapretHelper::_handleMessage(std::string_view message)
 		const auto strat = (pos != std::string_view::npos) ? rest.substr(pos + 1) : std::string_view{};
 		if (_isValidHost(host) && !strat.empty())
 		{
-			_strategy[std::string{ host }] = std::string{ strat };
-			_send(std::format("STRING:helper_strategy:{}:{}", host, strat), c_ipc_port);
+			_valid[std::string{ host }] = std::string{ strat };
+			_send(std::format("STRING:helper_valid:{}:{}", host, strat), c_ipc_port);
 
 			if (_error_hosts.erase(std::string{ host }))
 				_send(std::format("STRING:helper_error_clear:{}", host), c_ipc_port);
