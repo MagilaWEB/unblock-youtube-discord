@@ -209,7 +209,9 @@ void UiZapret2::_initMainControls()
 	_window_continue_select_strategy->addEventYesNo(
 		[this](JSArgs args)
 		{
-			if (args[0].ToBoolean())
+			_window_continue_select_strategy->hide();
+
+			if (!args[0].ToBoolean())
 				_autoStart();
 
 			return false;
