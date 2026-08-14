@@ -47,4 +47,5 @@ jobs:
 
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      timeout-minutes: 10
       run: ctest --build-config ${{ matrix.build_type }} -VV
