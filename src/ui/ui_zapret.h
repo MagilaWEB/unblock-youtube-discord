@@ -50,6 +50,10 @@ class UiZapret2
 	UL_LIST(_list_helper_seen);
 	std::vector<std::string> _last_helper_seen;
 
+	// Confirmed strategy per host (zapret statistics)
+	UL_LIST(_list_helper_strategy);
+	std::vector<std::pair<std::string, std::string>> _last_helper_strategy;
+
 public:
 	UiZapret2(std::shared_ptr<Ui> ui);
 
@@ -68,6 +72,9 @@ public:
 
 	/** Обновить список хостов, которые когда-либо проверялись через zapret (тик из Ui::jsUpdate). */
 	void updateHelperSeen();
+
+	/** Обновить статистику стратегий по хостам (тик из Ui::jsUpdate). */
+	void updateHelperStrategy();
 
 private:
 	void _listEnableServices();
@@ -99,4 +106,5 @@ private:
 
 	void _initHelperChecking();
 	void _initHelperSeen();
+	void _initHelperStrategy();
 };

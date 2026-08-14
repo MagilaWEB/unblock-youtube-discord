@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <unordered_map>
 #include <unordered_set>
 
 #include "curl_client.h"
@@ -29,6 +30,7 @@ class ZapretHelper
 	std::unordered_set<std::string>			_queue;
 	std::unordered_set<std::string>			_active;
 	std::unordered_set<std::string>			_known_hosts;
+	std::unordered_map<std::string, std::string> _strategy;
 	UdpSocket								_socket;
 	std::array<char, c_receive_buffer_size> _buffer{};
 	std::thread								_worker;

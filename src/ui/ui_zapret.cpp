@@ -30,6 +30,7 @@ void UiZapret2::initialize()
 	_listEnableServices();
 	_initHelperChecking();
 	_initHelperSeen();
+	_initHelperStrategy();
 }
 
 void UiZapret2::_listEnableServices()
@@ -540,4 +541,27 @@ void UiZapret2::updateHelperSeen()
 	_list_helper_seen->clear();
 	for (auto& host : hosts)
 		_list_helper_seen->createLi(Localization::Str{ host });
+}
+
+void UiZapret2::_initHelperStrategy()
+{
+	_list_helper_strategy->create("#zapret section", Localization::Str{ "str_zapret_helper_strategy_title" });
+}
+
+void UiZapret2::updateHelperStrategy()
+{
+	if (!_list_helper_strategy->isCreate())
+		return;
+
+	auto entries = _ui->_unblock->helperHostStrategies();
+	std::ranges::sort(entries);
+
+	if (entries == _last_helper_strategy)
+		return;
+
+	_last_helper_strategy = entries;
+
+	_list_helper_strategy->clear();
+	for (auto& [host, strategy] : entries)
+		_list_helper_strategy->createLi(utils::format(Localization::Str{ "str_zapret_helper_strategy_item" }(), host, strategy));
 }

@@ -209,10 +209,17 @@ function auto_strategy(ctx, desync)
                 return
             end
 
-            local function fail_zapret()
+            local function fail_stretegy()
                 if _G.zapret_ipc[host_name] == "OK" then
-                    _G.zapret_checking[host_name] = nil
                     _G.zapret_ipc[host_name] = "FAIL"
+                end
+            end
+
+            local function check_stretegy()
+                if not _G.zapret_checking[host_name] then
+                    _G.zapret_checking[host_name] = true
+                    send_signal("CHECK", host_name, nil, 10000)
+                    ULOG("INFO", "zapret-helper:check " .. host_name)
                 end
             end
 
@@ -220,7 +227,8 @@ function auto_strategy(ctx, desync)
                 reset_conection()
 
                 if check_fails() then
-                    fail_zapret()
+                    fail_stretegy()
+                    check_stretegy()
                     do_switch("is_retransmission")
                 end
 
@@ -230,10 +238,10 @@ function auto_strategy(ctx, desync)
             local seq = pos_get(desync, 's')
             if bitand(desync.dis.tcp.th_flags, TH_RST) ~= 0 and seq >= 1 and seq <= 8192 then
                 reset_conection()
-                fail_zapret()
+                fail_stretegy()
+                check_stretegy()
 
                 if check_fails() then
-
                     do_switch("RST")
                 end
 
@@ -244,7 +252,8 @@ function auto_strategy(ctx, desync)
             local plen = payload and #payload or 0
             if plen >= 16000 then
                 reset_conection()
-                fail_zapret()
+                fail_stretegy()
+                check_stretegy()
 
                 if check_fails() then
                     do_switch("DPI16KB")
@@ -259,7 +268,8 @@ function auto_strategy(ctx, desync)
                     local idx_loc = array_field_search(hdis.headers, "header_low", "location")
                     if idx_loc and is_dpi_redirect(desync.track.hostname, hdis.headers[idx_loc].value) then
                         reset_conection()
-                        fail_zapret()
+                        fail_stretegy()
+                        check_stretegy()
 
                         if check_fails() then
                             do_switch("DPI_redirect")
@@ -276,14 +286,14 @@ function auto_strategy(ctx, desync)
                         _G.zapret_checking[host_name] = nil
                         ULOG("OK",
                             "zapret:auto_strategy: CONFIRMED " .. strategy_name() .. "->" .. host_name .. ":" .. dport)
-                    elseif not _G.zapret_checking[host_name] then
-                        _G.zapret_checking[host_name] = true
-                        send_signal("CHECK", host_name, nil, 10000)
-                        ULOG("INFO", "zapret-helper:check " .. host_name)
+                        send_signal("STAT", host_name, strategy_name(), 10000)
+                    else
+                        check_stretegy()
                     end
                 else
                     ULOG("OK",
                         "zapret:auto_strategy: CONFIRMED " .. strategy_name() .. "->" .. host_name .. ":" .. dport)
+                    send_signal("STAT", host_name, strategy_name(), 10000)
                 end
             end
         end
@@ -299,6 +309,7 @@ function auto_strategy(ctx, desync)
             else
                 ULOG("OK",
                     "zapret:auto_strategy:UDP CONFIRMED " .. strategy_name() .. "->" .. host_or_ip .. ":" .. dport)
+                send_signal("STAT", host_or_ip, strategy_name(), 10000)
             end
 
             -- ULOG("INFO", "zapret:udp out=" .. pos_out .. " in=" .. pos_in .. " " .. host_or_ip(desync))

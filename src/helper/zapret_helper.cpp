@@ -54,6 +54,19 @@ void ZapretHelper::_handleMessage(std::string_view message)
 		std::lock_guard lock(_mutex);
 		_addHost(message.substr(6));
 	}
+	else if (message.starts_with("STAT:"))
+	{
+		std::lock_guard lock(_mutex);
+		const auto		rest  = message.substr(5);
+		const auto		pos	  = rest.find(':');
+		const auto		host  = rest.substr(0, pos);
+		const auto		strat = (pos != std::string_view::npos) ? rest.substr(pos + 1) : std::string_view{};
+		if (_isValidHost(host) && !strat.empty())
+		{
+			_strategy[std::string{ host }] = std::string{ strat };
+			_send(std::format("STRING:helper_strategy:{}:{}", host, strat), c_ipc_port);
+		}
+	}
 }
 
 void ZapretHelper::_checkHost(std::string_view host) const
@@ -115,7 +128,8 @@ void ZapretHelper::_workerLoop()
 				for (const auto& host : _known_hosts)
 					_send(std::format("STRING:helper_seen:{}", host), c_ipc_port);
 		}
-		else
+
+		if (!_active.empty())
 			for (auto& host : _active)
 				_send(std::format("STRING:helper_checking:{}", host), c_ipc_port);
 

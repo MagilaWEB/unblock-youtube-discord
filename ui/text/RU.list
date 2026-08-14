@@ -192,6 +192,8 @@ str_button_start_dns_hosts_update_title=🔄 Обновить локальный
 str_zapret_service_title=🔓 Сервисы
 str_zapret_helper_checking_title=🔍 Хосты на проверке (Zapret Помощник):
 str_zapret_helper_seen_title=🔍 Хосты, прошедшие через Zapret:
+str_zapret_helper_strategy_title=🔍 Стратегия по хостам:
+str_zapret_helper_strategy_item={} — {}
 
 // Setting common show console
 str_checkbox_show_console_title=📟 Показывать консоль
