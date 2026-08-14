@@ -37,6 +37,8 @@ public:
 	bool bind(u32 port) const;
 	/** Switch the socket to non-blocking mode. */
 	bool nonBlocking() const;
+	/** Bound local port (htons order), 0 if not bound. */
+	u32	 localPort() const;
 	/** Send a datagram to the given address. */
 	void sendTo(std::string_view message, u32 ip, u32 port) const;
 	/** Receive a datagram, returns its length (<=0 - no data). */

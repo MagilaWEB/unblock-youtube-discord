@@ -37,6 +37,19 @@ bool UdpSocket::nonBlocking() const
 	return ioctlsocket(_fd, FIONBIO, &mode) != SOCKET_ERROR;
 }
 
+u32 UdpSocket::localPort() const
+{
+	if (_fd == INVALID_SOCKET)
+		return 0;
+
+	sockaddr_in addr{};
+	int			addr_len = sizeof(addr);
+	if (getsockname(_fd, reinterpret_cast<sockaddr*>(&addr), &addr_len) != 0)
+		return 0;
+
+	return ntohs(addr.sin_port);
+}
+
 void UdpSocket::sendTo(std::string_view message, u32 ip, u32 port) const
 {
 	sockaddr_in addr{};

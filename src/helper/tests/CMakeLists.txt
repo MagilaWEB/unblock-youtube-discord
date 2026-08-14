@@ -1,5 +1,6 @@
 add_executable(test_helper
     test_helper.cpp
+    test_net.cpp
     ${CMAKE_SOURCE_DIR}/src/core/tests/tap_main.cpp
     ../zapret_helper.cpp
     ../net.cpp

@@ -26,7 +26,52 @@ void ZapretHelper::_send(std::string_view message, u32 port) const
 
 void ZapretHelper::_log(std::string_view text) const
 {
-	_send(std::format("LOG:INFO:helper:{}", text), c_ipc_port);
+	_send(_makeLog(text), c_ipc_port);
+}
+
+std::string ZapretHelper::_makeLog(std::string_view text)
+{
+	return std::format("LOG:INFO:helper:{}", text);
+}
+
+std::string ZapretHelper::_makeValidSignal(std::string_view host, std::string_view strategy)
+{
+	return std::format("STRING:helper_valid:{}:{}", host, strategy);
+}
+
+std::string ZapretHelper::_makeErrorSignal(std::string_view host, std::string_view strategy)
+{
+	return std::format("STRING:helper_error:{}:{}", host, strategy);
+}
+
+std::string ZapretHelper::_makeErrorClearSignal(std::string_view host)
+{
+	return std::format("STRING:helper_error_clear:{}", host);
+}
+
+std::string ZapretHelper::_makeDoneSignal(std::string_view host)
+{
+	return std::format("STRING:helper_done:{}", host);
+}
+
+std::string ZapretHelper::_makeCheckingSignal(std::string_view host)
+{
+	return std::format("STRING:helper_checking:{}", host);
+}
+
+std::string ZapretHelper::_makeSeenSignal(std::string_view host)
+{
+	return std::format("STRING:helper_seen:{}", host);
+}
+
+std::string ZapretHelper::_makeOk(std::string_view host)
+{
+	return std::format("OK:{}", host);
+}
+
+std::string ZapretHelper::_makeFail(std::string_view host)
+{
+	return std::format("FAIL:{}", host);
 }
 
 void ZapretHelper::_addHost(std::string_view host)
@@ -51,7 +96,9 @@ void ZapretHelper::_handleMessage(std::string_view message)
 	else if (message.starts_with("CHECK:"))
 	{
 		std::lock_guard lock(_mutex);
-		_addHost(message.substr(6));
+		const auto		rest = message.substr(6);
+		const auto		pos	 = rest.find(':');
+		_addHost(rest.substr(0, pos));
 	}
 	else if (message.starts_with("STAT:"))
 	{
@@ -63,10 +110,10 @@ void ZapretHelper::_handleMessage(std::string_view message)
 		if (_isValidHost(host) && !strat.empty())
 		{
 			_valid[std::string{ host }] = std::string{ strat };
-			_send(std::format("STRING:helper_valid:{}:{}", host, strat), c_ipc_port);
+			_send(_makeValidSignal(host, strat), c_ipc_port);
 
 			if (_error_hosts.erase(std::string{ host }))
-				_send(std::format("STRING:helper_error_clear:{}", host), c_ipc_port);
+				_send(_makeErrorClearSignal(host), c_ipc_port);
 		}
 	}
 	else if (message.starts_with("ERR:"))
@@ -79,7 +126,7 @@ void ZapretHelper::_handleMessage(std::string_view message)
 		if (_isValidHost(host))
 		{
 			_error_hosts[std::string{ host }] = std::string{ strat };
-			_send(std::format("STRING:helper_error:{}:{}", host, strat), c_ipc_port);
+			_send(_makeErrorSignal(host, strat), c_ipc_port);
 		}
 	}
 }
@@ -87,20 +134,43 @@ void ZapretHelper::_handleMessage(std::string_view message)
 void ZapretHelper::_checkHost(std::string_view host) const
 {
 	_log(std::format("check {}", host));
-	//_send(std::format("CHECK:{}", host), c_receive_port);
 
 	const auto result = CurlClient::checkHost(std::string{ host });
-	_send(std::format("STRING:helper_done:{}", host), c_ipc_port);
+	_send(_makeDoneSignal(host), c_ipc_port);
 
 	if (result)
 	{
 		_log(std::format("ok {} http={}", host, result.value()));
-		_send(std::format("OK:{}", host), c_receive_port);
+		_send(_makeOk(host), c_receive_port);
 	}
 	else
 	{
 		_log(std::format("fail {} curl={}", host, result.error()));
-		_send(std::format("FAIL:{}", host), c_receive_port);
+		_send(_makeFail(host), c_receive_port);
+	}
+}
+
+void ZapretHelper::_idleStep()
+{
+	const auto now = std::chrono::steady_clock::now();
+	if (now - _last_recheck > c_recheck_interval)
+	{
+		std::lock_guard lock(_mutex);
+		for (auto& [host, strategy] : _error_hosts)
+			if (!_known_hosts.contains(host))
+				_known_hosts.insert(host);
+
+		for (const auto& host : _known_hosts)
+			if (!_queue.contains(host))
+				_queue.insert(host);
+
+		_last_recheck = now;
+	}
+	else
+	{
+		std::lock_guard lock(_mutex);
+		for (const auto& host : _known_hosts)
+			_send(_makeSeenSignal(host), c_ipc_port);
 	}
 }
 
@@ -121,33 +191,13 @@ void ZapretHelper::_workerLoop()
 
 		if (batch.empty())
 		{
-			const auto now = steady_clock::now();
-			if (now - _last_recheck > c_recheck_interval)
-			{
-				std::lock_guard lock(_mutex);
-				for (auto& [host, strategy] : _error_hosts)
-					if (!_known_hosts.contains(host))
-						_known_hosts.insert(host);
-
-				for (const auto& host : _known_hosts)
-					if (!_queue.contains(host))
-						_queue.insert(host);
-
-				_last_recheck = now;
-			}
-			else
-			{
-				std::lock_guard lock(_mutex);
-				for (const auto& host : _known_hosts)
-					_send(std::format("STRING:helper_seen:{}", host), c_ipc_port);
-			}
-
+			_idleStep();
 			std::this_thread::sleep_for(c_sleep_short);
 			continue;
 		}
 
 		for (auto& host : batch)
-			_send(std::format("STRING:helper_checking:{}", host), c_ipc_port);
+			_send(_makeCheckingSignal(host), c_ipc_port);
 
 		std::for_each(std::execution::par, batch.begin(), batch.end(), [this](std::string& host) { _checkHost(host); });
 	}

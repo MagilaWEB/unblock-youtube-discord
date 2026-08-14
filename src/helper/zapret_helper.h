@@ -26,10 +26,10 @@ class ZapretHelper
 	inline static constexpr auto   c_recheck_interval{ std::chrono::minutes(1) };
 	inline static constexpr auto   c_sleep_short{ std::chrono::milliseconds(150) };
 
-	std::mutex								_mutex;
-	mutable std::mutex						_send_mutex;
-	std::unordered_set<std::string>			_queue;
-	std::unordered_set<std::string>			_known_hosts;
+	std::mutex									 _mutex;
+	mutable std::mutex							 _send_mutex;
+	std::unordered_set<std::string>				 _queue;
+	std::unordered_set<std::string>				 _known_hosts;
 	std::unordered_map<std::string, std::string> _error_hosts;
 	std::unordered_map<std::string, std::string> _valid;
 	UdpSocket									 _socket;
@@ -66,4 +66,18 @@ private:
 	void _checkHost(std::string_view host) const;
 	/** Background worker: checks queued hosts in batches. */
 	void _workerLoop();
+
+	// Message formatters (pure, no I/O) — unit-testable.
+	static std::string _makeLog(std::string_view text);
+	static std::string _makeValidSignal(std::string_view host, std::string_view strategy);
+	static std::string _makeErrorSignal(std::string_view host, std::string_view strategy);
+	static std::string _makeErrorClearSignal(std::string_view host);
+	static std::string _makeDoneSignal(std::string_view host);
+	static std::string _makeCheckingSignal(std::string_view host);
+	static std::string _makeSeenSignal(std::string_view host);
+	static std::string _makeOk(std::string_view host);
+	static std::string _makeFail(std::string_view host);
+
+	/** Re-check due (interval passed) or report seen hosts. Called when queue is empty. */
+	void _idleStep();
 };
