@@ -26,25 +26,16 @@ void ZapretHelper::_send(std::string_view message, u32 port) const
 
 void ZapretHelper::_log(std::string_view text) const
 {
-	_send(std::format("LOG:INFO:helper:{}", text), c_log_port);
+	_send(std::format("LOG:INFO:helper:{}", text), c_ipc_port);
 }
 
-void ZapretHelper::_addHosts(std::string_view hosts)
+void ZapretHelper::_addHost(std::string_view host)
 {
-	while (!hosts.empty())
+	host = host.substr(0, host.find(':'));
+	if (_isValidHost(host))
 	{
-		const auto pos	= hosts.find(':');
-		const auto host = hosts.substr(0, pos);
-		if (_isValidHost(host))
-		{
-			_known_hosts.insert(std::string{ host });
-			_queue.insert(std::string{ host });
-		}
-
-		if (pos == std::string_view::npos)
-			break;
-
-		hosts.remove_prefix(pos + 1);
+		_known_hosts.insert(std::string{ host });
+		_queue.insert(std::string{ host });
 	}
 }
 
@@ -53,24 +44,25 @@ void ZapretHelper::_handleMessage(std::string_view message)
 	if (message.starts_with("LIST:"))
 	{
 		std::lock_guard lock(_mutex);
-		_addHosts(message.substr(5));
+		for (const auto part : message.substr(5) | std::views::split(':'))
+			_addHost(std::string_view{ part });
+
 		_log(std::format("list added {} hosts", _queue.size()));
 	}
 	else if (message.starts_with("CHECK:"))
 	{
 		std::lock_guard lock(_mutex);
-		_addHosts(message.substr(6));
+		_addHost(message.substr(6));
 	}
 }
 
 void ZapretHelper::_checkHost(std::string_view host) const
 {
 	_log(std::format("check {}", host));
-	_send(std::format("CHECK:{}", host), c_receive_port);
+	//_send(std::format("CHECK:{}", host), c_receive_port);
 
 	const auto result = CurlClient::checkHost(std::string{ host });
-
-	_send(std::format("STRING:helper_done:{}", host), c_log_port);
+	_send(std::format("STRING:helper_done:{}", host), c_ipc_port);
 
 	if (result)
 	{
@@ -92,6 +84,7 @@ void ZapretHelper::_workerLoop()
 	{
 		std::vector<std::string> batch;
 		batch.reserve(c_batch_size);
+
 		{
 			std::lock_guard lock(_mutex);
 			while (!_queue.empty() && batch.size() < c_batch_size)
@@ -99,7 +92,6 @@ void ZapretHelper::_workerLoop()
 				auto it_host = _queue.begin();
 				if (!_active.contains(*it_host))
 				{
-					_send(std::format("STRING:helper_checking:{}", *it_host), c_log_port);
 					_active.insert(*it_host);
 					batch.emplace_back(*it_host);
 					_queue.erase(it_host);
@@ -119,10 +111,13 @@ void ZapretHelper::_workerLoop()
 
 				_last_recheck = now;
 			}
-
-			std::this_thread::sleep_for(c_sleep_short);
-			continue;
+			else
+				for (const auto& host : _known_hosts)
+					_send(std::format("STRING:helper_seen:{}", host), c_ipc_port);
 		}
+		else
+			for (auto& host : _active)
+				_send(std::format("STRING:helper_checking:{}", host), c_ipc_port);
 
 		if (batch.empty())
 		{

@@ -18,11 +18,11 @@
 class ZapretHelper
 {
 	inline static constexpr u32	   c_receive_port{ 10'000 };
-	inline static constexpr u32	   c_log_port{ 9'999 };
+	inline static constexpr u32	   c_ipc_port{ 9'999 };
 	inline static constexpr size_t c_receive_buffer_size{ 65'536 };
 	inline static constexpr size_t c_batch_size{ 24 };
 	inline static constexpr auto   c_recheck_interval{ std::chrono::minutes(1) };
-	inline static constexpr auto   c_sleep_short{ std::chrono::milliseconds(50) };
+	inline static constexpr auto   c_sleep_short{ std::chrono::milliseconds(150) };
 
 	std::mutex								_mutex;
 	mutable std::mutex						_send_mutex;
@@ -52,7 +52,7 @@ private:
 	/** Send a log entry to unblock (port 9999). */
 	void _log(std::string_view text) const;
 	/** Split a ':'-separated host string and enqueue the hosts. */
-	void _addHosts(std::string_view hosts);
+	void _addHost(std::string_view hosts);
 	/** Handle an incoming message (LIST or CHECK). */
 	void _handleMessage(std::string_view message);
 	/** Check a host via curl and report OK/FAIL. */
