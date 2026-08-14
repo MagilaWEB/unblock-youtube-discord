@@ -8,6 +8,7 @@
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "curl_client.h"
 #include "net.h"
@@ -25,19 +26,18 @@ class ZapretHelper
 	inline static constexpr auto   c_recheck_interval{ std::chrono::minutes(1) };
 	inline static constexpr auto   c_sleep_short{ std::chrono::milliseconds(150) };
 
-	std::mutex								_mutex;
-	mutable std::mutex						_send_mutex;
-	std::unordered_set<std::string>			_queue;
-	std::unordered_set<std::string>			_active;
-	std::unordered_set<std::string>			_known_hosts;
+	std::mutex									 _mutex;
+	mutable std::mutex							 _send_mutex;
+	std::vector<std::string>					 _queue;
+	std::unordered_set<std::string>				 _known_hosts;
 	std::unordered_map<std::string, std::string> _error_hosts;
 	std::unordered_map<std::string, std::string> _valid;
-	UdpSocket								_socket;
-	std::array<char, c_receive_buffer_size> _buffer{};
-	std::thread								_worker;
-	u32										_target_ip{ htonl(INADDR_LOOPBACK) };
-	bool									_running{ true };
-	std::chrono::steady_clock::time_point	_last_recheck{};
+	UdpSocket									 _socket;
+	std::array<char, c_receive_buffer_size>		 _buffer{};
+	std::thread									 _worker;
+	u32											 _target_ip{ htonl(INADDR_LOOPBACK) };
+	bool										 _running{ true };
+	std::chrono::steady_clock::time_point		 _last_recheck{};
 
 public:
 	ZapretHelper() = default;

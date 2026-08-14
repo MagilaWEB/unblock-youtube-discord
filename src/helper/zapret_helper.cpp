@@ -31,12 +31,12 @@ void ZapretHelper::_log(std::string_view text) const
 
 void ZapretHelper::_addHost(std::string_view host)
 {
-	host = host.substr(0, host.find(':'));
-	if (_isValidHost(host))
-	{
-		_known_hosts.insert(std::string{ host });
-		_queue.insert(std::string{ host });
-	}
+	if (!_isValidHost(host))
+		return;
+
+	_known_hosts.insert(std::string{ host });
+	if (std::ranges::find(_queue, host) == _queue.end())
+		_queue.emplace_back(host);
 }
 
 void ZapretHelper::_handleMessage(std::string_view message)
@@ -111,23 +111,6 @@ void ZapretHelper::_workerLoop()
 
 	while (_running)
 	{
-		std::vector<std::string> batch;
-		batch.reserve(c_batch_size);
-
-		{
-			std::lock_guard lock(_mutex);
-			while (!_queue.empty() && batch.size() < c_batch_size)
-			{
-				auto it_host = _queue.begin();
-				if (!_active.contains(*it_host))
-				{
-					_active.insert(*it_host);
-					batch.emplace_back(*it_host);
-					_queue.erase(it_host);
-				}
-			}
-		}
-
 		if (_queue.empty())
 		{
 			const auto now = steady_clock::now();
@@ -139,37 +122,25 @@ void ZapretHelper::_workerLoop()
 						_known_hosts.insert(host);
 
 				for (const auto& host : _known_hosts)
-					if (!_active.contains(host))
-						_queue.insert(host);
+					if (std::ranges::find(_queue, host) == _queue.end())
+						_queue.push_back(host);
 
 				_last_recheck = now;
 			}
 			else
 				for (const auto& host : _known_hosts)
 					_send(std::format("STRING:helper_seen:{}", host), c_ipc_port);
-		}
 
-		if (!_active.empty())
-			for (auto& host : _active)
-				_send(std::format("STRING:helper_checking:{}", host), c_ipc_port);
-
-		if (batch.empty())
-		{
 			std::this_thread::sleep_for(c_sleep_short);
 			continue;
 		}
 
-		std::for_each(
-			std::execution::par,
-			batch.begin(),
-			batch.end(),
-			[this](std::string& host)
-			{
-				_checkHost(host);
-				std::lock_guard lock(_mutex);
-				_active.erase(host);
-			}
-		);
+		for (auto& host : _queue)
+			_send(std::format("STRING:helper_checking:{}", host), c_ipc_port);
+
+		std::for_each(std::execution::par, _queue.begin(), _queue.end(), [this](std::string& host) { _checkHost(host); });
+
+		_queue.clear();
 	}
 }
 
