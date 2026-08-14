@@ -210,6 +210,10 @@ function auto_strategy(ctx, desync)
             end
 
             local function fail_stretegy()
+                if host_name then
+                    send_signal("ERR", host_name, strategy_name(), 10000)
+                end
+
                 if _G.zapret_ipc[host_name] == "OK" then
                     _G.zapret_ipc[host_name] = "FAIL"
                 end

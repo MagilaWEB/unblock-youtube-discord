@@ -296,6 +296,28 @@ std::vector<std::string> Unblock::helperSeenHosts()
 	return { _helper_seen.begin(), _helper_seen.end() };
 }
 
+std::vector<std::pair<std::string, std::string>> Unblock::helperErrorStrategies()
+{
+	auto& ipc = IPCSignals::get();
+
+	while (auto entry = ipc.getString("helper_error"))
+	{
+		const auto pos = entry->rfind(':');
+		if (pos != std::string::npos)
+			_helper_errors[entry->substr(0, pos)] = entry->substr(pos + 1);
+	}
+
+	while (auto host = ipc.getString("helper_error_clear"))
+		_helper_errors.erase(*host);
+
+	std::vector<std::pair<std::string, std::string>> result;
+	result.reserve(_helper_errors.size());
+	for (const auto& [host, strategy] : _helper_errors)
+		result.emplace_back(host, strategy);
+
+	return result;
+}
+
 std::vector<std::pair<std::string, std::string>> Unblock::helperHostStrategies()
 {
 	auto& ipc = IPCSignals::get();
@@ -404,6 +426,7 @@ void Unblock::removeService()
 {
 	_helper_seen.clear();
 	_helper_checking.clear();
+	_helper_errors.clear();
 	_helper_strategy.clear();
 	_zapret.remove();
 	_zapret_helper.remove();
@@ -414,6 +437,7 @@ void Unblock::stopService()
 {
 	_helper_seen.clear();
 	_helper_checking.clear();
+	_helper_errors.clear();
 	_helper_strategy.clear();
 	_zapret.stop();
 	_zapret_helper.stop();
@@ -423,6 +447,7 @@ void Unblock::startService()
 {
 	_helper_seen.clear();
 	_helper_checking.clear();
+	_helper_errors.clear();
 	_helper_strategy.clear();
 	_zapret.remove();
 	_zapret_helper.remove();

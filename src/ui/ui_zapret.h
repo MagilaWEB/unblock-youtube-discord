@@ -54,6 +54,10 @@ class UiZapret2
 	UL_LIST(_list_helper_strategy);
 	std::vector<std::pair<std::string, std::string>> _last_helper_strategy;
 
+	// Hosts with current errors
+	UL_LIST(_list_helper_error);
+	std::vector<std::pair<std::string, std::string>> _last_helper_error;
+
 public:
 	UiZapret2(std::shared_ptr<Ui> ui);
 
@@ -75,6 +79,9 @@ public:
 
 	/** Обновить статистику стратегий по хостам (тик из Ui::jsUpdate). */
 	void updateHelperStrategy();
+
+	/** Обновить список хостов с текущими ошибками (тик из Ui::jsUpdate). */
+	void updateHelperError();
 
 private:
 	void _listEnableServices();
@@ -107,4 +114,5 @@ private:
 	void _initHelperChecking();
 	void _initHelperSeen();
 	void _initHelperStrategy();
+	void _initHelperError();
 };

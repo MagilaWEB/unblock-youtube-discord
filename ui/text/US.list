@@ -193,6 +193,7 @@ str_zapret_service_title=🔓 Service
 str_zapret_helper_checking_title=🔍 Hosts being checked (Zapret Helper):
 str_zapret_helper_seen_title=🔍 Hosts processed through Zapret:
 str_zapret_helper_strategy_title=🔍 Strategy per host:
+str_zapret_helper_error_title=🔍 Hosts with errors:
 str_zapret_helper_strategy_item={} — {}
 
 // Setting common show console
