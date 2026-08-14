@@ -1,0 +1,154 @@
+main article#tutorial.active section {
+    display: block;
+}
+
+main article#tutorial .block {
+    padding: 1.6vw 2.4vw;
+}
+
+main article#tutorial .block h2 {
+    margin     : 0 0 1.1vw 0;
+    font-size  : 2.2vw;
+    font-weight: 600;
+}
+
+main article#tutorial .block p {
+    margin         : 0;
+    font-size      : 1.55vw;
+    line-height    : 2.5vw;
+    color          : rgba(240, 240, 240, 0.9);
+    white-space    : pre-line;
+    overflow-wrap  : break-word;
+}
+
+/* ============ Interactive tour ============ */
+
+#tour_overlay {
+    position        : fixed;
+    top             : 0;
+    left            : 0;
+    width           : 100%;
+    height          : 100%;
+    z-index         : 60;
+    background-color: transparent;
+    pointer-events  : auto;
+}
+
+#tour_spotlight {
+    position      : absolute;
+    display       : block;
+    visibility    : hidden;
+    opacity       : 0;
+    border-radius : 10px;
+    background    : rgba(255, 255, 255, 0.04);
+    border        : 2px solid rgba(0, 232, 160, 0.85);
+    box-shadow    : 0 0 24px rgba(0, 232, 160, 0.35);
+    transition    : opacity 0.25s ease;
+    pointer-events: none;
+    z-index       : 61;
+}
+
+#tour_spotlight.tour_spotlight_show {
+    visibility: visible;
+    opacity   : 1;
+}
+
+#tour_overlay .tour_dimmer {
+    position        : absolute;
+    display         : none;
+    background-color: rgba(0, 0, 0, 0.6);
+    pointer-events  : auto;
+    z-index         : 60;
+}
+
+#tour_panel {
+    position        : absolute;
+    width           : 37.4vw;
+    min-width       : 24.2vw;
+    max-width       : 48.4vw;
+    max-height      : 60vh;
+    overflow        : auto;
+    background-color: rgba(28, 31, 46, 0.96);
+    border          : 1px solid rgba(255, 255, 255, 0.14);
+    border-radius   : 12px;
+    padding         : 1.32vw 1.54vw;
+    box-shadow      : 0 12px 40px rgba(0, 0, 0, 0.6);
+    z-index         : 62;
+    pointer-events  : auto;
+    opacity         : 1;
+    visibility      : visible;
+    transition      : opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#tour_panel.tour_panel_hidden {
+    opacity   : 0;
+    visibility: hidden;
+}
+
+#tour_panel .tour_panel_title {
+    margin      : 0 0 0.6vw 0;
+    font-size   : 2.19vw;
+    font-weight : 600;
+    color       : #ffffff;
+}
+
+#tour_panel .tour_panel_desc {
+    margin        : 0 0 1vw 0;
+    font-size     : 1.61vw;
+    line-height   : 2.53vw;
+    color         : rgba(240, 240, 240, 0.92);
+    white-space   : pre-line;
+    overflow-wrap : break-word;
+}
+
+#tour_panel .tour_panel_counter {
+    font-size    : 1.27vw;
+    color        : rgba(240, 240, 240, 0.55);
+    margin-bottom: 0.7vw;
+}
+
+#tour_panel .tour_panel_buttons {
+    display        : flex;
+    align-items    : center;
+    justify-content: flex-end;
+    gap            : 0.6vw;
+}
+
+#tour_panel .tour_btn {
+    cursor        : pointer;
+    color         : #f0f0f0;
+    font-size     : 1.38vw;
+    padding       : 0.4vw 1vw;
+    border-radius : 6px;
+    background-color: rgba(45, 50, 66, 0.82);
+    border        : 1px solid rgba(255, 255, 255, 0.10);
+    transition    : background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+#tour_panel .tour_btn:hover {
+    background-color: rgba(75, 85, 110, 0.92);
+    border-color    : rgba(255, 255, 255, 0.25);
+}
+
+#tour_panel .tour_btn:active {
+    transform: scale(0.97);
+}
+
+#tour_panel .tour_btn.tour_btn_prev {
+    margin-right: auto;
+}
+
+#tour_panel .tour_btn.tour_btn_skip {
+    background-color: transparent;
+    border-color    : transparent;
+    color           : rgba(240, 240, 240, 0.6);
+}
+
+#tour_panel .tour_btn.tour_btn_next {
+    background-color: rgba(0, 160, 110, 0.7);
+    border-color    : rgba(0, 232, 160, 0.5);
+}
+
+#tour_panel .tour_btn.tour_btn_next:hover {
+    background-color: rgba(0, 190, 130, 0.85);
+}

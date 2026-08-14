@@ -119,6 +119,7 @@ str_window_title_info_result=✅ Results: {}%
 
 // Secondary Window auto start wait
 str_window_auto_start_wait_description=🔍 Selecting configuration...
+This can take a very long time: Zapret tries hundreds of bypass strategies, verifying each potentially working one through zapret-helper.
 Factors:
 • Internet quality
 • Resource availability
@@ -153,9 +154,10 @@ str_window_continue_select_strategy_description=Selected:
 ├ Config: [{}]
 └ Version: [{}]
 
-We recommend checking site availability yourself.
-If everything works — click «No» to finish selection.
-If you need a different option — click «Yes» to continue searching.
+❓ Does everything work as it should?
+
+✅ It works — click «Yes»: selection is finished.
+🔍 It doesn't work — click «No»: we'll keep looking for another option.
 
 // Secondary Window warning to conflict service
 str_window_warning_conflict_service=⚠ Conflicting services: [{}]
@@ -210,16 +212,16 @@ This helps quickly verify that the selected configuration is working and, if nee
 
 // Setting common enable dns hosts
 str_checkbox_enable_dns_hosts_title=📁 Local DNS (hosts)
-str_checkbox_enable_dns_hosts_description=📁 Use system hosts file to bypass DNS blocks.
-When enabled, Unblock adds domain-to-IP mappings to the hosts file (C:\Windows\System32\drivers\etc\hosts), bypassing your ISP's DNS servers.
-This allows blocking circumvention at the DNS level without additional software.
+str_checkbox_enable_dns_hosts_description=📁 Use system hosts file to bypass DNS blocks and spoof geolocation.
+When enabled, Unblock adds domain-to-IP mappings from GeoHide DNS lists to the hosts file (C:\Windows\System32\drivers\etc\hosts), bypassing your ISP's DNS servers.
+This allows blocking circumvention at the DNS level and regional restrictions without additional software.
 The hosts file is checked first on any network request, so the redirection happens before any external DNS lookup.
 Safe: when disabled, Unblock restores the original hosts file content.
 
 // Setting common enable local proxy telegram
 str_checkbox_enable_proxy_tg_title=📱 Proxy for Telegram
 str_checkbox_enable_proxy_tg_description=🔒 Local proxy for Telegram
-Creates a proxy server on your device. It does not connect to external servers and works locally to bypass blocks.
+Creates a proxy server on your device. It is TgWsProxy software adapted for Unblock. It does not connect to external servers and works locally to bypass blocks.
 str_button_proxy_link_tg_title=🔗 Connect proxy to Telegram
 
 // Setting checkbox unblock enable services
@@ -278,3 +280,160 @@ str_select_version_strategy_title=📚 Strategy list version
 str_select_version_strategy_description=Choose strategy list for bypassing blocks:
 Current (recommended) – new, regularly updated strategies.
 Legacy – old strategies from previous Unblock versions.
+
+// Tutorial
+str_h2_tutorial=Tutorial
+str_tutorial_intro_title=🧭 What is Unblock
+str_tutorial_intro_description=Unblock is an interactive manager for bypassing blocking of websites and services on the internet.
+Everything runs locally on your device and only when you enable the required features.
+
+All enabled services run in the background: Unblock manages them, and the app itself can be closed — there is no need to keep it open.
+
+What Unblock can do:
+• DPI blocking bypass (Zapret) — restores access to YouTube, Discord, Instagram and other services blocked at the ISP level.
+• DNS blocking bypass (Local DNS) — uses the system hosts file to substitute addresses before the request reaches your ISP's DNS servers.
+• Local proxy for Telegram — creates a proxy server on your device to bypass Telegram blocking.
+
+str_tutorial_quick_start_title=🚀 Quick start
+str_tutorial_quick_start_steps=1. Open the Zapret2 tab and enable the services you need, for example YouTube.
+2. Click «⚙️ Auto-config Zapret» — the program will find a working configuration on its own.
+3. Wait for the selection to finish. If resources are available, the «Configuration selected» window will appear — click «Yes» to finish.
+4. Everything works — enjoy the internet!
+
+str_tutorial_tab_zapret_title=🔓 Zapret2 tab
+str_tutorial_tab_zapret_description=The main tab — here you control DPI blocking bypass:
+
+• «▶ Start Zapret» / «🔄 Restart Zapret» / «⏹ Stop Zapret» — start, restart and stop the bypass service.
+• «⚙️ Auto-config Zapret» — automatic selection of a working configuration with resource availability checks.
+• «📂 Select configuration» — manual choice of the bypass strategy file.
+• «📚 Strategy list version» — choose current or legacy strategies (current is recommended).
+• Service checkboxes — enable bypass for specific services: YouTube, Discord, Cloudflare, Instagram, Facebook, X.com, torrent trackers, online games, Tor, Roblox, Speedtest, Amazon.
+• «🌐 TLD filtering» — applies bypass to all domain zones from the list (com, net, ua and others).
+• «🧪 Test» — checks domain availability. The result is shown in a separate window.
+
+Keep in mind: auto-config and testing can take a very long time. Zapret tries hundreds of bypass strategies in real time, and when a potentially working strategy appears, it must verify it through the zapret-helper assistant. The process continues until all strategies in the rotation are exhausted or until all domains are declared fully functional. This is a huge price for high accuracy.
+
+Host lists are displayed below: being checked, processed through Zapret, working and with errors.
+
+str_tutorial_tab_unblock_title=⚙️ Unblock tab
+str_tutorial_tab_unblock_description=The tab with general application settings:
+
+• «📟 Show console» — opens a window with Unblock logs for debugging.
+• «🧪 Test at startup» — automatically checks site availability right after the application starts.
+• «⏹ Stop all services» — stops all active services at once: Zapret, Local DNS and the Telegram proxy.
+
+str_tutorial_tab_dns_title=📁 Local DNS tab
+str_tutorial_tab_dns_description=Bypass of DNS-level blocking and geolocation spoofing using the system hosts file.
+
+When enabled, Unblock adds domain-to-IP mappings from GeoHide DNS lists to the hosts file (C:\Windows\System32\drivers\etc\hosts), bypassing your ISP's DNS servers.
+The hosts file is checked first on any network request, so the substitution happens before any external DNS lookup.
+This bypasses both DNS blocks and regional restrictions without additional software.
+
+The «🔄 Update local DNS» button refreshes the mapping list manually.
+Safe: when disabled, Unblock restores the original hosts file content.
+
+str_tutorial_tab_tg_title=📱 Telegram proxy tab
+str_tutorial_tab_tg_description=A local proxy server to bypass Telegram blocking.
+
+It is TgWsProxy software adapted for Unblock.
+The proxy works only locally on your device and does not connect to external servers.
+After enabling it, click «🔗 Connect proxy to Telegram» — the proxy will be set up automatically in the Telegram app.
+
+str_tutorial_troubleshoot_title=🛠️ If something is not working
+str_tutorial_troubleshoot_description=Check in order:
+
+1. Do you have internet access — the Unblock tab will show a warning if there is no network.
+2. Are the required services enabled on the Zapret2 tab.
+3. Is the bypass service running (the «▶ Start Zapret» button).
+4. Run «🧪 Test» — if domains are unavailable, run «⚙️ Auto-config Zapret» again or choose another config manually.
+5. Check for conflicting services — Unblock will warn you about them at startup.
+
+If your ISP uses whitelists, Unblock cannot bypass such restrictions — use a VPN in that case.
+
+str_tutorial_maintenance_title=🧹 Maintenance
+str_tutorial_maintenance_description=• «🔄 Check for updates at startup» — automatic check for new Unblock versions.
+• «🔍 Check for updates» — manual update check.
+• «🗑 Uninstall Unblock» — full removal of the application: stops services, restores system settings and resets parameters.
+• The «GitHub» and «Telegram» links in the footer — project support and feedback.
+
+// Tutorial tour
+str_tutorial_tour_start_title=🎓 Interactive tutorial
+str_tutorial_tour_start_description=Take a short tour of the Unblock interface. We'll show what each element does and how to use it.
+str_tutorial_tour_start_button=▶ Start tutorial
+
+str_tour_intro_title=👋 Welcome to Unblock!
+str_tour_intro_description=This is an interactive tour of the application interface.
+We'll go through all the tabs and show what each element does.
+Click «Next» to move forward. You can click «Skip» at any time.
+
+Remember: all enabled services run in the background, and Unblock is just a manager for them. After setup, you can close the app.
+
+str_tour_start_button_title=▶ Start Zapret
+str_tour_start_button_description=Starts the DPI blocking bypass service.
+If the service is already running, the button becomes «🔄 Restart Zapret».
+
+str_tour_auto_config_title=⚙️ Auto-config Zapret
+str_tour_auto_config_description=Automatically selects a working bypass configuration.
+The program tries strategies, checks resource availability and stops on a working one.
+
+Be prepared: the process can take a very long time. Zapret in Unblock's implementation tries hundreds of bypass strategies in real time. When a potentially working strategy appears, Zapret must verify it through the zapret-helper assistant to confirm the selected strategy actually works.
+The process continues until all strategies in the rotation are exhausted or until all tested domains are declared fully functional. This is a huge price for high accuracy.
+
+str_tour_version_strategy_title=📚 Strategy list version
+str_tour_version_strategy_description=Choose current or legacy strategies.
+Current is recommended — they are updated and contain more working configurations.
+
+str_tour_config_title=📂 Select configuration
+str_tour_config_description=Manual choice of the bypass strategy file.
+Useful if auto-config did not help or you know a suitable config.
+
+str_tour_services_title=🔓 Services list
+str_tour_services_description=Enable bypass for specific services: YouTube, Discord, Cloudflare, Instagram, Facebook, X.com, torrent trackers, online games, Tor, Roblox, Speedtest, Amazon.
+«🌐 TLD filtering» applies bypass to all domain zones from the list.
+Enable only the services you need.
+
+str_tour_testing_title=🧪 Testing
+str_tour_testing_description=Checks domain availability.
+If Zapret is running — the test goes through the selected configuration, otherwise it runs directly, a regular test.
+The result is shown in a separate window.
+
+Testing can be extremely slow: when a potentially working strategy appears, Zapret verifies it through the zapret-helper assistant to make sure it really works. The check continues until all strategies in the rotation are exhausted or until all domains are declared fully functional. This is a huge price for high accuracy.
+
+str_tour_show_console_title=📟 Show console
+str_tour_show_console_description=Opens a window with Unblock logs for debugging.
+
+str_tour_testing_startup_title=🧪 Test at startup
+str_tour_testing_startup_description=Automatically checks site availability right after the application starts.
+Results are shown as a list on the main tab.
+
+str_tour_stop_all_title=⏹ Stop all services
+str_tour_stop_all_description=Stops all active services at once: Zapret, Local DNS and the Telegram proxy.
+
+str_tour_dns_hosts_title=📁 Local DNS
+str_tour_dns_hosts_description=Uses the system hosts file to bypass DNS blocking and spoof geolocation.
+When enabled, Unblock adds domain-to-IP mappings from GeoHide DNS lists, bypassing your ISP's DNS servers.
+This bypasses both DNS blocks and regional restrictions.
+Safe: when disabled, the hosts content is restored.
+
+str_tour_update_dns_title=🔄 Update local DNS
+str_tour_update_dns_description=Refreshes the mappings in the hosts file manually.
+The button is available when Local DNS is enabled.
+
+str_tour_proxy_tg_title=📱 Proxy for Telegram
+str_tour_proxy_tg_description=Creates a local proxy server on your device to bypass Telegram blocking.
+It is TgWsProxy software adapted for Unblock.
+Works only locally, without external servers.
+
+str_tour_proxy_link_title=🔗 Connect proxy to Telegram
+str_tour_proxy_link_description=Automatically sets up the proxy in the Telegram app.
+
+str_tour_remove_app_title=🗑 Uninstall Unblock
+str_tour_remove_app_description=Full removal of the application: stops services, restores system settings and resets parameters.
+The process is irreversible — be careful.
+
+// Tutorial tour buttons
+str_tour_next=Next →
+str_tour_prev=← Back
+str_tour_skip=Skip
+str_tour_done=✓ Done
+str_tour_step={} of {}
