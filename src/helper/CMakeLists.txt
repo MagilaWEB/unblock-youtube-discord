@@ -13,5 +13,6 @@ target_compile_options(${NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror
 )
 
 if (BUILD_TESTS)
+  target_compile_definitions(${NAME} PRIVATE HELPER_TESTS)
   add_subdirectory(tests)
 endif ()

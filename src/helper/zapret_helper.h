@@ -39,7 +39,9 @@ class ZapretHelper
 	std::atomic<bool>							 _running{ true };
 	std::chrono::steady_clock::time_point		 _last_recheck{};
 
+#ifdef HELPER_TESTS
 	friend class ZapretHelperTest;
+#endif
 
 public:
 	ZapretHelper() = default;
