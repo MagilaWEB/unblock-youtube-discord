@@ -11,3 +11,7 @@ target_compile_definitions(${NAME} PRIVATE CONSOLE WIN32_LEAN_AND_MEAN)
 target_compile_options(${NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror
 	-Wno-padded -Wno-exit-time-destructors -Wno-unsafe-buffer-usage
 )
+
+if (BUILD_TESTS)
+  add_subdirectory(tests)
+endif ()
