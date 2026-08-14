@@ -39,13 +39,13 @@ body {
 }
 
 h1 {
-    line-height   : 1.1vw;
+    line-height   : 1.2;
     letter-spacing: -0.025vw;
 }
 
 h2 {
     font-size     : 2vw;
-    line-height   : 1.1vw;
+    line-height   : 1.2;
     font-weight   : 500;
     letter-spacing: -0.01vw;
 }
