@@ -34,6 +34,7 @@ void Engine::initialize()
 #endif
 
 	Debug::initLogFile();
+	Debug::setVersion(VERSION_STR);
 
 	// assign a base ui folder to ultralight.
 	Platform::instance().set_file_system(GetPlatformFileSystem("./../ui/"));

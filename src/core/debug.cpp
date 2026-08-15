@@ -1,5 +1,63 @@
 ﻿#include "debug.h"
 
+namespace
+{
+	// URL percent-encoding (UTF-8): every byte except unreserved characters is encoded as %XX.
+	std::string url_encode(std::string_view str)
+	{
+		static constexpr pcstr hex_digits = "0123456789ABCDEF";
+
+		std::string encoded;
+		encoded.reserve(str.size() * 3);
+
+		const auto is_unreserved = [](unsigned char c)
+		{
+			return std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~';
+		};
+
+		for (const unsigned char c : str)
+		{
+			if (is_unreserved(c))
+				encoded.push_back(static_cast<char>(c));
+			else
+			{
+				encoded.push_back('%');
+				encoded.push_back(hex_digits[(c >> 4) & 0x0F]);
+				encoded.push_back(hex_digits[c & 0x0F]);
+			}
+		}
+
+		return encoded;
+	}
+
+	// Reads the last N lines of the log file.
+	std::string read_log_tail(size_t tail_lines)
+	{
+		auto dir_logs = Core::get().currentPath() / "logs";
+
+		File log_file;
+		log_file.open(dir_logs / "log", ".txt", true);
+		if (!log_file.isOpen())
+			return "(log file not found)";
+
+		std::vector<std::string> lines;
+		lines.reserve(tail_lines);
+
+		for (auto& line : log_file)
+		{
+			lines.push_back(std::move(line));
+			if (lines.size() > tail_lines)
+				lines.erase(lines.begin());
+		}
+
+		std::string tail;
+		for (const auto& line : lines)
+			tail.append(line).append("\n");
+
+		return tail;
+	}
+} // namespace
+
 std::string_view Debug::get_prefix(MessageTypes type)
 {
 #ifdef WINDOWS
@@ -44,77 +102,164 @@ std::string_view Debug::get_prefix(MessageTypes type)
 	return "";
 }
 
+namespace
+{
+	// Prevent duplicate handling when multiple handlers catch the same exception.
+	bool crash_handled{ false };
+
+	// Localized string by key.
+	std::string lang_str(std::string_view key)
+	{
+		return Localization::Str{ key }();
+	}
+
+	// Builds the common user template section: "what were you doing" + reproduce steps + expected/actual.
+	std::string user_template(bool crash)
+	{
+		return utils::format(
+			"{}\n\n"
+			"{}\n"
+			"...\n\n"
+			"{}\n"
+			"1. ...\n"
+			"2. ...\n"
+			"3. ...\n\n"
+			"{}\n"
+			"...\n\n"
+			"{}\n"
+			"...\n",
+			lang_str("str_issue_describe_header"),
+			crash ? lang_str("str_issue_before_crash") : lang_str("str_issue_report_description"),
+			lang_str("str_issue_steps"),
+			lang_str("str_issue_expected"),
+			lang_str("str_issue_actual")
+		);
+	}
+
+	// Builds a human-readable crash description from the exception record.
+	std::string build_crash_message(PEXCEPTION_RECORD record)
+	{
+		std::string msg = "SEH Exception (Crash) caught!\n";
+
+		switch (record->ExceptionCode)
+		{
+		case EXCEPTION_ACCESS_VIOLATION:
+			msg += "Cause: Access Violation (Invalid pointer)\n";
+			break;
+		case EXCEPTION_INT_DIVIDE_BY_ZERO:
+			msg += "Cause: Integer Division by Zero\n";
+			break;
+		case EXCEPTION_STACK_OVERFLOW:
+			msg += "Cause: Stack Overflow\n";
+			break;
+		case EXCEPTION_ILLEGAL_INSTRUCTION:
+			msg += "Cause: Illegal Instruction\n";
+			break;
+		default:
+			msg += "Cause: Unknown SEH Exception\n";
+			break;
+		}
+
+		if (record->ExceptionCode != EXCEPTION_STACK_OVERFLOW)
+		{
+			try
+			{
+				msg += "\n\n";
+				msg += Debug::pretty_stacktrace();
+			}
+			catch (...)
+			{
+				msg += "\n\n(Stack trace collection failed due to corrupted state)";
+			}
+		}
+		else
+			msg += "\n\n(Stack trace unavailable: stack overflow)";
+
+		return msg;
+	}
+
+	// Shows the error window, writes to the log and opens a GitHub issue.
+	[[noreturn]] void handle_crash(const std::string& msg, u32 error_code)
+	{
+		if (crash_handled)
+			ExitProcess(1);
+
+		crash_handled = true;
+
+		Debug::winApiWindowShow("str_error", msg.c_str());
+
+		// Write the current crash into the log BEFORE reading its tail,
+		// so the crash message + stack trace appear once as the last log entry.
+		Debug::fatalErrorMessage(msg.c_str());
+
+		const std::string log_tail = Debug::_readLogTail(150);
+
+		const std::string title = utils::format(lang_str("str_issue_crash_title"), utils::format("0x{:08X}", error_code));
+		Debug::openGitHubIssue(title, Debug::buildCrashIssueBody(log_tail));
+
+		Debug::log.close();
+
+		// Terminate immediately: the process state is corrupted.
+		ExitProcess(static_cast<UINT>(0xC0000005));
+	}
+} // namespace
+
 static LONG WINAPI seh_unhandled_filter(_EXCEPTION_POINTERS* pExceptionInfo)
 {
+	// Ignore non-fatal exceptions (e.g. debug break exceptions raised by OutputDebugString).
+	if ((pExceptionInfo->ExceptionRecord->ExceptionCode & 0x80'00'00'00u) == 0)
+		return EXCEPTION_CONTINUE_SEARCH;
+
 	if (pExceptionInfo->ExceptionRecord->ExceptionCode == 0xE0'6D'73'63)
 		return EXCEPTION_CONTINUE_SEARCH;
 
-	std::string msg = "SEH Exception (Crash) caught!\n";
+	const std::string msg = build_crash_message(pExceptionInfo->ExceptionRecord);
+	handle_crash(msg, pExceptionInfo->ExceptionRecord->ExceptionCode);
 
-	switch (pExceptionInfo->ExceptionRecord->ExceptionCode)
-	{
-	case EXCEPTION_ACCESS_VIOLATION:
-		msg += "Cause: Access Violation (Invalid pointer)\n";
-		break;
-	case EXCEPTION_INT_DIVIDE_BY_ZERO:
-		msg += "Cause: Integer Division by Zero\n";
-		break;
-	case EXCEPTION_STACK_OVERFLOW:
-		msg += "Cause: Stack Overflow\n";
-		break;
-	case EXCEPTION_ILLEGAL_INSTRUCTION:
-		msg += "Cause: Illegal Instruction\n";
-		break;
-	default:
-		msg += "Cause: Unknown SEH Exception\n";
-		break;
-	}
-
-	if (pExceptionInfo->ExceptionRecord->ExceptionCode != EXCEPTION_STACK_OVERFLOW)
-	{
-		try
-		{
-			msg += "\n\n";
-			msg += Debug::pretty_stacktrace();
-		}
-		catch (...)
-		{
-			msg += "\n\n(Stack trace collection failed due to corrupted state)";
-		}
-	}
-	else
-	{
-		msg += "\n\n(Stack trace unavailable: stack overflow)";
-	}
-
-	Debug::winApiWindowShow("str_error", msg.c_str());
-	Debug::fatalErrorMessage(msg.c_str());
-	Debug::log.close();
-
+	// Unreachable (handle_crash terminates the process).
 	return EXCEPTION_EXECUTE_HANDLER;
 }
 
-
-[[noreturn]] static void seh_translator(unsigned int code, EXCEPTION_POINTERS*)
+// Vectored handler: catches every exception (including access violation) at the
+// OS level before the CRT/SEH machinery, regardless of compiler flags.
+static LONG CALLBACK vectored_exception_handler(PEXCEPTION_POINTERS pExceptionInfo)
 {
-	char buf[64];
-	snprintf(buf, sizeof(buf), "SEH Exception: 0x%08X", code);
-	throw std::runtime_error(buf);
+	// Ignore non-fatal exceptions: those without the severity bit set
+	// (e.g. DBG_PRINTEXCEPTION_C 0x4001000A used by OutputDebugString,
+	// which Ultralight raises while logging). They must go through normally.
+	if ((pExceptionInfo->ExceptionRecord->ExceptionCode & 0x80'00'00'00u) == 0)
+		return EXCEPTION_CONTINUE_SEARCH;
+
+	// Let C++ exceptions (0xE06D7363) go through the normal try/catch path.
+	if (pExceptionInfo->ExceptionRecord->ExceptionCode == 0xE0'6D'73'63)
+		return EXCEPTION_CONTINUE_SEARCH;
+
+	const std::string msg = build_crash_message(pExceptionInfo->ExceptionRecord);
+	handle_crash(msg, pExceptionInfo->ExceptionRecord->ExceptionCode);
+
+	// Unreachable (handle_crash terminates the process).
+	return EXCEPTION_CONTINUE_SEARCH;
 }
+
 
 namespace
 {
 	struct SEHFilterGuard
 	{
 		LPTOP_LEVEL_EXCEPTION_FILTER old_filter;
+		PVOID						 old_vectored;
 
 		SEHFilterGuard()
-			: old_filter(SetUnhandledExceptionFilter(seh_unhandled_filter))
+			: old_filter(SetUnhandledExceptionFilter(seh_unhandled_filter)),
+			  old_vectored(AddVectoredExceptionHandler(1, vectored_exception_handler))
 		{
 		}
 
 		~SEHFilterGuard()
 		{
+			if (old_vectored)
+				RemoveVectoredExceptionHandler(old_vectored);
+
 			SetUnhandledExceptionFilter(old_filter);
 		}
 	} guard;
@@ -128,8 +273,6 @@ void Debug::initialize(const std::string& command_line)
 	_command_line = command_line;
 
 	std::set_terminate(cpp_terminate_handler);
-
-	_set_se_translator(seh_translator);
 }
 
 void Debug::initLogFile()
@@ -163,6 +306,53 @@ void Debug::fatalErrorMessage(std::string message)
 	log.writeText(std::to_string(++_console_line) + ". " + message);
 	log.close();
 	std::cerr << message << std::endl;
+}
+
+void Debug::openGitHubIssue(const std::string& title, const std::string& body)
+{
+	constexpr pcstr c_issue_url_base{ "https://github.com/MagilaWEB/unblock-youtube-discord/issues/new" };
+
+	const std::string url = std::string{ c_issue_url_base }
+		+ "?title=" + url_encode(title)
+		+ "&body=" + url_encode(body);
+
+	// ShellExecuteA is safe for '?' and '&' in the URL (unlike system("start ...")).
+	ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+}
+
+std::string Debug::buildCrashIssueBody(const std::string& log_tail)
+{
+	return utils::format(
+		"{}\n\n"
+		"{}\n\n"
+		"<details>\n<summary>{}</summary>\n\n"
+		"```\n{}\n```\n\n</details>\n\n"
+		"{}\n\n"
+		"{}",
+		lang_str("str_issue_crash_header"),
+		utils::format(lang_str("str_issue_version"), version()),
+		lang_str("str_issue_log_summary"),
+		log_tail,
+		user_template(true),
+		lang_str("str_issue_full_log_hint")
+	);
+}
+
+std::string Debug::buildReportIssueBody()
+{
+	return utils::format(
+		"{}\n\n"
+		"{}\n\n"
+		"{}",
+		lang_str("str_issue_report_header"),
+		utils::format(lang_str("str_issue_version"), version()),
+		user_template(false)
+	);
+}
+
+std::string Debug::_readLogTail(size_t tail_lines)
+{
+	return read_log_tail(tail_lines);
 }
 
 std::string Debug::pretty_stacktrace()

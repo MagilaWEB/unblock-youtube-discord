@@ -18,6 +18,7 @@ class CORE_API Debug
 	};
 
 	inline static std::string	  _command_line{};
+	inline static std::string	  _version_str{};
 	inline static size_t		  _console_line{ 0 };
 	inline static CriticalSection _lock;
 
@@ -93,7 +94,16 @@ private:
 		msg += Debug::pretty_stacktrace();
 
 		Debug::winApiWindowShow("str_error", msg.c_str());
+
+		// Write the current crash into the log BEFORE reading its tail,
+		// so the crash message + stack trace appear once as the last log entry.
 		Debug::fatalErrorMessage(msg.c_str());
+
+		const std::string log_tail = _readLogTail(150);
+
+		// Automatically open a GitHub issue with a crash report.
+		const std::string title = utils::format(Localization::Str{ "str_issue_crash_title" }(), utils::format("0x{:08X}", 0u));
+		openGitHubIssue(title, buildCrashIssueBody(log_tail));
 
 		Debug::log.close();
 		std::abort();
@@ -101,6 +111,22 @@ private:
 
 public:
 	static const std::string& commandLine() { return _command_line; }
+
+	/** Report a problem on GitHub: opens the issue creation form in the browser
+	 *  with pre-filled title and body (template + information). */
+	static void openGitHubIssue(const std::string& title, const std::string& body);
+
+	/** Builds the crash report body (version + log tail + user template). */
+	static std::string buildCrashIssueBody(const std::string& log_tail);
+
+	/** Builds the manual bug report body (version + user template). */
+	static std::string buildReportIssueBody();
+
+	/** Reads the last tail_lines lines from logs/log.txt. */
+	static std::string _readLogTail(size_t tail_lines);
+
+	static void setVersion(std::string_view version) { _version_str = version; }
+	static const std::string& version() { return _version_str; }
 
 	static void initialize(const std::string& command_line);
 	static void initLogFile();
