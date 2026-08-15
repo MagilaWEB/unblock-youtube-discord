@@ -7,6 +7,7 @@ str_h2_tg_ws_proxy=Telegram Proxy
 // Footer BUTTON
 str_link_to_github=↗ GitHub
 str_link_to_telegram=↗ Telegram
+str_link_report_issue=🐞 Report a problem
 
 // BUTTON HOME
 str_b_start_zapret=▶ Start Zapret
@@ -437,3 +438,18 @@ str_tour_prev=← Back
 str_tour_skip=Skip
 str_tour_done=✓ Done
 str_tour_step={} of {}
+
+// GitHub issue report templates
+str_issue_crash_title=🐞 Bug report: Unblock crash (error: {})
+str_issue_report_title=🐞 Bug report: Unblock
+str_issue_crash_header=### 🐞 Unblock crash
+str_issue_report_header=### 🐞 Unblock bug report
+str_issue_version=**Version:** {}
+str_issue_log_summary=📄 Log tail (last 150 lines)
+str_issue_describe_header=### 📝 Please describe
+str_issue_before_crash=**What were you doing before the crash:**
+str_issue_report_description=**Problem description:**
+str_issue_steps=**Steps to reproduce:**
+str_issue_expected=**Expected behavior:**
+str_issue_actual=**Actual behavior:**
+str_issue_full_log_hint=**Full log:** `logs/log.txt` — attach the file by dragging it into the issue.

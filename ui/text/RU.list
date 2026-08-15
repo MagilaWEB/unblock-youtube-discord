@@ -7,6 +7,7 @@ str_h2_tg_ws_proxy=Telegram прокси
 // Footer BUTTON
 str_link_to_github=↗ GitHub
 str_link_to_telegram=↗ Telegram
+str_link_report_issue=🐞 Сообщить о проблеме
 
 // BUTTON HOME
 str_b_start_zapret=▶ Запустить Zapret
@@ -437,3 +438,18 @@ str_tour_prev=← Назад
 str_tour_skip=Пропустить
 str_tour_done=✓ Готово
 str_tour_step={} из {}
+
+// GitHub issue report templates
+str_issue_crash_title=🐞 Bug report: Unblock crash (ошибка: {})
+str_issue_report_title=🐞 Bug report: Unblock
+str_issue_crash_header=### 🐞 Unblock crash
+str_issue_report_header=### 🐞 Unblock bug report
+str_issue_version=**Версия:** {}
+str_issue_log_summary=📄 Хвост лога (последние 150 строк)
+str_issue_describe_header=### 📝 Опишите, пожалуйста
+str_issue_before_crash=**Что вы делали перед ошибкой:**
+str_issue_report_description=**Описание проблемы:**
+str_issue_steps=**Как воспроизвести:**
+str_issue_expected=**Ожидаемое поведение:**
+str_issue_actual=**Фактическое поведение:**
+str_issue_full_log_hint=**Полный лог:** `logs/log.txt` — прикрепите файл перетаскиванием в issue.

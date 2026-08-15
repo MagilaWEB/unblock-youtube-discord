@@ -72,6 +72,14 @@ void Ui::jsUpdate()
 	_updateAppProgressWindowInfo();
 }
 
+namespace
+{
+	std::string reportIssueBody()
+	{
+		return Debug::buildReportIssueBody();
+	}
+} // namespace
+
 void Ui::_footerElements()
 {
 	_link_to_github->create("footer", "str_link_to_github");
@@ -88,6 +96,36 @@ void Ui::_footerElements()
 		[](JSArgs)
 		{
 			Core::get().addTask([] { system("start https://t.me/+OqRXcWFw4kpmMTcy"); });
+			return false;
+		}
+	);
+
+	_link_report_issue->create("footer", "str_link_report_issue");
+	_link_report_issue->addEventClick(
+		[](JSArgs)
+		{
+			Core::get().addTask(
+				[]
+				{
+					Localization::Str title{ "str_issue_report_title" };
+					Debug::openGitHubIssue(title(), reportIssueBody());
+				}
+			);
+			return false;
+		}
+	);
+
+	_button_report_issue_tutorial->create("#tutorial_issue_container", "str_link_report_issue");
+	_button_report_issue_tutorial->addEventClick(
+		[](JSArgs)
+		{
+			Core::get().addTask(
+				[]
+				{
+					Localization::Str title{ "str_issue_report_title" };
+					Debug::openGitHubIssue(title(), reportIssueBody());
+				}
+			);
 			return false;
 		}
 	);

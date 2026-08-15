@@ -51,6 +51,8 @@ class Ui final : public utils::DefaultInit, public std::enable_shared_from_this<
 	// footer
 	BUTTON(_link_to_github);
 	BUTTON(_link_to_telegram);
+	BUTTON(_link_report_issue);
+	BUTTON(_button_report_issue_tutorial);
 
 public:
 	std::shared_ptr<Ui> self;
