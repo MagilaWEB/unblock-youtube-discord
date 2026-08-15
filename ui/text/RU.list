@@ -224,6 +224,31 @@ str_checkbox_enable_proxy_tg_title=📱 Прокси для Telegram
 str_checkbox_enable_proxy_tg_description=🔒 Локальный прокси для Telegram
 Создаёт прокси-сервер на вашем устройстве. Это адаптированный под Unblock софт TgWsProxy. Он не подключается к сторонним серверам и работает только локально для обхода блокировок.
 str_button_proxy_link_tg_title=🔗 Подключить прокси к Telegram
+str_b_proxy_tg_apply=💾 Применить настройки
+
+// Setting tg ws proxy
+str_proxy_tg_host_title=🌐 Хост
+str_proxy_tg_host_description=Адрес, на котором прокси слушает подключения. По умолчанию 127.0.0.1 — работает только локально.
+
+str_proxy_tg_port_title=🔌 Порт
+str_proxy_tg_port_description=Порт прокси-сервера. По умолчанию 9101. Используется и для подключения в Telegram.
+
+str_proxy_tg_dc_ip_1_title=📡 Дата-центр 1
+str_proxy_tg_dc_ip_1_description=IP-адрес первого дата-центра Telegram.
+
+str_proxy_tg_dc_ip_2_title=📡 Дата-центр 2
+str_proxy_tg_dc_ip_2_description=IP-адрес второго дата-центра Telegram.
+
+str_proxy_tg_dc_ip_3_title=📡 Дата-центр 3
+str_proxy_tg_dc_ip_3_description=IP-адрес третьего дата-центра Telegram.
+
+str_proxy_tg_dc_ip_4_title=📡 Дата-центр 4
+str_proxy_tg_dc_ip_4_description=IP-адрес четвёртого дата-центра Telegram.
+
+str_proxy_tg_cfproxy_domain_title=☁️ Cloudflare-домен
+str_proxy_tg_cfproxy_domain_description=Домен Cloudflare Worker, через который работает прокси. Используется для обхода блокировки.
+
+str_proxy_tg_apply_description=Применяет изменённые настройки прокси: останавливает службу, перезапускает её с новыми параметрами и подключает к Telegram.
 
 // Setting checkbox unblock enable services
 str_unblock_enable_discord_title=🎤 Discord
@@ -427,6 +452,9 @@ str_tour_proxy_tg_description=Создаёт локальный прокси-с�
 
 str_tour_proxy_link_title=🔗 Подключить прокси к Telegram
 str_tour_proxy_link_description=Автоматически настраивает прокси в приложении Telegram.
+
+str_tour_proxy_apply_title=💾 Применить настройки
+str_tour_proxy_apply_description=Перезапускает прокси с изменёнными настройками: останавливает службу, применяет новые параметры (хост, порт, дата-центры, Cloudflare-домен) и запускает заново.
 
 str_tour_remove_app_title=🗑 Удалить Unblock
 str_tour_remove_app_description=Полное удаление приложения: остановка служб, восстановление системных настроек и сброс параметров.

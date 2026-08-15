@@ -224,6 +224,31 @@ str_checkbox_enable_proxy_tg_title=📱 Proxy for Telegram
 str_checkbox_enable_proxy_tg_description=🔒 Local proxy for Telegram
 Creates a proxy server on your device. It is TgWsProxy software adapted for Unblock. It does not connect to external servers and works locally to bypass blocks.
 str_button_proxy_link_tg_title=🔗 Connect proxy to Telegram
+str_b_proxy_tg_apply=💾 Apply settings
+
+// Setting tg ws proxy
+str_proxy_tg_host_title=🌐 Host
+str_proxy_tg_host_description=Address the proxy listens on. Default is 127.0.0.1 — works locally only.
+
+str_proxy_tg_port_title=🔌 Port
+str_proxy_tg_port_description=Proxy server port. Default is 9101. Used for the Telegram connection too.
+
+str_proxy_tg_dc_ip_1_title=📡 Datacenter 1
+str_proxy_tg_dc_ip_1_description=IP address of Telegram's first datacenter.
+
+str_proxy_tg_dc_ip_2_title=📡 Datacenter 2
+str_proxy_tg_dc_ip_2_description=IP address of Telegram's second datacenter.
+
+str_proxy_tg_dc_ip_3_title=📡 Datacenter 3
+str_proxy_tg_dc_ip_3_description=IP address of Telegram's third datacenter.
+
+str_proxy_tg_dc_ip_4_title=📡 Datacenter 4
+str_proxy_tg_dc_ip_4_description=IP address of Telegram's fourth datacenter.
+
+str_proxy_tg_cfproxy_domain_title=☁️ Cloudflare domain
+str_proxy_tg_cfproxy_domain_description=Cloudflare Worker domain the proxy runs through. Used to bypass blocking.
+
+str_proxy_tg_apply_description=Applies changed proxy settings: stops the service, restarts it with new parameters and connects to Telegram.
 
 // Setting checkbox unblock enable services
 str_unblock_enable_discord_title=🎤 Discord
@@ -427,6 +452,9 @@ Works only locally, without external servers.
 
 str_tour_proxy_link_title=🔗 Connect proxy to Telegram
 str_tour_proxy_link_description=Automatically sets up the proxy in the Telegram app.
+
+str_tour_proxy_apply_title=💾 Apply settings
+str_tour_proxy_apply_description=Restarts the proxy with changed settings: stops the service, applies new parameters (host, port, datacenters, Cloudflare domain) and starts it again.
 
 str_tour_remove_app_title=🗑 Uninstall Unblock
 str_tour_remove_app_description=Full removal of the application: stops services, restores system settings and resets parameters.
