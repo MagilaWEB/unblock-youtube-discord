@@ -3,6 +3,9 @@
 #include <string>
 #include <string_view>
 
+#include "../pch.h"
+#include "../debug.h"
+
 class ColorFilter : public std::streambuf
 {
     std::streambuf* saved;
@@ -84,6 +87,11 @@ public:
 
 int main(int argc, char* argv[])
 {
+#ifdef CORE_TESTS
+    // Tests must report crashes to the test runner, not show the crash dialog.
+    Debug::setCrashHandlerEnabled(false);
+#endif
+
     ColorFilter filter;
     Catch::Session session;
     return session.run(argc, argv);
