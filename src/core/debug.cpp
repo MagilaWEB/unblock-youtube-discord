@@ -206,6 +206,10 @@ namespace
 
 static LONG WINAPI seh_unhandled_filter(_EXCEPTION_POINTERS* pExceptionInfo)
 {
+	// If the crash handler is disabled (tests), let the process crash normally.
+	if (!Debug::crashHandlerEnabled())
+		return EXCEPTION_CONTINUE_SEARCH;
+
 	// Ignore non-fatal exceptions (e.g. debug break exceptions raised by OutputDebugString).
 	if ((pExceptionInfo->ExceptionRecord->ExceptionCode & 0x80'00'00'00u) == 0)
 		return EXCEPTION_CONTINUE_SEARCH;
@@ -224,6 +228,10 @@ static LONG WINAPI seh_unhandled_filter(_EXCEPTION_POINTERS* pExceptionInfo)
 // OS level before the CRT/SEH machinery, regardless of compiler flags.
 static LONG CALLBACK vectored_exception_handler(PEXCEPTION_POINTERS pExceptionInfo)
 {
+	// If the crash handler is disabled (tests), let the process crash normally.
+	if (!Debug::crashHandlerEnabled())
+		return EXCEPTION_CONTINUE_SEARCH;
+
 	// Ignore non-fatal exceptions: those without the severity bit set
 	// (e.g. DBG_PRINTEXCEPTION_C 0x4001000A used by OutputDebugString,
 	// which Ultralight raises while logging). They must go through normally.
@@ -306,6 +314,11 @@ void Debug::fatalErrorMessage(std::string message)
 	log.writeText(std::to_string(++_console_line) + ". " + message);
 	log.close();
 	std::cerr << message << std::endl;
+}
+
+void Debug::setCrashHandlerEnabled(bool enabled)
+{
+	_crash_handler_enabled = enabled;
 }
 
 void Debug::openGitHubIssue(const std::string& title, const std::string& body)

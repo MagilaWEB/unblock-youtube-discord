@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <stacktrace>
+#include <atomic>
 #include "file_system.h"
 
 class CORE_API Debug
@@ -21,6 +22,7 @@ class CORE_API Debug
 	inline static std::string	  _version_str{};
 	inline static size_t		  _console_line{ 0 };
 	inline static CriticalSection _lock;
+	inline static std::atomic_bool _crash_handler_enabled{ true };
 
 public:
 	using exception = std::runtime_error;
@@ -115,6 +117,11 @@ public:
 	/** Report a problem on GitHub: opens the issue creation form in the browser
 	 *  with pre-filled title and body (template + information). */
 	static void openGitHubIssue(const std::string& title, const std::string& body);
+
+	/** Enable/disable the crash handler (vectored exception handler + SEH filter).
+	 *  Disabled in tests so a crash reports to the test runner instead of showing a dialog. */
+	static void setCrashHandlerEnabled(bool enabled);
+	static bool crashHandlerEnabled() { return _crash_handler_enabled; }
 
 	/** Builds the crash report body (version + log tail + user template). */
 	static std::string buildCrashIssueBody(const std::string& log_tail);
