@@ -46,6 +46,48 @@ struct DebugFixture
     }
 };
 
+// Issue template fixture: writes a minimal localization file with issue keys
+// so buildCrashIssueBody/buildReportIssueBody resolve strings.
+struct IssueTemplateFixture
+{
+    fs::path root;
+
+    IssueTemplateFixture()
+    {
+        root = fs::temp_directory_path() / "unblock_debug_test";
+        fs::remove_all(root);
+        fs::create_directories(root / "bin");
+        fs::create_directories(root / "binaries");
+        fs::create_directories(root / "configs");
+        fs::create_directories(root / "ui" / "text");
+        fs::current_path(root);
+
+        {
+            std::ofstream ofs(root / "ui" / "text" / "US.list");
+            ofs << "str_issue_crash_header=### Crash header\n";
+            ofs << "str_issue_report_header=### Report header\n";
+            ofs << "str_issue_version=**Version:** {}\n";
+            ofs << "str_issue_log_summary=Log tail summary\n";
+            ofs << "str_issue_describe_header=Describe header\n";
+            ofs << "str_issue_before_crash=Before crash\n";
+            ofs << "str_issue_report_description=Problem description\n";
+            ofs << "str_issue_steps=Steps\n";
+            ofs << "str_issue_expected=Expected\n";
+            ofs << "str_issue_actual=Actual\n";
+            ofs << "str_issue_full_log_hint=Full log hint\n";
+        }
+
+        Localization::get().set("US");
+    }
+
+    ~IssueTemplateFixture()
+    {
+        fs::current_path(fs::temp_directory_path());
+        fs::remove_all(root);
+    }
+};
+
+
 // ─── Stacktrace ─────────────────────────────────────────────
 
 TEST_CASE("Debug::pretty_stacktrace returns non-empty", "[debug][stacktrace]")
@@ -186,5 +228,112 @@ TEST_CASE("Debug log file contains written messages", "[debug][log]")
 
     auto line_count = std::count(content.begin(), content.end(), '\n');
     CHECK(line_count == 4);
+}
+
+// ─── Version ─────────────────────────────────────────────────
+
+TEST_CASE("Debug::setVersion stores version", "[debug][version]")
+{
+    Debug::setVersion("1.2.3");
+    CHECK(Debug::version() == "1.2.3");
+}
+
+TEST_CASE("Debug::setVersion overwrites previous value", "[debug][version]")
+{
+    Debug::setVersion("9.9.9");
+    Debug::setVersion("0.0.1");
+    CHECK(Debug::version() == "0.0.1");
+}
+
+TEST_CASE("Debug::version default is empty", "[debug][version]")
+{
+    Debug::setVersion("");
+    CHECK(Debug::version().empty());
+}
+
+// ─── Log tail ────────────────────────────────────────────────
+
+TEST_CASE("Debug::_readLogTail returns last N lines", "[debug][logtail]")
+{
+    DebugFixture fx;
+
+    auto log_path = fx.root / "logs" / "log.txt";
+    fs::create_directories(log_path.parent_path());
+    { std::ofstream ofs(log_path); ofs << "line1\nline2\nline3\nline4\nline5\n"; }
+
+    auto tail = Debug::_readLogTail(3);
+    CHECK(tail.find("line3") != std::string::npos);
+    CHECK(tail.find("line4") != std::string::npos);
+    CHECK(tail.find("line5") != std::string::npos);
+    CHECK(tail.find("line1") == std::string::npos);
+    CHECK(tail.find("line2") == std::string::npos);
+}
+
+TEST_CASE("Debug::_readLogTail all lines when tail exceeds size", "[debug][logtail]")
+{
+    DebugFixture fx;
+
+    auto log_path = fx.root / "logs" / "log.txt";
+    fs::create_directories(log_path.parent_path());
+    { std::ofstream ofs(log_path); ofs << "only_line\n"; }
+
+    auto tail = Debug::_readLogTail(100);
+    CHECK(tail.find("only_line") != std::string::npos);
+}
+
+TEST_CASE("Debug::_readLogTail missing file returns message", "[debug][logtail]")
+{
+    DebugFixture fx;
+
+    auto tail = Debug::_readLogTail(10);
+    CHECK(tail.find("not found") != std::string::npos);
+}
+
+// ─── Issue body templates ────────────────────────────────────
+
+TEST_CASE("Debug::buildReportIssueBody contains version and user template", "[debug][issue]")
+{
+    IssueTemplateFixture fx;
+    Debug::setVersion("1.2.3");
+
+    auto hdr = Localization::Str{ "str_issue_report_header" }();
+    auto ver = utils::format(Localization::Str{ "str_issue_version" }(), Debug::version());
+    REQUIRE_FALSE(hdr.empty());
+    REQUIRE_FALSE(ver.empty());
+
+    auto body = Debug::buildReportIssueBody();
+
+    CHECK(body.find("1.2.3") != std::string::npos);
+    CHECK(body.find("Problem description") != std::string::npos);
+    CHECK(body.find("Steps") != std::string::npos);
+    CHECK(body.find("Expected") != std::string::npos);
+    CHECK(body.find("Actual") != std::string::npos);
+    CHECK(body.find("<details>") == std::string::npos);
+    CHECK(body.find("Log tail summary") == std::string::npos);
+}
+
+TEST_CASE("Debug::buildCrashIssueBody contains log tail and user template", "[debug][issue]")
+{
+    IssueTemplateFixture fx;
+    Debug::setVersion("1.2.3");
+
+    auto body = Debug::buildCrashIssueBody("CRASH_LOG_TAIL");
+
+    CHECK(body.find("1.2.3") != std::string::npos);
+    CHECK(body.find("CRASH_LOG_TAIL") != std::string::npos);
+    CHECK(body.find("<details>") != std::string::npos);
+    CHECK(body.find("Log tail summary") != std::string::npos);
+    CHECK(body.find("Before crash") != std::string::npos);
+    CHECK(body.find("Steps") != std::string::npos);
+    CHECK(body.find("Full log hint") != std::string::npos);
+}
+
+TEST_CASE("Debug::buildCrashIssueBody contains full log hint", "[debug][issue]")
+{
+    IssueTemplateFixture fx;
+    Debug::setVersion("1.2.3");
+
+    auto body = Debug::buildCrashIssueBody("TAIL");
+    CHECK(body.find("Full log hint") != std::string::npos);
 }
 
