@@ -391,10 +391,10 @@ void Unblock::localProxyTg(bool run)
 		_tg_ws_proxy.setArgs(
 			{ (Core::get().binariesPath() / "tg-ws-proxy.exe").string(),
 			  std::string{ "--secret " } + proxy_secret.data(),
-			  "--dc-ip 1:149.154.175.50 --dc-ip 2:91.105.192.100 --dc-ip 3:149.154.175.100 --dc-ip 4:149.154.167.91",
-			  "--cfproxy-worker-domain unblock.kermanua1488.workers.dev",
-			  "--host 127.0.0.1",
-			  "--port 9101" }
+			  "--dc-ip 1:" + _tg_dc_ip[0] + " --dc-ip 2:" + _tg_dc_ip[1] + " --dc-ip 3:" + _tg_dc_ip[2] + " --dc-ip 4:" + _tg_dc_ip[3],
+			  "--cfproxy-worker-domain " + _tg_cfproxy_domain,
+			  "--host " + _tg_host,
+			  "--port " + _tg_port }
 		);
 		_tg_ws_proxy.create();
 		_tg_ws_proxy.start();
@@ -402,6 +402,14 @@ void Unblock::localProxyTg(bool run)
 	}
 
 	_tg_ws_proxy.remove();
+}
+
+void Unblock::setTgProxyParams(std::string_view host, std::string_view port, std::array<std::string, 4> dc_ip, std::string_view cfproxy_worker_domain)
+{
+	_tg_host				 = host;
+	_tg_port				 = port;
+	_tg_dc_ip				 = std::move(dc_ip);
+	_tg_cfproxy_domain		 = cfproxy_worker_domain;
 }
 
 bool Unblock::localProxyTgIsRun()
@@ -412,9 +420,13 @@ bool Unblock::localProxyTgIsRun()
 void Unblock::localProxyTgLinkRun()
 {
 	Core::get().addTaskParallel(
-		[]
+		[this]
 		{
-			std::string tg{ "start \"\" \"tg://proxy?server=127.0.0.1&port=9101&secret=" };
+			std::string tg{ "start \"\" \"tg://proxy?server=" };
+			tg.append(_tg_host);
+			tg.append("&port=");
+			tg.append(_tg_port);
+			tg.append("&secret=");
 			tg.append(proxy_secret);
 			tg.append("\"");
 			system(tg.c_str());

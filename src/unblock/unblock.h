@@ -24,6 +24,11 @@ class UNBLOCK_API Unblock final : public std::enable_shared_from_this<Unblock>
     std::atomic_bool _zapret_dbg_run_end;
     std::atomic_bool _zapret_dbg_run;
 
+    std::string _tg_host{ "127.0.0.1" };
+    std::string _tg_port{ "9101" };
+    std::array<std::string, 4> _tg_dc_ip{ "149.154.175.50", "91.105.192.100", "149.154.175.100", "149.154.167.91" };
+    std::string _tg_cfproxy_domain{ "unblock.kermanua1488.workers.dev" };
+
     // Accessed only from the JS thread (via Ui::jsUpdate)
     std::unordered_set<std::string> _helper_checking;
     std::unordered_set<std::string> _helper_seen;
@@ -76,6 +81,14 @@ public:
     void localProxyTg(bool run = true);
     bool localProxyTgIsRun();
     void localProxyTgLinkRun();
+
+    void setTgProxyParams(std::string_view host, std::string_view port,
+                          std::array<std::string, 4> dc_ip,
+                          std::string_view cfproxy_worker_domain);
+    const std::string& tgProxyHost() const { return _tg_host; }
+    const std::string& tgProxyPort() const { return _tg_port; }
+    const std::array<std::string, 4>& tgProxyDcIp() const { return _tg_dc_ip; }
+    const std::string& tgProxyCfproxyDomain() const { return _tg_cfproxy_domain; }
 
     void testingDomain(
         std::function<void(std::string_view, bool)>&& callback = [](std::string_view, bool)
