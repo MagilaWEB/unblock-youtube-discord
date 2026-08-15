@@ -54,11 +54,11 @@ public:
 
 	void addEventClick(std::function<bool(JSArgs)>&& callback);
 
-	/** Регистрирует шаг интерактивного туториала для этого элемента.
-	 *  @param title       id строки заголовка шага (ключ локализации).
-	 *  @param description id строки описания шага (ключ локализации).
-	 *  @param priority    необязательный приоритет: чем меньше, тем раньше в туториале.
-	 *                     По умолчанию шаг попадает в конец. */
+	/** Registers a step of the interactive tutorial for this element.
+	 *  @param title       id of the step title string (localization key).
+	 *  @param description id of the step description string (localization key).
+	 *  @param priority    optional priority: the lower, the earlier in the tutorial.
+	 *                     By default the step goes to the end. */
 	void addTutorialStep(Localization::Str title, Localization::Str description, u32 priority = type_max<u32>);
 
 	static void initializeAll(View* view);
