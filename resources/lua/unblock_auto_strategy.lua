@@ -16,6 +16,17 @@
 --   time=N      — время через которое произойдет сброс ошибок (по умолч. 60 сек)
 --   maxseq=N    — макс. seq для проверок (по умолч. 32768)
 --   reset       — отправлять RST при ошибке
+-- auto_host_group — группирует хосты одного семейства в общую стратегию.
+-- googlevideo (rr*-sn-*.googlevideo.com) — все такие хосты делят один hrec:
+-- подобранная стратегия применяется ко всем сразу, при сбое/FAIL переключается
+-- для всей группы, а не для каждого rr-хоста отдельно.
+function auto_host_group(hostkey)
+    if hostkey and hostkey:find("googlevideo%.com$") then
+        return "googlevideo.com"
+    end
+    return hostkey
+end
+
 function auto_host_record(desync)
     local hostkey
     if desync.track and desync.track.hostname then
@@ -27,6 +38,8 @@ function auto_host_record(desync)
     if not hostkey then
         return nil
     end
+
+    hostkey = auto_host_group(hostkey)
 
     if not autostate then
         autostate = {}
@@ -99,30 +112,54 @@ function auto_strategy(ctx, desync)
         hrec.nstrategy = 0
     end
 
-    -- закреплённая стратегия применяется всегда, пока helper не вернёт FAIL
-    if hrec.fixed_strategy and hrec.fixed_strategy > 0 then
-        hrec.nstrategy = hrec.fixed_strategy
-    end
-
     if hrec.ctstrategy == 0 then
         return
     end
 
+    local verdict = VERDICT_PASS
     local arg = args_defaults(desync.arg)
-
     local crec = auto_conn_record(desync)
+
+    local host_name = desync.track and desync.track.hostname
+
+    local function strategy_name()
+        if hrec.nstrategy == 0 then
+            return "direct"
+        end
+        return "strategy_" .. hrec.nstrategy
+    end
+
+    local function fail_helper_stretegy()
+        if host_name then
+            send_signal("ERR", host_name, strategy_name(), 10000)
+        end
+    end
+
+    local function check_helper_stretegy()
+        if host_name then
+            _G.helper_check[host_name] = true
+            send_signal("CHECK", host_name, nil, 10000)
+            ULOG("INFO", "zapret-helper:check " .. host_name)
+        end
+    end
+
+    local function strategy_plan()
+        while true do
+            local inst = plan_instance_pop(desync)
+            if not inst then
+                break
+            end
+
+            if inst.arg.strategy and tonumber(inst.arg.strategy) == hrec.nstrategy and hrec.nstrategy ~= 0 then
+                verdict = plan_instance_execute(desync, verdict, inst)
+            end
+        end
+    end
+
     if crec then
         local host_or_ip = host_or_ip(desync)
-        local host_name = desync.track and desync.track.hostname
 
         local dport = tostring(desync.dis.tcp and desync.dis.tcp.th_dport or desync.dis.udp and desync.dis.udp.uh_dport)
-
-        local function strategy_name()
-            if hrec.nstrategy == 0 then
-                return "direct"
-            end
-            return "strategy_" .. hrec.nstrategy
-        end
 
         DLOG("auto_strategy: " .. strategy_name() .. "->" .. host_or_ip .. ":" .. dport)
 
@@ -157,11 +194,6 @@ function auto_strategy(ctx, desync)
 
         local function check_fails()
             if arg.fails then
-
-                if host_name and _G.zapret_checking[host_name] then
-                    return false
-                end
-
                 local now = os.time()
                 if hrec.last_fail_time and now - hrec.last_fail_time > (tonumber(arg.time) or 60) then
                     hrec.fails = nil
@@ -183,10 +215,6 @@ function auto_strategy(ctx, desync)
         end
 
         local function do_switch(reason)
-            -- закреплённую стратегию локальными сбоями не меняем, ждём FAIL от helper
-            if hrec.fixed_strategy then
-                return
-            end
 
             ULOG("WARNING", "zapret:auto_strategy: FAIL " .. strategy_name() .. " " .. reason .. "->" .. host_or_ip ..
                 ":" .. dport)
@@ -199,121 +227,103 @@ function auto_strategy(ctx, desync)
             end
         end
 
+        if not _G.zapret_ipc then
+            _G.zapret_ipc = {}
+        end
+
         if desync.dis.tcp then
-            if not _G.zapret_checking then
-                _G.zapret_checking = {}
-            end
+            if host_name and _G.zapret_ipc[host_name] then
+                strategy_plan()
 
-            if not _G.zapret_ipc then
-                _G.zapret_ipc = {}
-            end
-
-            if host_name and _G.zapret_ipc[host_name] == "FAIL" then
-                _G.zapret_ipc[host_name] = nil
-                _G.zapret_checking[host_name] = nil
-
-                if hrec.fixed_strategy then
-                    hrec.fixed_strategy = nil
-                    hrec.nstrategy = 0
-                else
-                    do_switch("FAIL")
-                end
-
-                reset_conection()
-                send_signal("CHECK", host_name, nil, 10000)
-                return
-            end
-
-            local function fail_stretegy()
                 if host_name then
-                    send_signal("ERR", host_name, strategy_name(), 10000)
+                    send_signal("VALID", host_name, strategy_name(), 10000)
                 end
-
-                if _G.zapret_ipc[host_name] == "OK" then
-                    _G.zapret_ipc[host_name] = "FAIL"
-                end
-            end
-
-            local function check_stretegy()
-                if not _G.zapret_checking[host_name] then
-                    _G.zapret_checking[host_name] = true
-                    send_signal("CHECK", host_name, nil, 10000)
-                    ULOG("INFO", "zapret-helper:check " .. host_name)
-                end
+                return verdict
             end
 
             if desync.outgoing and is_retransmission(desync) then
                 reset_conection()
+                fail_helper_stretegy()
+                -- check_helper_stretegy()
 
                 if check_fails() then
-                    fail_stretegy()
-                    check_stretegy()
                     do_switch("is_retransmission")
                 end
 
-                return
+                strategy_plan()
+                return verdict
             end
 
-            local seq = pos_get(desync, 's')
-            if bitand(desync.dis.tcp.th_flags, TH_RST) ~= 0 and seq >= 1 and seq <= 8192 then
-                reset_conection()
-                fail_stretegy()
-                check_stretegy()
+            if not host_name then
+                local seq = pos_get(desync, 's')
+                if bitand(desync.dis.tcp.th_flags, TH_RST) ~= 0 and seq >= 1 and seq <= 8192 then
+                    reset_conection()
+                    fail_helper_stretegy()
+                    -- check_helper_stretegy()
 
-                if check_fails() then
-                    do_switch("RST")
+                    if check_fails() then
+                        do_switch("RST")
+                    end
+
+                    strategy_plan()
+                    return verdict
                 end
 
-                return
-            end
+                local payload = desync.reasm_data or desync.dis.payload
+                local plen = payload and #payload or 0
+                if plen >= 16000 then
+                    reset_conection()
+                    fail_helper_stretegy()
+                    -- check_helper_stretegy()
 
-            local payload = desync.reasm_data or desync.dis.payload
-            local plen = payload and #payload or 0
-            if plen >= 16000 then
-                reset_conection()
-                fail_stretegy()
-                check_stretegy()
+                    if check_fails() then
+                        do_switch("DPI16KB")
+                    end
 
-                if check_fails() then
-                    do_switch("DPI16KB")
+                    strategy_plan()
+                    return verdict
                 end
 
-                return
-            end
+                if desync.l7payload == "http_reply" and desync.track and desync.track.hostname then
+                    local hdis = http_dissect_reply(desync.dis.payload)
+                    if hdis and (hdis.code == 302 or hdis.code == 307) then
+                        local idx_loc = array_field_search(hdis.headers, "header_low", "location")
+                        if idx_loc and is_dpi_redirect(desync.track.hostname, hdis.headers[idx_loc].value) then
+                            reset_conection()
+                            fail_helper_stretegy()
+                            -- check_helper_stretegy()
 
-            if desync.l7payload == "http_reply" and desync.track and desync.track.hostname then
-                local hdis = http_dissect_reply(desync.dis.payload)
-                if hdis and (hdis.code == 302 or hdis.code == 307) then
-                    local idx_loc = array_field_search(hdis.headers, "header_low", "location")
-                    if idx_loc and is_dpi_redirect(desync.track.hostname, hdis.headers[idx_loc].value) then
-                        reset_conection()
-                        fail_stretegy()
-                        check_stretegy()
+                            if check_fails() then
+                                do_switch("DPI_redirect")
+                            end
 
-                        if check_fails() then
-                            do_switch("DPI_redirect")
+                            strategy_plan()
+                            return verdict
                         end
-
-                        return
                     end
                 end
+            end
+
+            if not _G.helper_check then
+                _G.helper_check = {}
             end
 
             if host_name then
-                if hrec.nstrategy ~= 0 then
-                    if _G.zapret_ipc[host_name] == "OK" then
-                        _G.zapret_checking[host_name] = nil
-                        hrec.fixed_strategy = hrec.nstrategy
-                        ULOG("OK",
-                            "zapret:auto_strategy: CONFIRMED " .. strategy_name() .. "->" .. host_name .. ":" .. dport)
-                        send_signal("STAT", host_name, strategy_name(), 10000)
-                    else
-                        check_stretegy()
+                if _G.zapret_ipc[host_name] == false then
+                    if _G.helper_check[host_name] == false then
+                        _G.helper_check[host_name] = true
+                        reset_conection()
+                        fail_helper_stretegy()
+
+                        if check_fails() then
+                            do_switch("HELPER ZAPRET HOST FAIL")
+                        end
                     end
+
+                    strategy_plan()
+                    return verdict
                 else
-                    ULOG("OK",
-                        "zapret:auto_strategy: CONFIRMED " .. strategy_name() .. "->" .. host_name .. ":" .. dport)
-                    send_signal("STAT", host_name, strategy_name(), 10000)
+                    send_signal("VALID", host_name, strategy_name(), 10000)
                 end
             end
         end
@@ -322,30 +332,26 @@ function auto_strategy(ctx, desync)
             local pos_out = pos_get(desync, 'n', false)
             local pos_in = pos_get(desync, 'n', true)
             if pos_out >= 4 and pos_in <= 1 then
+                fail_helper_stretegy()
+
                 if check_fails() then
                     do_switch("UDP");
-                    return
+                    strategy_plan()
+                    return verdict
                 end
             else
+                if host_name then
+                    send_signal("VALID", host_name, strategy_name(), 10000)
+                end
                 ULOG("OK",
-                    "zapret:auto_strategy:UDP CONFIRMED " .. strategy_name() .. "->" .. host_or_ip .. ":" .. dport)
-                send_signal("STAT", host_or_ip, strategy_name(), 10000)
+                    "zapret:auto_strategy: CONFIRMED UDP " .. strategy_name() .. "->" .. host_or_ip .. ":" .. dport)
             end
 
             -- ULOG("INFO", "zapret:udp out=" .. pos_out .. " in=" .. pos_in .. " " .. host_or_ip(desync))
         end
     end
 
-    local verdict = VERDICT_PASS
-    while true do
-        local inst = plan_instance_pop(desync)
-        if not inst then
-            break
-        end
-        if inst.arg.strategy and tonumber(inst.arg.strategy) == hrec.nstrategy and hrec.nstrategy ~= 0 then
-            verdict = plan_instance_execute(desync, verdict, inst)
-        end
-    end
+    strategy_plan()
 
     return verdict
 end

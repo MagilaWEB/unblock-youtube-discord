@@ -69,16 +69,20 @@ function zcheck(ctx, desync)
             _G.zapret_ipc = {}
         end
 
+        if not _G.helper_check then
+            _G.helper_check = {}
+        end
+
         if msg:find("FAIL:") == 1 then
             local host = msg:sub(6)
-            _G.zapret_ipc[host] = "FAIL"
-            _G.zapret_checking = _G.zapret_checking or {}
-            _G.zapret_checking[host] = nil
+            _G.zapret_ipc[host] = false
+            _G.helper_check[host] = false
 
             ULOG("WARNING", "zcheck: FAIL " .. host)
         elseif msg:find("OK:") == 1 then
             local host = msg:sub(4)
-            _G.zapret_ipc[host] = "OK"
+            _G.zapret_ipc[host] = true
+            _G.helper_check[host] = false
             ULOG("OK", "zcheck host ok -> " .. host)
         end
     end
