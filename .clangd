@@ -1,0 +1,4 @@
+CompileFlags:
+  CompilationDatabase: _build_ai
+Diagnostics:
+  ClangTidy: true
