@@ -1,16 +1,14 @@
 #include "zapret_helper.h"
 
+#include <algorithm>
 #include <cctype>
-#include <execution>
 #include <format>
 #include <ranges>
 #include <vector>
 
 ZapretHelper::~ZapretHelper()
 {
-	_running = false;
-	if (_worker.joinable())
-		_worker.join();
+	_stopPool();
 }
 
 bool ZapretHelper::_isValidHost(std::string_view host)
@@ -42,11 +40,6 @@ std::string ZapretHelper::_makeValidSignal(std::string_view host, std::string_vi
 std::string ZapretHelper::_makeErrorSignal(std::string_view host, std::string_view strategy)
 {
 	return std::format("STRING:helper_error:{}:{}", host, strategy);
-}
-
-std::string ZapretHelper::_makeErrorClearSignal(std::string_view host)
-{
-	return std::format("STRING:helper_error_clear:{}", host);
 }
 
 std::string ZapretHelper::_makeDoneSignal(std::string_view host)
@@ -81,6 +74,7 @@ void ZapretHelper::_addHost(std::string_view host)
 
 	_known_hosts.insert(std::string{ host });
 	_queue.insert(std::string{ host });
+	_cv.notify_one();
 }
 
 void ZapretHelper::_handleMessage(std::string_view message)
@@ -100,20 +94,23 @@ void ZapretHelper::_handleMessage(std::string_view message)
 		const auto		pos	 = rest.find(':');
 		_addHost(rest.substr(0, pos));
 	}
-	else if (message.starts_with("STAT:"))
+	else if (message.starts_with("VALID:"))
 	{
 		std::lock_guard lock(_mutex);
-		const auto		rest  = message.substr(5);
+		const auto		rest  = message.substr(6);
 		const auto		pos	  = rest.find(':');
-		const auto		host  = rest.substr(0, pos);
+		const auto		host  = std::string{ rest.substr(0, pos) };
 		const auto		strat = (pos != std::string_view::npos) ? rest.substr(pos + 1) : std::string_view{};
 		if (_isValidHost(host) && !strat.empty())
 		{
-			_valid[std::string{ host }] = std::string{ strat };
-			_send(_makeValidSignal(host, strat), c_ipc_port);
+			_valid_hosts[host] = std::string{ strat };
+			_error_hosts.erase(host);
 
-			if (_error_hosts.erase(std::string{ host }))
-				_send(_makeErrorClearSignal(host), c_ipc_port);
+			if (!_known_hosts.contains(host))
+				_known_hosts.insert(host);
+
+			for (auto& [host, strat] : _valid_hosts)
+				_send(_makeValidSignal(host, strat), c_ipc_port);
 		}
 	}
 	else if (message.starts_with("ERR:"))
@@ -121,17 +118,24 @@ void ZapretHelper::_handleMessage(std::string_view message)
 		std::lock_guard lock(_mutex);
 		const auto		rest  = message.substr(4);
 		const auto		pos	  = rest.find(':');
-		const auto		host  = rest.substr(0, pos);
+		const auto		host  = std::string{ rest.substr(0, pos) };
 		const auto		strat = (pos != std::string_view::npos) ? rest.substr(pos + 1) : std::string_view{};
 		if (_isValidHost(host))
 		{
-			_error_hosts[std::string{ host }] = std::string{ strat };
-			_send(_makeErrorSignal(host, strat), c_ipc_port);
+			_error_hosts[host] = std::string{ strat };
+			_valid_hosts.erase(host);
+			_cv.notify_all();
 		}
+
+		if (!_known_hosts.contains(host))
+			_known_hosts.insert(host);
+
+		for (auto& [host, strat] : _error_hosts)
+			_send(_makeErrorSignal(host, strat), c_ipc_port);
 	}
 }
 
-void ZapretHelper::_checkHost(std::string_view host) const
+void ZapretHelper::_checkHost(std::string_view host)
 {
 	_log(std::format("check {}", host));
 
@@ -150,57 +154,80 @@ void ZapretHelper::_checkHost(std::string_view host) const
 	}
 }
 
+std::optional<std::string> ZapretHelper::_popHost()
+{
+	if (!_queue.empty())
+	{
+		auto			  it   = _queue.begin();
+		const std::string host = *it;
+		_queue.erase(it);
+		_in_check.insert(host);
+		return host;
+	}
+
+	return std::nullopt;
+}
+
+void ZapretHelper::_workerRoutine()
+{
+	while (_running)
+	{
+		std::unique_lock lock(_mutex);
+		_cv.wait(lock, [this] { return !_running || !_queue.empty(); });
+
+		if (!_running)
+			return;
+
+		auto host = _popHost();
+		if (!host)
+			continue;
+
+		lock.unlock();
+
+		_send(_makeCheckingSignal(*host), c_ipc_port);
+		_checkHost(*host);
+
+		lock.lock();
+		_in_check.erase(*host);
+		_cv.notify_all();
+
+		std::this_thread::sleep_for(c_sleep_short);
+	}
+}
+
+void ZapretHelper::_stopPool()
+{
+	_running = false;
+	_cv.notify_all();
+
+	for (auto& worker : _pool)
+		if (worker.joinable())
+			worker.join();
+
+	_pool.clear();
+}
+
 void ZapretHelper::_idleStep()
 {
 	const auto now = std::chrono::steady_clock::now();
 	if (now - _last_recheck > c_recheck_interval)
 	{
 		std::lock_guard lock(_mutex);
-		for (auto& [host, strategy] : _error_hosts)
-			if (!_known_hosts.contains(host))
-				_known_hosts.insert(host);
-
 		for (const auto& host : _known_hosts)
 			if (!_queue.contains(host))
 				_queue.insert(host);
 
 		_last_recheck = now;
+		_cv.notify_all();
 	}
-	else
-	{
-		std::lock_guard lock(_mutex);
-		for (const auto& host : _known_hosts)
-			_send(_makeSeenSignal(host), c_ipc_port);
-	}
-}
 
-void ZapretHelper::_workerLoop()
-{
-	using namespace std::chrono;
+	std::lock_guard lock(_mutex);
+	for (const auto& host : _known_hosts)
+		_send(_makeSeenSignal(host), c_ipc_port);
 
-	while (_running)
-	{
-		std::vector<std::string> batch;
-		{
-			std::lock_guard lock(_mutex);
-			batch.reserve(_queue.size());
-			for (auto& host : _queue)
-				batch.push_back(std::move(host));
-			_queue.clear();
-		}
-
-		if (batch.empty())
-		{
-			_idleStep();
-			std::this_thread::sleep_for(c_sleep_short);
-			continue;
-		}
-
-		for (auto& host : batch)
-			_send(_makeCheckingSignal(host), c_ipc_port);
-
-		std::for_each(std::execution::par, batch.begin(), batch.end(), [this](std::string& host) { _checkHost(host); });
-	}
+	for (const auto& [host, _] : _error_hosts)
+		if (!_queue.contains(host))
+			_queue.insert(host);
 }
 
 int ZapretHelper::run()
@@ -208,10 +235,13 @@ int ZapretHelper::run()
 	if (!_socket.create() || !_socket.bind(c_receive_port) || !_socket.nonBlocking())
 		return 1;
 
-	_worker = std::thread{ [this] { _workerLoop(); } };
+	for (u32 i = 0; i < c_pool_size; ++i)
+		_pool.emplace_back([this] { _workerRoutine(); });
 
 	while (_running)
 	{
+		_idleStep();
+
 		sockaddr_in from{};
 		const int	n = _socket.recvFrom(_buffer.data(), static_cast<int>(_buffer.size()) - 1, from);
 		if (n <= 0)
@@ -224,8 +254,7 @@ int ZapretHelper::run()
 	}
 
 	_running = false;
-	if (_worker.joinable())
-		_worker.join();
+	_cv.notify_all();
 
 	return 0;
 }

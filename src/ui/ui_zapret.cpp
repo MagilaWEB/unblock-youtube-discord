@@ -587,7 +587,7 @@ void UiZapret2::updateHelperError()
 	if (!_list_helper_error->isCreate())
 		return;
 
-	auto entries = _ui->_unblock->helperErrorStrategies();
+	auto entries = _ui->_unblock->helperErrorHosts();
 	std::ranges::sort(entries);
 
 	if (entries == _last_helper_error)

@@ -3,7 +3,9 @@
 #include <array>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -22,19 +24,22 @@ class ZapretHelper
 {
 	inline static constexpr u32	   c_receive_port{ 10'000 };
 	inline static constexpr u32	   c_ipc_port{ 9'999 };
+	inline static constexpr u32	   c_pool_size{ 20 };
 	inline static constexpr size_t c_receive_buffer_size{ 65'536 };
 	inline static constexpr auto   c_recheck_interval{ std::chrono::minutes(1) };
 	inline static constexpr auto   c_sleep_short{ std::chrono::milliseconds(150) };
 
 	std::mutex									 _mutex;
+	std::condition_variable						 _cv;
 	mutable std::mutex							 _send_mutex;
 	std::unordered_set<std::string>				 _queue;
 	std::unordered_set<std::string>				 _known_hosts;
+	std::unordered_set<std::string>				 _in_check;
 	std::unordered_map<std::string, std::string> _error_hosts;
-	std::unordered_map<std::string, std::string> _valid;
+	std::unordered_map<std::string, std::string> _valid_hosts;
 	UdpSocket									 _socket;
 	std::array<char, c_receive_buffer_size>		 _buffer{};
-	std::thread									 _worker;
+	std::vector<std::thread>					 _pool;
 	u32											 _target_ip{ htonl(INADDR_LOOPBACK) };
 	std::atomic<bool>							 _running{ true };
 	std::chrono::steady_clock::time_point		 _last_recheck{};
@@ -63,15 +68,20 @@ private:
 	/** Handle an incoming message (LIST or CHECK). */
 	void _handleMessage(std::string_view message);
 	/** Check a host via curl and report OK/FAIL. */
-	void _checkHost(std::string_view host) const;
-	/** Background worker: checks queued hosts in batches. */
-	void _workerLoop();
+	void _checkHost(std::string_view host);
+	/** Pop the next host (from queue, then error hosts) under mutex. */
+	std::optional<std::string> _popHost();
+	/** True if any host is waiting and not currently being checked. */
+	bool _hasPendingHost() const;
+	/** Background worker: waits for hosts and checks them one by one. */
+	void _workerRoutine();
+	/** Stop workers and join the pool. */
+	void _stopPool();
 
 	// Message formatters (pure, no I/O) — unit-testable.
 	static std::string _makeLog(std::string_view text);
 	static std::string _makeValidSignal(std::string_view host, std::string_view strategy);
 	static std::string _makeErrorSignal(std::string_view host, std::string_view strategy);
-	static std::string _makeErrorClearSignal(std::string_view host);
 	static std::string _makeDoneSignal(std::string_view host);
 	static std::string _makeCheckingSignal(std::string_view host);
 	static std::string _makeSeenSignal(std::string_view host);

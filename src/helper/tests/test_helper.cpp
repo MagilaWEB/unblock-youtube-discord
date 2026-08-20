@@ -22,7 +22,7 @@ public:
 	const std::unordered_set<std::string>&				knownHosts() const { return helper._known_hosts; }
 	const std::unordered_set<std::string>&				queue() const { return helper._queue; }
 	const std::unordered_map<std::string, std::string>& errorHosts() const { return helper._error_hosts; }
-	const std::unordered_map<std::string, std::string>& valid() const { return helper._valid; }
+	const std::unordered_map<std::string, std::string>& valid() const { return helper._valid_hosts; }
 
 	void clearQueue() { helper._queue.clear(); }
 
@@ -33,7 +33,6 @@ public:
 	std::string makeLog(std::string_view text) const { return ZapretHelper::_makeLog(text); }
 	std::string makeValidSignal(std::string_view h, std::string_view s) const { return ZapretHelper::_makeValidSignal(h, s); }
 	std::string makeErrorSignal(std::string_view h, std::string_view s) const { return ZapretHelper::_makeErrorSignal(h, s); }
-	std::string makeErrorClearSignal(std::string_view h) const { return ZapretHelper::_makeErrorClearSignal(h); }
 	std::string makeDoneSignal(std::string_view h) const { return ZapretHelper::_makeDoneSignal(h); }
 	std::string makeCheckingSignal(std::string_view h) const { return ZapretHelper::_makeCheckingSignal(h); }
 	std::string makeSeenSignal(std::string_view h) const { return ZapretHelper::_makeSeenSignal(h); }
@@ -445,12 +444,6 @@ TEST_CASE("makeErrorSignal format", "[helper][format]")
 {
 	ZapretHelperTest t;
 	CHECK(t.makeErrorSignal("a.com", "3") == "STRING:helper_error:a.com:3");
-}
-
-TEST_CASE("makeErrorClearSignal format", "[helper][format]")
-{
-	ZapretHelperTest t;
-	CHECK(t.makeErrorClearSignal("a.com") == "STRING:helper_error_clear:a.com");
 }
 
 TEST_CASE("makeDoneSignal format", "[helper][format]")

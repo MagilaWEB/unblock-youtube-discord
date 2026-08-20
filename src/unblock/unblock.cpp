@@ -296,19 +296,26 @@ std::vector<std::string> Unblock::helperSeenHosts()
 	return { _helper_seen.begin(), _helper_seen.end() };
 }
 
-std::vector<std::pair<std::string, std::string>> Unblock::helperErrorStrategies()
+std::vector<std::pair<std::string, std::string>> Unblock::helperErrorHosts()
 {
 	auto& ipc = IPCSignals::get();
 
-	while (auto entry = ipc.getString("helper_error"))
-	{
-		const auto pos = entry->rfind(':');
-		if (pos != std::string::npos)
-			_helper_errors[entry->substr(0, pos)] = entry->substr(pos + 1);
-	}
+	auto entry = ipc.getString("helper_error");
 
-	while (auto host = ipc.getString("helper_error_clear"))
-		_helper_errors.erase(*host);
+	if (entry)
+	{
+		_helper_errors.clear();
+
+		do
+		{
+			const auto pos = entry->rfind(':');
+			if (pos != std::string::npos)
+			{
+				const auto host		 = entry->substr(0, pos);
+				_helper_errors[host] = entry->substr(pos + 1);
+			}
+		} while ((entry = ipc.getString("helper_error")));
+	}
 
 	std::vector<std::pair<std::string, std::string>> result;
 	result.reserve(_helper_errors.size());
@@ -322,11 +329,21 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperValidHosts()
 {
 	auto& ipc = IPCSignals::get();
 
-	while (auto entry = ipc.getString("helper_valid"))
+	auto entry = ipc.getString("helper_valid");
+
+	if (entry)
 	{
-		const auto pos = entry->rfind(':');
-		if (pos != std::string::npos)
-			_helper_valid[entry->substr(0, pos)] = entry->substr(pos + 1);
+		_helper_valid.clear();
+
+		do
+		{
+			const auto pos = entry->rfind(':');
+			if (pos != std::string::npos)
+			{
+				const auto host		= entry->substr(0, pos);
+				_helper_valid[host] = entry->substr(pos + 1);
+			}
+		} while ((entry = ipc.getString("helper_valid")));
 	}
 
 	std::vector<std::pair<std::string, std::string>> result;
@@ -406,10 +423,10 @@ void Unblock::localProxyTg(bool run)
 
 void Unblock::setTgProxyParams(std::string_view host, std::string_view port, std::array<std::string, 4> dc_ip, std::string_view cfproxy_worker_domain)
 {
-	_tg_host				 = host;
-	_tg_port				 = port;
-	_tg_dc_ip				 = std::move(dc_ip);
-	_tg_cfproxy_domain		 = cfproxy_worker_domain;
+	_tg_host		   = host;
+	_tg_port		   = port;
+	_tg_dc_ip		   = std::move(dc_ip);
+	_tg_cfproxy_domain = cfproxy_worker_domain;
 }
 
 bool Unblock::localProxyTgIsRun()
@@ -517,5 +534,4 @@ void Unblock::startService()
 			}
 		}
 	}
-
 }

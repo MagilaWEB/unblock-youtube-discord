@@ -66,7 +66,7 @@ public:
 
     std::vector<std::string> helperCheckingHosts();
     std::vector<std::string> helperSeenHosts();
-    std::vector<std::pair<std::string, std::string>> helperErrorStrategies();
+    std::vector<std::pair<std::string, std::string>> helperErrorHosts();
     std::vector<std::pair<std::string, std::string>> helperValidHosts();
 
     std::vector<std::string> listVersionStrategy();
