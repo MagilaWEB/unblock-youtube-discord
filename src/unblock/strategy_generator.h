@@ -4,10 +4,10 @@ class StrategyGenerator final
 	std::shared_ptr<File>  _file_strategy{};
 	std::list<std::string> _section_opt_service_names{};
 
-	static const std::filesystem::path _base_blacklist;
-	static const std::filesystem::path _base_ip_set;
-	static const std::filesystem::path _user_blacklist;
-	static const std::filesystem::path _user_ip_set;
+	static const std::filesystem::path& _base_blacklist();
+	static const std::filesystem::path& _base_ip_set();
+	static const std::filesystem::path& _user_blacklist();
+	static const std::filesystem::path& _user_ip_set();
 
 public:
 	using map_filters = std::map<std::string, std::vector<std::string>>;
@@ -17,7 +17,7 @@ private:
 
 public:
 	explicit StrategyGenerator();
-	~StrategyGenerator()		 = default;
+	~StrategyGenerator() = default;
 
 	void inFile(std::shared_ptr<File>& strategy);
 	void changeServiceList(std::list<std::string>);

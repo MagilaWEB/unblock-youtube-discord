@@ -56,6 +56,7 @@ static bool requestElevation()
 	return true;
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape) - unhandled exceptions are caught by Debug::try_wrap/SEH handlers
 int main(int argc, char** argv)
 {
 	std::string lp_cmd_line{};
@@ -68,8 +69,7 @@ int main(int argc, char** argv)
 	{
 		if (requestElevation())
 			return 0;
-		else
-			return 1;
+		return 1;
 	}
 
 	auto res = Debug::try_wrap(run, lp_cmd_line);

@@ -93,8 +93,9 @@ void UiBase::OnWindowObjectReady(View* caller, uint64_t, bool, const String&)
 	JSObject global			 = JSGlobalObject();
 	global["RUN_CPP"]		 = JSValue(true);
 	global["VERSION_APP"]	 = JSValue(VERSION_STR);
-	global["CPPRunJsUpdate"] = static_cast<JSCallback>(std::bind(&UiBase::runJsUpdate, this, std::placeholders::_1, std::placeholders::_2));
-	global["CPPLangText"]	 = static_cast<JSCallbackWithRetval>(std::bind(&UiBase::langText, this, std::placeholders::_1, std::placeholders::_2));
+	global["CPPRunJsUpdate"] = static_cast<JSCallback>([this](JSObject obj, const JSArgs& args) { this->runJsUpdate(obj, args); });
+	global["CPPLangText"] =
+		static_cast<JSCallbackWithRetval>([this](JSObject obj, const JSArgs& args) -> JSValue { return this->langText(obj, args); });
 
 	// Logic thread JavaScript to CPP
 	caller->EvaluateScript("setInterval(CPPRunJsUpdate, 30)");

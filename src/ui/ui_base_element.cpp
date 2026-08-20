@@ -3,11 +3,11 @@
 
 using namespace ultralight;
 
-View*												 BaseElement::_view;
+View* BaseElement::_view;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wglobal-constructors"
-std::map<std::string, BaseElement*>			  BaseElement::_all_element;
-BaseElement::MapEvent							   BaseElement::_event_click;
+std::map<std::string, BaseElement*>			  BaseElement::_all_element;	// NOLINT(bugprone-throwing-static-initialization) - global element registry
+BaseElement::MapEvent							   BaseElement::_event_click;	// NOLINT(bugprone-throwing-static-initialization) - global event registry
 #pragma clang diagnostic pop
 
 void BaseElement::runCodeToJS(const std::function<void()>& run_code)
@@ -45,7 +45,7 @@ JSValue BaseElement::runCodeToJSResult(const std::function<JSValue()>& run_code)
 	return run_code();
 }
 
-BaseElement::BaseElement(std::string_view name) : _name(name.data()), _type("base_element")
+BaseElement::BaseElement(std::string_view name) : _name(name), _type("base_element")
 {
 	const auto find_element = std::ranges::find_if(_all_element, [this](const auto& _name_element) { return _name_element.first == _name; });
 
@@ -58,6 +58,7 @@ BaseElement::BaseElement(std::string_view name) : _name(name.data()), _type("bas
 	_all_element[_name] = this;
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape) - registry erasure on plain map, no throwing code
 BaseElement::~BaseElement()
 {
 	_all_element[_name] = nullptr;
@@ -87,7 +88,16 @@ void BaseElement::create(std::string_view selector, Localization::Str title, boo
 		[this, selector, _title, first]
 		{
 			ASSERT_ARGS(
-				_create({ selector.data(), name(), _title.c_str(), first }).ToBoolean() == true,
+				_create(
+					{
+						String{ selector.data(), selector.size() },
+						name(),
+						_title.c_str(),
+						first
+			  }
+				)
+						.ToBoolean()
+					== true,
 				"Couldn't create a {} named [{}]",
 				_type,
 				name()
@@ -187,9 +197,10 @@ void BaseElement::addEventClick(std::function<bool(JSArgs)>&& callback)
 void BaseElement::addTutorialStep(Localization::Str title, Localization::Str description, u32 priority)
 {
 	const auto title_id = title._str_id;
-	const auto desc_id  = description._str_id;
+	const auto desc_id	= description._str_id;
 
 	runCodeToJS(
+		// NOLINTNEXTLINE(bugprone-exception-escape) - Ultralight callback contract
 		[this, title_id, desc_id, priority]
 		{
 			auto global_js = JSGlobalObject();

@@ -124,7 +124,7 @@ std::list<Service>& Unblock::getConflictingServices()
 					if (std::regex_match(name_service, std::regex{ _win_divert.getName() }))
 						continue;
 
-					conflicting_service.emplace_back(Service{ name_service });
+					conflicting_service.emplace_back(name_service);
 					conflicting_service.back().open();
 				}
 			}
@@ -211,15 +211,19 @@ exit
 )"
 };
 
-static HttpsLoad load_7z{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" };
+static HttpsLoad& getLoad7z()
+{
+	static HttpsLoad load{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" };
+	return load;
+}
 
 bool Unblock::appUpdate()
 {
 	auto path = Core::get().currentPath() / "update" / "new_unblock.7z";
 
-	load_7z.run_to_file(path);
+	getLoad7z().run_to_file(path);
 
-	u32 code = load_7z.codeResult();
+	u32 code = getLoad7z().codeResult();
 	if (code != 200)
 		return false;
 
@@ -255,7 +259,7 @@ bool Unblock::appUpdate()
 
 float Unblock::appUpdateProgress() const
 {
-	return load_7z.progress();
+	return getLoad7z().progress();
 }
 
 u32 Unblock::domainSuccessRate() const

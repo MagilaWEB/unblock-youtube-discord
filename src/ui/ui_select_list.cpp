@@ -45,7 +45,17 @@ void SelectList::create(std::string_view selector, Localization::Str title, Loca
 		[this, selector, _title, _description, first]
 		{
 			ASSERT_ARGS(
-				_create({ selector.data(), name(), _title.c_str(), _description.c_str(), first }).ToBoolean() == true,
+				_create(
+					{
+						String{ selector.data(), selector.size() },
+						name(),
+						_title.c_str(),
+						_description.c_str(),
+						first
+			  }
+				)
+						.ToBoolean()
+					== true,
 				"Couldn't create a {} named [{}]",
 				_type,
 				name()
@@ -89,7 +99,7 @@ void SelectList::addEventChange(std::function<bool(JSArgs)>&& callback)
 
 void SelectList::setSelectedOptionValue(std::string_view value)
 {
-	std::string _value = value.data();
+	std::string _value{ value };
 	runCodeToJS(
 		[this, _value]
 		{

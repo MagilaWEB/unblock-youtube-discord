@@ -167,7 +167,7 @@ void StrategiesDPI::_blob_init_to_zapret()
 					if (std::ranges::find(fake_default, key_fake) != std::end(fake_default))
 						continue;
 
-					if (_fake_bin_params.find(key_fake) != _fake_bin_params.end())
+					if (_fake_bin_params.contains(key_fake))
 						continue;
 
 					auto find_blob_base = std::format("--blob={}", key_fake);
@@ -231,11 +231,11 @@ void StrategiesDPI::_normalizeStrategyFinal()
 	while (_strategy_dpi.back().starts_with("--new"))
 		_strategy_dpi.pop_back();
 
-	_strategy_dpi.push_back("--new");
-	_strategy_dpi.push_back("--filter-udp=10000");
-	_strategy_dpi.push_back("--ipset-ip=127.0.0.1/32");
-	_strategy_dpi.push_back("--payload=all");
-	_strategy_dpi.push_back("--lua-desync=zcheck");
+	_strategy_dpi.emplace_back("--new");
+	_strategy_dpi.emplace_back("--filter-udp=10000");
+	_strategy_dpi.emplace_back("--ipset-ip=127.0.0.1/32");
+	_strategy_dpi.emplace_back("--payload=all");
+	_strategy_dpi.emplace_back("--lua-desync=zcheck");
 
 	for (auto& line : _strategy_dpi)
 		Debug::ok("{}", line);
@@ -268,8 +268,8 @@ void StrategiesDPI::_getAllPorts(std::string& str) const
 					Debug::warning("_getAllPorts Separator not found : for [{}]", name_service);
 			};
 
-			std::string setting_service_string{ result.value() };
-			size_t		position = 0;
+			const std::string& setting_service_string = result.value();
+			size_t			   position				  = 0;
 			while (position < setting_service_string.length())
 			{
 				size_t found = setting_service_string.find(">>", position);

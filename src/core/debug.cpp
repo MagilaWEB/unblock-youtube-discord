@@ -1,4 +1,4 @@
-﻿#include "debug.h"
+#include "debug.h"
 
 namespace
 {
@@ -10,10 +10,7 @@ namespace
 		std::string encoded;
 		encoded.reserve(str.size() * 3);
 
-		const auto is_unreserved = [](unsigned char c)
-		{
-			return std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~';
-		};
+		const auto is_unreserved = [](unsigned char c) { return std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~'; };
 
 		for (const unsigned char c : str)
 		{
@@ -56,7 +53,7 @@ namespace
 
 		return tail;
 	}
-} // namespace
+}	 // namespace
 
 std::string_view Debug::get_prefix(MessageTypes type)
 {
@@ -190,7 +187,7 @@ namespace
 
 		// Write the current crash into the log BEFORE reading its tail,
 		// so the crash message + stack trace appear once as the last log entry.
-		Debug::fatalErrorMessage(msg.c_str());
+		Debug::fatalErrorMessage(msg);
 
 		const std::string log_tail = Debug::_readLogTail(150);
 
@@ -200,9 +197,9 @@ namespace
 		Debug::log.close();
 
 		// Terminate immediately: the process state is corrupted.
-		ExitProcess(static_cast<UINT>(0xC0000005));
+		ExitProcess(static_cast<UINT>(0xC0'00'00'05));
 	}
-} // namespace
+}	 // namespace
 
 static LONG WINAPI seh_unhandled_filter(_EXCEPTION_POINTERS* pExceptionInfo)
 {
@@ -211,7 +208,7 @@ static LONG WINAPI seh_unhandled_filter(_EXCEPTION_POINTERS* pExceptionInfo)
 		return EXCEPTION_CONTINUE_SEARCH;
 
 	// Ignore non-fatal exceptions (e.g. debug break exceptions raised by OutputDebugString).
-	if ((pExceptionInfo->ExceptionRecord->ExceptionCode & 0x80'00'00'00u) == 0)
+	if ((pExceptionInfo->ExceptionRecord->ExceptionCode & 0x80'00'00'00U) == 0)
 		return EXCEPTION_CONTINUE_SEARCH;
 
 	if (pExceptionInfo->ExceptionRecord->ExceptionCode == 0xE0'6D'73'63)
@@ -235,7 +232,7 @@ static LONG CALLBACK vectored_exception_handler(PEXCEPTION_POINTERS pExceptionIn
 	// Ignore non-fatal exceptions: those without the severity bit set
 	// (e.g. DBG_PRINTEXCEPTION_C 0x4001000A used by OutputDebugString,
 	// which Ultralight raises while logging). They must go through normally.
-	if ((pExceptionInfo->ExceptionRecord->ExceptionCode & 0x80'00'00'00u) == 0)
+	if ((pExceptionInfo->ExceptionRecord->ExceptionCode & 0x80'00'00'00U) == 0)
 		return EXCEPTION_CONTINUE_SEARCH;
 
 	// Let C++ exceptions (0xE06D7363) go through the normal try/catch path.
@@ -249,7 +246,6 @@ static LONG CALLBACK vectored_exception_handler(PEXCEPTION_POINTERS pExceptionIn
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
-
 namespace
 {
 	struct SEHFilterGuard
@@ -257,9 +253,9 @@ namespace
 		LPTOP_LEVEL_EXCEPTION_FILTER old_filter;
 		PVOID						 old_vectored;
 
-		SEHFilterGuard()
-			: old_filter(SetUnhandledExceptionFilter(seh_unhandled_filter)),
-			  old_vectored(AddVectoredExceptionHandler(1, vectored_exception_handler))
+		SEHFilterGuard() :
+			old_filter(SetUnhandledExceptionFilter(seh_unhandled_filter)),
+			old_vectored(AddVectoredExceptionHandler(1, vectored_exception_handler))
 		{
 		}
 
@@ -270,7 +266,7 @@ namespace
 
 			SetUnhandledExceptionFilter(old_filter);
 		}
-	} guard;
+	} guard; // NOLINT(bugprone-throwing-static-initialization) - WinAPI setup, never throws
 }
 
 void Debug::initialize(const std::string& command_line)
@@ -313,7 +309,7 @@ void Debug::fatalErrorMessage(std::string message)
 {
 	log.writeText(std::to_string(++_console_line) + ". " + message);
 	log.close();
-	std::cerr << message << std::endl;
+	std::cerr << message << '\n';
 }
 
 void Debug::setCrashHandlerEnabled(bool enabled)
@@ -325,9 +321,7 @@ void Debug::openGitHubIssue(const std::string& title, const std::string& body)
 {
 	constexpr pcstr c_issue_url_base{ "https://github.com/MagilaWEB/unblock-youtube-discord/issues/new" };
 
-	const std::string url = std::string{ c_issue_url_base }
-		+ "?title=" + url_encode(title)
-		+ "&body=" + url_encode(body);
+	const std::string url = std::string{ c_issue_url_base } + "?title=" + url_encode(title) + "&body=" + url_encode(body);
 
 	// ShellExecuteA is safe for '?' and '&' in the URL (unlike system("start ...")).
 	ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);

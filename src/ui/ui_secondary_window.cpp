@@ -3,8 +3,8 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wglobal-constructors"
 std::vector<SecondaryWindow*> SecondaryWindow::_all_window;
-SecondaryWindow::MapEvent SecondaryWindow::_event_yes_no;
-SecondaryWindow::MapEvent SecondaryWindow::_event_cancel;
+SecondaryWindow::MapEvent SecondaryWindow::_event_yes_no;	  // NOLINT(bugprone-throwing-static-initialization) - global event registry
+SecondaryWindow::MapEvent SecondaryWindow::_event_cancel;	  // NOLINT(bugprone-throwing-static-initialization) - global event registry
 #pragma clang diagnostic pop
 
 SecondaryWindow::SecondaryWindow(std::string_view name) : BaseElement(name)

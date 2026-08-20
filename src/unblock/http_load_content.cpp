@@ -20,7 +20,7 @@ HttpsLoad::~HttpsLoad()
 static int ProgressCallback(float* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t /*ultotal*/, curl_off_t /*ulnow*/)
 {
 	if (dltotal > 0)
-		*clientp = static_cast<float>(dlnow) / static_cast<float>(dltotal) * 100.f;
+		*clientp = static_cast<float>(dlnow) / static_cast<float>(dltotal) * 100.F;
 
 	return CURLE_OK;
 }

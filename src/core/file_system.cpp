@@ -1,11 +1,18 @@
 #include "file_system.h"
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wglobal-constructors"
-static const std::regex r_section_name{ "\\[.*\\](?:.*|\\n)" };
-static const std::regex reg_equally{ "\\=" };
-#pragma clang diagnostic pop
+static const std::regex& r_section_name()
+{
+	static const std::regex regex{ R"(\[.*\](?:.*|\n))" };
+	return regex;
+}
 
+static const std::regex& reg_equally()
+{
+	static const std::regex regex{ R"(=)" };
+	return regex;
+}
+
+// NOLINTNEXTLINE(bugprone-exception-escape) - close() uses no-throw WinAPI + RAII lock
 File::~File()
 {
 	close();
@@ -40,7 +47,7 @@ void File::forLineSection(std::string_view section, std::function<bool(std::stri
 		return;
 	}
 
-	auto& list_string = _map_list_string[std::string{section}];
+	auto& list_string = _map_list_string[std::string{ section }];
 	if (list_string.empty())
 	{
 		bool		start{ false };
@@ -48,7 +55,7 @@ void File::forLineSection(std::string_view section, std::function<bool(std::stri
 		forLine(
 			[&](std::string str)
 			{
-				if ((!start) && std::regex_match(str, r_section_name) && str.contains(name_section))
+				if ((!start) && std::regex_match(str, r_section_name()) && str.contains(name_section))
 				{
 					start = true;
 					return false;
@@ -57,7 +64,7 @@ void File::forLineSection(std::string_view section, std::function<bool(std::stri
 				if (!start)
 					return false;
 
-				if (std::regex_match(str, r_section_name))
+				if (std::regex_match(str, r_section_name()))
 					return true;
 
 				if ((!str.empty()) && (!std::regex_match(str, std::regex{ "\n" })))
@@ -84,7 +91,7 @@ void File::forLineParametersSection(std::string_view section, std::function<bool
 		[this, section, fn](std::string str)
 		{
 			std::smatch para;
-			if (std::regex_search(str, para, reg_equally))
+			if (std::regex_search(str, para, reg_equally()))
 			{
 				auto key = para.prefix().str();
 				utils::trim(key);
@@ -92,16 +99,14 @@ void File::forLineParametersSection(std::string_view section, std::function<bool
 				utils::trim(value);
 				return fn(key, value);
 			}
-			else
-			{
-				Debug::warning(
-					"when trying to get the keys and values in the [{}] file in the [{}] section The kneader is missing [=]! A string of the "
-					"following format [{}].",
-					name().c_str(),
-					section,
-					str.c_str()
-				);
-			}
+
+			Debug::warning(
+				"when trying to get the keys and values in the [{}] file in the [{}] section The kneader is missing [=]! A string of the "
+				"following format [{}].",
+				name().c_str(),
+				section,
+				str.c_str()
+			);
 
 			return false;
 		}
@@ -118,7 +123,7 @@ std::optional<u32> File::positionSection(std::string_view section)
 	forLine(
 		[&](std::string str)
 		{
-			if (std::regex_match(str, r_section_name))
+			if (std::regex_match(str, r_section_name()))
 			{
 				position++;
 				return is_section = str.contains(name_section);
@@ -151,7 +156,7 @@ std::expected<TypeReturn, std::string> File::parameterSection(std::string_view s
 		section,
 		[&kay_value, parameter](std::string key, std::string value)
 		{
-			if (key == parameter.data())
+			if (key == parameter)
 			{
 				kay_value = value;
 				return true;
@@ -239,7 +244,7 @@ void File::writeSectionParameter(std::string_view section, std::string parameter
 		[&stoped, parameter, value_argument](std::string& str)
 		{
 			std::smatch para;
-			if (std::regex_search(str, para, reg_equally))
+			if (std::regex_search(str, para, reg_equally()))
 			{
 				auto key = para.prefix().str();
 				utils::trim(key);
@@ -261,7 +266,7 @@ void File::writeSectionParameter(std::string_view section, std::string parameter
 	if (stoped)
 		return;
 
-	_map_list_string[std::string{section}].emplace_back(std::format("{}={}", parameter, value_argument));
+	_map_list_string[std::string{ section }].emplace_back(std::format("{}={}", parameter, value_argument));
 	_normalize();
 }
 
@@ -358,7 +363,7 @@ void File::save()
 	_removeEmptyLine();
 
 	for (auto& _string : _line_string)
-		_stream << _string << std::endl;
+		_stream << _string << '\n';
 	_stream.close();
 
 	_is_write = false;
@@ -380,14 +385,14 @@ void File::_normalize()
 	{
 		std::string key{ std::format("[{}]", section) };
 
-	bool   is_section{ false };
-	ptrdiff_t it = 0;
-	for (; static_cast<size_t>(it) < _line_string.size(); it++)
+		bool	  is_section{ false };
+		ptrdiff_t it = 0;
+		for (; static_cast<size_t>(it) < _line_string.size(); it++)
 		{
 			auto& str = _line_string[static_cast<size_t>(it)];
-			if ((!is_section) && std::regex_match(str, r_section_name) && str.contains(key))
+			if ((!is_section) && std::regex_match(str, r_section_name()) && str.contains(key))
 				is_section = true;
-			else if (is_section && std::regex_match(str, r_section_name))
+			else if (is_section && std::regex_match(str, r_section_name()))
 				break;
 
 			if (is_section)
@@ -417,7 +422,7 @@ void File::_removeEmptyLine()
 		{
 			if (front && (str.empty() || std::regex_match(str, std::regex{ "\n" })))
 				return true;
-			else if (front)
+			if (front)
 				front = false;
 
 			if (!front && str.empty())

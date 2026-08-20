@@ -6,7 +6,7 @@ bool utils::IsUTF8(std::string_view string)
 		return true;
 
 	const auto* bytes = reinterpret_cast<const unsigned char*>(string.data());
-	u32					 num;
+	u32			num;
 	for (size_t idx = 0; idx < string.size();)
 	{
 		if ((bytes[idx] & 0x80) == 0x00)
@@ -21,10 +21,8 @@ bool utils::IsUTF8(std::string_view string)
 			return false;
 
 		for (u32 i = 1; i < num; ++i)
-		{
 			if (idx + i >= string.size() || (bytes[idx + i] & 0xC0) != 0x80)
 				return false;
-		}
 		idx += num;
 	}
 
@@ -40,6 +38,7 @@ std::string utils::UTF8_to_CP1251(std::string_view utf8_str)
 		static thread_local wchar_t cache_str[4'096];
 		RtlZeroMemory(&cache_str, sizeof(cache_str));
 
+		// NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage) — explicit size (len + 1) is passed to WinAPI.
 		MultiByteToWideChar(CP_UTF8, 0, utf8_str.data(), len + 1, cache_str, len + 1);
 
 		static thread_local char cache_str_result[4'096];
@@ -50,7 +49,7 @@ std::string utils::UTF8_to_CP1251(std::string_view utf8_str)
 		return { cache_str_result };
 	}
 
-	return std::string{utf8_str};
+	return std::string{ utf8_str };
 }
 
 std::wstring utils::UTF8_to_UTF16(std::string_view utf8_str)

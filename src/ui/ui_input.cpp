@@ -1,12 +1,12 @@
 #include "ui_input.h"
 
 std::pair<Input::Types, pcstr> Input::convert_types[]{
-	{ Input::Types::text,   "text" },
+	{	  Input::Types::text,	  "text" },
 	{ Input::Types::number, "number" },
-	{ Input::Types::color,  "color" },
-	{ Input::Types::time,   "time" },
-	{ Input::Types::ip,	   "ip" },
-	{ Input::Types::port,  "port" },
+	{  Input::Types::color,  "color" },
+	{	  Input::Types::time,	  "time" },
+	{	  Input::Types::ip,		"ip" },
+	{	  Input::Types::port,	  "port" },
 };
 
 Input::Input(std::string_view name) : BaseElement(name)
@@ -53,7 +53,19 @@ void Input::create(std::string_view selector, Types type, JSValue value, Localiz
 				if (id == type)
 				{
 					ASSERT_ARGS(
-						_create({ selector.data(), name(), str, value, _title.c_str(), _description.c_str(), first }).ToBoolean() == true,
+						_create(
+							{
+								String{ selector.data(), selector.size() },
+								name(),
+								str,
+								value,
+								_title.c_str(),
+								_description.c_str(),
+								first
+					  }
+						)
+								.ToBoolean()
+							== true,
 						"Couldn't create a {} named [{}]",
 						_type,
 						name()

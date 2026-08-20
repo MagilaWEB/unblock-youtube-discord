@@ -11,7 +11,7 @@ DNSHost::Google::Google(std::string test_domain)
 
 static void removeChars(std::string& s, std::string_view chars)
 {
-	s.erase(std::remove_if(s.begin(), s.end(), [chars](char c) { return chars.find(c) != std::string_view::npos; }), s.end());
+	s.erase(std::remove_if(s.begin(), s.end(), [chars](char c) { return chars.contains(c); }), s.end());
 }
 
 static void replaceAll(std::string& s, std::string_view from, std::string_view to)
@@ -45,7 +45,7 @@ void DNSHost::Google::run()
 			std::string_view token(&line[start], end - start);
 			start = end + 1;
 
-			if (token.find("Answer:name") == 0)
+			if (token.starts_with("Answer:name"))
 			{
 				static constexpr std::string_view answerPrefix = "Answer:";
 				if (token.size() > answerPrefix.size())
@@ -54,7 +54,7 @@ void DNSHost::Google::run()
 					_formatToMap(name, value);
 				}
 			}
-			else if (token.find("data") == 0)
+			else if (token.starts_with("data"))
 			{
 				_formatToMap(name, token);
 			}
@@ -63,13 +63,13 @@ void DNSHost::Google::run()
 		if (start < line.size())
 		{
 			std::string_view token(&line[start], line.size() - start);
-			if (token.find("Answer:name") == 0)
+			if (token.starts_with("Answer:name"))
 			{
 				static constexpr std::string_view answerPrefix = "Answer:";
 				if (token.size() > answerPrefix.size())
 					_formatToMap(name, token.substr(answerPrefix.size()));
 			}
-			else if (token.find("data") == 0)
+			else if (token.starts_with("data"))
 			{
 				_formatToMap(name, token);
 			}

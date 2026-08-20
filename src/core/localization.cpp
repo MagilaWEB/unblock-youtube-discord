@@ -32,10 +32,10 @@ void Localization::set(std::string_view lang_id)
 			if (pos != std::string::npos)
 				return false;
 
-			pos = str.find_first_of("=");
+			pos = str.find_first_of('=');
 			if (pos != std::string::npos)
 			{
-				key				  = str.substr(0, pos);
+				key = str.substr(0, pos);
 				utils::trim(key);
 				const auto& value = str.substr(++pos, str.size());
 				_string_list.emplace(key, value);
@@ -55,7 +55,7 @@ pcstr Localization::translate(std::string_view str_id)
 {
 	FAST_LOCK_SHARED(_lock);
 
-	auto it = _string_list.find(std::string{str_id});
+	auto it = _string_list.find(std::string{ str_id });
 	if (it != _string_list.end())
 		return it->second.c_str();
 

@@ -175,12 +175,12 @@ void DomainTesting::cancelTesting()
 
 u32 DomainTesting::successRate() const
 {
-	return static_cast<u32>((static_cast<float>(_domain_ok.load()) / static_cast<float>(_list_host.size())) * 100.f);
+	return static_cast<u32>((static_cast<float>(_domain_ok.load()) / static_cast<float>(_list_host.size())) * 100.F);
 }
 
 u32 DomainTesting::errorRate() const
 {
-	return static_cast<u32>((static_cast<float>(_domain_error.load()) / static_cast<float>(_list_host.size())) * 100.f);
+	return static_cast<u32>((static_cast<float>(_domain_error.load()) / static_cast<float>(_list_host.size())) * 100.F);
 }
 
 void DomainTesting::printTestInfo() const

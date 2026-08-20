@@ -230,7 +230,7 @@ void IPCSignals::_listen()
 
 		{
 			std::lock_guard lock(_mutex);
-			_data[std::string(key)].values.push_back(std::string(val));
+			_data[std::string(key)].values.emplace_back(val);
 			_data[std::string(key)].created = std::chrono::steady_clock::now();
 		}
 

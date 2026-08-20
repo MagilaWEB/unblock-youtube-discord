@@ -45,6 +45,7 @@ void UiZapret2::_listEnableServices()
 		);
 
 		check_box->addEventClick(
+			// NOLINTNEXTLINE(bugprone-exception-escape) - Ultralight callback contract
 			[this, name](JSArgs args)
 			{
 				_ui->uiBase()->userConfig()->writeSectionParameter("UNBLOCK", std::string{ "enable_" } + name, JSToCPP(args[0]));
@@ -497,8 +498,8 @@ void UiZapret2::_testingServiceDomains()
 				_window_info_testing->show();
 				return;
 			}
-			else
-				_list_host_info->clear();
+
+			_list_host_info->clear();
 
 			_domain_testing_cancel.store(false);
 		}

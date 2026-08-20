@@ -110,7 +110,8 @@ void Service::create()
 
 	if (fullCmdLine.length() > 30'000)
 		Debug::warning(
-			"For the [{}] service, the number of launch parameter characters exceeds 30,000. The current number of characters is [{}]. Please note that the maximum length can be 32,767! ",
+			"For the [{}] service, the number of launch parameter characters exceeds 30,000. The current number of characters is [{}]. Please note "
+			"that the maximum length can be 32,767! ",
 			_name,
 			fullCmdLine.length()
 		);
@@ -179,7 +180,7 @@ void Service::create()
 		if (_sc)
 			return;
 
-		if (_time_limit.getElapsed_sec() > 5.0f)
+		if (_time_limit.getElapsed_sec() > 5.0F)
 		{
 			std::string message = win_error_message(err);
 			InputConsole::textError(Localization::Str{ "str_error_create_service" }(), _name, message.c_str());
@@ -228,7 +229,7 @@ void Service::start()
 		if (started)
 			break;
 
-		if (_time_limit.getElapsed_sec() > 5.0f)
+		if (_time_limit.getElapsed_sec() > 5.0F)
 		{
 			InputConsole::textError(Localization::Str{ "str_error_wait_time_start_service" }(), _name);
 			return;

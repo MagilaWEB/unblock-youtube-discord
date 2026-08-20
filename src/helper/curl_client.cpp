@@ -5,7 +5,7 @@
 
 namespace
 {
-	inline const std::string c_user_agent{
+	inline const std::string c_user_agent{ // NOLINT(bugprone-throwing-static-initialization) - small literal, allocation failure at startup is not recoverable
 		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 	};
 	inline constexpr u32 c_check_timeout_sec{ 6 };

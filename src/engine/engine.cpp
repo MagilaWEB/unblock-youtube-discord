@@ -44,9 +44,9 @@ void Engine::initialize()
 	config.memory_cache_size	 = 64 * 1'024 * 1'024;
 	config.animation_timer_delay = 1.0 / 30.0;
 	config.max_update_time		 = 1.0 / 60.0;
-	config.override_ram_size	 = 2u * 1024 * 1024 * 1024;
+	config.override_ram_size	 = 2U * 1'024 * 1'024 * 1'024;
 	config.recycle_delay		 = 2.0;
-	config.min_large_heap_size	 = 16 * 1024 * 1024;
+	config.min_large_heap_size	 = 16 * 1'024 * 1'024;
 
 	Settings setting{};
 
@@ -209,7 +209,7 @@ std::string Engine::_getSystemLocale()
 	std::string result(static_cast<size_t>(size_needed), 0);
 
 	WideCharToMultiByte(CP_UTF8, 0, buffer.data(), chars - 1, result.data(), size_needed, nullptr, nullptr);
-	return result.substr(result.find_first_of("-") + 1, result.length());
+	return result.substr(result.find_first_of('-') + 1, result.length());
 }
 
 void Engine::_forceSetWindowIcon(HWND hwnd, const wchar_t* iconPath)

@@ -150,7 +150,7 @@ std::vector<std::string> Core::exec(std::string cmd)
 		std::vector<std::string> result{};
 
 		while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr)
-			result.push_back(buffer.data());
+			result.emplace_back(buffer.data());
 		return result;
 	}
 

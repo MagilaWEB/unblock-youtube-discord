@@ -45,7 +45,7 @@ void ListUl::createLi(Localization::Str text)
 	auto _text = text();
 
 	runCodeToJS([this, _text]
-			{ ASSERT_ARGS(_create_li({ name(), _text.c_str() }).ToBoolean() == true, "Couldn't create_li a {} named [{}]", _type, name()); });
+				{ ASSERT_ARGS(_create_li({ name(), _text.c_str() }).ToBoolean() == true, "Couldn't create_li a {} named [{}]", _type, name()); });
 }
 
 void ListUl::createLiSuccess(Localization::Str text, bool state)
@@ -75,7 +75,18 @@ void ListUl::addClass(std::string_view name_class)
 		{
 			if (!_created)
 				return;
-			ASSERT_ARGS(_add_class({ name(), name_class.data() }).ToBoolean() == true, "Couldn't addClass a {} named [{}]", _type, name());
+			ASSERT_ARGS(
+				_add_class(
+					{
+						name(),
+						String{ name_class.data(), name_class.size() }
+			   }
+				).ToBoolean()
+					== true,
+				"Couldn't addClass a {} named [{}]",
+				_type,
+				name()
+			);
 		}
 	);
 }
@@ -87,7 +98,18 @@ void ListUl::removeClass(std::string_view name_class)
 		{
 			if (!_created)
 				return;
-			ASSERT_ARGS(_remove_class({ name(), name_class.data() }).ToBoolean() == true, "Couldn't removeClass a {} named [{}]", _type, name());
+			ASSERT_ARGS(
+				_remove_class(
+					{
+						name(),
+						String{ name_class.data(), name_class.size() }
+			   }
+				).ToBoolean()
+					== true,
+				"Couldn't removeClass a {} named [{}]",
+				_type,
+				name()
+			);
 		}
 	);
 }

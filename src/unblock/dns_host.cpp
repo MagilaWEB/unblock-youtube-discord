@@ -231,7 +231,7 @@ void DNSHost::cancel()
 
 float DNSHost::percentageCompletion() const
 {
-	return (static_cast<float>(_size_iter.load()) / static_cast<float>(_list_hosts.size())) * 100.f;
+	return (static_cast<float>(_size_iter.load()) / static_cast<float>(_list_hosts.size())) * 100.F;
 }
 
 std::string DNSHost::_pathHostDir()
@@ -290,7 +290,7 @@ void DNSHost::_loadInfo()
 			else if (run_service && line.contains("# "))
 			{
 				_list_dns_hosts_file_name.push_back(line.substr(2, line.length()));
-				if (run_service && line == end_line)
+				if (line == end_line)
 					run_service = false;
 			}
 		}
@@ -324,7 +324,7 @@ void DNSHost::_writeDomain(std::string domain)
 		for (auto& ip_or_domain : ip_list)
 		{
 			_map_list_lock.EnterShared();
-			if (_map_list.count(original_domain))
+			if (_map_list.contains(original_domain))
 			{
 				_map_list_lock.LeaveShared();
 
@@ -342,7 +342,7 @@ void DNSHost::_writeDomain(std::string domain)
 
 			_map_list_lock.EnterShared();
 
-			if (_map_list.count(ip_or_domain) && !_map_list[ip_or_domain].empty())
+			if (_map_list.contains(ip_or_domain) && !_map_list[ip_or_domain].empty())
 			{
 				const std::string resolved_ip = _map_list[ip_or_domain];
 				_map_list_lock.LeaveShared();
