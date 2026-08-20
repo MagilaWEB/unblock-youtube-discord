@@ -127,9 +127,6 @@ void ZapretHelper::_handleMessage(std::string_view message)
 			_cv.notify_all();
 		}
 
-		if (!_known_hosts.contains(host))
-			_known_hosts.insert(host);
-
 		for (auto& [host, strat] : _error_hosts)
 			_send(_makeErrorSignal(host, strat), c_ipc_port);
 	}
@@ -158,8 +155,8 @@ std::optional<std::string> ZapretHelper::_popHost()
 {
 	if (!_queue.empty())
 	{
-		auto			  it   = _queue.begin();
-		const std::string host = *it;
+		auto		it	 = _queue.begin();
+		std::string host = *it;
 		_queue.erase(it);
 		_in_check.insert(host);
 		return host;
@@ -226,8 +223,11 @@ void ZapretHelper::_idleStep()
 		_send(_makeSeenSignal(host), c_ipc_port);
 
 	for (const auto& [host, _] : _error_hosts)
+	{
+		_known_hosts.insert(host);
 		if (!_queue.contains(host))
 			_queue.insert(host);
+	}
 }
 
 int ZapretHelper::run()

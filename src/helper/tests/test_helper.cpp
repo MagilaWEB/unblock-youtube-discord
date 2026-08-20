@@ -40,7 +40,6 @@ public:
 	std::string makeFail(std::string_view h) const { return ZapretHelper::_makeFail(h); }
 };
 
-
 TEST_CASE("isValidHost empty", "[helper][valid]")
 {
 	ZapretHelperTest t;
@@ -89,7 +88,6 @@ TEST_CASE("isValidHost underscores/hyphens are rejected without letters", "[help
 	CHECK_FALSE(t.isValidHost("123-456"));
 }
 
-
 TEST_CASE("addHost valid host goes to known and queue", "[helper][add]")
 {
 	ZapretHelperTest t;
@@ -122,7 +120,6 @@ TEST_CASE("addHost duplicate host does not duplicate", "[helper][add]")
 	CHECK(t.knownHosts().size() == 1);
 	CHECK(t.queue().size() == 1);
 }
-
 
 TEST_CASE("LIST multiple hosts", "[helper][list]")
 {
@@ -179,7 +176,6 @@ TEST_CASE("LIST re-adds already known host", "[helper][list]")
 	CHECK(t.queue().size() == 1);
 }
 
-
 TEST_CASE("CHECK adds valid host", "[helper][check]")
 {
 	ZapretHelperTest t;
@@ -204,40 +200,38 @@ TEST_CASE("CHECK empty ignored", "[helper][check]")
 	CHECK(t.queue().empty());
 }
 
-
-TEST_CASE("STAT records valid strategy", "[helper][stat]")
+TEST_CASE("VALID records valid strategy", "[helper][valid]")
 {
 	ZapretHelperTest t;
-	t.handleMessage("STAT:google.com:5");
+	t.handleMessage("VALID:google.com:5");
 	CHECK(t.valid().contains("google.com"));
 	CHECK(t.valid().at("google.com") == "5");
 }
 
-TEST_CASE("STAT with empty strategy ignored", "[helper][stat]")
+TEST_CASE("VALID with empty strategy ignored", "[helper][valid]")
 {
 	ZapretHelperTest t;
-	t.handleMessage("STAT:google.com:");
+	t.handleMessage("VALID:google.com:");
 	CHECK(t.valid().empty());
 }
 
-TEST_CASE("STAT with invalid host ignored", "[helper][stat]")
+TEST_CASE("VALID with invalid host ignored", "[helper][valid]")
 {
 	ZapretHelperTest t;
-	t.handleMessage("STAT:1.2.3.4:5");
+	t.handleMessage("VALID:1.2.3.4:5");
 	CHECK(t.valid().empty());
 }
 
-TEST_CASE("STAT clears error for the host", "[helper][stat]")
+TEST_CASE("VALID clears error for the host", "[helper][valid]")
 {
 	ZapretHelperTest t;
 	t.handleMessage("ERR:google.com:3");
 	CHECK(t.errorHosts().contains("google.com"));
 
-	t.handleMessage("STAT:google.com:7");
+	t.handleMessage("VALID:google.com:7");
 	CHECK_FALSE(t.errorHosts().contains("google.com"));
 	CHECK(t.valid().at("google.com") == "7");
 }
-
 
 TEST_CASE("ERR records strategy", "[helper][err]")
 {
@@ -270,7 +264,6 @@ TEST_CASE("ERR overwrites previous strategy", "[helper][err]")
 	CHECK(t.errorHosts().at("google.com") == "9");
 }
 
-
 TEST_CASE("unknown prefix ignored", "[helper][unknown]")
 {
 	ZapretHelperTest t;
@@ -288,7 +281,6 @@ TEST_CASE("empty message ignored", "[helper][unknown]")
 	CHECK(t.knownHosts().empty());
 	CHECK(t.queue().empty());
 }
-
 
 TEST_CASE("LIST with empty middle segment", "[helper][list][edge]")
 {
@@ -335,7 +327,6 @@ TEST_CASE("LIST with many hosts", "[helper][list][edge]")
 	CHECK(t.queue().size() == 1'000);
 }
 
-
 TEST_CASE("CHECK with trailing colon", "[helper][check][edge]")
 {
 	ZapretHelperTest t;
@@ -353,11 +344,10 @@ TEST_CASE("CHECK with middle colon only adds before-colon host", "[helper][check
 	CHECK_FALSE(t.queue().contains("junk"));
 }
 
-
-TEST_CASE("STAT without strategy ignored", "[helper][stat][edge]")
+TEST_CASE("VALID without strategy ignored", "[helper][valid][edge]")
 {
 	ZapretHelperTest t;
-	t.handleMessage("STAT:google.com");
+	t.handleMessage("VALID:google.com");
 	CHECK(t.valid().empty());
 }
 
@@ -369,10 +359,10 @@ TEST_CASE("ERR without strategy records empty strategy", "[helper][err][edge]")
 	CHECK(t.errorHosts().at("google.com").empty());
 }
 
-TEST_CASE("STAT with strategy containing colons keeps rest", "[helper][stat][edge]")
+TEST_CASE("VALID with strategy containing colons keeps rest", "[helper][valid][edge]")
 {
 	ZapretHelperTest t;
-	t.handleMessage("STAT:google.com:1:2:3");
+	t.handleMessage("VALID:google.com:1:2:3");
 	CHECK(t.valid().contains("google.com"));
 	CHECK(t.valid().at("google.com") == "1:2:3");
 }
@@ -384,13 +374,12 @@ TEST_CASE("ERR with strategy containing colons keeps rest", "[helper][err][edge]
 	CHECK(t.errorHosts().at("google.com") == "5:6");
 }
 
-TEST_CASE("STAT with empty strategy ignored", "[helper][stat][edge]")
+TEST_CASE("VALID with empty strategy ignored", "[helper][valid][edge]")
 {
 	ZapretHelperTest t;
-	t.handleMessage("STAT:google.com:");
+	t.handleMessage("VALID:google.com:");
 	CHECK(t.valid().empty());
 }
-
 
 TEST_CASE("lowercase prefix ignored", "[helper][case]")
 {
@@ -426,7 +415,6 @@ TEST_CASE("host with URL keeps whole string", "[helper][valid][edge]")
 	t.handleMessage("CHECK:http://google.com");
 	CHECK(t.knownHosts().size() == 1);
 }
-
 
 TEST_CASE("makeLog format", "[helper][format]")
 {
@@ -475,7 +463,6 @@ TEST_CASE("makeFail format", "[helper][format]")
 	ZapretHelperTest t;
 	CHECK(t.makeFail("a.com") == "FAIL:a.com");
 }
-
 
 TEST_CASE("idleStep within interval reports seen, does not refill queue", "[helper][idle]")
 {
