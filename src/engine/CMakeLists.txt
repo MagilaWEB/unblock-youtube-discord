@@ -7,28 +7,25 @@ file(GLOB src_hpp "*.hpp")
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(CUPY_LIBS_DLL_TO_BIN)
-    add_custom_target(global_pre_build ALL
-        COMMAND ${CMAKE_COMMAND} -E echo "=== Global Pre-Build Cleanup ==="
-        COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-        COMMAND ${CMAKE_COMMAND} -E echo "Cleanup complete"
-        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/winws2.exe || ${CMAKE_COMMAND} -E echo "Warning: failed to remove winws2.exe (maybe in use)"
-        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/cygwin1.dll || ${CMAKE_COMMAND} -E echo "Warning: failed to remove cygwin1.dll (maybe in use)"
-        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-lib.lua
-        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-auto.lua
-        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-antidpi.lua
-        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-obfs.lua
-        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-pcap.lua
-        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-tests.lua
-        COMMENT "Global pre-build cleanup"
+    # Full-rebuild cleanup. These run at configure time (i.e. a full rebuild in
+    # the IDE triggers a reconfigure), NOT on every incremental ninja run.
+    # Otherwise incremental builds would wipe bin/ and binaries/ and leave the
+    # unchanged DLLs/exes missing until the next full relink.
+    file(REMOVE_RECURSE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    file(MAKE_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    file(REMOVE ${CMAKE_SOURCE_DIR}/binaries/winws2.exe)
+    file(REMOVE ${CMAKE_SOURCE_DIR}/binaries/cygwin1.dll)
+    file(REMOVE
+        ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-lib.lua
+        ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-auto.lua
+        ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-antidpi.lua
+        ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-obfs.lua
+        ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-pcap.lua
+        ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-tests.lua
     )
 endif()
 
 add_executable(${NAME} ${src_h} ${src_hpp} ${src_cpp} engine.rc)
-
-if(CUPY_LIBS_DLL_TO_BIN)
-    add_dependencies(${target} global_pre_build)
-endif()
 
 target_precompile_headers(${NAME} PRIVATE pch.h)
 
