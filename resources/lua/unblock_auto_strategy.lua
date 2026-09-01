@@ -11,7 +11,7 @@
 --   7. Все стратегии перебраны (exhausted) → прямой трафик
 --
 -- Перебор: 1, 2, 3, 4, ..., N (последовательно)
--- Параметры (через --lua-desync=auto_strategy:fails=3:...):
+-- Параметры (через --lua-desync=auto_strategy:fails=4:...):
 --   fails=N     — ошибок до переключения (по умолч. 3)
 --   time=N      — время через которое произойдет сброс ошибок (по умолч. 60 сек)
 --   maxseq=N    — макс. seq для проверок (по умолч. 32768)
@@ -38,8 +38,6 @@ function auto_host_record(desync)
     if not hostkey then
         return nil
     end
-
-    hostkey = auto_host_group(hostkey)
 
     if not autostate then
         autostate = {}
@@ -214,17 +212,54 @@ function auto_strategy(ctx, desync)
             return false
         end
 
+        local function check_valid_strategy()
+            if _G.strategy_success then
+                for _, nstrategy in ipairs(_G.strategy_success) do
+                    if nstrategy == hrec.nstrategy then
+                        return false
+                    end
+                end
+            end
+
+            return true
+        end
+
         local function do_switch(reason)
 
             ULOG("WARNING", "zapret:auto_strategy: FAIL " .. strategy_name() .. " " .. reason .. "->" .. host_or_ip ..
                 ":" .. dport)
 
-            if hrec.nstrategy < hrec.ctstrategy then
-                hrec.nstrategy = hrec.nstrategy + 1
-            else
-                send_signal("STRING", "exhausted", host_or_ip)
-                hrec.nstrategy = 0
+            if hrec.strategy_success_fail then
+                if hrec.nstrategy < hrec.ctstrategy then
+                    hrec.nstrategy = hrec.nstrategy + 1
+
+                    while not check_valid_strategy() do
+                        hrec.nstrategy = hrec.nstrategy + 1
+                    end
+                else
+                    send_signal("STRING", "exhausted", host_or_ip)
+                    hrec.nstrategy = 0
+                    hrec.sstrategy = 1
+                    hrec.strategy_success_fail = false
+                end
+
+                return
             end
+
+            if not hrec.sstrategy then
+                hrec.sstrategy = 1
+            end
+
+            local count_strategy_success = _G.strategy_success and #_G.strategy_success or 0
+            if (count_strategy_success == 0) or (count_strategy_success < hrec.sstrategy) then
+                hrec.strategy_success_fail = true
+                hrec.sstrategy = 1
+                hrec.nstrategy = 1
+                return
+            end
+
+            hrec.nstrategy = _G.strategy_success[hrec.sstrategy]
+            hrec.sstrategy = hrec.sstrategy + 1
         end
 
         if not _G.zapret_ipc then
@@ -238,6 +273,19 @@ function auto_strategy(ctx, desync)
                 if host_name then
                     send_signal("VALID", host_name, strategy_name(), 10000)
                 end
+
+                if hrec.nstrategy ~= 0 and check_valid_strategy() then
+                    if not _G.strategy_success then
+                        _G.strategy_success = {}
+                    end
+
+                    hrec.strategy_success_fail = false
+
+                    table.insert(_G.strategy_success, hrec.nstrategy)
+                end
+
+                hrec.fails = 0;
+
                 return verdict
             end
 
@@ -363,6 +411,6 @@ function args_defaults(arg)
         udp_in = tonumber(arg.udp_in) or 1,
         udp_out = tonumber(arg.udp_out) or 4,
         reset = arg.reset ~= nil or false,
-        time = arg.time or 60
+        time = arg.time or 300
     }
 end
