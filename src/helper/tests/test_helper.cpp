@@ -19,10 +19,35 @@ public:
 
 	void handleMessage(std::string_view message) { helper._handleMessage(message); }
 
-	const std::unordered_set<std::string>&				knownHosts() const { return helper._known_hosts; }
-	const std::unordered_set<std::string>&				queue() const { return helper._queue; }
-	const std::unordered_map<std::string, std::string>& errorHosts() const { return helper._error_hosts; }
+	const std::unordered_set<std::string>&			  knownHosts() const { return helper._known_hosts; }
+	const std::unordered_set<std::string>&			  queue() const { return helper._queue; }
+	const std::unordered_set<std::string>&			  inCheck() const { return helper._in_check; }
+	const std::unordered_map<std::string, ZapretHelper::ErrorInfo>& errorHosts() const { return helper._error_hosts; }
 	const std::unordered_map<std::string, std::string>& valid() const { return helper._valid_hosts; }
+
+	// helpers for ErrorInfo
+	std::string errorStrategy(const std::string& host) const
+	{
+		auto it = helper._error_hosts.find(host);
+		return it == helper._error_hosts.end() ? std::string{} : it->second.strategy;
+	}
+	void setErrorTimes(const std::string& host, std::chrono::steady_clock::time_point firstSeen,
+					   std::chrono::steady_clock::time_point lastQueued)
+	{
+		auto it = helper._error_hosts.find(host);
+		if (it != helper._error_hosts.end())
+		{
+			it->second.firstSeen  = firstSeen;
+			it->second.lastQueued = lastQueued;
+		}
+	}
+	void setInCheck(const std::string& host, bool value)
+	{
+		if (value)
+			helper._in_check.insert(host);
+		else
+			helper._in_check.erase(host);
+	}
 
 	void clearQueue() { helper._queue.clear(); }
 
@@ -238,7 +263,7 @@ TEST_CASE("ERR records strategy", "[helper][err]")
 	ZapretHelperTest t;
 	t.handleMessage("ERR:google.com:3");
 	CHECK(t.errorHosts().contains("google.com"));
-	CHECK(t.errorHosts().at("google.com") == "3");
+	CHECK(t.errorStrategy("google.com") == "3");
 }
 
 TEST_CASE("ERR empty strategy recorded as empty string", "[helper][err]")
@@ -246,7 +271,7 @@ TEST_CASE("ERR empty strategy recorded as empty string", "[helper][err]")
 	ZapretHelperTest t;
 	t.handleMessage("ERR:google.com:");
 	CHECK(t.errorHosts().contains("google.com"));
-	CHECK(t.errorHosts().at("google.com").empty());
+	CHECK(t.errorStrategy("google.com").empty());
 }
 
 TEST_CASE("ERR with invalid host ignored", "[helper][err]")
@@ -261,7 +286,7 @@ TEST_CASE("ERR overwrites previous strategy", "[helper][err]")
 	ZapretHelperTest t;
 	t.handleMessage("ERR:google.com:3");
 	t.handleMessage("ERR:google.com:9");
-	CHECK(t.errorHosts().at("google.com") == "9");
+	CHECK(t.errorStrategy("google.com") == "9");
 }
 
 TEST_CASE("unknown prefix ignored", "[helper][unknown]")
@@ -356,7 +381,7 @@ TEST_CASE("ERR without strategy records empty strategy", "[helper][err][edge]")
 	ZapretHelperTest t;
 	t.handleMessage("ERR:google.com");
 	CHECK(t.errorHosts().contains("google.com"));
-	CHECK(t.errorHosts().at("google.com").empty());
+	CHECK(t.errorStrategy("google.com").empty());
 }
 
 TEST_CASE("VALID with strategy containing colons keeps rest", "[helper][valid][edge]")
@@ -371,7 +396,7 @@ TEST_CASE("ERR with strategy containing colons keeps rest", "[helper][err][edge]
 {
 	ZapretHelperTest t;
 	t.handleMessage("ERR:google.com:5:6");
-	CHECK(t.errorHosts().at("google.com") == "5:6");
+	CHECK(t.errorStrategy("google.com") == "5:6");
 }
 
 TEST_CASE("VALID with empty strategy ignored", "[helper][valid][edge]")
@@ -539,4 +564,73 @@ TEST_CASE("idleStep empty state does not crash", "[helper][idle]")
 	t.idleStep();
 	CHECK(t.knownHosts().empty());
 	CHECK(t.queue().empty());
+}
+
+TEST_CASE("idleStep error host fresh <5min requeues every idleStep", "[helper][idle][error]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("ERR:fresh.com:3");
+	t.clearQueue();
+	t.setLastRecheckNow();
+	CHECK(t.queue().empty());
+
+	t.idleStep();
+	CHECK(t.queue().contains("fresh.com"));
+
+	t.clearQueue();
+	t.idleStep();
+	CHECK(t.queue().contains("fresh.com"));
+}
+
+TEST_CASE("idleStep error host stale >=5min throttles to 5min", "[helper][idle][error]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("ERR:stale.com:3");
+	t.clearQueue();
+	t.setLastRecheckNow();
+
+	// make it stale: firstSeen 6 min ago, lastQueued 6 min ago
+	const auto now = std::chrono::steady_clock::now();
+	t.setErrorTimes("stale.com", now - std::chrono::minutes(6), now - std::chrono::minutes(6));
+
+	t.idleStep();
+	CHECK(t.queue().contains("stale.com"));
+
+	t.clearQueue();
+	t.idleStep();
+	CHECK_FALSE(t.queue().contains("stale.com"));
+
+	// after 5min passes: move lastQueued 6 min ago again
+	t.setErrorTimes("stale.com", now - std::chrono::minutes(6), now - std::chrono::minutes(6));
+	t.idleStep();
+	CHECK(t.queue().contains("stale.com"));
+}
+
+TEST_CASE("idleStep error host stale does not duplicate when in_check", "[helper][idle][error]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("ERR:busy.com:3");
+	const auto now = std::chrono::steady_clock::now();
+	t.setErrorTimes("busy.com", now - std::chrono::minutes(6), now - std::chrono::minutes(6));
+	t.clearQueue();
+	t.setLastRecheckNow();
+
+	t.setInCheck("busy.com", true);
+	t.idleStep();
+	CHECK_FALSE(t.queue().contains("busy.com"));
+
+	t.setInCheck("busy.com", false);
+	t.idleStep();
+	CHECK(t.queue().contains("busy.com"));
+}
+
+TEST_CASE("idleStep fresh error host does not duplicate when in_check", "[helper][idle][error]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("ERR:fresh2.com:3");
+	t.clearQueue();
+	t.setLastRecheckNow();
+	t.setInCheck("fresh2.com", true);
+	t.idleStep();
+	CHECK_FALSE(t.queue().contains("fresh2.com"));
 }
