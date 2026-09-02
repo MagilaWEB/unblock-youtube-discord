@@ -33,10 +33,10 @@ static bool isRunningAsAdmin()
 static bool requestElevation()
 {
 	char exePath[MAX_PATH];
-	if (GetModuleFileName(nullptr, exePath, MAX_PATH) == 0)
+	if (GetModuleFileNameA(nullptr, exePath, MAX_PATH) == 0)
 		return false;
 
-	SHELLEXECUTEINFO sei{};
+	SHELLEXECUTEINFOA sei{};
 	sei.cbSize		 = sizeof(sei);
 	sei.fMask		 = SEE_MASK_NOCLOSEPROCESS;
 	sei.lpVerb		 = "runas";
@@ -44,7 +44,7 @@ static bool requestElevation()
 	sei.lpParameters = Debug::commandLine().c_str();
 	sei.nShow		 = SW_NORMAL;
 
-	if (!ShellExecuteEx(&sei))
+	if (!ShellExecuteExA(&sei))
 		return false;
 
 	if (sei.hProcess)

@@ -152,7 +152,7 @@ public:
 		else
 			format = desc_format;
 
-		MessageBox(nullptr, TEXT(utils::UTF8_to_CP1251(format.c_str()).c_str()), TEXT(utils::UTF8_to_CP1251(text_lang_title()).c_str()), MB_OK);
+		MessageBoxA(nullptr, utils::UTF8_to_CP1251(format.c_str()).c_str(), utils::UTF8_to_CP1251(text_lang_title()).c_str(), MB_OK);
 	}
 
 	template<typename Fn, typename... Args>
