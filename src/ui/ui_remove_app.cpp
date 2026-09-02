@@ -1,5 +1,9 @@
 #include "ui.h"
 
+#include <windows.h>
+
+#include <filesystem>
+
 void Ui::_removeApp()
 {
 	_remove_app->create("#unblock section .common", "str_button_remove");
@@ -27,27 +31,6 @@ void Ui::_removeApp()
 	);
 }
 
-constexpr static pcstr del_update_script_cmd{ R"(
-ECHO off
-SET CURRENT_DIR=%~dp0
-
-goto wait_loop
-
-:wait_loop
-tasklist /fi "imagename eq engine.exe" /v | find /i "Unblock Version:" >nul
-if %errorlevel% == 0 (
-    timeout /t 1 /nobreak >nul
-    goto wait_loop
-) else (
-   goto close_unblock
-)
-
-:close_unblock
-
-start cmd /c rd "%CURRENT_DIR%" /S /Q&exit
-exit
-)" };
-
 void Ui::_removeAppRun()
 {
 	_ui_unblock->stopAllServices();
@@ -55,20 +38,38 @@ void Ui::_removeAppRun()
 	_unblock->dnsHosts(false);
 	console(false);
 
-	std::string del_bat_path{ (Core::get().currentPath() / "del_unblock").string() + ".bat" };
-	std::string run_bat{ "start cmd /c " + del_bat_path };
+	// Uninstall is delegated to the standalone unblock_update.exe. We launch a
+	// %TEMP% copy of it because it must outlive engine.exe and then remove the
+	// application root it does not reside in itself.
+	const auto temp_root = Core::get().tempPath() / "unblock";
+	std::error_code ec;
+	std::filesystem::create_directories(temp_root, ec);
 
-	std::fstream bat;
-	bat.open(del_bat_path.c_str(), std::ios::out | std::ios::binary);
-	bat.clear();
-	bat << del_update_script_cmd;
-	bat.close();
+	const auto updater = Core::get().binPath() / "unblock_update.exe";
+	const auto self	   = temp_root / "unblock_update.exe";
+	std::filesystem::copy_file(updater, self, std::filesystem::copy_options::overwrite_existing, ec);
+	if (ec)
+	{
+		Debug::error("Failed to prepare unblock_update: {}", ec.message());
+		OnClose(nullptr);
+		return;
+	}
 
-	while (!bat.is_open())
-		bat.open(del_bat_path.c_str(), std::ios::in);
-	bat.close();
+	std::wstring cmd_line =
+		L"\"" + self.wstring() + L"\" \"" + Core::get().currentPath().wstring() + L"\" " + std::to_wstring(GetCurrentProcessId()) +
+		L" remove";
 
-	system(run_bat.c_str());
+	STARTUPINFOW		 startup{};
+	PROCESS_INFORMATION	 process{};
+	startup.cb = sizeof(startup);
+
+	if (!CreateProcessW(nullptr, cmd_line.data(), nullptr, nullptr, FALSE, 0, nullptr, temp_root.c_str(), &startup, &process))
+		Debug::error("Failed to start unblock_update: {}", static_cast<u32>(GetLastError()));
+	else
+	{
+		CloseHandle(process.hThread);
+		CloseHandle(process.hProcess);
+	}
 
 	OnClose(nullptr);
 }

@@ -7,6 +7,9 @@
 
 #include <shellapi.h>
 
+#include <filesystem>
+#include <string>
+
 Unblock::Unblock()
 {
 	(void)IPCSignals::get();
@@ -180,39 +183,6 @@ std::optional<std::string> Unblock::checkUpdate() const
 	return {};
 }
 
-constexpr static std::string_view setup_update_script{
-	R"(
-ECHO off
-SET CURRENT_DIR=%~dp0
-
-goto wait_loop
-
-:wait_loop
-tasklist /fi "imagename eq engine.exe" /v | find /i "Unblock Version:" >nul
-if %errorlevel% == 0 (
-    timeout /t 1 /nobreak >nul
-    goto wait_loop
-) else (
-   goto close_unblock
-)
-
-:close_unblock
-
-RD %CURRENT_DIR%\bin /S /Q
-RD %CURRENT_DIR%\binaries /S /Q
-RD %CURRENT_DIR%\configs /S /Q
-RD %CURRENT_DIR%\ui /S /Q
-
-ROBOCOPY %CURRENT_DIR%update\unblock %CURRENT_DIR% /E /IS /IT /COPYALL /R:0 /W:0 /NP /NJH /NJS
-
-RD %CURRENT_DIR%\update /S /Q
-
-start %CURRENT_DIR%bin\engine.exe
-start cmd /c del "%CURRENT_DIR%setup_update.bat"
-exit
-)"
-};
-
 static HttpsLoad& getLoad7z()
 {
 	static HttpsLoad load{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" };
@@ -221,11 +191,20 @@ static HttpsLoad& getLoad7z()
 
 bool Unblock::appUpdate()
 {
-	auto path = Core::get().currentPath() / "update" / "new_unblock.7z";
+	// The update is delegated to the standalone unblock_update.exe (see src/unblock_update);
+	// all temporary files live under %TEMP%\unblock — no .bat scripts are dropped into
+	// the application root.
+	const auto temp_root = Core::get().tempPath() / "unblock";
 
-	getLoad7z().run_to_file(path);
+	std::error_code ec;
+	std::filesystem::remove_all(temp_root, ec);
+	std::filesystem::create_directories(temp_root, ec);
 
-	u32 code = getLoad7z().codeResult();
+	const auto archive = temp_root / "new_unblock.7z";
+
+	getLoad7z().run_to_file(archive);
+
+	const u32 code = getLoad7z().codeResult();
 	if (code != 200)
 		return false;
 
@@ -234,7 +213,7 @@ bool Unblock::appUpdate()
 		static bit7z::Bit7zLibrary	   lib{ "7za.dll" };
 		static bit7z::BitFileExtractor extractor{ lib, bit7z::BitFormat::SevenZip };
 
-		extractor.extract(path.string(), path.parent_path().string());
+		extractor.extract(archive.string(), temp_root.string());
 	}
 	catch (const bit7z::BitException& ex)
 	{
@@ -242,20 +221,36 @@ bool Unblock::appUpdate()
 		return false;
 	}
 
-	std::string setup_bat_path{ (Core::get().currentPath() / "setup_update").string() + ".bat" };
-	std::string run_bat{ "start " + setup_bat_path };
+	const auto bin_path	   = Core::get().binPath();
+	const auto updater	   = bin_path / "unblock_update.exe";
+	const auto new_updater = temp_root / "unblock" / "bin" / "unblock_update.exe";
 
-	std::fstream bat;
-	bat.open(setup_bat_path.c_str(), std::ios::out | std::ios::binary);
-	bat.clear();
-	bat << setup_update_script;
-	bat.close();
+	// Refresh the helper itself in advance: it is not running yet, so the file can
+	// be replaced; the helper then skips itself while copying the payload.
+	if (std::filesystem::exists(new_updater))
+	{
+		std::error_code copy_ec;
+		std::filesystem::copy_file(new_updater, updater, std::filesystem::copy_options::overwrite_existing, copy_ec);
+		if (copy_ec)
+			Debug::warning("Failed to update unblock_update.exe: {}", copy_ec.message());
+	}
 
-	while (!bat.is_open())
-		bat.open(setup_bat_path.c_str(), std::ios::in);
-	bat.close();
+	std::wstring cmd_line =
+		L"\"" + updater.wstring() + L"\" \"" + Core::get().currentPath().wstring() + L"\" " + std::to_wstring(GetCurrentProcessId()) +
+		L" update \"" + temp_root.wstring() + L"\"";
 
-	system(run_bat.c_str());
+	STARTUPINFOW		 startup{};
+	PROCESS_INFORMATION	 process{};
+	startup.cb = sizeof(startup);
+
+	if (!CreateProcessW(nullptr, cmd_line.data(), nullptr, nullptr, FALSE, 0, nullptr, bin_path.c_str(), &startup, &process))
+	{
+		Debug::error("Failed to start unblock_update: {}", static_cast<u32>(GetLastError()));
+		return false;
+	}
+
+	CloseHandle(process.hThread);
+	CloseHandle(process.hProcess);
 	return true;
 }
 
@@ -452,8 +447,9 @@ void Unblock::localProxyTgLinkRun()
 			tg.append("&secret=");
 			tg.append(proxy_secret);
 
-			// ShellExecuteA is safe for '&' in the URL (unlike system("start \"\" ..."),
-			// where cmd splits the command on every '&', truncating the link).
+			// ShellExecuteA forwards '&' in the URL verbatim, whereas
+			// system("start ...") routes the link through cmd.exe, which
+			// interprets '&' as a command separator and truncates the URL.
 			ShellExecuteA(nullptr, "open", tg.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 		}
 	);
