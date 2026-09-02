@@ -27,7 +27,6 @@ namespace
 		return encoded;
 	}
 
-	// Reads the last N lines of the log file.
 	std::string read_log_tail(size_t tail_lines)
 	{
 		auto dir_logs = Core::get().currentPath() / "logs";
@@ -104,7 +103,6 @@ namespace
 	// Prevent duplicate handling when multiple handlers catch the same exception.
 	bool crash_handled{ false };
 
-	// Localized string by key.
 	std::string lang_str(std::string_view key)
 	{
 		return Localization::Str{ key }();
@@ -133,7 +131,6 @@ namespace
 		);
 	}
 
-	// Builds a human-readable crash description from the exception record.
 	std::string build_crash_message(PEXCEPTION_RECORD record)
 	{
 		std::string msg = "SEH Exception (Crash) caught!\n";
@@ -175,7 +172,6 @@ namespace
 		return msg;
 	}
 
-	// Shows the error window, writes to the log and opens a GitHub issue.
 	[[noreturn]] void handle_crash(const std::string& msg, u32 error_code)
 	{
 		if (crash_handled)

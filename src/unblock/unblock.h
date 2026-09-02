@@ -29,7 +29,7 @@ class UNBLOCK_API Unblock final : public std::enable_shared_from_this<Unblock>
     std::array<std::string, 4> _tg_dc_ip{ "149.154.175.50", "91.105.192.100", "149.154.175.100", "149.154.167.91" };
     std::string _tg_cfproxy_domain{ "unblock.kermanua1488.workers.dev" };
 
-    // Accessed only from the JS thread (via Ui::jsUpdate)
+    // Accessed only from the JS thread (via Ui::update)
     std::unordered_set<std::string> _helper_checking;
     std::unordered_set<std::string> _helper_seen;
     std::unordered_map<std::string, std::string> _helper_errors;

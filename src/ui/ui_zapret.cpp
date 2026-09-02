@@ -182,7 +182,6 @@ void UiZapret2::_selectConfigUpdate()
 
 void UiZapret2::_initMainControls()
 {
-	// Initialize start button
 	_start_button->create("#zapret .common", "str_b_start_zapret");
 	_start_button->addTutorialStep("str_tour_start_button_title", "str_tour_start_button_description", 1);
 

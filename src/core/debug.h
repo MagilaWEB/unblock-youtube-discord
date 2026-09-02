@@ -181,35 +181,30 @@ public:
 		return std::unexpected(utils::format(fmt, args...));
 	}
 
-	/** Send ok */
 	template<typename... Args>
 	static void print(std::string_view message, Args&&... args)
 	{
 		msg(MessageTypes::ePrint, message, args...);
 	}
 
-	/** Send ok */
 	template<typename... Args>
 	static void ok(std::string_view message, Args&&... args)
 	{
 		msg(MessageTypes::eOk, message, args...);
 	}
 
-	/** Send info */
 	template<typename... Args>
 	static void info(std::string_view message, Args&&... args)
 	{
 		msg(MessageTypes::eInfo, message, args...);
 	}
 
-	/** Send warning */
 	template<typename... Args>
 	static void warning(std::string_view message, Args&&... args)
 	{
 		msg(MessageTypes::eWarning, message, args...);
 	}
 
-	/** Send please */
 	template<typename... Args>
 	static void please(std::string_view message, Args&&... args)
 	{

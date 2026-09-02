@@ -1,4 +1,4 @@
-let array_list_ul = []; //  array objects ul text.
+let array_list_ul = [];
 
 class UL {
 	constructor(_name, _object_div) {

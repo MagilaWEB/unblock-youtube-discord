@@ -328,7 +328,6 @@ void DNSHost::_writeDomain(std::string domain)
 			{
 				_map_list_lock.LeaveShared();
 
-				// IP
 				if (std::regex_match(ip_or_domain, reg_ipv4_pattern()))
 				{
 					{
@@ -355,7 +354,6 @@ void DNSHost::_writeDomain(std::string domain)
 
 			_map_list_lock.LeaveShared();
 
-			// DOMAIN
 			{
 				FAST_LOCK(_map_list_lock);
 				_map_list[ip_or_domain].reserve(0);

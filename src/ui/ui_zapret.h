@@ -26,7 +26,7 @@ class UiZapret2
 	BUTTON(_run_auto_config_zapret);
 	BUTTON(_stop_zapret);
 
-	// Windows for strategy/config selection;
+	// Windows for strategy/config selection
 	SECONDARY_WINDOW(_window_auto_start_wait);
 	SECONDARY_WINDOW(_window_continue_select_strategy);
 
@@ -71,16 +71,16 @@ public:
 
 	void initialize();
 
-	/** Обновить список хостов, которые zapret-helper проверяет (тик из Ui::jsUpdate). */
+	/** Update the list of hosts that zapret-helper is checking (tick from Ui::update). */
 	void updateHelperChecking();
 
-	/** Обновить список хостов, которые когда-либо проверялись через zapret (тик из Ui::jsUpdate). */
+	/** Update the list of hosts that have ever been checked via zapret (tick from Ui::update). */
 	void updateHelperSeen();
 
-	/** Обновить список валидных хостов со стратегией (тик из Ui::jsUpdate). */
+	/** Update the list of valid hosts with a confirmed strategy (tick from Ui::update). */
 	void updateHelperValid();
 
-	/** Обновить список хостов с текущими ошибками (тик из Ui::jsUpdate). */
+	/** Update the list of hosts with current errors (tick from Ui::update). */
 	void updateHelperError();
 
 private:

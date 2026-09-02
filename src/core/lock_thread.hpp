@@ -1,6 +1,5 @@
 #pragma once
 
-// Desc: Simple wrapper for critical section
 class CORE_API CriticalSection
 {
 	CRITICAL_SECTION pmutex;

@@ -19,7 +19,6 @@ public:
 		SERVICE_STATUS_PROCESS sc_status{};
 	};
 
-	// RAII deleter for SC_HANDLE
 	struct ScHandleDeleter
 	{
 		void operator()(SC_HANDLE h) const noexcept
