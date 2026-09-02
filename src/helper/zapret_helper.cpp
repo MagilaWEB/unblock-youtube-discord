@@ -218,7 +218,7 @@ void ZapretHelper::_idleStep()
 	{
 		std::lock_guard lock(_mutex);
 		for (const auto& host : _known_hosts)
-			if (!_queue.contains(host))
+			if (!_queue.contains(host) && !_in_check.contains(host))
 				_queue.insert(host);
 
 		_last_recheck = now;
@@ -235,7 +235,8 @@ void ZapretHelper::_idleStep()
 		if (!_known_hosts.contains(host))
 			_known_hosts.insert(host);
 
-		if (_queue.contains(host))
+		// Host is currently being checked - do not re-enqueue it.
+		if (_queue.contains(host) || _in_check.contains(host))
 			continue;
 
 		if ((now - info.first) < c_errors_progress_recheck_interval)

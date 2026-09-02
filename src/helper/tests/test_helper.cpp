@@ -37,8 +37,8 @@ public:
 		auto it = helper._error_hosts.find(host);
 		if (it != helper._error_hosts.end())
 		{
-			it->second.firstSeen  = firstSeen;
-			it->second.lastQueued = lastQueued;
+			it->second.first = firstSeen;
+			it->second.last  = lastQueued;
 		}
 	}
 	void setInCheck(const std::string& host, bool value)
