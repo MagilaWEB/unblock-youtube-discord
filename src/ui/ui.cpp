@@ -2,6 +2,8 @@
 #include "tutorial.h"
 #include "../engine/version.hpp"
 
+#include <shellapi.h>
+
 Ui::Ui(IEngineAPI* engine) : _engine(engine)
 {
 	_unblock = std::make_shared<Unblock>();
@@ -167,7 +169,7 @@ void Ui::_footerElements()
 	_link_to_github->addEventClick(
 		[](JSArgs)
 		{
-			Core::get().addTask([] { system("start https://github.com/MagilaWEB/unblock-youtube-discord"); });
+			Core::get().addTask([] { ShellExecuteA(nullptr, "open", "https://github.com/MagilaWEB/unblock-youtube-discord", nullptr, nullptr, SW_SHOWNORMAL); });
 			return false;
 		}
 	);
@@ -176,7 +178,7 @@ void Ui::_footerElements()
 	_link_to_telegram->addEventClick(
 		[](JSArgs)
 		{
-			Core::get().addTask([] { system("start https://t.me/+OqRXcWFw4kpmMTcy"); });
+			Core::get().addTask([] { ShellExecuteA(nullptr, "open", "https://t.me/+OqRXcWFw4kpmMTcy", nullptr, nullptr, SW_SHOWNORMAL); });
 			return false;
 		}
 	);

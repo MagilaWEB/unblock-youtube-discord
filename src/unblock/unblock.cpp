@@ -5,6 +5,8 @@
 #include <bit7z/bitfileextractor.hpp>
 #include <curl/curl.h>
 
+#include <shellapi.h>
+
 Unblock::Unblock()
 {
 	(void)IPCSignals::get();
@@ -443,14 +445,16 @@ void Unblock::localProxyTgLinkRun()
 	Core::get().addTaskParallel(
 		[this]
 		{
-			std::string tg{ "start \"\" \"tg://proxy?server=" };
+			std::string tg{ "tg://proxy?server=" };
 			tg.append(_tg_host);
 			tg.append("&port=");
 			tg.append(_tg_port);
 			tg.append("&secret=");
 			tg.append(proxy_secret);
-			tg.append("\"");
-			system(tg.c_str());
+
+			// ShellExecuteA is safe for '&' in the URL (unlike system("start \"\" ..."),
+			// where cmd splits the command on every '&', truncating the link).
+			ShellExecuteA(nullptr, "open", tg.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 		}
 	);
 }
