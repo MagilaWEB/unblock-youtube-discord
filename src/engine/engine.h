@@ -32,7 +32,7 @@ class ENGINE_API Engine final : public IEngineAPI
 
 public:
 	Engine();
-	~Engine() override;
+	~Engine() noexcept override;
 
 	static Engine& get();
 

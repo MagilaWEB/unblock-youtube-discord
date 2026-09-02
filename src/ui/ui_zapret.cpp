@@ -118,8 +118,8 @@ void UiZapret2::_selectStrategyVersionUpdate()
 
 	auto strategy_dirs = _ui->_unblock->listVersionStrategy();
 
-	for (u32 i = 0; i < strategy_dirs.size(); i++)
-		_select_version_strategy->createOption(strategy_dirs[i], strategy_dirs[i]);
+	for (const auto& strategy_dir : strategy_dirs)
+		_select_version_strategy->createOption(strategy_dir, strategy_dir);
 
 	if (auto strategy_version = _ui->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "version_strategy"))
 		_select_version_strategy->setSelectedOptionValue(strategy_version.value());
@@ -158,8 +158,8 @@ void UiZapret2::_selectConfigUpdate()
 
 	_select_config->show();
 
-	for (u32 i = 0; i < strategies_list.size(); i++)
-		_select_config->createOption(strategies_list[i], strategies_list[i]);
+	for (const auto& strategy : strategies_list)
+		_select_config->createOption(strategy, strategy);
 
 	if (auto config = _ui->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
 	{

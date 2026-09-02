@@ -27,9 +27,25 @@ Engine::Engine()
 		_app.emplace(std::move(*created));
 }
 
-Engine::~Engine()
+Engine::~Engine() noexcept
 {
-	_finish();
+	try
+	{
+		_finish();
+	}
+	catch (...)
+	{
+		// Destructors must not throw; swallowing the exception keeps the
+		// fstream close() (hideConsole) from escaping during shutdown.
+		// Debug::error may throw (format_error), so guard it as well.
+		try
+		{
+			Debug::error("Exception thrown during Engine shutdown");
+		}
+		catch (...) // NOLINT(bugprone-empty-catch) - swallowing on purpose: a noexcept destructor must not propagate anything.
+		{
+		}
+	}
 }
 
 Engine& Engine::get()
@@ -71,11 +87,15 @@ void Engine::run()
 	// Scheme registration is mandatory before creating the webview (WebView2 stage).
 	saucer::webview::register_scheme("ui");
 
-	_app->run([this](saucer::application* app) -> coco::stray { return _start(app); });
+	if (_app)
+		_app->run([this](saucer::application* app) -> coco::stray { return _start(app); });
 
 	_finish();
 }
 
+// clang-tidy resolves coco::stray's promise_type through the coroutine instance below;
+// that's an artifact of the coroutine machinery, not a real instance-access bug.
+// NOLINTNEXTLINE(readability-static-accessed-through-instance)
 coco::stray Engine::_start(saucer::application* app)
 {
 	auto window = saucer::window::create(app);
@@ -83,6 +103,7 @@ coco::stray Engine::_start(saucer::application* app)
 	{
 		Debug::error("Failed to create window: {}", window.error().message());
 		app->quit();
+		// NOLINTNEXTLINE(readability-static-accessed-through-instance) - coroutine promise_type artifact, see _start().
 		co_return;
 	}
 	_window = std::move(window).value();
@@ -132,26 +153,29 @@ coco::stray Engine::_start(saucer::application* app)
 	{
 		Debug::error("Failed to create webview: {}", view.error().message());
 		app->quit();
+		// NOLINTNEXTLINE(readability-static-accessed-through-instance) - coroutine promise_type artifact, see _start().
 		co_return;
 	}
 	_view.emplace(std::move(*view));
-	_setupScheme(*_view);
+
+	saucer::smartview* const webview = &*_view;
+	_setupScheme(*webview);
 
 	// Dev tools only in Debug builds; disabled in Release.
 #ifdef _DEBUG
-	_view->set_dev_tools(true);
+	webview->set_dev_tools(true);
 #endif
 
 	// Context menu does not affect visuals — disabled in both builds.
-	_view->set_context_menu(false);
+	webview->set_context_menu(false);
 
 	_ui = std::make_shared<Ui>(this);
 	_ui->postConstruct();
 
 	// Bridge + window subscriptions (before navigation).
-	_ui->setup(&*_view);
+	_ui->setup(webview);
 
-	_view->set_url("ui://root/main.html");
+	webview->set_url("ui://root/main.html");
 	_window->show();
 
 	_startUpdateTicker(app);
@@ -166,7 +190,10 @@ void Engine::_setupScheme(saucer::smartview& view)
 
 	view.handle_scheme(
 		"ui",
-		[ui_root = std::move(ui_root)](const saucer::scheme::request& request, saucer::scheme::executor exec)
+		// saucer wraps handlers in noexcept-expected callable/transformer templates, so any
+		// allocation inside the lambda looks like an escaping exception to bugprone-exception-escape.
+		// NOLINTNEXTLINE(bugprone-exception-escape)
+		[ui_root](const saucer::scheme::request& request, saucer::scheme::executor exec)
 		{
 			saucer::fs::path file_path = ui_root / request.url().path();
 

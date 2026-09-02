@@ -85,8 +85,8 @@ void SecondaryWindow::_addButton(std::string_view text, ui::dom::Element& out)
 	inner.text(text);
 	btn.append(inner);
 
-	out = btn;
-	_buttons.push_back(std::move(btn));
+out = btn;
+	_buttons.push_back(btn);
 }
 
 void SecondaryWindow::_buildOk()

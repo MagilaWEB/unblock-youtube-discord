@@ -238,7 +238,7 @@ void Tutorial::updatePanel()
 	_panel_desc.text(Localization::Str{ step.desc }());
 
 	const auto step_text = Localization::Str{ "str_tour_step" }();
-	const auto counter	 = std::format("{} of {}", _index + 1, _steps.size());
+	const auto counter	 = utils::format(step_text, _index + 1, _steps.size());
 	_panel_counter.text(counter);
 
 	_btn_prev.style("visibility", _index == 0 ? "hidden" : "visible");
