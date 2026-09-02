@@ -398,6 +398,31 @@ const std::list<std::string>& Unblock::dnsHostsListName()
 	return _dns_hosts.listDnsFileName();
 }
 
+void Unblock::setDnsHostsRegion(std::string_view region)
+{
+	_dns_hosts.setRegion(region);
+}
+
+const std::string& Unblock::dnsHostsRegion() const
+{
+	return _dns_hosts.region();
+}
+
+void Unblock::setDnsHostsBaseUrl(std::string_view url)
+{
+	_dns_hosts.setBaseUrl(url);
+}
+
+const std::string& Unblock::dnsHostsBaseUrl() const
+{
+	return _dns_hosts.baseUrl();
+}
+
+bool Unblock::dnsHostsRegionAvailable(std::string_view region) const
+{
+	return _dns_hosts.regionAvailable(region);
+}
+
 constexpr static std::string_view proxy_secret{ "dd92bc05d4dc4f4bef9cb4b7bf5628c5" };
 
 void Unblock::localProxyTg(bool run)

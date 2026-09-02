@@ -219,6 +219,16 @@ str_checkbox_enable_dns_hosts_description=📁 Использование сис
 Файл hosts проверяется первым при любом сетевом запросе, поэтому подмена срабатывает до обращения к внешним DNS.
 Настройка безопасна: при отключении Unblock восстанавливает оригинальное содержимое hosts.
 
+// Region select for dns hosts
+str_select_dns_hosts_region_title=🌍 Активный регион
+str_select_dns_hosts_region_description=🌍 Регион, для которого geohide.ru формирует hosts-файл (из списка ниже).
+str_dns_hosts_regions_title=📋 Список регионов
+str_dns_hosts_regions_description=📋 Здесь выбирается регион, под который подбираются адреса сайтов: ru — российские серверы как мосты к зарубежным, eu — европейские серверы для прямого подключения, us — американские серверы для прямого подключения. Обычно достаточно выбрать свой регион. Можно добавить свой вариант или удалить лишние.
+str_input_dns_hosts_region_placeholder=Добавить регион (например, ua) и нажать Enter
+str_input_dns_hosts_url_title=🔗 Хост geohide
+str_input_dns_hosts_url_description=🔗 Хост, с которого скачивается hosts-файл (без https://, например geohide.ru). Измените, если автор перенесёт сервис.
+str_window_check_region_description=🔍 Проверка доступности региона...
+
 // Setting common enable local proxy telegram
 str_checkbox_enable_proxy_tg_title=📱 Прокси для Telegram
 str_checkbox_enable_proxy_tg_description=🔒 Локальный прокси для Telegram

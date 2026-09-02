@@ -110,7 +110,7 @@ window.__dom_select_init = function(h_div, h_label, h_select, cppName, name) {
 		if (opt.firstChild) label.append(opt.firstChild.cloneNode(true));
 		select.classList.remove("select_active");
 		active = false;
-		await window.saucer.exposed[cppName](name, opt.value || opt.innerHTML);
+		await window.saucer.exposed[cppName](name, opt.getAttribute("value") || opt.innerHTML);
 	});
 };
 
@@ -121,7 +121,7 @@ window.__dom_select_setValue = function(h_label, value) {
 	if (!select) return;
 	var opts = select.querySelectorAll(".option");
 	for (var i = 0; i < opts.length; i++) {
-		if ((opts[i].value || opts[i].innerHTML) == value) {
+		if ((opts[i].getAttribute("value") || opts[i].innerHTML) == value) {
 			while (label.firstChild) label.removeChild(label.firstChild);
 			if (opts[i].firstChild) label.append(opts[i].firstChild.cloneNode(true));
 			return;
@@ -133,6 +133,21 @@ window.__dom_select_clear = function(h_select) {
 	var select = __dom[h_select];
 	if (!select) return;
 	select.innerHTML = "";
+};
+
+// --- Editable list: remove button ----------------------------------
+
+// The remove button of an editable-list row. Reports the row index.
+window.__dom_list_remove = function(h_btn, cppName, name) {
+	var btn = __dom[h_btn];
+	if (!btn) return;
+	btn.addEventListener("click", async () => {
+		var row = btn.closest ? btn.closest(".editable_list_item") : null;
+		if (!row || !row.parentNode) return;
+		var index = Array.prototype.indexOf.call(row.parentNode.children, row);
+		if (index >= 0)
+			await window.saucer.exposed[cppName](name, index);
+	});
 };
 
 // --- Tutorial overlay positioning ---------------------------------

@@ -92,21 +92,24 @@ JSValue Input::getValue()
 {
 	auto* view = BaseElement::view();
 	if (!view)
-		return JSValue{ std::string{} };
+		return JSValue{ _value };
 
 	// Live read of the input value from the DOM. Called only from background
 	// threads (Core::addTask), so we block with coco::await — UI stays free.
 	// __dom[] may have no entry if the handle is invalid; evaluate returns ""
-	// in that case.
+	// in that case. An empty field falls back to the value set via setValue.
 	const auto result = coco::await(view->evaluate<std::string>("(__dom[{}] && __dom[{}].value) || ''", _input.handle(), _input.handle()));
 
-	return JSValue{ result.value_or(std::string{}) };
+	const std::string dom_value = result.value_or(std::string{});
+	if (!dom_value.empty())
+		return JSValue{ dom_value };
+
+	return JSValue{ _value };
 }
 
 void Input::setValue(JSValue value)
 {
-	if (!_created)
-		return;
-
-	_input.value(value.ToString());
+	// Remember the programmatic value; the field itself is left untouched —
+	// it is only filled by the user.
+	_value = value.ToString();
 }

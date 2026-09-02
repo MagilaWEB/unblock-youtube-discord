@@ -4,6 +4,9 @@
 class Input : public BaseElement
 {
 	ui::dom::Element _input;
+	// Value set programmatically via setValue; used as a fallback in getValue
+	// when the user left the field empty.
+	std::string _value;
 
 public:
 	enum class Types : u8

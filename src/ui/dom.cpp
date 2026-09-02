@@ -236,6 +236,16 @@ namespace ui::dom
 	}
 
 	// -------------------------------------------------------------------
+	// Editable list (remove button)
+	// -------------------------------------------------------------------
+
+	void Element::listRemove(std::string_view cpp_name, std::string_view widget_name)
+	{
+		if (auto* v = sv(); v && _h >= 0)
+			v->execute("__dom_list_remove({}, {}, {})", _h, cpp_name, widget_name);
+	}
+
+	// -------------------------------------------------------------------
 	// Interaction
 	// -------------------------------------------------------------------
 

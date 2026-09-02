@@ -22,6 +22,9 @@ class DNSHost final : public utils::DefaultInit
 	std::map<std::string, std::string> _map_list{};
 	FastLock						   _map_list_lock;
 
+	std::string _region{ "ru" };
+	std::string _base_url{ "geohide.ru" };
+
 	std::atomic_uint _size_iter{ 0 };
 	std::atomic_bool _user_host_complete{ false };
 	std::atomic_bool _cancel_update{ false };
@@ -62,9 +65,19 @@ public:
 
 	float percentageCompletion() const;
 
+	void setRegion(std::string_view region);
+	const std::string& region() const { return _region; }
+
+	void setBaseUrl(std::string_view url);
+	const std::string& baseUrl() const { return _base_url; }
+
+	// Проверяет, что hosts-файл для региона доступен (HTTP 200).
+	bool regionAvailable(std::string_view region) const;
+
 private:
 	std::string									_pathHostDir();
 	void										_loadInfo();
 	std::optional<DNSHost::Google::MapDomainIP> _getIPGoogle(std::string domain);
 	void										_writeDomain(std::string domain);
+	std::string									_regionUrl() const;
 };

@@ -1,0 +1,82 @@
+/* ============ Editable list ============ */
+
+.editable_list {
+    display       : flex;
+    flex-direction: column;
+    gap           : 0.7vw;
+    padding       : 0.9vw 1.2vw;
+    background-color: rgba(32, 35, 50, 0.75);
+    border        : 1px solid rgba(255, 255, 255, 0.09);
+    border-radius : 10px;
+}
+
+.editable_list .title {
+    margin    : 0;
+    font-size : 1.6vw;
+    font-weight: 600;
+    color     : #ffffff;
+}
+
+.editable_list .editable_list_items {
+    display       : flex;
+    flex-direction: column;
+    gap           : 0.35vw;
+}
+
+.editable_list .editable_list_item {
+    display        : flex;
+    align-items    : center;
+    justify-content: space-between;
+    gap            : 0.6vw;
+    padding        : 0.3vw 0.7vw;
+    background-color: rgba(45, 50, 66, 0.6);
+    border         : 1px solid rgba(255, 255, 255, 0.08);
+    border-radius  : 6px;
+}
+
+.editable_list .editable_list_item span {
+    flex        : 1;
+    font-size   : 1.35vw;
+    color       : rgba(240, 240, 240, 0.92);
+    word-break  : break-word;
+    white-space : nowrap;
+    overflow    : hidden;
+    text-overflow: ellipsis;
+}
+
+.editable_list .editable_list_remove {
+    cursor          : pointer;
+    width           : 1.6vw;
+    height          : 1.6vw;
+    display         : flex;
+    align-items     : center;
+    justify-content : center;
+    font-size       : 1.1vw;
+    line-height     : 1;
+    color           : rgba(240, 240, 240, 0.55);
+    background-color: transparent;
+    border          : 1px solid transparent;
+    border-radius   : 4px;
+    transition      : background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.editable_list .editable_list_remove:hover {
+    color           : #ff6b6b;
+    background-color: rgba(255, 107, 107, 0.12);
+    border-color    : rgba(255, 107, 107, 0.35);
+}
+
+.editable_list .editable_list_input {
+    width        : 100%;
+    padding      : 0.45vw 0.8vw;
+    font-size    : 1.35vw;
+    color        : #f0f0f0;
+    background-color: rgba(25, 28, 42, 0.7);
+    border       : 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    outline      : none;
+}
+
+.editable_list .editable_list_input:focus {
+    border-color: rgba(0, 232, 160, 0.5);
+}

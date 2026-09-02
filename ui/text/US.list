@@ -219,6 +219,16 @@ This allows blocking circumvention at the DNS level and regional restrictions wi
 The hosts file is checked first on any network request, so the redirection happens before any external DNS lookup.
 Safe: when disabled, Unblock restores the original hosts file content.
 
+// Region select for dns hosts
+str_select_dns_hosts_region_title=🌍 Active region
+str_select_dns_hosts_region_description=🌍 Region for which geohide.ru builds the hosts file (from the list below).
+str_dns_hosts_regions_title=📋 Region list
+str_dns_hosts_regions_description=📋 Choose the region the site addresses are picked for: ru — Russian servers acting as bridges to foreign ones, eu — European servers for direct connection, us — American servers for direct connection. Picking your own region is usually enough. You can add your own option or remove unused ones.
+str_input_dns_hosts_region_placeholder=Add a region (e.g. ua) and press Enter
+str_input_dns_hosts_url_title=🔗 geohide host
+str_input_dns_hosts_url_description=🔗 Host the hosts file is downloaded from (without https://, e.g. geohide.ru). Change it if the service moves.
+str_window_check_region_description=🔍 Checking region availability...
+
 // Setting common enable local proxy telegram
 str_checkbox_enable_proxy_tg_title=📱 Proxy for Telegram
 str_checkbox_enable_proxy_tg_description=🔒 Local proxy for Telegram

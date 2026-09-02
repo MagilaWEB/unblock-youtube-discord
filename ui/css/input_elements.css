@@ -249,7 +249,7 @@
     border-radius   : 12px;
     transform       : rotate(-14deg);
     transform-origin: top left;
-    backdrop-filter : blur(12px);
+    backdrop-filter : blur(4px);
     pointer-events  : none;
     will-change     : transform, opacity;
 }

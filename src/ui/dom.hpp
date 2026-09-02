@@ -80,6 +80,9 @@ namespace ui::dom
 		void selectSetValue(const Element& label, std::string_view value);
 		void selectClear();
 
+		// --- Editable list (remove button) ---------------------------------
+		void listRemove(std::string_view cpp_name, std::string_view widget_name);
+
 		// --- Interaction --------------------------------------------------
 		void click();
 

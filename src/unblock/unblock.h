@@ -77,6 +77,11 @@ public:
     float dnsHostsUpdateProgress() const;
     bool dnsHostsCheck() const;
     const std::list<std::string>& dnsHostsListName();
+    void setDnsHostsRegion(std::string_view region);
+    const std::string& dnsHostsRegion() const;
+    void setDnsHostsBaseUrl(std::string_view url);
+    const std::string& dnsHostsBaseUrl() const;
+    bool dnsHostsRegionAvailable(std::string_view region) const;
 
     void localProxyTg(bool run = true);
     bool localProxyTgIsRun();

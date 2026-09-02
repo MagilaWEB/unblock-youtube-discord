@@ -2,6 +2,9 @@
 #include <concurrent_vector.h>
 #include <curl/curl.h>
 
+#include <algorithm>
+#include <regex>
+
 const std::regex& reg_ipv4_pattern()
 {
 	static const std::regex re{ R"(^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$)" };
@@ -172,6 +175,14 @@ void DNSHost::update()
 		if (isHostsUser())
 			_file_hosts_user.clear();
 
+		// Готовый hosts-файл geohide.ru для выбранного региона — база
+		// сопоставлений; локальные домены unblock ниже имеют приоритет.
+		HttpsLoad geohide{ _regionUrl() };
+		auto	  geohide_lines = geohide.run();
+		if (geohide.codeResult() == 200 && !geohide_lines.empty())
+			for (auto& line : geohide_lines)
+				_file_hosts_user.writeText(line);
+
 		_loadInfo();
 
 		File local_hosts{ false };
@@ -234,6 +245,45 @@ float DNSHost::percentageCompletion() const
 	return (static_cast<float>(_size_iter.load()) / static_cast<float>(_list_hosts.size())) * 100.F;
 }
 
+void DNSHost::setRegion(std::string_view region)
+{
+	_region = region.empty() ? "ru" : std::string{ region };
+}
+
+void DNSHost::setBaseUrl(std::string_view url)
+{
+	// Храним только хост (без протокола), как в telegram proxy. Если ввели
+	// полный URL — срезаем схему и хвостовой слеш.
+	std::string host{ url };
+
+	if (host.starts_with("https://"))
+		host.erase(0, std::string_view{ "https://" }.size());
+	else if (host.starts_with("http://"))
+		host.erase(0, std::string_view{ "http://" }.size());
+
+	while (!host.empty() && host.back() == '/')
+		host.pop_back();
+
+	_base_url = host.empty() ? "geohide.ru" : host;
+}
+
+std::string DNSHost::_regionUrl() const
+{
+	if (_region.empty() || _region == "ru")
+		return "https://" + _base_url + "/hosts";
+	return "https://" + _base_url + "/" + _region + "/hosts";
+}
+
+bool DNSHost::regionAvailable(std::string_view region) const
+{
+	const std::string reg = region.empty() ? "ru" : std::string{ region };
+	const std::string url = (reg == "ru") ? "https://" + _base_url + "/hosts" : "https://" + _base_url + "/" + reg + "/hosts";
+
+	HttpsLoad load{ url };
+	load.run();
+	return load.codeResult() == 200;
+}
+
 std::string DNSHost::_pathHostDir()
 {
 	static constexpr char XOR_KEY{ 0x5A };
@@ -263,7 +313,7 @@ void DNSHost::_loadInfo()
 		File local_hosts{ false };
 		local_hosts.open(Core::get().configsPath() / "hosts", "");
 
-		HttpsLoad hosts{ "https://raw.githubusercontent.com/Internet-Helper/GeoHideDNS/refs/heads/main/hosts/hosts" };
+		HttpsLoad hosts{ _regionUrl() };
 		auto	  lines = hosts.run();
 		if (hosts.codeResult() != 200 || lines.empty())
 		{
@@ -277,22 +327,25 @@ void DNSHost::_loadInfo()
 				local_hosts.writeText(line);
 		}
 
-		const std::string start_line{ "# AMD" };
-		const std::string end_line{ "# Xerox" };
-		bool			  run_service{ false };
+		// Service sections are "# <name>" comments. The file header and the
+		// fallback blocks ("Сервисные IP", "Резервные", ...) are Cyrillic or
+		// bare IPs, so only ASCII names that are not IPv4 addresses qualify.
+		static const std::regex ipv4_regex{ R"(^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$)" };
+
 		for (auto& line : lines)
 		{
-			if ((!run_service) && line == start_line)
-			{
-				run_service = true;
-				_list_dns_hosts_file_name.push_back(line.substr(2, line.length()));
-			}
-			else if (run_service && line.contains("# "))
-			{
-				_list_dns_hosts_file_name.push_back(line.substr(2, line.length()));
-				if (line == end_line)
-					run_service = false;
-			}
+			if (!line.starts_with("# "))
+				continue;
+
+			const std::string name = line.substr(2);
+			if (name.empty() || std::regex_match(name, ipv4_regex))
+				continue;
+
+			const bool has_non_ascii = std::ranges::any_of(name, [](unsigned char ch) { return ch >= 0x80; });
+			if (has_non_ascii)
+				continue;
+
+			_list_dns_hosts_file_name.push_back(name);
 		}
 	}
 }
