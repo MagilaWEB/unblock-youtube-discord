@@ -145,7 +145,7 @@ coco::stray Engine::_start(saucer::application* app)
 	// Context menu does not affect visuals — disabled in both builds.
 	_view->set_context_menu(false);
 
-	_ui = std::make_shared<UiBase>(this);
+	_ui = std::make_shared<Ui>(this);
 	_ui->postConstruct();
 
 	// Bridge + window subscriptions (before navigation).

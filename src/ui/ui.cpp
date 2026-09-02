@@ -1,7 +1,8 @@
 #include "ui.h"
-#include "ui_base.h"
+#include "tutorial.h"
+#include "../engine/version.hpp"
 
-Ui::Ui(std::shared_ptr<UiBase> ui_base) : _ui_base(std::move(ui_base))
+Ui::Ui(IEngineAPI* engine) : _engine(engine)
 {
 	_unblock = std::make_shared<Unblock>();
 }
@@ -14,6 +15,89 @@ void Ui::postConstruct()
 	_ui_proxy_tg = std::make_unique<UiProxyTg>(self, _unblock);
 	_ui_zapret2 = std::make_unique<UiZapret2>(self);
 	_ui_unblock = std::make_unique<UiUnblock>(self);
+}
+
+// ------------------ Setup (JS bridge + window subscriptions) ------------------
+void Ui::setup(saucer::smartview* view)
+{
+	if (!view)
+		return;
+
+	// Global variables for the UI page (injected before the scripts load).
+	view->inject(
+		{ .code	 = "window.RUN_CPP = true; window.VERSION_APP = " + jsQuote(VERSION_STR) + ";",
+		  .run_at = saucer::script::time::creation }
+	);
+
+	// DOM shim: low-level DOM helpers used by C++ widgets (see dom.hpp).
+	ui::dom::injectShim(view);
+
+	// JS -> CPP: translate a string by language key.
+	view->expose("CPPLangText", [this](std::string text_id) { return langText(std::move(text_id)); });
+
+	// Save window size to config.
+	view->parent().on<saucer::window::event::resize>(
+		[this](int width, int height)
+		{
+			_engine->userConfig()->writeSectionParameter("WINDOW", "width", std::to_string(width));
+			_engine->userConfig()->writeSectionParameter("WINDOW", "height", std::to_string(height));
+		}
+	);
+
+	// Window close — full UI reset (the engine shuts itself down on the last closed window).
+	view->parent().on<saucer::window::event::closed>([this]() { _closeWindow(); });
+
+	// DOM ready — build the widget tree.
+	view->once<saucer::webview::event::dom_ready>([this]() { _domReady(); });
+}
+
+void Ui::_closeWindow()
+{
+	Tutorial::release();
+	BaseElement::release();
+}
+
+void Ui::_domReady()
+{
+	auto* view = _engine->webview();
+	if (!view)
+		return;
+
+	// Page title shown in Task Manager for the WebView2 process: "Unblock <version>".
+	view->execute("document.title = {}", jsQuote(std::string("Unblock ") + VERSION_STR));
+
+	BaseElement::initializeAll(view);
+	initialize();
+	Tutorial::initializeAll(view);
+}
+
+void Ui::OnClose(saucer::application*)
+{
+	Tutorial::release();
+	BaseElement::release();
+	_engine->quit();
+}
+
+// ------------------ Config ------------------
+const std::shared_ptr<File>& Ui::userConfig()
+{
+	return _engine->userConfig();
+}
+
+void Ui::console(bool show)
+{
+	show ? _engine->showConsole() : _engine->hideConsole();
+}
+
+std::string Ui::langText(std::string_view text_id)
+{
+	if (text_id.empty())
+	{
+		Debug::warning("The passed argument in LANG_TEXT is empty");
+		return "";
+	}
+
+	return Localization::Str{ text_id }();
 }
 
 void Ui::_initializeAppState()

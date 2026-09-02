@@ -5,7 +5,7 @@
 
 #include "engine_api.hpp"
 
-#include "../ui/ui_base.h"
+#include "../ui/ui.h"
 
 #include <atomic>
 #include <fstream>
@@ -18,7 +18,7 @@ class ENGINE_API Engine final : public IEngineAPI
 	std::shared_ptr<saucer::window>		 _window;
 	std::optional<saucer::smartview>	 _view;
 
-	std::shared_ptr<UiBase> _ui{ nullptr };
+	std::shared_ptr<Ui> _ui{ nullptr };
 	std::shared_ptr<File>	_file_user_setting;
 
 	HWND			_hwnd_console;

@@ -1,4 +1,6 @@
 #pragma once
+#include "../engine/engine_api.hpp"
+#include "utils_saucer.hpp"
 #include "ui_secondary_window.h"
 #include "ui_button.h"
 #include "ui_check_box.h"
@@ -8,12 +10,11 @@
 #include "ui_zapret.h"
 #include "ui_unblock.h"
 
-class UiBase;
-class Ui final : public utils::DefaultInit, public std::enable_shared_from_this<Ui>
+class UI_API Ui final : public utils::DefaultInit, public std::enable_shared_from_this<Ui>
 {
 	friend class UiUnblock;
 	friend class UiZapret2;
-	std::shared_ptr<UiBase> _ui_base;
+	IEngineAPI* _engine;
 
 	std::shared_ptr<Unblock> _unblock;
 
@@ -57,22 +58,35 @@ class Ui final : public utils::DefaultInit, public std::enable_shared_from_this<
 public:
 	std::shared_ptr<Ui> self;
 
-	explicit Ui(std::shared_ptr<UiBase> ui_base);
+	explicit Ui(IEngineAPI* engine);
 
 	void initialize();
 	void postConstruct();
 
 	void update();
 
+	const std::shared_ptr<File>& userConfig();
+	bool hasCyrillicOrSpaceInBinaryPath() const { return _engine->hasCyrillicOrSpaceInBinaryPath(); }
+
+	void console(bool show);
+	std::string langText(std::string_view text_id);
+
+	// App termination (used when uninstalling the program).
+	void OnClose(saucer::application*);
+
+	// Registers the JS bridge (expose/inject) and window subscriptions; called before navigation.
+	void setup(saucer::smartview* view);
+
 	const Ptr<SecondaryWindow>& getWindowWaitStartService() { return _window_wait_start_service; }
 
 	const Ptr<CheckBox>& getTestingDomainsStartup() const { return _ui_unblock->getTestingDomainsStartup(); }
 
-	std::shared_ptr<UiBase>& uiBase() { return _ui_base; }
-
 	std::unique_ptr<UiUnblock>& getUiUnblock() { return _ui_unblock; }
 
 private:
+	void _domReady();
+	void _closeWindow();
+
 	void _initializeAppState();
 	void _initComponents();
 	void _initializeFooter();
