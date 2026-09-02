@@ -4,7 +4,6 @@
 class Input : public BaseElement
 {
 	JSFunction _set_value;
-	JSFunction _get_value;
 
 public:
 	enum class Types : u8

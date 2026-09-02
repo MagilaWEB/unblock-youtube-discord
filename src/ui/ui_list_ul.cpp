@@ -7,45 +7,24 @@ ListUl::ListUl(std::string_view name) : BaseElement(name)
 
 void ListUl::initialize()
 {
-	auto global_js = JSGlobalObject();
-
-	if (!_create)
-		_create = global_js["createListUl"];
-
-	if (!_remove)
-		_remove = global_js["removeListUl"];
-
-	if (!_show)
-		_show = global_js["showListUl"];
-
-	if (!_hide)
-		_hide = global_js["hideListUl"];
-
-	if (!_set_title)
-		_set_title = global_js["setTitleListUl"];
-
-	if (!_create_li)
-		_create_li = global_js["createListUlLiAdd"];
-
-	if (!_create_li_success)
-		_create_li_success = global_js["createListUlLiAddSuccess"];
-
-	if (!_add_class)
-		_add_class = global_js["addClassListUl"];
-
-	if (!_remove_class)
-		_remove_class = global_js["removeClassListUl"];
-
-	if (!_clear_li)
-		_clear_li = global_js["clearListUl"];
+	_create			  = JSFunction{ "createListUl" };
+	_remove			  = JSFunction{ "removeListUl" };
+	_show			  = JSFunction{ "showListUl" };
+	_hide			  = JSFunction{ "hideListUl" };
+	_set_title		  = JSFunction{ "setTitleListUl" };
+	_create_li		  = JSFunction{ "createListUlLiAdd" };
+	_create_li_success = JSFunction{ "createListUlLiAddSuccess" };
+	_add_class		  = JSFunction{ "addClassListUl" };
+	_remove_class	  = JSFunction{ "removeClassListUl" };
+	_clear_li		  = JSFunction{ "clearListUl" };
 }
 
 void ListUl::createLi(Localization::Str text)
 {
-	auto _text = text();
+	if (!_created)
+		return;
 
-	runCodeToJS([this, _text]
-				{ ASSERT_ARGS(_create_li({ name(), _text.c_str() }).ToBoolean() == true, "Couldn't create_li a {} named [{}]", _type, name()); });
+	_create_li.call({ name(), text() });
 }
 
 void ListUl::createLiSuccess(Localization::Str text, bool state)
@@ -53,75 +32,29 @@ void ListUl::createLiSuccess(Localization::Str text, bool state)
 	if (!_created)
 		return;
 
-	auto _text = text();
-
-	runCodeToJS(
-		[this, _text, state]
-		{
-			ASSERT_ARGS(
-				_create_li_success({ name(), _text.c_str(), state }).ToBoolean() == true,
-				"Couldn't create_li_success a {} named [{}]",
-				_type,
-				name()
-			);
-		}
-	);
+	_create_li_success.call({ name(), text(), state });
 }
 
 void ListUl::addClass(std::string_view name_class)
 {
-	runCodeToJS(
-		[this, name_class]
-		{
-			if (!_created)
-				return;
-			ASSERT_ARGS(
-				_add_class(
-					{
-						name(),
-						String{ name_class.data(), name_class.size() }
-			   }
-				).ToBoolean()
-					== true,
-				"Couldn't addClass a {} named [{}]",
-				_type,
-				name()
-			);
-		}
-	);
+	if (!_created)
+		return;
+
+	_add_class.call({ name(), std::string{ name_class } });
 }
 
 void ListUl::removeClass(std::string_view name_class)
 {
-	runCodeToJS(
-		[this, name_class]
-		{
-			if (!_created)
-				return;
-			ASSERT_ARGS(
-				_remove_class(
-					{
-						name(),
-						String{ name_class.data(), name_class.size() }
-			   }
-				).ToBoolean()
-					== true,
-				"Couldn't removeClass a {} named [{}]",
-				_type,
-				name()
-			);
-		}
-	);
+	if (!_created)
+		return;
+
+	_remove_class.call({ name(), std::string{ name_class } });
 }
 
 void ListUl::clear()
 {
-	runCodeToJS(
-		[this]
-		{
-			if (!_created)
-				return;
-			ASSERT_ARGS(_clear_li({ name() }).ToBoolean() == true, "Couldn't clear a {} named [{}]", _type, name());
-		}
-	);
+	if (!_created)
+		return;
+
+	_clear_li.call({ name() });
 }

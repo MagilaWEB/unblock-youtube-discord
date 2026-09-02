@@ -37,11 +37,13 @@ set(ALL_MACRO_CPP ) #DEBUG_RUN_ZAPRET
 # Cmake includes
 include(FetchContent)
 
-# Load GitHub ultralight-sdk
+# Load saucer (webview, WebView2 backend)
+set(saucer_backend "WebView2")
+
 FetchContent_Declare(
-  ultralight
-  URL https://github.com/MagilaWEB/ultralight-sdk/releases/download/v1.4.1_dev/ultralight-sdk.7z
-  SOURCE_DIR ultralight
+  saucer
+  GIT_REPOSITORY https://github.com/saucer/saucer
+  GIT_TAG v8.0.5
 )
 
 # Load GitHub curl binaries
@@ -71,7 +73,7 @@ FetchContent_Declare(
 
 # Build
 FetchContent_MakeAvailable(
-    ultralight
+    saucer
     curl
     bit7z
     7za
@@ -103,12 +105,6 @@ endif()
 set(CURL_INCLUDE_DIR ${CURL_DIR}/include)
 set(ZLIB_INCLUDE_DIR ${CURL_INCLUDE_DIR})
 
-# Include ultralight
-set(ULTRALIGHT_DIR ${CMAKE_BINARY_DIR}/ultralight)
-set(ULTRALIGHT_INCLUDE ${ULTRALIGHT_DIR}/include)
-set(ULTRALIGHT_LIB ${ULTRALIGHT_DIR}/lib)
-set(ULTRALIGHT_BIN ${ULTRALIGHT_DIR}/bin)
-
 # Include bit7z
 set(BIT7Z_DIR ${CMAKE_BINARY_DIR}/bit7z)
 set(BIT7Z_INCLUDE ${BIT7Z_DIR}/include)
@@ -123,6 +119,11 @@ endif()
 set(7ZA_DIR ${CMAKE_BINARY_DIR}/7za)
 set(7ZA_BIN ${7ZA_DIR}/x64/7za.dll)
 
+# WebView2 headers (nuget package, ставится saucer'ом во время конфигурации)
+file(GLOB WEBVIEW2_INCLUDE_DIRS
+    ${CMAKE_BINARY_DIR}/_deps/saucer-build/nuget/packages/Microsoft.Web.WebView2.*/build/native/include
+)
+
 # bin Zapret2 res 
 set(ZAPRET2_DIR ${CMAKE_BINARY_DIR}/zapret2)
 set(ZAPRET2_BIN ${ZAPRET2_DIR}/binaries/windows-x86_64)
@@ -131,7 +132,8 @@ set(ZAPRET2_LUA ${ZAPRET2_DIR}/lua)
 # Build
 message(STATUS "COMPILER = ${CMAKE_CXX_COMPILER_ID}")
 
-add_compile_options(-Wall -Wextra -Wpedantic -Werror
+# Warning flags for project targets (NOT for third-party sub-projects like saucer)
+set(PROJECT_WARNING_FLAGS -Wall -Wextra -Wpedantic -Werror
     -Wno-padded
     -Wno-exit-time-destructors
     -Wno-unsafe-buffer-usage

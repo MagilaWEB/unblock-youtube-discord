@@ -7,26 +7,12 @@ Button::Button(std::string_view name) : BaseElement(name)
 
 void Button::initialize()
 {
-	auto global_js = JSGlobalObject();
+	_add_event_click = JSFunction{ "addButtonEventClick" };
+	_create			 = JSFunction{ "createButton" };
+	_remove			 = JSFunction{ "removeButton" };
+	_set_title		 = JSFunction{ "setTitleButton" };
+	_show			 = JSFunction{ "showButton" };
+	_hide			 = JSFunction{ "hideButton" };
 
-	if (!_add_event_click)
-		_add_event_click = global_js["addButtonEventClick"];
-
-	if (!_create)
-		_create = global_js["createButton"];
-
-	if (!_remove)
-		_remove = global_js["removeButton"];
-
-	if (!_set_title)
-		_set_title = global_js["setTitleButton"];
-
-	if (!_show)
-		_show = global_js["showButton"];
-	
-	if (!_hide)
-		_hide = global_js["hideButton"];
-
-	if (!global_js["CPPButtonEventClick"])
-		global_js["CPPButtonEventClick"] = JS_EVENT(_event_click);
+	exposeEventClick<std::string>("CPPButtonEventClick", _event_click);
 }

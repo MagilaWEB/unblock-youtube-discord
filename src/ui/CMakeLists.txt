@@ -9,17 +9,13 @@ add_library(${NAME} SHARED ${src_h} ${src_hpp} ${src_cpp})
 
 target_precompile_headers(${NAME} PRIVATE pch.h)
 
-# Include files
-target_include_directories(${NAME} PRIVATE ${ULTRALIGHT_INCLUDE})
+target_compile_options(${NAME} PRIVATE ${PROJECT_WARNING_FLAGS})
 
 # Link
 target_link_libraries(${NAME} PRIVATE
         core
         unblock
-        ${ULTRALIGHT_LIB}/AppCore.lib
-        ${ULTRALIGHT_LIB}/UltralightCore.lib
-        ${ULTRALIGHT_LIB}/Ultralight.lib
-        ${ULTRALIGHT_LIB}/WebCore.lib
+        saucer::saucer
 )
 
 # Define EXPORTS when building the libraries

@@ -35,9 +35,9 @@ function addButtonEventClick(_name, _function)
 	{
 		if(RUN_CPP)
 		{
-			const JSButtonEventClick = () =>
+			const JSButtonEventClick = async () =>
 			{
-				if(CPPButtonEventClick(_name))
+				if(await saucer.exposed.CPPButtonEventClick(_name))
 					a.removeEventListener("click", JSButtonEventClick)
 			};
 

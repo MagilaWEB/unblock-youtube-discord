@@ -96,8 +96,6 @@ void Core::parallel_run()
 				}
 				else
 					_task_lock.LeaveShared();
-
-				FAST_LOCK_SHARED(_task_lock_js);
 			}
 		}
 	);
@@ -230,33 +228,7 @@ void Core::taskComplete(std::function<void()>&& callback)
 	_task_complete.emplace_back(callback);
 }
 
-void Core::addTaskJS(std::function<void()> callback)
-{
-	FAST_LOCK(_task_lock_js);
-	_task_js.emplace_back(callback);
-}
-
-std::deque<std::function<void()>>& Core::getTaskJS()
-{
-	return _task_js;
-}
-
 FastLock& Core::getTaskLock()
 {
 	return _task_lock;
-}
-
-FastLock& Core::getTaskLockJS()
-{
-	return _task_lock_js;
-}
-
-void Core::setThreadJsID(DWORD id)
-{
-	_thread_js_id = id;
-}
-
-DWORD Core::getThreadJsID()
-{
-	return _thread_js_id;
 }

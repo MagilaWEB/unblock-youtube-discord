@@ -1,16 +1,10 @@
 #include "ui_base.h"
 #include "ui.h"
-#include "../core/timer.h"
 #include "../engine/version.hpp"
 
 // ------------------ Constructor ------------------
 UiBase::UiBase(IEngineAPI* engine) : _engine(engine)
 {
-	_overlay = Overlay::Create(_engine->window(), _engine->window()->width(), _engine->window()->height(), 0, 0);
-	_overlay->view()->LoadURL("file:///main.html");
-
-	_overlay->view()->set_load_listener(this);
-	_overlay->view()->set_view_listener(this);
 }
 
 void UiBase::postConstruct()
@@ -23,32 +17,67 @@ void UiBase::postConstruct()
 // ------------------ Destructor ------------------
 UiBase::~UiBase()
 {
-	if (_overlay)
-	{
-		_overlay->view()->set_load_listener(nullptr);
-		_overlay->view()->set_view_listener(nullptr);
-	}
+	_ui.reset();
 	_engine = nullptr;
 }
 
-// ------------------ WindowListener ------------------
-void UiBase::OnResize(ultralight::Window*, uint32_t width, uint32_t height)
+// ------------------ Setup (JS bridge + window subscriptions) ------------------
+void UiBase::setup(saucer::smartview* view)
 {
-	if (_overlay)
-		_overlay->Resize(width, height);
+	if (!view)
+		return;
 
-	_engine->userConfig()->writeSectionParameter("WINDOW", "width", std::to_string(width));
-	_engine->userConfig()->writeSectionParameter("WINDOW", "height", std::to_string(height));
+	// Global variables for the UI page (injected before the scripts load).
+	view->inject(
+		{ .code	 = "window.RUN_CPP = true; window.VERSION_APP = " + jsQuote(VERSION_STR) + ";",
+		  .run_at = saucer::script::time::creation }
+	);
+
+	// JS -> CPP: translate a string by language key.
+	view->expose("CPPLangText", [this](std::string text_id) { return langText(std::move(text_id)); });
+
+	// Save window size to config.
+	view->parent().on<saucer::window::event::resize>(
+		[this](int width, int height)
+		{
+			_engine->userConfig()->writeSectionParameter("WINDOW", "width", std::to_string(width));
+			_engine->userConfig()->writeSectionParameter("WINDOW", "height", std::to_string(height));
+		}
+	);
+
+	// Window close — full UI reset (the engine shuts itself down on the last closed window).
+	view->parent().on<saucer::window::event::closed>([this]() { _closeWindow(); });
+
+	// DOM ready — build the widget tree.
+	view->once<saucer::webview::event::dom_ready>([this]() { _domReady(); });
 }
 
-void UiBase::OnClose(ultralight::Window*)
+void UiBase::_closeWindow()
 {
 	BaseElement::release();
 	_ui.reset();
-	_engine->app()->Quit();
 }
 
-// ------------------ JS callbacks ------------------
+void UiBase::_domReady()
+{
+	auto* view = _engine->webview();
+	if (!view)
+		return;
+
+	// Page title shown in Task Manager for the WebView2 process: "Unblock <version>".
+	view->execute("document.title = {}", jsQuote(std::string("Unblock ") + VERSION_STR));
+
+	BaseElement::initializeAll(view);
+	_ui->initialize();
+}
+
+void UiBase::OnClose(saucer::application*)
+{
+	BaseElement::release();
+	_engine->quit();
+}
+
+// ------------------ Config ------------------
 const std::shared_ptr<File>& UiBase::userConfig()
 {
 	return _engine->userConfig();
@@ -59,120 +88,19 @@ void UiBase::console(bool show)
 	show ? _engine->showConsole() : _engine->hideConsole();
 }
 
-void UiBase::runJsUpdate(const JSObject&, const JSArgs&)
+void UiBase::update()
 {
-	auto& task = Core::get().getTaskJS();
-	FAST_LOCK(Core::get().getTaskLockJS());
-	while (!task.empty())
-	{
-		task.front()();
-		task.pop_front();
-	}
-
-	_ui->jsUpdate();
+	if (_ui)
+		_ui->update();
 }
 
-JSValue UiBase::langText(const JSObject&, const JSArgs& args)
+std::string UiBase::langText(std::string_view text_id)
 {
-	if (!args[0].IsString())
+	if (text_id.empty())
 	{
-		Debug::warning("The passed argument in LANG_TEXT is not a string");
+		Debug::warning("The passed argument in LANG_TEXT is empty");
 		return "";
 	}
 
-	const auto text_id = static_cast<String>(args[0].ToString());
-	return Localization::Str{ text_id.utf8().data() }().data();
+	return Localization::Str{ text_id }();
 }
-
-// ------------------ LoadListener ------------------
-void UiBase::OnWindowObjectReady(View* caller, uint64_t, bool, const String&)
-{
-	auto locked_context = caller->LockJSContext();
-	SetJSContext(locked_context->ctx());
-
-	JSObject global			 = JSGlobalObject();
-	global["RUN_CPP"]		 = JSValue(true);
-	global["VERSION_APP"]	 = JSValue(VERSION_STR);
-	global["CPPRunJsUpdate"] = static_cast<JSCallback>([this](JSObject obj, const JSArgs& args) { this->runJsUpdate(obj, args); });
-	global["CPPLangText"] =
-		static_cast<JSCallbackWithRetval>([this](JSObject obj, const JSArgs& args) -> JSValue { return this->langText(obj, args); });
-
-	// Logic thread JavaScript to CPP
-	caller->EvaluateScript("setInterval(CPPRunJsUpdate, 30)");
-}
-
-void UiBase::OnDOMReady(View* caller, uint64_t, bool, const String&)
-{
-	Core::setThreadJsID(GetCurrentThreadId());
-
-	auto locked_context = caller->LockJSContext();
-	SetJSContext(locked_context->ctx());
-
-	BaseElement::initializeAll(caller);
-	_ui->initialize();
-}
-
-// --------------- Console message (debug/release) ---------------
-#define LOGS(method)                                                                                        \
-	method(                                                                                                 \
-		"Java/Script\n\tsource:\t{}\n\ttype:\t{}\n\tmessage:\t{}\n\tline_number:\t{}\n\tcolumn_number:\t{}" \
-		"\n\tsource_id:\t{}\n\tnum_arguments:\t{}\n\t{}",                                                   \
-		static_cast<u32>(msg.source()),                                                                     \
-		static_cast<u32>(msg.type()),                                                                       \
-		msg.message().utf8().data(),                                                                        \
-		msg.line_number(),                                                                                  \
-		msg.column_number(),                                                                                \
-		msg.source_id().utf8().data(),                                                                      \
-		msg.num_arguments(),                                                                                \
-		text_msg.c_str()                                                                                    \
-	);
-
-#ifdef DEBUG
-void UiBase::OnAddConsoleMessage(View* /*caller*/, const ConsoleMessage& msg)
-{
-	std::string text_msg{ "MSG: " };
-	uint32_t	num_args = msg.num_arguments();
-
-	if (num_args > 0)
-	{
-		for (uint32_t i = 0; i < num_args; i++)
-		{
-			JSValue arg = static_cast<JSValue>(msg.argument_at(i));
-			text_msg.append(static_cast<String>(arg.ToString()).utf8().data()).append(" ");
-		}
-	}
-
-	if (msg.level() == kMessageLevel_Log)
-		LOGS(Debug::ok)
-	else if (msg.level() == kMessageLevel_Debug || msg.level() == kMessageLevel_Info)
-		LOGS(Debug::info)
-	else if (msg.level() == kMessageLevel_Warning)
-		LOGS(Debug::warning)
-	else if (msg.level() == kMessageLevel_Error)
-		LOGS(Debug::error)
-}
-#else
-void UiBase::OnAddConsoleMessage(View* /*caller*/, const ConsoleMessage& msg)
-{
-	std::string text_msg{ "MSG: " };
-	uint32_t	num_args = msg.num_arguments();
-
-	if (num_args > 0)
-	{
-		for (uint32_t i = 0; i < num_args; i++)
-		{
-			JSValue arg = static_cast<JSValue>(msg.argument_at(i));
-			text_msg.append(static_cast<String>(arg.ToString()).utf8().data()).append(" ");
-		}
-	}
-
-	if (msg.level() == kMessageLevel_Log)
-		LOGS(InputConsole::textOk)
-	else if (msg.level() == kMessageLevel_Debug || msg.level() == kMessageLevel_Info)
-		LOGS(InputConsole::textInfo)
-	else if (msg.level() == kMessageLevel_Warning)
-		LOGS(InputConsole::textWarning)
-	else if (msg.level() == kMessageLevel_Error)
-		LOGS(InputConsole::textError)
-}
-#endif

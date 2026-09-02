@@ -3,8 +3,8 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wglobal-constructors"
 std::vector<SecondaryWindow*> SecondaryWindow::_all_window;
-SecondaryWindow::MapEvent SecondaryWindow::_event_yes_no;	  // NOLINT(bugprone-throwing-static-initialization) - global event registry
-SecondaryWindow::MapEvent SecondaryWindow::_event_cancel;	  // NOLINT(bugprone-throwing-static-initialization) - global event registry
+SecondaryWindow::MapEvent SecondaryWindow::_event_yes_no; // NOLINT(bugprone-throwing-static-initialization) - global event registry
+SecondaryWindow::MapEvent SecondaryWindow::_event_cancel; // NOLINT(bugprone-throwing-static-initialization) - global event registry
 #pragma clang diagnostic pop
 
 SecondaryWindow::SecondaryWindow(std::string_view name) : BaseElement(name)
@@ -15,97 +15,52 @@ SecondaryWindow::SecondaryWindow(std::string_view name) : BaseElement(name)
 
 SecondaryWindow::~SecondaryWindow()
 {
-	auto it = std::ranges::find(_all_window, this);
+	const auto it = std::ranges::find(_all_window, this);
 	if (it != _all_window.end())
 		_all_window.erase(it);
-
-	BaseElement::~BaseElement();
 }
 
 void SecondaryWindow::initialize()
 {
-	auto global_js = JSGlobalObject();
+	_create			= JSFunction{ "createSecondaryWindow" };
+	_remove			= JSFunction{ "removeSecondaryWindow" };
+	_set_type		= JSFunction{ "setTypeSecondaryWindow" };
+	_set_title		= JSFunction{ "setTitleSecondaryWindow" };
+	_set_description = JSFunction{ "setDescriptionSecondaryWindow" };
+	_show			= JSFunction{ "showSecondaryWindow" };
+	_hide			= JSFunction{ "hideSecondaryWindow" };
 
-	if (!_create)
-		_create = global_js["createSecondaryWindow"];
-
-	if (!_remove)
-		_remove = global_js["removeSecondaryWindow"];
-
-	if (!_set_type)
-		_set_type = global_js["setTypeSecondaryWindow"];
-
-	if (!_set_title)
-		_set_title = global_js["setTitleSecondaryWindow"];
-
-	if (!_set_description)
-		_set_description = global_js["setDescriptionSecondaryWindow"];
-
-	if (!_show)
-		_show = global_js["showSecondaryWindow"];
-
-	if (!_hide)
-		_hide = global_js["hideSecondaryWindow"];
-
-	if (!global_js["CPPSecondaryWindowEventOK"])
-		global_js["CPPSecondaryWindowEventOK"] = JS_EVENT(_event_click);
-
-	if (!global_js["CPPSecondaryWindowEventYESNO"])
-		global_js["CPPSecondaryWindowEventYESNO"] = JS_EVENT(_event_yes_no);
-
-	if (!global_js["CPPSecondaryWindowEventCancel"])
-		global_js["CPPSecondaryWindowEventCancel"] = JS_EVENT(_event_cancel);
+	exposeEventClick<std::string>("CPPSecondaryWindowEventOK", _event_click);
+	exposeEventClick<std::string, bool>("CPPSecondaryWindowEventYESNO", _event_yes_no);
+	exposeEventClick<std::string>("CPPSecondaryWindowEventCancel", _event_cancel);
 }
 
 void SecondaryWindow::create(Localization::Str title, Localization::Str description)
 {
-	auto _title		  = title();
-	auto _description = description();
-	runCodeToJS(
-		[this, _title, _description]
-		{
-			ASSERT_ARGS(
-				_create({ name(), _title.c_str(), _description.c_str() }).ToBoolean() == true,
-				"Couldn't create a {} named [{}]",
-				_type,
-				name()
-			);
-			_event_click[name()].clear();
-			_event_yes_no[name()].clear();
-			_event_cancel[name()].clear();
-			_created = true;
-		}
-	);
+	_create.call({ name(), title(), description() });
+	_event_click[name()].clear();
+	_event_yes_no[name()].clear();
+	_event_cancel[name()].clear();
+	_created = true;
 }
 
 void SecondaryWindow::setType(Type type)
 {
-	runCodeToJS(
-		[this, type]
-		{
-			if (!_created)
-				return;
+	if (!_created)
+		return;
 
-			ASSERT_ARGS(_set_type({ name(), static_cast<u8>(type) }).ToBoolean() == true, "Couldn't setType a {} named [{}]", _type, name());
-			_event_click[name()].clear();
-			_event_yes_no[name()].clear();
-			_event_cancel[name()].clear();
-		}
-	);
+	_set_type.call({ name(), static_cast<int>(type) });
+	_event_click[name()].clear();
+	_event_yes_no[name()].clear();
+	_event_cancel[name()].clear();
 }
 
 void SecondaryWindow::setDescription(Localization::Str description)
 {
-	String _description = description().data();
-	runCodeToJS(
-		[this, _description]
-		{
-			if (!_created)
-				return;
+	if (!_created)
+		return;
 
-			ASSERT_ARGS(_set_description({ name(), _description }).ToBoolean() == true, "Couldn't setDescription a {} named [{}]", _type, name());
-		}
-	);
+	_set_description.call({ name(), description() });
 }
 
 void SecondaryWindow::show()
@@ -164,54 +119,39 @@ bool SecondaryWindow::waitShow()
 
 void SecondaryWindow::addEventOk(std::function<bool(JSArgs)>&& callback)
 {
-	runCodeToJS(
-		[this, callback]
-		{
-			if (!_created)
-				return;
+	if (!_created)
+		return;
 
-			_event_click[name()].push_back(callback);
-		}
-	);
+	_event_click[name()].push_back(std::move(callback));
 }
 
 void SecondaryWindow::clearEventOk()
 {
-	runCodeToJS([this] { _event_click[name()].clear(); });
+	_event_click[name()].clear();
 }
 
 void SecondaryWindow::addEventYesNo(std::function<bool(JSArgs)>&& callback)
 {
-	runCodeToJS(
-		[this, callback]
-		{
-			if (!_created)
-				return;
+	if (!_created)
+		return;
 
-			_event_yes_no[name()].push_back(callback);
-		}
-	);
+	_event_yes_no[name()].push_back(std::move(callback));
 }
 
 void SecondaryWindow::clearEventYesNo()
 {
-	runCodeToJS([this] { _event_yes_no[name()].clear(); });
+	_event_yes_no[name()].clear();
 }
 
 void SecondaryWindow::addEventCancel(std::function<bool(JSArgs)>&& callback)
 {
-	runCodeToJS(
-		[this, callback]
-		{
-			if (!_created)
-				return;
+	if (!_created)
+		return;
 
-			_event_cancel[name()].push_back(callback);
-		}
-	);
+	_event_cancel[name()].push_back(std::move(callback));
 }
 
 void SecondaryWindow::clearEventCancel()
 {
-	runCodeToJS([this] { _event_cancel[name()].clear(); });
+	_event_cancel[name()].clear();
 }

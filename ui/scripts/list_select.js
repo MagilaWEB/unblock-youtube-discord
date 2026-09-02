@@ -58,13 +58,12 @@ class SELECT {
         option.append(_title);
         option.value = _value;
 
-        option.addEventListener("click", () => {
+        option.addEventListener("click", async () => {
             if (!this.select_active || !this.select_mouseover)
                 return;
 
             this.select.classList.remove("select_active");
 
-            this.select.classList.remove("select_active");
             this.select_active = false;
             this.label.removeChild(this.label.firstChild);
             this.label.append(option.innerHTML);
@@ -72,7 +71,7 @@ class SELECT {
             this.option_index = option.value;
             this.option_selected = option;
 
-            this.eventChange();
+            await this.eventChange();
 
             this.select_active = false;
         });
@@ -100,9 +99,9 @@ class SELECT {
         this.array_option[++this.option_size] = option;
     }
 
-    eventChange() {
+    async eventChange() {
         if (RUN_CPP)
-            CPPSelectEventChange(this.name, this.option_index, this.option_selected.innerHTML);
+            await saucer.exposed.CPPSelectEventChange(this.name, this.option_index, this.option_selected.innerHTML);
         else {
             this.array_callbacks = this.array_callbacks.filter(fn => {
                 if (fn(this.option_index, this.option_selected.innerHTML)) {

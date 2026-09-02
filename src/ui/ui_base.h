@@ -1,49 +1,39 @@
 #pragma once
-#include "../engine/engine_api.hpp"
-#include "utils_ultralight.hpp"
 
-using namespace ultralight;
+#include "../engine/engine_api.hpp"
+#include "utils_saucer.hpp"
 
 class Ui;
 
-class UI_API UiBase final : public WindowListener,
-                            public std::enable_shared_from_this<UiBase>,
-                            private LoadListener,
-                            private ViewListener
-
+class UI_API UiBase final : public std::enable_shared_from_this<UiBase>
 {
-    std::shared_ptr<Ui> _ui;
+	std::shared_ptr<Ui> _ui;
 
-    IEngineAPI* _engine;
-    RefPtr<Overlay> _overlay;
-
-public:
-    UiBase() = delete;
-    UiBase(IEngineAPI* engine);
-    UiBase(const UiBase&) = default;
-    UiBase& operator=(const UiBase&) = default;
-    ~UiBase() override;
-
-    void postConstruct();
-
-    void OnAddConsoleMessage(View* caller, const ConsoleMessage& msg) override;
-
-    void OnWindowObjectReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame,
-                             const String& url) override;
-    void OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const String& url) override;
-
-    void OnResize(ultralight::Window* window, uint32_t width, uint32_t height) override;
-
-    void OnClose(Window* window) override;
-
-    void OnChangeCursor(View*, Cursor cursor) override { _engine->window()->SetCursor(cursor); }
-
-    const std::shared_ptr<File>& userConfig();
-
-    bool hasCyrillicOrSpaceInBinaryPath() const { return _engine->hasCyrillicOrSpaceInBinaryPath(); }
+	IEngineAPI* _engine;
 
 public:
-    void console(bool show);
-    void runJsUpdate(const JSObject& obj, const JSArgs& args);
-    JSValue langText(const JSObject& obj, const JSArgs& args);
+	UiBase() = delete;
+	UiBase(IEngineAPI* engine);
+	~UiBase();
+
+	void postConstruct();
+
+	const std::shared_ptr<File>& userConfig();
+	bool hasCyrillicOrSpaceInBinaryPath() const { return _engine->hasCyrillicOrSpaceInBinaryPath(); }
+
+public:
+	void console(bool show);
+	void update();
+	std::string langText(std::string_view text_id);
+
+	// App termination (used when uninstalling the program).
+	void OnClose(saucer::application*);
+
+public:
+	// Registers the JS bridge (expose/inject) and window subscriptions; called before navigation.
+	void setup(saucer::smartview* view);
+
+private:
+	void _domReady();
+	void _closeWindow();
 };

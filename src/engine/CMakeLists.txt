@@ -29,17 +29,21 @@ add_executable(${NAME} ${src_h} ${src_hpp} ${src_cpp} engine.rc)
 
 target_precompile_headers(${NAME} PRIVATE pch.h)
 
-# Include files
-target_include_directories(${NAME} PRIVATE ${ULTRALIGHT_INCLUDE})
+target_compile_options(${NAME} PRIVATE ${PROJECT_WARNING_FLAGS})
+# WebView2.h содержит enum с 0xffffffff, не помещающийся в int
+target_compile_options(${NAME} PRIVATE -Wno-microsoft-enum-value)
+
+# Заголовки WebView2 (saucer/modules/stable/webview2.hpp утаскивает WebView2.h)
+if(WEBVIEW2_INCLUDE_DIRS)
+    target_include_directories(${NAME} PRIVATE ${WEBVIEW2_INCLUDE_DIRS})
+endif()
 
 # Link
 target_link_libraries(${NAME} PRIVATE
         core
         ui
         unblock
-        ${ULTRALIGHT_LIB}/AppCore.lib
-        ${ULTRALIGHT_LIB}/UltralightCore.lib
-        ${ULTRALIGHT_LIB}/Ultralight.lib
+        saucer::saucer
         dwmapi.lib
 )
 
@@ -53,13 +57,6 @@ target_link_options(${NAME} PRIVATE
 
 # Copy library binaries to the folder of the compiled project
 if(CUPY_LIBS_DLL_TO_BIN)
-    set(ultralight_files
-        ${ULTRALIGHT_BIN}/AppCore.dll
-        ${ULTRALIGHT_BIN}/Ultralight.dll
-        ${ULTRALIGHT_BIN}/UltralightCore.dll
-        ${ULTRALIGHT_BIN}/WebCore.dll
-    )
-
     add_custom_command(TARGET ${NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${7ZA_BIN} $<TARGET_FILE_DIR:${NAME}>
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -77,9 +74,6 @@ if(CUPY_LIBS_DLL_TO_BIN)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${CMAKE_SOURCE_DIR}/src/engine/unblock.ico"
             $<TARGET_FILE_DIR:${NAME}>
-
-
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ultralight_files} $<TARGET_FILE_DIR:${NAME}>
         COMMENT "Copying runtime DLLs to output directory"
 
         COMMAND ${CMAKE_COMMAND} -E copy

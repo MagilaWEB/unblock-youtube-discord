@@ -3,10 +3,10 @@
 
 class SelectList final : public BaseElement
 {
-	JSFunction _create_option;
-	JSFunction _set_value;
-	JSFunction _get_value;
-	JSFunction _clear;
+	JSFunction  _create_option;
+	JSFunction  _set_value;
+	JSFunction  _clear;
+	std::string _selected_value;
 
 public:
 	SelectList(std::string_view name);

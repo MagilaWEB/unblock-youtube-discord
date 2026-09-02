@@ -24,7 +24,7 @@ class SecondaryWindow {
 		this.loader = null;
 	}
 
-	createElement() {
+	async createElement() {
 		if (this.button_ok)
 			this.button_ok.remove();
 
@@ -37,47 +37,52 @@ class SecondaryWindow {
 		if (this.loader)
 			this.loader.remove();
 
+		const text_ok = RUN_CPP ? await saucer.exposed.CPPLangText("str_b_secondary_window_ok") : "OK";
+		const text_yes = RUN_CPP ? await saucer.exposed.CPPLangText("str_b_secondary_window_yes") : "YES";
+		const text_no = RUN_CPP ? await saucer.exposed.CPPLangText("str_b_secondary_window_no") : "NO";
+		const text_cancel = RUN_CPP ? await saucer.exposed.CPPLangText("str_b_secondary_window_cancel") : "Cancel";
+
 		switch (this.type) {
 			case 0:
-				if (createButton(".secondary_window .elements", this.name_button_ok, RUN_CPP ? CPPLangText("str_b_secondary_window_ok") : "OK")) {
+				if (createButton(".secondary_window .elements", this.name_button_ok, text_ok)) {
 					this.button_ok = getButton(this.name_button_ok);
 					this.elements_div.appendChild(this.button_ok);
 					this.elements_div.classList.add("horizontally")
 
-					this.button_ok.addEventListener("click", () => {
+					this.button_ok.addEventListener("click", async () => {
 						if (!RUN_CPP)
 							this.hide();
 
 						if (RUN_CPP)
-							CPPSecondaryWindowEventOK(this.name);
+							await saucer.exposed.CPPSecondaryWindowEventOK(this.name);
 					});
 				}
 				break;
 			case 1:
-				if (createButton(".secondary_window .elements", this.name_button_yes, RUN_CPP ? CPPLangText("str_b_secondary_window_yes") : "YES")) {
+				if (createButton(".secondary_window .elements", this.name_button_yes, text_yes)) {
 					this.button_yes = getButton(this.name_button_yes);
 					this.elements_div.appendChild(this.button_yes);
 					this.elements_div.classList.add("horizontally")
 
-					this.button_yes.addEventListener("click", () => {
+					this.button_yes.addEventListener("click", async () => {
 						if (!RUN_CPP)
 							this.hide();
 
 						if (RUN_CPP)
-							CPPSecondaryWindowEventYESNO(this.name, true);
+							await saucer.exposed.CPPSecondaryWindowEventYESNO(this.name, true);
 					});
 				}
-				if (createButton(".secondary_window .elements", this.name_button_no, RUN_CPP ? CPPLangText("str_b_secondary_window_no") : "NO")) {
+				if (createButton(".secondary_window .elements", this.name_button_no, text_no)) {
 					this.button_no = getButton(this.name_button_no);
 					this.elements_div.appendChild(this.button_no);
 					this.elements_div.classList.add("horizontally")
 
-					this.button_no.addEventListener("click", () => {
+					this.button_no.addEventListener("click", async () => {
 						if (!RUN_CPP)
 							this.hide();
 
 						if (RUN_CPP)
-							CPPSecondaryWindowEventYESNO(this.name, false);
+							await saucer.exposed.CPPSecondaryWindowEventYESNO(this.name, false);
 					});
 				}
 				break;
@@ -89,17 +94,17 @@ class SecondaryWindow {
 				this.elements_div.appendChild(loader);
 				this.loader = loader;
 
-				if (createButton(".secondary_window .elements", this.name_button_no, RUN_CPP ? CPPLangText("str_b_secondary_window_cancel") : "Cancel")) {
+				if (createButton(".secondary_window .elements", this.name_button_no, text_cancel)) {
 					this.button_no = getButton(this.name_button_no);
 					this.elements_div.appendChild(this.button_no);
 					this.elements_div.classList.add("vertically")
 
-					this.button_no.addEventListener("click", () => {
+					this.button_no.addEventListener("click", async () => {
 						if (!RUN_CPP)
 							this.hide();
 
 						if (RUN_CPP)
-							CPPSecondaryWindowEventCancel(this.name);
+							await saucer.exposed.CPPSecondaryWindowEventCancel(this.name);
 					});
 				}
 

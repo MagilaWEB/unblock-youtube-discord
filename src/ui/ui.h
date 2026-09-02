@@ -48,7 +48,7 @@ class Ui final : public utils::DefaultInit, public std::enable_shared_from_this<
 	SECONDARY_WINDOW(_window_warning_no_internet);
 	SECONDARY_WINDOW(_window_wait_start_service);
 
-	// footer
+	// Footer
 	BUTTON(_link_to_github);
 	BUTTON(_link_to_telegram);
 	BUTTON(_link_report_issue);
@@ -62,9 +62,8 @@ public:
 	void initialize();
 	void postConstruct();
 
-	void jsUpdate();
+	void update();
 
-	// Этот метод
 	const Ptr<SecondaryWindow>& getWindowWaitStartService() { return _window_wait_start_service; }
 
 	const Ptr<CheckBox>& getTestingDomainsStartup() const { return _ui_unblock->getTestingDomainsStartup(); }
@@ -88,12 +87,12 @@ private:
 
 	void _checkWhitelist();
 
-	// update
+	// Update
 	void _updateApp();
 	void _checkAppUpdate();
 	void _updateAppWindow();
 	void _updateAppProgressWindowInfo();
 
-	// base footer 
+	// Base footer
 	void _footerElements();
 };

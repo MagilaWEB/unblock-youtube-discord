@@ -1,15 +1,34 @@
 #pragma once
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Weverything"
+#include "utils_saucer.hpp"
 
-#include <AppCore/JSHelpers.h>
-#include <Ultralight/View.h>
+#include <algorithm>
+#include <functional>
+#include <map>
+#include <string>
+#include <string_view>
+#include <vector>
 
-#pragma clang diagnostic pop
+class BaseElement;
 
-using namespace ultralight;
-#define JS_EVENT(map) static_cast<JSCallbackWithRetval>([this](JSObject, const JSArgs& args) -> JSValue { return this->eventCPP(args, map); })
+// Holds the name of a JS function on the webview side. Calls go through
+// saucer::smartview::execute directly (thread-safe), so the Core task queue for JS is no longer needed.
+class JSFunction
+{
+	std::string _name;
+
+public:
+	JSFunction() = default;
+	explicit JSFunction(std::string name) : _name(std::move(name)) {}
+
+	[[nodiscard]] bool IsFunction() const { return !_name.empty(); }
+	explicit operator bool() const { return IsFunction(); }
+	bool operator!() const { return !IsFunction(); }
+
+	// Fire-and-forget: execute the JS function with arguments (no result).
+	void call(const JSArgs& args) const;
+	void operator()(const JSArgs& args) const { call(args); }
+};
 
 class BaseElement
 {
@@ -25,8 +44,8 @@ protected:
 	bool			  _created{ false };
 	bool			  _is_show{ true };
 
-	static View*								  _view;
-	static std::map<std::string, BaseElement*> _all_element;
+	static saucer::smartview*							_view;
+	static std::map<std::string, BaseElement*>			_all_element;
 
 	using MapEvent = std::map<std::string, std::vector<std::function<bool(JSArgs)>>>;
 	static MapEvent _event_click;
@@ -37,9 +56,6 @@ public:
 	virtual ~BaseElement();
 
 	[[nodiscard]] pcstr name() const { return _name.c_str(); }
-
-	static void	   runCodeToJS(const std::function<void()>& run_code);
-	static JSValue runCodeToJSResult(const std::function<JSValue()>& run_code);
 
 	void create(std::string_view selector, Localization::Str title, bool first = false);
 	void remove();
@@ -61,9 +77,26 @@ public:
 	 *                     By default the step goes to the end. */
 	void addTutorialStep(Localization::Str title, Localization::Str description, u32 priority = type_max<u32>);
 
-	static void initializeAll(View* view);
+	static void initializeAll(saucer::smartview* view);
 	static void release();
+	static saucer::smartview* view();
 
 	virtual void initialize() = 0;
-	static bool	 eventCPP(const JSArgs& args, MapEvent& map_event);
+
+protected:
+	static bool eventCPP(const JSArgs& args, MapEvent& map_event);
+
+	// Registers a JS->CPP event via saucer::expose with typed arguments.
+	// The first argument is the element name; the rest are forwarded to callbacks without the first.
+	template <typename... TArgs>
+	void exposeEventClick(const std::string& event_name, MapEvent& map_event)
+	{
+		if (!_view)
+			return;
+
+		_view->expose(
+			event_name,
+			[&map_event](TArgs... args) -> bool { return eventCPP({ js::Value{ args }... }, map_event); }
+		);
+	}
 };

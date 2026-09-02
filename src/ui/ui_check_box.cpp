@@ -1,5 +1,4 @@
 #include "ui_check_box.h"
-#include "utils_ultralight.hpp"
 
 CheckBox::CheckBox(std::string_view name) : BaseElement(name)
 {
@@ -8,75 +7,41 @@ CheckBox::CheckBox(std::string_view name) : BaseElement(name)
 
 void CheckBox::initialize()
 {
-	auto global_js = JSGlobalObject();
+	_add_event_click = JSFunction{ "addCheckBoxEventCheck" };
+	_create			 = JSFunction{ "createCheckBox" };
+	_remove			 = JSFunction{ "removeCheckBox" };
+	_set_state		 = JSFunction{ "setCheckBoxState" };
+	_show			 = JSFunction{ "showCheckBox" };
+	_hide			 = JSFunction{ "hideCheckBox" };
 
-	if (!_add_event_click)
-		_add_event_click = global_js["addCheckBoxEventCheck"];
-
-	if (!_create)
-		_create = global_js["createCheckBox"];
-
-	if (!_remove)
-		_remove = global_js["removeCheckBox"];
-
-	if (!_set_state)
-		_set_state = global_js["setCheckBoxState"];
-
-	if (!_get_state)
-		_get_state = global_js["getCheckBoxState"];
-
-	if (!_show)
-		_show = global_js["showCheckBox"];
-
-	if (!_hide)
-		_hide = global_js["hideCheckBox"];
-
-	if (!global_js["CPPCheckBoxEventClick"])
-		global_js["CPPCheckBoxEventClick"] = JS_EVENT(_event_click);
+	if (BaseElement::view())
+		BaseElement::view()->expose(
+			"CPPCheckBoxEventClick",
+			[this](std::string element_name, bool state) -> bool
+			{
+				_state = state;
+				return eventCPP({ std::move(element_name), state }, _event_click);
+			}
+		);
 }
 
 void CheckBox::create(std::string_view selector, Localization::Str title, Localization::Str description, bool first)
 {
-	auto _title		  = title();
-	auto _description = description();
-	runCodeToJS(
-		[this, selector, _title, _description, first]
-		{
-			ASSERT_ARGS(
-				_create(
-					{
-						String{ selector.data(), selector.size() },
-						name(),
-						_title.c_str(),
-						_description.c_str(),
-						first
-			  }
-				)
-						.ToBoolean()
-					== true,
-				"Couldn't create a {} named [{}]",
-				_type,
-				name()
-			);
-			_event_click[name()].clear();
-			_created = true;
-		}
-	);
+	_create.call({ selector, name(), title(), description(), first });
+	_event_click[name()].clear();
+	_created = true;
 }
 
 void CheckBox::setState(bool state)
 {
-	runCodeToJS(
-		[this, state]
-		{
-			if (!_created)
-				return;
-			_set_state({ name(), state });
-		}
-	);
+	if (!_created)
+		return;
+
+	_state = state;
+	_set_state.call({ name(), state });
 }
 
 bool CheckBox::getState()
 {
-	return runCodeToJSResult([this] { return _get_state({ name() }); });
+	return _state;
 }

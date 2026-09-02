@@ -8,6 +8,8 @@ add_library(${NAME} SHARED ${src_h} ${src_hpp} ${src_cpp})
 
 target_precompile_headers(${NAME} PRIVATE pch.h)
 
+target_compile_options(${NAME} PRIVATE ${PROJECT_WARNING_FLAGS})
+
 # Include files
 
 # Link

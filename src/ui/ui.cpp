@@ -62,7 +62,7 @@ void Ui::initialize()
 	_init = true;
 }
 
-void Ui::jsUpdate()
+void Ui::update()
 {
 	_ui_dns_hosts->updateInfoWindow();
 	_ui_zapret2->updateHelperChecking();

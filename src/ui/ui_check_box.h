@@ -4,7 +4,7 @@
 class CheckBox final : public BaseElement
 {
 	JSFunction _set_state;
-	JSFunction _get_state;
+	bool	   _state{ false };
 
 public:
 	CheckBox(std::string_view name);

@@ -1,4 +1,4 @@
-let array_check_box = []; //  array objects check box.
+let array_check_box = [];
 
 /**
  * Get check_box element.
@@ -35,7 +35,6 @@ function getCheckBoxInput(_name) {
 	return undefined;
 }
 
-// Check the status of the checkbox
 /**
  * Returns the flag status, if it is set, then the value is true.
  * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
@@ -60,7 +59,6 @@ function setCheckBoxState(_name, _state) {
 		input.checked = _state;
 }
 
-// The event of clicking the checkbox
 /**
  * Registers the Check event at the checkbox, triggered when clicking on the checkbox.
  * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
@@ -86,10 +84,10 @@ function addCheckBoxEventCheck(_name, _function) {
 		}
 		else
 		{
-			const JsCheckBoxEventClick = () =>
+			const JsCheckBoxEventClick = async () =>
 			{
-				if(CPPCheckBoxEventClick(_name, !!input.checked))
-					a.removeEventListener("click", JsCheckBoxEventClick)
+				if(await saucer.exposed.CPPCheckBoxEventClick(_name, !!input.checked))
+					input.removeEventListener("change", JsCheckBoxEventClick)
 			};
 
 			input.addEventListener("change", JsCheckBoxEventClick);
@@ -160,7 +158,7 @@ function createCheckBox(_selector, _name, _title, _description, _first) {
 }
 
 /**
- * Deletes the ñheckBox permanently.
+ * Deletes the CheckBox permanently.
  * @param {*} _name It is a unique element name, in fact, a kind of identifier, it can be any name, it is necessary for convenient management of the element in JS and C++.
  * @returns Returns false if an error occurs, and true if successful.
  */

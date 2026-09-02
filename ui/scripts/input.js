@@ -44,9 +44,9 @@ class INPUT {
 	}
 
 	_keyup() {
-		this.object_input.addEventListener("keyup", event => {
+		this.object_input.addEventListener("keyup", async event => {
 			event.preventDefault();
-			if (event.keyCode === 13) // enter
+			if (event.keyCode === 13) // Enter key
 			{
 				if (this.type == "ip") {
 					if (!this.ipRE.test(this.object_input.value)) {
@@ -76,7 +76,7 @@ class INPUT {
 				this.object_input.blur();
 
 				if (RUN_CPP)
-					CPPInputEventSubmit(this.name, this.value);
+					await saucer.exposed.CPPInputEventSubmit(this.name, this.value);
 				else {
 					this.array_callback_submit = this.array_callback_submit.filter(json_data => {
 						if (json_data.func(this.value) === true)

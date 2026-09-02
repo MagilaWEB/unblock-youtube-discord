@@ -1,48 +1,23 @@
 #include "ui_base_element.h"
-#include "utils_ultralight.hpp"
 
-using namespace ultralight;
-
-View* BaseElement::_view;
+saucer::smartview*							   BaseElement::_view;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wglobal-constructors"
-std::map<std::string, BaseElement*>			  BaseElement::_all_element;	// NOLINT(bugprone-throwing-static-initialization) - global element registry
-BaseElement::MapEvent							   BaseElement::_event_click;	// NOLINT(bugprone-throwing-static-initialization) - global event registry
+std::map<std::string, BaseElement*>			 BaseElement::_all_element; // NOLINT(bugprone-throwing-static-initialization) - global element registry
+BaseElement::MapEvent						   BaseElement::_event_click; // NOLINT(bugprone-throwing-static-initialization) - global event registry
 #pragma clang diagnostic pop
 
-void BaseElement::runCodeToJS(const std::function<void()>& run_code)
+void JSFunction::call(const JSArgs& args) const
 {
-	if (Core::getThreadJsID() != GetCurrentThreadId())
-	{
-		Core::get().addTaskJS(run_code);
+	if (_name.empty())
 		return;
-	}
 
-	run_code();
-}
+	auto* view = BaseElement::view();
+	if (!view)
+		return;
 
-JSValue BaseElement::runCodeToJSResult(const std::function<JSValue()>& run_code)
-{
-	if (Core::getThreadJsID() != GetCurrentThreadId())
-	{
-		std::atomic_bool wait{ true };
-		JSValue			 result;
-
-		Core::get().addTaskJS(
-			[run_code, &result, &wait]
-			{
-				result = run_code();
-				wait.store(false);
-			}
-		);
-
-		while (wait.load())
-			std::this_thread::yield();
-
-		return result;
-	}
-
-	return run_code();
+	auto code = _name + "(" + jsArgsList(args) + ")";
+	view->webview::execute(saucer::cstring_view{ code });
 }
 
 BaseElement::BaseElement(std::string_view name) : _name(name), _type("base_element")
@@ -64,7 +39,7 @@ BaseElement::~BaseElement()
 	_all_element[_name] = nullptr;
 }
 
-void BaseElement::initializeAll(View* view)
+void BaseElement::initializeAll(saucer::smartview* view)
 {
 	if (_view)
 		return;
@@ -81,77 +56,48 @@ void BaseElement::release()
 	_view = nullptr;
 }
 
+saucer::smartview* BaseElement::view()
+{
+	return _view;
+}
+
 void BaseElement::create(std::string_view selector, Localization::Str title, bool first)
 {
-	auto _title = title();
-	runCodeToJS(
-		[this, selector, _title, first]
-		{
-			ASSERT_ARGS(
-				_create(
-					{
-						String{ selector.data(), selector.size() },
-						name(),
-						_title.c_str(),
-						first
-			  }
-				)
-						.ToBoolean()
-					== true,
-				"Couldn't create a {} named [{}]",
-				_type,
-				name()
-			);
-			_event_click[name()].clear();
-			_created = true;
-		}
-	);
+	_create.call({ selector, name(), title(), first });
+
+	_event_click[name()].clear();
+	_created = true;
 }
 
 void BaseElement::remove()
 {
-	runCodeToJS(
-		[this]
-		{
-			if (!_created)
-				return;
+	if (!_created)
+		return;
 
-			_created = false;
+	_created = false;
 
-			ASSERT_ARGS(_remove({ name() }).ToBoolean() == true, "Couldn't remove a {} named [{}]", _type, name());
-			_event_click[name()].clear();
-		}
-	);
+	_remove.call({ name() });
+	_event_click[name()].clear();
 }
 
 void BaseElement::show()
 {
-	runCodeToJS(
-		[this]
-		{
-			if (!_created)
-				return;
+	if (!_created)
+		return;
 
-			_is_show = true;
+	_is_show = true;
 
-			ASSERT_ARGS(_show({ name() }).ToBoolean() == true, "Couldn't remove a {} named [{}]", _type, name());
-		}
-	);
+	_show.call({ name() });
 }
 
 void BaseElement::hide()
 {
-	runCodeToJS(
-		[this]
-		{
-			if (!_created)
-				return;
+	if (!_created)
+		return;
 
-			_is_show = false;
+	_is_show = false;
 
-			ASSERT_ARGS(_hide({ name() }).ToBoolean() == true, "Couldn't remove a {} named [{}]", _type, name());
-		}
-	);
+	_hide.call({ name() });
 }
 
 bool BaseElement::isCreate() const
@@ -166,32 +112,22 @@ bool BaseElement::isShow() const
 
 void BaseElement::setTitle(Localization::Str title)
 {
-	auto _title = title();
-	runCodeToJS(
-		[this, _title]
-		{
-			if (!_created)
-				return;
+	if (!_created)
+		return;
 
-			ASSERT_ARGS(_set_title({ name(), _title.c_str() }).ToBoolean() == true, "Couldn't setTitle a {} named [{}]", _type, name());
-		}
-	);
+	_set_title.call({ name(), title() });
 }
 
 void BaseElement::addEventClick(std::function<bool(JSArgs)>&& callback)
 {
-	runCodeToJS(
-		[this, callback]
-		{
-			if (!_created)
-				return;
-			auto& vector_event = _event_click[name()];
-			if (vector_event.empty())
-				_add_event_click({ name() });
+	if (!_created)
+		return;
 
-			vector_event.push_back(callback);
-		}
-	);
+	auto& vector_event = _event_click[name()];
+	if (vector_event.empty())
+		_add_event_click.call({ name() });
+
+	vector_event.push_back(std::move(callback));
 }
 
 void BaseElement::addTutorialStep(Localization::Str title, Localization::Str description, u32 priority)
@@ -199,26 +135,18 @@ void BaseElement::addTutorialStep(Localization::Str title, Localization::Str des
 	const auto title_id = title._str_id;
 	const auto desc_id	= description._str_id;
 
-	runCodeToJS(
-		// NOLINTNEXTLINE(bugprone-exception-escape) - Ultralight callback contract
-		[this, title_id, desc_id, priority]
-		{
-			auto global_js = JSGlobalObject();
-			auto prop	   = global_js["registerTutorialStep"];
-			if (prop.IsFunction())
-			{
-				JSFunction fn = prop;
-				fn({ name(), title_id.c_str(), desc_id.c_str(), priority, _type });
-			}
-			else
-				Debug::warning("registerTutorialStep is not defined, the tutorial step [{}] was not registered", name());
-		}
-	);
+	auto* view = _view;
+	if (!view)
+		return;
+
+	// Tutorial scripts may not be loaded yet — JS checks for the function's presence.
+	auto code = "if (typeof registerTutorialStep === 'function') registerTutorialStep(" + jsArgsList({ name(), title_id, desc_id, priority, _type }) + ")";
+	view->webview::execute(saucer::cstring_view{ code });
 }
 
 bool BaseElement::eventCPP(const JSArgs& args, MapEvent& map_event)
 {
-	auto& events = map_event[JSToCPP<std::string>(static_cast<String>(args[0].ToString()))];
+	auto& events = map_event[JSToCPP<std::string>(args[0])];
 	if (events.empty())
 		return true;
 

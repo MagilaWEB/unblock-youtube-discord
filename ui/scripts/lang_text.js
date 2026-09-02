@@ -3,9 +3,11 @@
  */
 
 if (RUN_CPP) {
-    const list_tex = document.querySelectorAll(".text");
-    list_tex.forEach(element => {
-        element.innerHTML = CPPLangText(element.innerHTML);
-        element.textContent = element.innerHTML;
-    });
+    (async () => {
+        const list_tex = document.querySelectorAll(".text");
+        for (const element of list_tex) {
+            element.innerHTML = await saucer.exposed.CPPLangText(element.innerHTML);
+            element.textContent = element.innerHTML;
+        }
+    })();
 }

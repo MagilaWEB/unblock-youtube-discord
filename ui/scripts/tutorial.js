@@ -1,6 +1,6 @@
 // =========================================================
-// Интерактивный тур по интерфейсу Unblock
-// Запускается по кнопке «Пройти обучение» на вкладке #tutorial
+// Interactive tour of the Unblock interface
+// Launched by the «Take a tour» button on the #tutorial tab
 // =========================================================
 
 let tour_overlay = null;
@@ -18,10 +18,10 @@ let tour_index = 0;
 let tour_step_timeout = null;
 let tour_registry = [];
 
-function tourLang(_key, _fallback) {
+async function tourLang(_key, _fallback) {
 	try {
 		if (RUN_CPP)
-			return CPPLangText(_key);
+			return await saucer.exposed.CPPLangText(_key);
 	} catch (error) {}
 
 	return _fallback;
@@ -35,13 +35,13 @@ function tourNormalizeType(_type) {
 	return _type;
 }
 
-/** Регистрирует шаг интерактивного туториала.
- *  Может вызываться из C++ (BaseElement::addTutorialStep) или напрямую из JS.
- *  @param _name       имя элемента (для блока — CSS-селектор).
- *  @param _title_id   ключ локализации заголовка.
- *  @param _desc_id    ключ локализации описания.
- *  @param _priority   необязательный приоритет (по умолчанию — в конец).
- *  @param _type       тип элемента: button | checkbox | select | block | intro. */
+/** Registers a step of the interactive tutorial.
+ *  Can be called from C++ (BaseElement::addTutorialStep) or directly from JS.
+ *  @param _name       element name (for a block — a CSS selector).
+ *  @param _title_id   localization key of the step title.
+ *  @param _desc_id    localization key of the step description.
+ *  @param _priority   optional priority (by default — appended to the end).
+ *  @param _type       element type: button | checkbox | select | block | intro. */
 function registerTutorialStep(_name, _title_id, _desc_id, _priority, _type) {
 	const priority = (_priority === undefined || _priority === null) ? Number.MAX_SAFE_INTEGER : Number(_priority);
 	tour_registry.push({
@@ -54,7 +54,7 @@ function registerTutorialStep(_name, _title_id, _desc_id, _priority, _type) {
 	return true;
 }
 
-// Построение списка шагов. Шаги, чьи элементы не найдены или скрыты, пропускаются.
+// Build the list of steps. Steps whose elements are not found or hidden are skipped.
 function tourBuildSteps() {
 	const steps = [];
 
@@ -213,15 +213,16 @@ function tourShowStep() {
 	tour_spotlight.classList.remove("tour_spotlight_show");
 	tourHideDimmers();
 
-	// Скрываем панель (fade-out) перед сменой шага
+	// Hide the panel (fade-out) before switching to the next step
 	tour_panel.classList.add("tour_panel_hidden");
 
 	if (step.intro) {
 		tourSwitchTab(step.tab);
 		tour_step_timeout = setTimeout(() => {
-			tourUpdatePanelContent(step);
-			tourPositionPanel();
-			tourShowPanel();
+			tourUpdatePanelContent(step).then(() => {
+				tourPositionPanel();
+				tourShowPanel();
+			});
 		}, 300);
 		return;
 	}
@@ -240,35 +241,36 @@ function tourShowStep() {
 				element.scrollIntoView({ block: "center", behavior: "smooth" });
 
 			tour_step_timeout = setTimeout(() => {
-				tourUpdatePanelContent(step);
-				tourShowSpotlight(element);
-				tourPositionPanel(element);
-				tourShowPanel();
+				tourUpdatePanelContent(step).then(() => {
+					tourShowSpotlight(element);
+					tourPositionPanel(element);
+					tourShowPanel();
+				});
 			}, 450);
 		}, 900);
 	}, 300);
 }
 
-function tourUpdatePanelContent(step) {
-	tour_panel_title.textContent = tourLang(step.title, step.title);
-	tour_panel_desc.textContent = tourLang(step.desc, step.desc);
-	tour_panel_counter.textContent = tourFormatCounter(tour_index + 1, tour_steps.length);
+async function tourUpdatePanelContent(step) {
+	tour_panel_title.textContent = await tourLang(step.title, step.title);
+	tour_panel_desc.textContent = await tourLang(step.desc, step.desc);
+	tour_panel_counter.textContent = await tourFormatCounter(tour_index + 1, tour_steps.length);
 
 	tour_btn_prev.style.visibility = tour_index === 0 ? "hidden" : "visible";
-	tour_btn_prev.textContent = tourLang("str_tour_prev", "← Back");
+	tour_btn_prev.textContent = await tourLang("str_tour_prev", "← Back");
 
-	tour_btn_skip.textContent = tourLang("str_tour_skip", "Skip");
+	tour_btn_skip.textContent = await tourLang("str_tour_skip", "Skip");
 
 	const is_last = tour_index >= tour_steps.length - 1;
-	tour_btn_next.textContent = tourLang(is_last ? "str_tour_done" : "str_tour_next", is_last ? "✓ Done" : "Next →");
+	tour_btn_next.textContent = await tourLang(is_last ? "str_tour_done" : "str_tour_next", is_last ? "✓ Done" : "Next →");
 }
 
 function tourShowPanel() {
 	tour_panel.classList.remove("tour_panel_hidden");
 }
 
-function tourFormatCounter(current, total) {
-	const text = tourLang("str_tour_step", "{} of {}");
+async function tourFormatCounter(current, total) {
+	const text = await tourLang("str_tour_step", "{} of {}");
 	return text.replace("{}", String(current)).replace("{}", String(total));
 }
 
@@ -405,7 +407,7 @@ function tourNextStep(force) {
 
 // ============================ Init ============================
 
-function tutorialTourInit() {
+async function tutorialTourInit() {
 	registerTutorialStep("__intro__", "str_tour_intro_title", "str_tour_intro_description", 0, "intro");
 	registerTutorialStep("#zapret .service", "str_tour_services_title", "str_tour_services_description", 5, "block");
 
@@ -413,7 +415,7 @@ function tutorialTourInit() {
 	if (!container)
 		return;
 
-	createButton("#tutorial_tour_start", "tutorial_tour_start", tourLang("str_tutorial_tour_start_button", "▶ Start tutorial"));
+	createButton("#tutorial_tour_start", "tutorial_tour_start", await tourLang("str_tutorial_tour_start_button", "▶ Start tutorial"));
 
 	const button = getButton("tutorial_tour_start");
 	if (button) {
@@ -424,6 +426,6 @@ function tutorialTourInit() {
 }
 
 if (document.readyState === "loading")
-	document.addEventListener("DOMContentLoaded", tutorialTourInit);
+	document.addEventListener("DOMContentLoaded", () => { tutorialTourInit(); });
 else
 	tutorialTourInit();
