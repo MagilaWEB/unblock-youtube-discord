@@ -1,16 +1,23 @@
 #pragma once
 
-#include "../core/pch.h"
-#include "../core/file_system.h"
-
 #include "engine_api.hpp"
 
-#include "../ui/ui.h"
+#include "../core/file_system.h"
+
+#include <saucer/smartview.hpp>
 
 #include <atomic>
+#include <cstdio>
 #include <fstream>
+#include <memory>
 #include <optional>
+#include <streambuf>
+#include <string>
 #include <thread>
+
+#include <windows.h>
+
+class Ui;
 
 class ENGINE_API Engine final : public IEngineAPI
 {

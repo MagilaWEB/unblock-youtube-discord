@@ -1,3 +1,4 @@
+#include <saucer/smartview.hpp>
 #include "ui_check_box.h"
 
 CheckBox::CheckBox(std::string_view name) : BaseElement(name)

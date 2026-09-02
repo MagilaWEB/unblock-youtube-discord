@@ -1,3 +1,4 @@
+#include <saucer/smartview.hpp>
 #include "ui_select_list.h"
 
 SelectList::SelectList(std::string_view name) : BaseElement(name)

@@ -1,3 +1,4 @@
+#include <saucer/smartview.hpp>
 #include "ui_button.h"
 
 Button::Button(std::string_view name) : BaseElement(name)

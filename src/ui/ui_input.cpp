@@ -1,3 +1,4 @@
+#include <saucer/smartview.hpp>
 #include "ui_input.h"
 #include "ui_button.h"
 

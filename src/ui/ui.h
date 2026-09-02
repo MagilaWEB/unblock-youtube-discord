@@ -1,6 +1,6 @@
 #pragma once
 #include "../engine/engine_api.hpp"
-#include "utils_saucer.hpp"
+#include "../core/utils.h"
 #include "ui_secondary_window.h"
 #include "ui_button.h"
 #include "ui_check_box.h"
@@ -9,6 +9,9 @@
 #include "ui_proxy_tg.h"
 #include "ui_zapret.h"
 #include "ui_unblock.h"
+
+#include <memory>
+#include <string_view>
 
 class UI_API Ui final : public utils::DefaultInit, public std::enable_shared_from_this<Ui>
 {

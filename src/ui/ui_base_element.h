@@ -2,6 +2,9 @@
 
 #include "utils_saucer.hpp"
 #include "dom.hpp"
+#include "../core/localization.h"
+
+#include <saucer/smartview.hpp>
 
 #include <algorithm>
 #include <functional>

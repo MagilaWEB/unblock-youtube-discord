@@ -1,3 +1,4 @@
+#include <saucer/smartview.hpp>
 #include "tutorial.h"
 
 #include <algorithm>

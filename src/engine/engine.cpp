@@ -1,6 +1,8 @@
 #include "engine.h"
 #include "version.hpp"
 
+#include "../ui/ui.h"
+
 #include <saucer/modules/stable/webview2.hpp>
 
 #include <cwctype>

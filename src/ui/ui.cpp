@@ -1,3 +1,4 @@
+#include <saucer/smartview.hpp>
 #include "ui.h"
 #include "tutorial.h"
 #include "../engine/version.hpp"

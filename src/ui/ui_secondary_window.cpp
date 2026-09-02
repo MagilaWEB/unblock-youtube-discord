@@ -1,3 +1,4 @@
+#include <saucer/smartview.hpp>
 #include "ui_secondary_window.h"
 
 #pragma clang diagnostic push

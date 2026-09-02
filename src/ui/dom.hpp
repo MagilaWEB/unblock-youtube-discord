@@ -1,7 +1,5 @@
 #pragma once
 
-#include "utils_saucer.hpp"
-
 #include <atomic>
 #include <string>
 #include <string_view>

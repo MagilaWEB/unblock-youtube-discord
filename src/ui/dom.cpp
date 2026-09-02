@@ -1,3 +1,4 @@
+#include <saucer/smartview.hpp>
 #include "dom.hpp"
 #include "ui_base_element.h"
 

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../core/pch.h"
 #include "../core/concepts.h"
+#include "../core/types.inl"
+#include "../core/debug.h"
 
-#include <saucer/smartview.hpp>
-
+#include <concepts>
 #include <variant>
 #include <string>
 #include <vector>
@@ -12,6 +12,7 @@
 #include <charconv>
 #include <algorithm>
 #include <array>
+#include <limits>
 
 // -------------------------------------------------------------------------------------
 // Mini-compatible JS value type: this used to be ultralight::JSValue, now it's our own
