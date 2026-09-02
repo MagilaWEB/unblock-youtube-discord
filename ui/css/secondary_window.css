@@ -7,6 +7,7 @@
 	width           : 100%;
 	height          : 100%;
 	background-color: rgba(0, 0, 0, 0.42);
+	backdrop-filter : blur(12px);
 	transition      : opacity 800ms;
 	will-change     : transform, opacity;
 	contain         : layout style paint;

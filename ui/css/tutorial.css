@@ -57,6 +57,7 @@ main article#tutorial .block p {
     position        : absolute;
     display         : none;
     background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter : blur(5px);
     pointer-events  : auto;
     z-index         : 60;
 }

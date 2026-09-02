@@ -50,14 +50,6 @@ h2 {
     letter-spacing: -0.01vw;
 }
 
-.blur {
-    filter: blur(12px);
-}
-
-main {
-    transition: filter .5s;
-}
-
 main article {
     position  : absolute;
     top       : 5vw;
