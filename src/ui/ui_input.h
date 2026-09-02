@@ -3,7 +3,7 @@
 
 class Input : public BaseElement
 {
-	JSFunction _set_value;
+	ui::dom::Element _input;
 
 public:
 	enum class Types : u8
@@ -38,3 +38,4 @@ public:
 	{                \
 		#name        \
 	}
+

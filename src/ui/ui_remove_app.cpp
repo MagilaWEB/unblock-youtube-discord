@@ -1,5 +1,4 @@
 #include "ui.h"
-#include "ui_base.h"
 
 void Ui::_removeApp()
 {
@@ -54,7 +53,7 @@ void Ui::_removeAppRun()
 	_ui_unblock->stopAllServices();
 
 	_unblock->dnsHosts(false);
-	_ui_base->console(false);
+	console(false);
 
 	std::string del_bat_path{ (Core::get().currentPath() / "del_unblock").string() + ".bat" };
 	std::string run_bat{ "start cmd /c " + del_bat_path };
@@ -71,5 +70,5 @@ void Ui::_removeAppRun()
 
 	system(run_bat.c_str());
 
-	_ui_base->OnClose(nullptr);
+	OnClose(nullptr);
 }

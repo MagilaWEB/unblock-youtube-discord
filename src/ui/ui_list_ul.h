@@ -3,11 +3,8 @@
 
 class ListUl final : public BaseElement
 {
-	JSFunction _create_li;
-	JSFunction _create_li_success;
-	JSFunction _add_class;
-	JSFunction _remove_class;
-	JSFunction _clear_li;
+	ui::dom::Element _ul;
+	ui::dom::Element _h2;
 
 public:
 	ListUl(std::string_view name);
@@ -15,6 +12,10 @@ public:
 	void addEventClick(std::function<bool(JSArgs)>&& fn) = delete;
 
 	void initialize() override;
+
+	void create(std::string_view selector, Localization::Str title, bool first = false);
+
+	void setTitle(std::string text);
 
 	void createLi(Localization::Str text);
 	void createLiSuccess(Localization::Str text, bool state = false);
@@ -29,3 +30,4 @@ public:
 	{                 \
 		#name         \
 	}
+

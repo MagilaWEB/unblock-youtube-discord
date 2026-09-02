@@ -3,8 +3,8 @@
 
 class SecondaryWindow final : public BaseElement
 {
-	JSFunction _set_type;
-	JSFunction _set_description;
+	ui::dom::Element _content;
+	ui::dom::Element _elements;
 
 	static std::vector<SecondaryWindow*> _all_window;
 	static MapEvent _event_yes_no;
@@ -12,6 +12,8 @@ class SecondaryWindow final : public BaseElement
 
 	std::atomic_bool _is_showing{ false };
 	std::atomic_bool _wait_show{ false };
+
+	std::vector<ui::dom::Element> _buttons;
 
 public:
 	enum class Type : u8
@@ -21,7 +23,7 @@ public:
 		Wait,
 		Info = type_max<u8>
 	};
-	
+
 	SecondaryWindow(std::string_view name);
 	~SecondaryWindow() override;
 
@@ -50,11 +52,18 @@ public:
 
 	void addEventCancel(std::function<bool(JSArgs)>&& callback);
 	void clearEventCancel();
-};
 
+private:
+	void _clearElements();
+	void _buildOk();
+	void _buildYesNo();
+	void _buildWait();
+	void _addButton(std::string_view text, ui::dom::Element& out);
+};
 
 #define SECONDARY_WINDOW(name) \
 	Ptr<SecondaryWindow>##name \
-	{                   \
-		#name           \
+	{                          \
+		#name                  \
 	}
+

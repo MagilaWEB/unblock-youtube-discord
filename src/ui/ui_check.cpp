@@ -1,9 +1,8 @@
 #include "ui.h"
-#include "ui_base.h"
 
 void Ui::_checkValidRootDirectory()
 {
-	if (_ui_base->hasCyrillicOrSpaceInBinaryPath())
+	if (hasCyrillicOrSpaceInBinaryPath())
 	{
 		_window_root_directory_error->create(
 			Localization::Str{ "str_error" },
@@ -14,8 +13,8 @@ void Ui::_checkValidRootDirectory()
 		_window_root_directory_error->addEventOk(
 			[ui_self = self](JSArgs)
 			{
-				ui_self->_ui_base->console(false);
-				ui_self->_ui_base->OnClose(nullptr);
+				ui_self->console(false);
+				ui_self->OnClose(nullptr);
 				return false;
 			}
 		);

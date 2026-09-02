@@ -2,21 +2,42 @@
 
 ListUl::ListUl(std::string_view name) : BaseElement(name)
 {
-	_type = "list_ul";
 }
 
 void ListUl::initialize()
 {
-	_create			  = JSFunction{ "createListUl" };
-	_remove			  = JSFunction{ "removeListUl" };
-	_show			  = JSFunction{ "showListUl" };
-	_hide			  = JSFunction{ "hideListUl" };
-	_set_title		  = JSFunction{ "setTitleListUl" };
-	_create_li		  = JSFunction{ "createListUlLiAdd" };
-	_create_li_success = JSFunction{ "createListUlLiAddSuccess" };
-	_add_class		  = JSFunction{ "addClassListUl" };
-	_remove_class	  = JSFunction{ "removeClassListUl" };
-	_clear_li		  = JSFunction{ "clearListUl" };
+}
+
+void ListUl::create(std::string_view selector, Localization::Str title, bool first)
+{
+	auto parent = ui::dom::querySelector(selector);
+	if (!parent.valid())
+		return;
+
+	_root		 = ui::dom::create("div");
+	_root.addClass("list_ul").addClass("block").addClass("show");
+
+	if (first)
+		parent.prepend(_root);
+	else
+		parent.append(_root);
+
+	_h2			 = ui::dom::create("h2");
+	_h2.text(title());
+	_root.append(_h2);
+
+	_ul			 = ui::dom::create("ul");
+	_root.append(_ul);
+
+	_created = true;
+}
+
+void ListUl::setTitle(std::string text)
+{
+	if (!_created)
+		return;
+
+	_h2.text(text);
 }
 
 void ListUl::createLi(Localization::Str text)
@@ -24,7 +45,12 @@ void ListUl::createLi(Localization::Str text)
 	if (!_created)
 		return;
 
-	_create_li.call({ name(), text() });
+	auto li = ui::dom::create("li");
+	_ul.append(li);
+
+	auto p = ui::dom::create("p");
+	p.text(text());
+	li.append(p);
 }
 
 void ListUl::createLiSuccess(Localization::Str text, bool state)
@@ -32,7 +58,16 @@ void ListUl::createLiSuccess(Localization::Str text, bool state)
 	if (!_created)
 		return;
 
-	_create_li_success.call({ name(), text(), state });
+	auto li = ui::dom::create("li");
+	if (state)
+		li.addClass("li_success");
+	else
+		li.addClass("li_fail");
+	_ul.append(li);
+
+	auto p = ui::dom::create("p");
+	p.text(text());
+	li.append(p);
 }
 
 void ListUl::addClass(std::string_view name_class)
@@ -40,7 +75,7 @@ void ListUl::addClass(std::string_view name_class)
 	if (!_created)
 		return;
 
-	_add_class.call({ name(), std::string{ name_class } });
+	_root.addClass(name_class);
 }
 
 void ListUl::removeClass(std::string_view name_class)
@@ -48,7 +83,7 @@ void ListUl::removeClass(std::string_view name_class)
 	if (!_created)
 		return;
 
-	_remove_class.call({ name(), std::string{ name_class } });
+	_root.removeClass(name_class);
 }
 
 void ListUl::clear()
@@ -56,5 +91,5 @@ void ListUl::clear()
 	if (!_created)
 		return;
 
-	_clear_li.call({ name() });
+	_ul.html("");
 }

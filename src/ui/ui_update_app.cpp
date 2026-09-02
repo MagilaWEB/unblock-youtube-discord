@@ -1,5 +1,4 @@
 #include "ui.h"
-#include "ui_base.h"
 
 #pragma clang diagnostic ignored "-Wshadow-uncaptured-local"
 
@@ -13,13 +12,13 @@ void Ui::_updateApp()
 		Localization::Str{ "str_checkbox_check_update_app_startup_description" }
 	);
 
-	auto result = _ui_base->userConfig()->parameterSection<bool>("SYSTEM", "check_update_app_startup");
+	auto result = userConfig()->parameterSection<bool>("SYSTEM", "check_update_app_startup");
 	_enable_check_update_startup->setState(result ? result.value() : true);
 
 	_enable_check_update_startup->addEventClick(
 		[self = self](JSArgs args)
 		{
-			self->_ui_base->userConfig()->writeSectionParameter("SYSTEM", "check_update_app_startup", JSToCPP(args[0]));
+			self->userConfig()->writeSectionParameter("SYSTEM", "check_update_app_startup", JSToCPP(args[0]));
 			return false;
 		}
 	);
@@ -80,7 +79,7 @@ void Ui::_updateAppWindow()
 		{
 			if (JSToCPP<bool>(args[0]))
 			{
-				self->_ui_base->console(false);
+				self->console(false);
 
 				Core::get().addTask(
 					[self = self]
@@ -92,7 +91,7 @@ void Ui::_updateAppWindow()
 						self->_window_wait_update_unblock->hide();
 
 						if (state)
-							self->_ui_base->OnClose(nullptr);
+							self->OnClose(nullptr);
 						else
 						{
 							self->_window_error_update_unblock->show();

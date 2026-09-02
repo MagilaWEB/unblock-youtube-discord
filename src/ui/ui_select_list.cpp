@@ -2,22 +2,14 @@
 
 SelectList::SelectList(std::string_view name) : BaseElement(name)
 {
-	_type = "select_list";
+	_tutorial_type = "select";
 }
 
 void SelectList::initialize()
 {
-	_create		  = JSFunction{ "createListSelect" };
-	_create_option = JSFunction{ "createSelectOption" };
-	_set_value	  = JSFunction{ "setSelectSelectedOption" };
-	_clear		  = JSFunction{ "clearSelect" };
-	_remove		  = JSFunction{ "removeListSelect" };
-	_show		  = JSFunction{ "showListSelect" };
-	_hide		  = JSFunction{ "hideListSelect" };
-
-	if (BaseElement::view())
-		BaseElement::view()->expose(
-			"CPPSelectEventChange",
+	if (auto* view = BaseElement::view())
+		view->expose(
+			"CPPSelectEventChange_" + _name,
 			[this](std::string element_name, std::string value) -> bool
 			{
 				_selected_value = value;
@@ -28,8 +20,39 @@ void SelectList::initialize()
 
 void SelectList::create(std::string_view selector, Localization::Str title, Localization::Str description, bool first)
 {
-	_create.call({ selector, name(), title(), description(), first });
-	_event_click[name()].clear();
+	auto parent = ui::dom::querySelector(selector);
+	if (!parent.valid())
+		return;
+
+	_root		 = ui::dom::create("div");
+	_root.addClass("select_list").addClass("show");
+
+	if (first)
+		parent.prepend(_root);
+	else
+		parent.append(_root);
+
+	_label		 = ui::dom::create("div");
+	_label.setAttr("tabindex", "0").addClass("label");
+	_root.append(_label);
+
+	_select		 = ui::dom::create("div");
+	_select.id(_name).addClass("select");
+	_root.append(_select);
+
+	auto p_title = ui::dom::create("p");
+	p_title.addClass("title").text(title());
+	_root.append(p_title);
+
+	auto p_description = ui::dom::create("p");
+	p_description.addClass("info_description").text(description());
+	ui::dom::body().append(p_description);
+
+	_root.tooltip(p_description);
+
+	_select.initSelect(_label, "CPPSelectEventChange_" + _name, _name);
+
+	_event_click[_name].clear();
 	_created = true;
 }
 
@@ -38,7 +61,10 @@ void SelectList::createOption(JSValue value, Localization::Str text, bool select
 	if (!_created)
 		return;
 
-	_create_option.call({ name(), value, text(), select });
+	auto option = ui::dom::create("div");
+	option.addClass("option").text(text());
+	option.setAttr("value", value.ToString());
+	_select.append(option);
 
 	if (select)
 		_selected_value = value.ToString();
@@ -49,7 +75,7 @@ void SelectList::addEventChange(std::function<bool(JSArgs)>&& callback)
 	if (!_created)
 		return;
 
-	_event_click[name()].push_back(std::move(callback));
+	_event_click[_name].push_back(std::move(callback));
 }
 
 void SelectList::setSelectedOptionValue(std::string_view value)
@@ -58,7 +84,7 @@ void SelectList::setSelectedOptionValue(std::string_view value)
 		return;
 
 	_selected_value = value;
-	_set_value.call({ name(), std::string{ value } });
+	_select.selectSetValue(_label, value);
 }
 
 JSValue SelectList::getSelectedOptionValue()
@@ -72,5 +98,5 @@ void SelectList::clear()
 		return;
 
 	_selected_value.clear();
-	_clear.call({ name() });
+	_select.selectClear();
 }

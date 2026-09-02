@@ -1,7 +1,6 @@
 #include "ui_proxy_tg.h"
 
 #include "ui.h"
-#include "ui_base.h"
 #include "../unblock/unblock.h"
 
 UiProxyTg::UiProxyTg(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock)
@@ -65,7 +64,7 @@ void UiProxyTg::_enableProxyLinkTg()
 
 std::string UiProxyTg::_settingValue(std::string_view key, std::string_view default_value)
 {
-	if (auto result = _ui->uiBase()->userConfig()->parameterSection<std::string>("TG_WS_PROXY", std::string{ key }))
+	if (auto result = _ui->userConfig()->parameterSection<std::string>("TG_WS_PROXY", std::string{ key }))
 		return result.value();
 
 	return std::string{ default_value };
@@ -122,11 +121,11 @@ void UiProxyTg::_applyProxySettings()
 				JSToCPP<std::string>(_proxy_tg_dc_ip_4->getValue())
 			};
 
-			_ui->uiBase()->userConfig()->writeSectionParameter("TG_WS_PROXY", "host", host);
-			_ui->uiBase()->userConfig()->writeSectionParameter("TG_WS_PROXY", "port", port);
-			_ui->uiBase()->userConfig()->writeSectionParameter("TG_WS_PROXY", "cfproxy_worker_domain", cfproxy);
+			_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", "host", host);
+			_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", "port", port);
+			_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", "cfproxy_worker_domain", cfproxy);
 			for (u32 i = 0; i < 4; i++)
-				_ui->uiBase()->userConfig()->writeSectionParameter("TG_WS_PROXY", utils::format("dc_ip_{}", i + 1), dc_ip[i]);
+				_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", utils::format("dc_ip_{}", i + 1), dc_ip[i]);
 
 			_unblock->setTgProxyParams(host, port, dc_ip, cfproxy);
 

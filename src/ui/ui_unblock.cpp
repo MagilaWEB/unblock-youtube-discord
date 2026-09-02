@@ -1,7 +1,6 @@
 #include "ui_unblock.h"
 
 #include "ui.h"
-#include "ui_base.h"
 
 #pragma clang diagnostic ignored "-Wshadow-uncaptured-local"
 
@@ -24,14 +23,14 @@ void UiUnblock::_showConsole()
 			->create("#unblock section .common", "str_checkbox_show_console_title", Localization::Str{ "str_checkbox_show_console_description" });
 		_show_console->addTutorialStep("str_tour_show_console_title", "str_tour_show_console_description", 7);
 
-		auto result = _ui->uiBase()->userConfig()->parameterSection<bool>("SYSTEM", "show_console");
+		auto result = _ui->userConfig()->parameterSection<bool>("SYSTEM", "show_console");
 		_show_console->setState(result ? result.value() : false);
 
 		_show_console->addEventClick(
 			[self = _ui](JSArgs args)
 			{
-				self->uiBase()->console(JSToCPP<bool>(args[0]));
-				self->uiBase()->userConfig()->writeSectionParameter("SYSTEM", "show_console", JSToCPP(args[0]));
+				self->console(JSToCPP<bool>(args[0]));
+				self->userConfig()->writeSectionParameter("SYSTEM", "show_console", JSToCPP(args[0]));
 				return false;
 			}
 		);
@@ -45,13 +44,13 @@ void UiUnblock::_testDomainsStartup()
 		->create("#unblock section .common", "str_checkbox_testing_startup_title", Localization::Str{ "str_checkbox_testing_startup_description" });
 	_testing_domains_startup->addTutorialStep("str_tour_testing_startup_title", "str_tour_testing_startup_description", 8);
 
-	const auto result = _ui->uiBase()->userConfig()->parameterSection<bool>("TESTING", "startup");
+	const auto result = _ui->userConfig()->parameterSection<bool>("TESTING", "startup");
 	_testing_domains_startup->setState(result ? result.value() : false);
 
 	_testing_domains_startup->addEventClick(
 		[self = _ui](JSArgs args)
 		{
-			self->uiBase()->userConfig()->writeSectionParameter("TESTING", "startup", JSToCPP(args[0]));
+			self->userConfig()->writeSectionParameter("TESTING", "startup", JSToCPP(args[0]));
 			return false;
 		}
 	);

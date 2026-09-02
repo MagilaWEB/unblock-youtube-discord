@@ -1,7 +1,6 @@
 #include "ui_zapret.h"
 
 #include "ui.h"
-#include "ui_base.h"
 #include "../unblock/unblock.h"
 
 UiZapret2::UiZapret2(std::shared_ptr<Ui> ui) : _ui(std::move(ui))
@@ -48,7 +47,7 @@ void UiZapret2::_listEnableServices()
 			// NOLINTNEXTLINE(bugprone-exception-escape) - Ultralight callback contract
 			[this, name](JSArgs args)
 			{
-				_ui->uiBase()->userConfig()->writeSectionParameter("UNBLOCK", std::string{ "enable_" } + name, JSToCPP(args[0]));
+				_ui->userConfig()->writeSectionParameter("UNBLOCK", std::string{ "enable_" } + name, JSToCPP(args[0]));
 
 				_listEnableServicesUpdate();
 				return false;
@@ -67,7 +66,7 @@ void UiZapret2::_listEnableServicesUpdate()
 
 		std::string setting_name{ "enable_" + name };
 
-		if (auto result = _ui->uiBase()->userConfig()->parameterSection<bool>("UNBLOCK", setting_name))
+		if (auto result = _ui->userConfig()->parameterSection<bool>("UNBLOCK", setting_name))
 		{
 			if (result.value())
 				_ui->_unblock->addOptionalStrategies(name);
@@ -99,7 +98,7 @@ void UiZapret2::_selectStrategyVersion()
 	_select_version_strategy->addEventChange(
 		[this](JSArgs args)
 		{
-			_ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy", JSToCPP(args[1]));
+			_ui->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy", JSToCPP(args[0]));
 			_selectStrategyVersionUpdate();
 			return false;
 		}
@@ -120,9 +119,9 @@ void UiZapret2::_selectStrategyVersionUpdate()
 	auto strategy_dirs = _ui->_unblock->listVersionStrategy();
 
 	for (u32 i = 0; i < strategy_dirs.size(); i++)
-		_select_version_strategy->createOption(i, strategy_dirs[i]);
+		_select_version_strategy->createOption(strategy_dirs[i], strategy_dirs[i]);
 
-	if (auto strategy_version = _ui->uiBase()->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "version_strategy"))
+	if (auto strategy_version = _ui->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "version_strategy"))
 		_select_version_strategy->setSelectedOptionValue(strategy_version.value());
 
 	_ui->_unblock->changeDirVersionStrategy(JSToCPP<std::string>(_select_version_strategy->getSelectedOptionValue()));
@@ -137,7 +136,7 @@ void UiZapret2::_selectConfig()
 	_select_config->addEventChange(
 		[this](JSArgs args)
 		{
-			_ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", JSToCPP(args[1]));
+			_ui->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", JSToCPP(args[0]));
 			return false;
 		}
 	);
@@ -160,18 +159,18 @@ void UiZapret2::_selectConfigUpdate()
 	_select_config->show();
 
 	for (u32 i = 0; i < strategies_list.size(); i++)
-		_select_config->createOption(i, strategies_list[i]);
+		_select_config->createOption(strategies_list[i], strategies_list[i]);
 
-	if (auto config = _ui->uiBase()->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
+	if (auto config = _ui->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
 	{
 		if (std::ranges::find(strategies_list, config.value()) != strategies_list.end())
 		{
 			_select_config->setSelectedOptionValue(config.value());
-			_ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", JSToCPP(_select_config->getSelectedOptionValue()));
+			_ui->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", JSToCPP(_select_config->getSelectedOptionValue()));
 		}
 		else
 		{
-			_ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", strategies_list[0]);
+			_ui->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", strategies_list[0]);
 			_select_config->setSelectedOptionValue(strategies_list[0]);
 		}
 	}
@@ -278,14 +277,14 @@ void UiZapret2::_buttonUpdate()
 
 void UiZapret2::_clickStartService()
 {
-	if (auto config = _ui->uiBase()->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
+	if (auto config = _ui->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
 	{
 		auto& strategy_list = _ui->_unblock->getStrategiesList();
 		if (std::ranges::find(strategy_list, config.value()) == strategy_list.end())
 		{
 			Debug::warning("config[{}] The specified strategy does not exist from the user's settings!", config.value());
 
-			_ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", "");
+			_ui->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", "");
 
 			_select_config->setSelectedOptionValue(strategy_list[0]);
 		}
@@ -331,7 +330,7 @@ void UiZapret2::_autoStart()
 
 				if (!_automatically_strategy_cancel && _ui->_unblock->validDomain())
 				{
-					_ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", strategy_name);
+					_ui->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", strategy_name);
 
 					_window_continue_select_strategy->setDescription(
 						utils::format(Localization::Str{ "str_window_continue_select_strategy_description" }(), strategy_name, version_str)
@@ -362,7 +361,7 @@ bool UiZapret2::_autoStartTryNext() const
 	{
 		_select_version_strategy->setSelectedOptionValue(version);
 		_ui->_unblock->changeDirVersionStrategy(version);
-		_ui->uiBase()->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy", version);
+		_ui->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy", version);
 	};
 
 	if (it != strategy_dirs.end())
@@ -420,15 +419,15 @@ void UiZapret2::_tcpGlobalChange(bool state) const
 	if (!state)
 	{
 		system("netsh interface tcp set global timestamps=disabled");
-		_ui->uiBase()->userConfig()->writeSectionParameter("SYSTEM", "enable_tcp_global", "false");
+		_ui->userConfig()->writeSectionParameter("SYSTEM", "enable_tcp_global", "false");
 		return;
 	}
 
-	auto tcp_set_global = _ui->uiBase()->userConfig()->parameterSection<bool>("SYSTEM", "enable_tcp_global");
+	auto tcp_set_global = _ui->userConfig()->parameterSection<bool>("SYSTEM", "enable_tcp_global");
 	if ((!tcp_set_global) || (!tcp_set_global.value()))
 	{
 		system("netsh interface tcp set global timestamps=enabled");
-		_ui->uiBase()->userConfig()->writeSectionParameter("SYSTEM", "enable_tcp_global", "true");
+		_ui->userConfig()->writeSectionParameter("SYSTEM", "enable_tcp_global", "true");
 	}
 }
 

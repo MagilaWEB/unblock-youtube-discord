@@ -1,7 +1,6 @@
 #include "ui_dns_hosts.h"
 
 #include "ui.h"
-#include "ui_base.h"
 #include "../unblock/unblock.h"
 
 UiDnsHosts::UiDnsHosts(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock)
@@ -26,7 +25,7 @@ void UiDnsHosts::_enableDnsHosts()
 	_window_to_warn_enable_dns_hosts->addEventYesNo(
 		[this](JSArgs args)
 		{
-			_ui->uiBase()->userConfig()->writeSectionParameter("SYSTEM", "enable_dns_hosts", JSToCPP(args[0]));
+			_ui->userConfig()->writeSectionParameter("SYSTEM", "enable_dns_hosts", JSToCPP(args[0]));
 			_enableDnsHostsUpdate();
 			_window_to_warn_enable_dns_hosts->hide();
 			return false;
@@ -57,7 +56,7 @@ void UiDnsHosts::_enableDnsHosts()
 				return false;
 			}
 
-			_ui->uiBase()->userConfig()->writeSectionParameter("SYSTEM", "enable_dns_hosts", "false");
+			_ui->userConfig()->writeSectionParameter("SYSTEM", "enable_dns_hosts", "false");
 			_enableDnsHostsUpdate();
 			return false;
 		}
@@ -100,7 +99,7 @@ void UiDnsHosts::updateInfoWindow()
 
 void UiDnsHosts::_enableDnsHostsUpdate()
 {
-	auto result = _ui->uiBase()->userConfig()->parameterSection<bool>("SYSTEM", "enable_dns_hosts");
+	auto result = _ui->userConfig()->parameterSection<bool>("SYSTEM", "enable_dns_hosts");
 	if (result)
 	{
 		const bool state = result.value();
