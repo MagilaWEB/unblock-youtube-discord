@@ -29,9 +29,6 @@ void Ui::setup(saucer::smartview* view)
 		  .run_at = saucer::script::time::creation }
 	);
 
-	// DOM shim: low-level DOM helpers used by C++ widgets (see dom.hpp).
-	ui::dom::injectShim(view);
-
 	// JS -> CPP: translate a string by language key.
 	view->expose("CPPLangText", [this](std::string text_id) { return langText(std::move(text_id)); });
 

@@ -11,22 +11,6 @@ namespace ui::dom
 		std::atomic<int> s_nextHandle{ 0 };
 	}
 
-	// -------------------------------------------------------------------
-	// Shim injection
-	// -------------------------------------------------------------------
-
-	void injectShim(saucer::smartview* view)
-	{
-		if (!view)
-			return;
-
-		view->inject({
-			.code	 = std::string(shim_code),
-			.run_at	 = saucer::script::time::creation,
-			.clearable = false,
-		});
-	}
-
 	static inline saucer::smartview* sv()
 	{
 		return BaseElement::view();
