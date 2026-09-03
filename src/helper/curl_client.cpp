@@ -5,8 +5,7 @@
 
 namespace
 {
-	inline const std::string c_user_agent{
-		// NOLINT(bugprone-throwing-static-initialization) - small literal, allocation failure at startup is not recoverable
+	inline constexpr const char* c_user_agent{
 		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 	};
 	inline constexpr u32 c_check_timeout_sec{ 6 };
@@ -70,7 +69,7 @@ std::expected<long, int> CurlClient::_fetch(const std::string& url, bool head)
 	curl_easy_setopt(curl.get(), CURLOPT_NOBODY, head ? 1L : 0L);
 	curl_easy_setopt(curl.get(), CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_DEFAULT);
 	curl_easy_setopt(curl.get(), CURLOPT_SSL_VERIFYPEER, 0L);
-	curl_easy_setopt(curl.get(), CURLOPT_USERAGENT, c_user_agent.c_str());
+	curl_easy_setopt(curl.get(), CURLOPT_USERAGENT, c_user_agent);
 	curl_easy_setopt(curl.get(), CURLOPT_ACCEPT_ENCODING, "");
 	curl_easy_setopt(curl.get(), CURLOPT_HTTPHEADER, headers.get());
 	curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT, static_cast<long>(c_check_timeout_sec));
