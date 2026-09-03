@@ -13,3 +13,5 @@ update
 .idea
 *.log
 binaries/lua/*.lua
+binaries/cygwin1.dll
+binaries/winws2.exe
