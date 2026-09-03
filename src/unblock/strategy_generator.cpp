@@ -66,15 +66,11 @@ void StrategyGenerator::_convertDataFiles()
 {
 	File black_list_all{ false };
 	black_list_all.open(_user_blacklist() / "all", ".list", true);
-
-	if (black_list_all.isOpen())
-		black_list_all.clear();
+	black_list_all.clear();
 
 	File ip_set_all{ false };
 	ip_set_all.open(_user_ip_set() / "all", ".list", true);
-
-	if (ip_set_all.isOpen())
-		ip_set_all.clear();
+	ip_set_all.clear();
 
 	for (auto& service : _section_opt_service_names)
 	{
@@ -110,6 +106,12 @@ void StrategyGenerator::_convertDataFiles()
 		all_files_to_filters(new_blacklist, _base_blacklist(), true);
 		all_files_to_filters(new_ip_set, _base_ip_set(), true);
 	}
+
+	if (!black_list_all.isOpen())
+		black_list_all.save();
+
+	if (!ip_set_all.isOpen())
+		ip_set_all.save();
 }
 
 void StrategyGenerator::_readFileFilters(std::string_view section)
@@ -197,17 +199,12 @@ std::optional<std::string> StrategyGenerator::_getDataFile(std::string str, std:
 	if (str.contains("%BLOCKLIST%"))
 	{
 		std::filesystem::path path = _user_blacklist() / (all ? "all" : section) += ".list";
-		if (!std::filesystem::exists(path))
-			return "";
-
 		return "--hostlist=\"" + path.string() + "\"";
 	}
 
 	if (str.contains("%IP-SETLIST%"))
 	{
 		std::filesystem::path path = _user_ip_set() / (all ? "all" : section) += ".list";
-		if (!std::filesystem::exists(path))
-			return "";
 		return "--ipset=\"" + path.string() + "\"";
 	}
 
