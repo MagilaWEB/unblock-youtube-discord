@@ -4,7 +4,6 @@
 #include "../unblock/unblock.h"
 
 #include <algorithm>
-#include <regex>
 
 UiDnsHosts::UiDnsHosts(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock)
     : _ui(std::move(ui)), _unblock(std::move(unblock))
@@ -141,7 +140,7 @@ void UiDnsHosts::_enableDnsHosts()
 		[this](JSArgs args)
 		{
 			const auto host = JSToCPP<std::string>(args[0]);
-			if (!_isValidHost(host))
+			if (!utils::isValidHost(host))
 				return false;
 			_applyBaseUrl(host);
 			return false;
@@ -263,12 +262,6 @@ void UiDnsHosts::_applyBaseUrl(const std::string& url)
 
 	if (_ui->userConfig()->parameterSection<bool>("SYSTEM", "enable_dns_hosts").value_or(false))
 		Core::get().addTask([this] { _updateDnsHosts(); });
-}
-
-bool UiDnsHosts::_isValidHost(const std::string& host) const
-{
-	static const std::regex host_regex{ R"(^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?(:[0-9]{1,5})?$)" };
-	return std::regex_match(host, host_regex);
 }
 
 void UiDnsHosts::_enableDnsHostsUpdate()

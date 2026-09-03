@@ -1,6 +1,7 @@
 #pragma once
 #include "ui_button.h"
 #include "ui_check_box.h"
+#include "ui_editable_list.h"
 #include "ui_list_ul.h"
 #include "ui_select_list.h"
 #include "ui_secondary_window.h"
@@ -20,6 +21,12 @@ class UiZapret2
 	SELECT_LIST(_select_config);
 	// Map of service enable checkboxes
 	std::map<std::string, std::shared_ptr<CheckBox>> _list_enable_services{};
+
+	// Кастомные списки: хосты, ip-set и исключения
+	EDITABLE_LIST(_list_custom_hosts);
+	EDITABLE_LIST(_list_custom_ip_set);
+	EDITABLE_LIST(_list_custom_domains_exclude);
+	EDITABLE_LIST(_list_custom_ip_exclude);
 
 	// Start button
 	BUTTON(_start_button);
@@ -86,6 +93,9 @@ public:
 private:
 	void _listEnableServices();
 	void _listEnableServicesUpdate();
+
+	void _initCustomLists();
+	void _saveCustomLists();
 
 	void _selectStrategyVersion();
 	void _selectStrategyVersionUpdate();

@@ -23,6 +23,7 @@ UiZapret2::UiZapret2(std::shared_ptr<Ui> ui) : _ui(std::move(ui))
 void UiZapret2::initialize()
 {
 	_initMainControls();
+	_initCustomLists();
 	_testingInit();
 	_selectStrategyVersion();
 	_selectConfig();
@@ -88,6 +89,78 @@ void UiZapret2::_listEnableServicesUpdate()
 		else
 			_ui->_unblock->removeOptionalStrategies(name);
 	}
+}
+
+void UiZapret2::_initCustomLists()
+{
+	_list_custom_hosts->create(
+		"#zapret .custom",
+		Localization::Str{ "str_zapret_custom_hosts_title" },
+		Localization::Str{ "str_zapret_custom_hosts_description" }(),
+		Localization::Str{ "str_input_zapret_custom_hosts_placeholder" }()
+	);
+	_list_custom_hosts->setValidator([](const std::string& value) { return utils::isValidHost(value); });
+
+	_list_custom_ip_set->create(
+		"#zapret .custom",
+		Localization::Str{ "str_zapret_custom_ip_set_title" },
+		Localization::Str{ "str_zapret_custom_ip_set_description" }(),
+		Localization::Str{ "str_input_zapret_custom_ip_set_placeholder" }()
+	);
+	_list_custom_ip_set->setValidator([](const std::string& value) { return utils::isValidNetwork(value); });
+
+	_list_custom_domains_exclude->create(
+		"#zapret .custom",
+		Localization::Str{ "str_zapret_custom_domains_exclude_title" },
+		Localization::Str{ "str_zapret_custom_domains_exclude_description" }(),
+		Localization::Str{ "str_input_zapret_custom_domains_exclude_placeholder" }()
+	);
+	_list_custom_domains_exclude->setValidator([](const std::string& value) { return utils::isValidHost(value); });
+
+	_list_custom_ip_exclude->create(
+		"#zapret .custom",
+		Localization::Str{ "str_zapret_custom_ip_exclude_title" },
+		Localization::Str{ "str_zapret_custom_ip_exclude_description" }(),
+		Localization::Str{ "str_input_zapret_custom_ip_exclude_placeholder" }()
+	);
+	_list_custom_ip_exclude->setValidator([](const std::string& value) { return utils::isValidNetwork(value); });
+
+	auto on_change = [this](JSArgs)
+	{
+		_saveCustomLists();
+		return false;
+	};
+
+	_list_custom_hosts->addEventChange(on_change);
+	_list_custom_ip_set->addEventChange(on_change);
+	_list_custom_domains_exclude->addEventChange(on_change);
+	_list_custom_ip_exclude->addEventChange(on_change);
+
+	if (auto cfg = _ui->userConfig()->parameterSectionVector("ZAPRET", "custom_hosts"))
+		_list_custom_hosts->setItems(cfg.value());
+	if (auto cfg = _ui->userConfig()->parameterSectionVector("ZAPRET", "custom_ip_set"))
+		_list_custom_ip_set->setItems(cfg.value());
+	if (auto cfg = _ui->userConfig()->parameterSectionVector("ZAPRET", "custom_domains_exclude"))
+		_list_custom_domains_exclude->setItems(cfg.value());
+	if (auto cfg = _ui->userConfig()->parameterSectionVector("ZAPRET", "custom_ip_exclude"))
+		_list_custom_ip_exclude->setItems(cfg.value());
+
+	_saveCustomLists();
+}
+
+void UiZapret2::_saveCustomLists()
+{
+	_ui->userConfig()->writeSectionParameterVector("ZAPRET", "custom_hosts", _list_custom_hosts->items());
+	_ui->userConfig()->writeSectionParameterVector("ZAPRET", "custom_ip_set", _list_custom_ip_set->items());
+	_ui->userConfig()->writeSectionParameterVector("ZAPRET", "custom_domains_exclude", _list_custom_domains_exclude->items());
+	_ui->userConfig()->writeSectionParameterVector("ZAPRET", "custom_ip_exclude", _list_custom_ip_exclude->items());
+
+	_ui->_unblock->setCustomLists(
+		_list_custom_hosts->items(),
+		_list_custom_ip_set->items(),
+		_list_custom_domains_exclude->items(),
+		_list_custom_ip_exclude->items()
+	);
 }
 
 void UiZapret2::_selectStrategyVersion()

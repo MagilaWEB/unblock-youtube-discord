@@ -200,6 +200,21 @@ str_zapret_helper_error_title=🔍 Хосты с ошибками ({}):
 str_zapret_helper_error_item={} - {}
 str_zapret_helper_valid_item={} - {}
 
+// Zapret custom lists
+str_zapret_custom_title=🛠️ Свои списки
+str_zapret_custom_hosts_title=🌐 Свои хосты
+str_zapret_custom_hosts_description=Домены, которые будут добавлены в общий блоклист (all.list) и обрабатываться вне зависимости от выбранных сервисов.
+str_input_zapret_custom_hosts_placeholder=Добавить хост (например, example.com) и нажать Enter
+str_zapret_custom_ip_set_title=🌐 Свой IP-set
+str_zapret_custom_ip_set_description=IP-адреса и подсети, которые будут добавлены в общий ip-set (all.list).
+str_input_zapret_custom_ip_set_placeholder=Добавить IP или подсеть (например, 1.2.3.0/24) и нажать Enter
+str_zapret_custom_domains_exclude_title=🚫 Исключения доменов
+str_zapret_custom_domains_exclude_description=Домены, которые не нужно обрабатывать (добавляются в domains_exclude.list).
+str_input_zapret_custom_domains_exclude_placeholder=Добавить исключение (например, bank.ru) и нажать Enter
+str_zapret_custom_ip_exclude_title=🚫 Исключения IP
+str_zapret_custom_ip_exclude_description=IP-адреса и подсети, которые не нужно обрабатывать (добавляются в ip-exclude.list).
+str_input_zapret_custom_ip_exclude_placeholder=Добавить IP или подсеть (например, 192.168.0.0/16) и нажать Enter
+
 // Setting common show console
 str_checkbox_show_console_title=📟 Показывать консоль
 str_checkbox_show_console_description=Открывает окно с логами работы Unblock.

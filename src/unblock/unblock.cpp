@@ -82,6 +82,11 @@ void Unblock::clearOptionalStrategies()
 	_domain_testing.changeOptionalServices({});
 }
 
+void Unblock::setCustomLists(std::vector<std::string> hosts, std::vector<std::string> ip_set, std::vector<std::string> domains_exclude, std::vector<std::string> ip_exclude)
+{
+	_strategies_dpi.changeCustomLists(std::move(hosts), std::move(ip_set), std::move(domains_exclude), std::move(ip_exclude));
+}
+
 bool Unblock::runTest()
 {
 	return _domain_testing.isTesting();

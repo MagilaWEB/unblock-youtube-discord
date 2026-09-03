@@ -24,4 +24,10 @@ namespace utils
 	CORE_API void ltrim(std::string& str);
 	CORE_API void rtrim(std::string& str);
 	CORE_API void trim(std::string& str);
+
+	/** Проверяет, что строка — валидное имя хоста (домен), опционально с портом. */
+	CORE_API bool isValidHost(std::string_view host);
+
+	/** Проверяет, что строка — валидный IP-адрес или подсеть (IPv4/IPv6, опционально с префиксом /N). */
+	CORE_API bool isValidNetwork(std::string_view network);
 }

@@ -51,6 +51,13 @@ public:
     void removeOptionalStrategies(std::string_view name);
     void clearOptionalStrategies();
 
+    void setCustomLists(
+        std::vector<std::string> hosts,
+        std::vector<std::string> ip_set,
+        std::vector<std::string> domains_exclude,
+        std::vector<std::string> ip_exclude
+    );
+
     bool runTest();
 
     std::string getNameStrategies();

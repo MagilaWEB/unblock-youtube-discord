@@ -200,6 +200,21 @@ str_zapret_helper_error_title=🔍 Hosts with errors ({}):
 str_zapret_helper_error_item={} - {}
 str_zapret_helper_valid_item={} - {}
 
+// Zapret custom lists
+str_zapret_custom_title=🛠️ Custom lists
+str_zapret_custom_hosts_title=🌐 Custom hosts
+str_zapret_custom_hosts_description=Domains added to the common blocklist (all.list) and processed regardless of the selected services.
+str_input_zapret_custom_hosts_placeholder=Add a host (e.g. example.com) and press Enter
+str_zapret_custom_ip_set_title=🌐 Custom IP-set
+str_zapret_custom_ip_set_description=IP addresses and subnets added to the common ip-set (all.list).
+str_input_zapret_custom_ip_set_placeholder=Add an IP or subnet (e.g. 1.2.3.0/24) and press Enter
+str_zapret_custom_domains_exclude_title=🚫 Domain exceptions
+str_zapret_custom_domains_exclude_description=Domains that must not be touched (added to domains_exclude.list).
+str_input_zapret_custom_domains_exclude_placeholder=Add an exception (e.g. bank.ru) and press Enter
+str_zapret_custom_ip_exclude_title=🚫 IP exceptions
+str_zapret_custom_ip_exclude_description=IP addresses and subnets that must not be touched (added to ip-exclude.list).
+str_input_zapret_custom_ip_exclude_placeholder=Add an IP or subnet (e.g. 192.168.0.0/16) and press Enter
+
 // Setting common show console
 str_checkbox_show_console_title=📟 Show console
 str_checkbox_show_console_description=Opens a console window with Unblock logs.

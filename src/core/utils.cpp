@@ -94,3 +94,141 @@ void utils::trim(std::string& str)
 	rtrim(str);
 	ltrim(str);
 }
+
+namespace
+{
+	bool isValidIpv4(std::string_view address)
+	{
+		int				 octets = 0;
+		std::string_view rest	= address;
+
+		while (true)
+		{
+			auto pos = rest.find('.');
+			auto oct = pos == std::string_view::npos ? rest : rest.substr(0, pos);
+
+			if (oct.empty() || oct.size() > 3)
+				return false;
+
+			int value = 0;
+			for (char ch : oct)
+			{
+				if (ch < '0' || ch > '9')
+					return false;
+				value = value * 10 + (ch - '0');
+			}
+
+			if (value > 255)
+				return false;
+
+			octets++;
+			if (pos == std::string_view::npos)
+				break;
+
+			rest = rest.substr(pos + 1);
+		}
+
+		return octets == 4;
+	}
+
+	bool isValidIpv6(std::string_view address)
+	{
+		const auto double_colon = address.find("::");
+		if (double_colon != address.rfind("::"))
+			return false;
+
+		const bool has_double = double_colon != std::string_view::npos;
+
+		auto is_hex_group = [](std::string_view group)
+		{
+			if (group.empty() || group.size() > 4)
+				return false;
+
+			return std::ranges::all_of(
+				group,
+				[](char ch) { return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F'); }
+			);
+		};
+
+		auto count_groups = [&is_hex_group](std::string_view part) -> int
+		{
+			if (part.empty())
+				return 0;
+
+			int	 count = 0;
+			auto start = part.begin();
+			while (true)
+			{
+				auto			 it = std::ranges::find(start, part.end(), ':');
+				std::string_view group{ start, it };
+
+				if (!is_hex_group(group))
+					return -1;
+
+				count++;
+				if (it == part.end())
+					break;
+
+				start = it + 1;
+			}
+
+			return count;
+		};
+
+		if (has_double)
+		{
+			const int left	= count_groups(address.substr(0, double_colon));
+			const int right = count_groups(address.substr(double_colon + 2));
+			if (left < 0 || right < 0)
+				return false;
+
+			return left + right <= 7;
+		}
+
+		return count_groups(address) == 8;
+	}
+}	 // namespace
+
+bool utils::isValidHost(std::string_view host)
+{
+	static const std::regex host_regex{ R"(^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?(:[0-9]{1,5})?$)" };
+	return std::regex_match(host.begin(), host.end(), host_regex);
+}
+
+bool utils::isValidNetwork(std::string_view network)
+{
+	if (network.empty())
+		return false;
+
+	std::string_view address = network;
+	std::string_view prefix;
+
+	if (auto pos = network.find('/'); pos != std::string_view::npos)
+	{
+		address = network.substr(0, pos);
+		prefix	= network.substr(pos + 1);
+
+		if (address.empty() || prefix.empty())
+			return false;
+	}
+
+	const bool is_ipv6 = address.find(':') != std::string_view::npos;
+
+	if (!prefix.empty())
+	{
+		int value = 0;
+		for (char ch : prefix)
+		{
+			if (ch < '0' || ch > '9')
+				return false;
+			value = value * 10 + (ch - '0');
+			if (value > 128)
+				return false;
+		}
+
+		if (is_ipv6 ? (value > 128) : (value > 32))
+			return false;
+	}
+
+	return is_ipv6 ? isValidIpv6(address) : isValidIpv4(address);
+}

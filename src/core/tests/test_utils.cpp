@@ -149,3 +149,67 @@ TEST_CASE("utils::trim empty string", "[utils][trim]")
     utils::trim(s);
     CHECK(s.empty());
 }
+
+TEST_CASE("utils::isValidHost valid domains", "[utils][host]")
+{
+    CHECK(utils::isValidHost("example.com"));
+    CHECK(utils::isValidHost("www.example.com"));
+    CHECK(utils::isValidHost("sub.domain.example.com"));
+    CHECK(utils::isValidHost("a"));
+    CHECK(utils::isValidHost("xn--80aswg.xn--p1ai"));
+    CHECK(utils::isValidHost("example.com:8080"));
+    CHECK(utils::isValidHost("1.2.3.4"));
+}
+
+TEST_CASE("utils::isValidHost invalid values", "[utils][host]")
+{
+    CHECK_FALSE(utils::isValidHost(""));
+    CHECK_FALSE(utils::isValidHost(" example.com"));
+    CHECK_FALSE(utils::isValidHost("example.com "));
+    CHECK_FALSE(utils::isValidHost("-example.com"));
+    CHECK_FALSE(utils::isValidHost("example.com:abc"));
+    CHECK_FALSE(utils::isValidHost("example.com:123456"));
+    CHECK_FALSE(utils::isValidHost("exa mple.com"));
+}
+
+TEST_CASE("utils::isValidNetwork valid IPv4", "[utils][network]")
+{
+    CHECK(utils::isValidNetwork("1.2.3.4"));
+    CHECK(utils::isValidNetwork("255.255.255.255"));
+    CHECK(utils::isValidNetwork("1.2.3.0/24"));
+    CHECK(utils::isValidNetwork("0.0.0.0/0"));
+    CHECK(utils::isValidNetwork("192.168.0.0/16"));
+}
+
+TEST_CASE("utils::isValidNetwork invalid IPv4", "[utils][network]")
+{
+    CHECK_FALSE(utils::isValidNetwork(""));
+    CHECK_FALSE(utils::isValidNetwork("1.2.3"));
+    CHECK_FALSE(utils::isValidNetwork("1.2.3.4.5"));
+    CHECK_FALSE(utils::isValidNetwork("1.2.3.256"));
+    CHECK_FALSE(utils::isValidNetwork("1.2.3.4/33"));
+    CHECK_FALSE(utils::isValidNetwork("1.2.3.4/"));
+    CHECK_FALSE(utils::isValidNetwork("a.b.c.d"));
+}
+
+TEST_CASE("utils::isValidNetwork valid IPv6", "[utils][network]")
+{
+    CHECK(utils::isValidNetwork("::1"));
+    CHECK(utils::isValidNetwork("::"));
+    CHECK(utils::isValidNetwork("2001:db8::1"));
+    CHECK(utils::isValidNetwork("fe80::/10"));
+    CHECK(utils::isValidNetwork("2001:db8::1/128"));
+    CHECK(utils::isValidNetwork("1:2:3:4:5:6:7:8"));
+}
+
+TEST_CASE("utils::isValidNetwork invalid IPv6", "[utils][network]")
+{
+    CHECK_FALSE(utils::isValidNetwork("1::2::3"));
+    CHECK_FALSE(utils::isValidNetwork("2001:db8:::1"));
+    CHECK_FALSE(utils::isValidNetwork("gggg::1"));
+    CHECK_FALSE(utils::isValidNetwork("::1/129"));
+    CHECK_FALSE(utils::isValidNetwork("1:2:3:4:5:6:7:8:9"));
+    CHECK_FALSE(utils::isValidNetwork("1:2:3"));
+    CHECK_FALSE(utils::isValidNetwork(":1"));
+    CHECK_FALSE(utils::isValidNetwork("1:"));
+}

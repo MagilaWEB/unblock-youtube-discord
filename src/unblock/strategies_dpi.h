@@ -30,6 +30,7 @@ public:
 
 	void changeDirVersion(std::string_view dir_version) override;
 	void changeOptionalServices(std::list<std::string> list_service);
+	void changeCustomLists(std::vector<std::string> hosts, std::vector<std::string> ip_set, std::vector<std::string> domains_exclude, std::vector<std::string> ip_exclude);
 	u32	 getMaxStrategyCount() const;
 
 private:

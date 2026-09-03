@@ -24,6 +24,18 @@ const std::filesystem::path& StrategyGenerator::_user_ip_set()
 	return path;
 }
 
+const std::filesystem::path& StrategyGenerator::_user_domains_exclude()
+{
+	static const std::filesystem::path path{ Core::get().userPath() / "domains_exclude.list" };
+	return path;
+}
+
+const std::filesystem::path& StrategyGenerator::_user_ip_exclude()
+{
+	static const std::filesystem::path path{ Core::get().userPath() / "ip-exclude.list" };
+	return path;
+}
+
 StrategyGenerator::StrategyGenerator()
 {
 	if (!std::filesystem::is_directory(_user_blacklist()))
@@ -55,6 +67,16 @@ void StrategyGenerator::inFile(std::shared_ptr<File>& strategy)
 void StrategyGenerator::changeServiceList(std::list<std::string> list)
 {
 	_section_opt_service_names = list;
+}
+
+void StrategyGenerator::changeCustomLists(
+	std::vector<std::string> hosts, std::vector<std::string> ip_set, std::vector<std::string> domains_exclude, std::vector<std::string> ip_exclude
+)
+{
+	_custom_hosts			= std::move(hosts);
+	_custom_ip_set			= std::move(ip_set);
+	_custom_domains_exclude = std::move(domains_exclude);
+	_custom_ip_exclude		= std::move(ip_exclude);
 }
 
 const StrategyGenerator::map_filters& StrategyGenerator::mapFilters()
@@ -112,6 +134,14 @@ void StrategyGenerator::_convertDataFiles()
 
 	if (!ip_set_all.isOpen())
 		ip_set_all.save();
+
+	// Кастомные хосты и ip-set дописываются в all.list (пересоздаётся выше).
+	_appendLines(_user_blacklist() / "all.list", _custom_hosts);
+	_appendLines(_user_ip_set() / "all.list", _custom_ip_set);
+
+	// Эффективные файлы исключений: база из configs + кастомные, пересобираются каждый раз.
+	_buildUserExclude(Core::get().configsPath() / "domains_exclude.list", _user_domains_exclude(), _custom_domains_exclude);
+	_buildUserExclude(Core::get().configsPath() / "ip-exclude.list", _user_ip_exclude(), _custom_ip_exclude);
 }
 
 void StrategyGenerator::_readFileFilters(std::string_view section)
@@ -210,17 +240,58 @@ std::optional<std::string> StrategyGenerator::_getDataFile(std::string str, std:
 
 	if (str.contains("%DOMAINS-EXCLUDE%"))
 	{
-		static const std::filesystem::path path_file_domains_exclude{ Core::get().configsPath() / "domains_exclude.list" };
-		ASSERT_ARGS(std::filesystem::exists(path_file_domains_exclude), "The [{}] file does not exist!", path_file_domains_exclude.string());
-		return "--hostlist-exclude=\"" + (path_file_domains_exclude.string()) + "\"";
+		ASSERT_ARGS(std::filesystem::exists(_user_domains_exclude()), "The [{}] file does not exist!", _user_domains_exclude().string());
+		return "--hostlist-exclude=\"" + (_user_domains_exclude().string()) + "\"";
 	}
 
 	if (str.contains("%IP-EXCLUDE%"))
 	{
-		static const std::filesystem::path path_ip_exclude{ Core::get().configsPath() / "ip-exclude.list" };
-		ASSERT_ARGS(std::filesystem::exists(path_ip_exclude), "The [{}] file does not exist!", path_ip_exclude.string());
-		return "--ipset-exclude=\"" + (path_ip_exclude.string()) + "\"";
+		ASSERT_ARGS(std::filesystem::exists(_user_ip_exclude()), "The [{}] file does not exist!", _user_ip_exclude().string());
+		return "--ipset-exclude=\"" + (_user_ip_exclude().string()) + "\"";
 	}
 
 	return std::nullopt;
+}
+
+void StrategyGenerator::_buildUserExclude(
+	const std::filesystem::path& base_path, const std::filesystem::path& user_path, const std::vector<std::string>& custom
+)
+{
+	File base{ false };
+	base.open(base_path, "", true);
+
+	File user{ false };
+	user.open(user_path, "", true);
+	user.clear();
+
+	if (base.isOpen())
+		for (auto& line : base)
+			user.writeText(line);
+
+	user.save();
+
+	_appendLines(user_path, custom);
+}
+
+void StrategyGenerator::_appendLines(const std::filesystem::path& file_path, const std::vector<std::string>& items)
+{
+	if (items.empty())
+		return;
+
+	File file{ false };
+	file.open(file_path, "", true);
+	if (!file.isOpen())
+		return;
+
+	std::vector<std::string> keep;
+	for (auto& line : file)
+		if (std::ranges::find(items, line) == items.end())
+			keep.push_back(line);
+
+	file.clear();
+	for (auto& line : keep)
+		file.writeText(line);
+	for (auto& item : items)
+		file.writeText(item);
+	file.save();
 }

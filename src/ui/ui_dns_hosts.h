@@ -43,5 +43,4 @@ private:
 	void _checkRegionAvailability(std::string region);
 	void _applyActiveRegion(const std::string& region);
 	void _applyBaseUrl(const std::string& url);
-	bool _isValidHost(const std::string& host) const;
 };
