@@ -10,109 +10,100 @@
 
 class UNBLOCK_API Unblock final : public std::enable_shared_from_this<Unblock>
 {
-    Service _zapret{"zapret2", "SvcHost.exe"};
+	Service _zapret{ "zapret2", "SvcHost.exe" };
 	Service _zapret_helper{ "zapret2_helper", "SvcHost.exe" };
-    Service _tg_ws_proxy{"TgWsProxy", "SvcHost.exe"};
-    Service _win_divert{"WinDivert"};
+	Service _tg_ws_proxy{ "TgWsProxy", "SvcHost.exe" };
+	Service _win_divert{ "WinDivert" };
 
-    DomainTesting _domain_testing;
-    StrategiesDPI _strategies_dpi;
-    DNSHost _dns_hosts;
+	DomainTesting _domain_testing;
+	StrategiesDPI _strategies_dpi;
+	DNSHost		  _dns_hosts;
 
-    std::list<std::string> _section_opt_service_names{};
-    u32 _strategy{};
-    std::atomic_bool _zapret_dbg_run_end;
-    std::atomic_bool _zapret_dbg_run;
+	std::list<std::string> _section_opt_service_names{};
+	u32					   _strategy{};
+	std::atomic_bool	   _zapret_dbg_run_end;
+	std::atomic_bool	   _zapret_dbg_run;
 
-    std::string _tg_host{ "127.0.0.1" };
-    std::string _tg_port{ "9101" };
-    std::array<std::string, 4> _tg_dc_ip{ "149.154.175.50", "91.105.192.100", "149.154.175.100", "149.154.167.91" };
-    std::string _tg_cfproxy_domain{ "unblock.kermanua1488.workers.dev" };
+	std::string				   _tg_host{ "127.0.0.1" };
+	std::string				   _tg_port{ "9101" };
+	std::array<std::string, 4> _tg_dc_ip{ "149.154.175.50", "91.105.192.100", "149.154.175.100", "149.154.167.91" };
+	std::string				   _tg_cfproxy_domain{ "unblock.kermanua1488.workers.dev" };
 
-    // Accessed only from the JS thread (via Ui::update)
-    std::unordered_set<std::string> _helper_checking;
-    std::unordered_set<std::string> _helper_seen;
-    std::unordered_map<std::string, std::string> _helper_errors;
-    std::unordered_map<std::string, std::string> _helper_valid;
+	// Accessed only from the JS thread (via Ui::update)
+	std::unordered_set<std::string>				 _helper_checking;
+	std::unordered_set<std::string>				 _helper_seen;
+	std::unordered_map<std::string, std::string> _helper_errors;
+	std::unordered_map<std::string, std::string> _helper_valid;
 
 public:
-    Unblock();
+	Unblock();
 
-    bool testUrl(std::string_view str_url);
+	bool testUrl(std::string_view str_url);
 
-    bool automaticallyStrategy();
+	bool automaticallyStrategy();
 
-    void serviceConfigFile(const std::shared_ptr<File>& config);
+	void serviceConfigFile(const std::shared_ptr<File>& config);
 
-    void changeStrategy(std::string_view name_config);
-    void changeDirVersionStrategy(std::string_view dir_version);
+	void changeStrategy(std::string_view name_config);
+	void changeDirVersionStrategy(std::string_view dir_version);
 
-    void addOptionalStrategies(std::string_view name);
-    void removeOptionalStrategies(std::string_view name);
-    void clearOptionalStrategies();
+	void addOptionalStrategies(std::string_view name);
+	void removeOptionalStrategies(std::string_view name);
+	void clearOptionalStrategies();
 
-    void setCustomLists(
-        std::vector<std::string> hosts,
-        std::vector<std::string> ip_set,
-        std::vector<std::string> domains_exclude,
-        std::vector<std::string> ip_exclude
-    );
+	void setCustomLists(
+		std::vector<std::string> hosts, std::vector<std::string> ip_set, std::vector<std::string> domains_exclude, std::vector<std::string> ip_exclude
+	);
 
-    bool runTest();
+	bool runTest();
 
-    std::string getNameStrategies();
-    const std::vector<std::string>& getStrategies();
+	std::string						getNameStrategies();
+	const std::vector<std::string>& getStrategies();
 
-    const std::vector<std::string>& getStrategiesList();
-    std::list<Service>& getConflictingServices();
+	const std::vector<std::string>& getStrategiesList();
+	std::list<Service>&				getConflictingServices();
 
-    void startService();
-    void stopService();
-    void removeService();
-    bool activeService();
+	void startService();
+	void stopService();
+	void removeService();
+	bool activeService();
 
-    std::vector<std::string> helperCheckingHosts();
-    std::vector<std::string> helperSeenHosts();
-    std::vector<std::pair<std::string, std::string>> helperErrorHosts();
-    std::vector<std::pair<std::string, std::string>> helperValidHosts();
+	std::vector<std::string>						 helperCheckingHosts();
+	std::vector<std::string>						 helperSeenHosts();
+	std::vector<std::pair<std::string, std::string>> helperErrorHosts();
+	std::vector<std::pair<std::string, std::string>> helperValidHosts();
 
-    std::vector<std::string> listVersionStrategy();
+	std::vector<std::string> listVersionStrategy();
 
-    void dnsHosts(bool state);
-    void dnsHostsUpdate();
-    void dnsHostsCancelUpdate();
-    float dnsHostsUpdateProgress() const;
-    bool dnsHostsCheck() const;
-    const std::list<std::string>& dnsHostsListName();
-    void setDnsHostsRegion(std::string_view region);
-    const std::string& dnsHostsRegion() const;
-    void setDnsHostsBaseUrl(std::string_view url);
-    const std::string& dnsHostsBaseUrl() const;
-    bool dnsHostsRegionAvailable(std::string_view region) const;
+	void						  dnsHosts(bool state);
+	void						  dnsHostsUpdate();
+	void						  dnsHostsCancelUpdate();
+	float						  dnsHostsUpdateProgress() const;
+	bool						  dnsHostsCheck() const;
+	const std::list<std::string>& dnsHostsListName();
+	void						  setDnsHostsRegion(std::string_view region);
+	const std::string&			  dnsHostsRegion() const;
+	void						  setDnsHostsBaseUrl(std::string_view url);
+	const std::string&			  dnsHostsBaseUrl() const;
+	bool						  dnsHostsRegionAvailable(std::string_view region) const;
 
-    void localProxyTg(bool run = true);
-    bool localProxyTgIsRun();
-    void localProxyTgLinkRun();
+	void localProxyTg(bool run = true);
+	bool localProxyTgIsRun();
+	void localProxyTgLinkRun();
 
-    void setTgProxyParams(std::string_view host, std::string_view port,
-                          std::array<std::string, 4> dc_ip,
-                          std::string_view cfproxy_worker_domain);
-    const std::string& tgProxyHost() const { return _tg_host; }
-    const std::string& tgProxyPort() const { return _tg_port; }
-    const std::array<std::string, 4>& tgProxyDcIp() const { return _tg_dc_ip; }
-    const std::string& tgProxyCfproxyDomain() const { return _tg_cfproxy_domain; }
+	void setTgProxyParams(std::string_view host, std::string_view port, std::array<std::string, 4> dc_ip, std::string_view cfproxy_worker_domain);
+	const std::string&				  tgProxyHost() const { return _tg_host; }
+	const std::string&				  tgProxyPort() const { return _tg_port; }
+	const std::array<std::string, 4>& tgProxyDcIp() const { return _tg_dc_ip; }
+	const std::string&				  tgProxyCfproxyDomain() const { return _tg_cfproxy_domain; }
 
-    void testingDomain(
-        std::function<void(std::string_view, bool)>&& callback = [](std::string_view, bool)
-        {
-        }, bool base_test = true
-    );
-    void testingDomainCancel();
+	void testingDomain(std::function<void(std::string_view, bool)>&& callback = [](std::string_view, bool) {}, bool base_test = true);
+	void testingDomainCancel();
 
-    std::optional<std::string> checkUpdate() const;
-    bool appUpdate();
-    float appUpdateProgress() const;
+	std::optional<std::string> checkUpdate() const;
+	bool					   appUpdate();
+	float					   appUpdateProgress() const;
 
-    u32 domainSuccessRate() const;
-    bool validDomain() const;
+	u32	 domainSuccessRate() const;
+	bool validDomain() const;
 };

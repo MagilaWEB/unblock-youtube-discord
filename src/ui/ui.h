@@ -13,7 +13,8 @@
 #include <memory>
 #include <string_view>
 
-class UI_API Ui final : public utils::DefaultInit, public std::enable_shared_from_this<Ui>
+class UI_API Ui final : public utils::DefaultInit,
+						public std::enable_shared_from_this<Ui>
 {
 	friend class UiUnblock;
 	friend class UiZapret2;
@@ -32,9 +33,9 @@ class UI_API Ui final : public utils::DefaultInit, public std::enable_shared_fro
 	SECONDARY_WINDOW(_window_remove_app);
 
 	std::unique_ptr<UiDnsHosts> _ui_dns_hosts;
-	std::unique_ptr<UiProxyTg> _ui_proxy_tg;
-	std::unique_ptr<UiZapret2> _ui_zapret2;
-	std::unique_ptr<UiUnblock> _ui_unblock;
+	std::unique_ptr<UiProxyTg>	_ui_proxy_tg;
+	std::unique_ptr<UiZapret2>	_ui_zapret2;
+	std::unique_ptr<UiUnblock>	_ui_unblock;
 
 	// Root directory error
 	SECONDARY_WINDOW(_window_root_directory_error);
@@ -69,9 +70,9 @@ public:
 	void update();
 
 	const std::shared_ptr<File>& userConfig();
-	bool hasCyrillicOrSpaceInBinaryPath() const { return _engine->hasCyrillicOrSpaceInBinaryPath(); }
+	bool						 hasCyrillicOrSpaceInBinaryPath() const { return _engine->hasCyrillicOrSpaceInBinaryPath(); }
 
-	void console(bool show);
+	void		console(bool show);
 	std::string langText(std::string_view text_id);
 
 	// App termination (used when uninstalling the program).

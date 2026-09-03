@@ -30,18 +30,20 @@ public:
 
 	void changeDirVersion(std::string_view dir_version) override;
 	void changeOptionalServices(std::list<std::string> list_service);
-	void changeCustomLists(std::vector<std::string> hosts, std::vector<std::string> ip_set, std::vector<std::string> domains_exclude, std::vector<std::string> ip_exclude);
-	u32	 getMaxStrategyCount() const;
+	void changeCustomLists(
+		std::vector<std::string> hosts, std::vector<std::string> ip_set, std::vector<std::string> domains_exclude, std::vector<std::string> ip_exclude
+	);
+	u32 getMaxStrategyCount() const;
 
 private:
 	void _uploadStrategies() override;
 	void _saveStrategies(std::string_view str) override;
 
-	void					   _init_lua_to_zapret();
-	void					   _blob_init_to_zapret();
-	void					   _normalizeStrategyString(std::string& str) const;
-	void					   _normalizeStrategyFinal();
-	bool					   _ignoringLineStrategy(std::string_view str) const;
-	void					   _getAllPorts(std::string& str) const;
-	void					   _luaDesyncNumberStrategy(std::string& str);
+	void _init_lua_to_zapret();
+	void _blob_init_to_zapret();
+	void _normalizeStrategyString(std::string& str) const;
+	void _normalizeStrategyFinal();
+	bool _ignoringLineStrategy(std::string_view str) const;
+	void _getAllPorts(std::string& str) const;
+	void _luaDesyncNumberStrategy(std::string& str);
 };

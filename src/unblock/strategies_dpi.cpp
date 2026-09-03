@@ -54,7 +54,9 @@ void StrategiesDPI::changeOptionalServices(std::list<std::string> list_service)
 	_section_opt_service_names = list_service;
 }
 
-void StrategiesDPI::changeCustomLists(std::vector<std::string> hosts, std::vector<std::string> ip_set, std::vector<std::string> domains_exclude, std::vector<std::string> ip_exclude)
+void StrategiesDPI::changeCustomLists(
+	std::vector<std::string> hosts, std::vector<std::string> ip_set, std::vector<std::string> domains_exclude, std::vector<std::string> ip_exclude
+)
 {
 	_generator.changeCustomLists(std::move(hosts), std::move(ip_set), std::move(domains_exclude), std::move(ip_exclude));
 }

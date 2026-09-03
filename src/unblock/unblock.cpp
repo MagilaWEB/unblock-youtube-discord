@@ -82,7 +82,9 @@ void Unblock::clearOptionalStrategies()
 	_domain_testing.changeOptionalServices({});
 }
 
-void Unblock::setCustomLists(std::vector<std::string> hosts, std::vector<std::string> ip_set, std::vector<std::string> domains_exclude, std::vector<std::string> ip_exclude)
+void Unblock::setCustomLists(
+	std::vector<std::string> hosts, std::vector<std::string> ip_set, std::vector<std::string> domains_exclude, std::vector<std::string> ip_exclude
+)
 {
 	_strategies_dpi.changeCustomLists(std::move(hosts), std::move(ip_set), std::move(domains_exclude), std::move(ip_exclude));
 }
@@ -240,12 +242,11 @@ bool Unblock::appUpdate()
 			Debug::warning("Failed to update unblock_update.exe: {}", copy_ec.message());
 	}
 
-	std::wstring cmd_line =
-		L"\"" + updater.wstring() + L"\" \"" + Core::get().currentPath().wstring() + L"\" " + std::to_wstring(GetCurrentProcessId()) +
-		L" update \"" + temp_root.wstring() + L"\"";
+	std::wstring cmd_line = L"\"" + updater.wstring() + L"\" \"" + Core::get().currentPath().wstring() + L"\" "
+						  + std::to_wstring(GetCurrentProcessId()) + L" update \"" + temp_root.wstring() + L"\"";
 
-	STARTUPINFOW		 startup{};
-	PROCESS_INFORMATION	 process{};
+	STARTUPINFOW		startup{};
+	PROCESS_INFORMATION process{};
 	startup.cb = sizeof(startup);
 
 	if (!CreateProcessW(nullptr, cmd_line.data(), nullptr, nullptr, FALSE, 0, nullptr, bin_path.c_str(), &startup, &process))

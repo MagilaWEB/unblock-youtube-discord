@@ -125,10 +125,10 @@ namespace js
 			);
 		}
 	};
-} // namespace js
+}	 // namespace js
 
 using JSValue = js::Value;
-using JSArgs	 = std::vector<JSValue>;
+using JSArgs  = std::vector<JSValue>;
 
 // Escape a string for embedding as a literal in JS source (JSON-style).
 inline std::string jsQuote(std::string_view value)
@@ -143,30 +143,30 @@ inline std::string jsQuote(std::string_view value)
 	{
 		switch (ch)
 		{
-			case '"':
-				result.append("\\\"");
-				break;
-			case '\\':
-				result.append("\\\\");
-				break;
-			case '\n':
-				result.append("\\n");
-				break;
-			case '\r':
-				result.append("\\r");
-				break;
-			case '\t':
-				result.append("\\t");
-				break;
-			default:
-				if (ch < 0x20)
-				{
-					result.append("\\u00");
-					result.push_back(hex[(ch >> 4) & 0xF]);
-					result.push_back(hex[ch & 0xF]);
-				}
-				else
-					result.push_back(static_cast<char>(ch));
+		case '"':
+			result.append("\\\"");
+			break;
+		case '\\':
+			result.append("\\\\");
+			break;
+		case '\n':
+			result.append("\\n");
+			break;
+		case '\r':
+			result.append("\\r");
+			break;
+		case '\t':
+			result.append("\\t");
+			break;
+		default:
+			if (ch < 0x20)
+			{
+				result.append("\\u00");
+				result.push_back(hex[(ch >> 4) & 0xF]);
+				result.push_back(hex[ch & 0xF]);
+			}
+			else
+				result.push_back(static_cast<char>(ch));
 		}
 	}
 
@@ -200,7 +200,7 @@ inline std::string jsArgToString(const JSValue& arg)
 }
 
 // Analog of ultralight::JSToCPP — convert a value from a JS event to a CPP type.
-template <concepts::VallidALL Type = std::string>
+template<concepts::VallidALL Type = std::string>
 Type JSToCPP(const JSValue& value)
 {
 	if constexpr (concepts::VallidString<Type>)
@@ -248,8 +248,8 @@ Type JSToCPP(const JSValue& value)
 
 	if constexpr (concepts::VallidInteger<Type>)
 	{
-		const auto			integer		= value.ToInteger();
-		constexpr Type		min_integer = type_min<Type>;
+		const auto	   integer	   = value.ToInteger();
+		constexpr Type min_integer = type_min<Type>;
 		if (integer < min_integer)
 		{
 			Debug::warning(

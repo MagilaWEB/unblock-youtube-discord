@@ -4,8 +4,8 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wglobal-constructors"
 std::vector<SecondaryWindow*> SecondaryWindow::_all_window;
-SecondaryWindow::MapEvent SecondaryWindow::_event_yes_no; // NOLINT - global event registry
-SecondaryWindow::MapEvent SecondaryWindow::_event_cancel; // NOLINT - global event registry
+SecondaryWindow::MapEvent	  SecondaryWindow::_event_yes_no;	 // NOLINT - global event registry
+SecondaryWindow::MapEvent	  SecondaryWindow::_event_cancel;	 // NOLINT - global event registry
 #pragma clang diagnostic pop
 
 SecondaryWindow::SecondaryWindow(std::string_view name) : BaseElement(name)
@@ -41,11 +41,11 @@ void SecondaryWindow::initialize()
 
 void SecondaryWindow::create(Localization::Str title, Localization::Str description)
 {
-	_root		 = ui::dom::create("div");
+	_root = ui::dom::create("div");
 	_root.id(_name).addClass("secondary_window");
 	ui::dom::body().append(_root);
 
-	_content	 = ui::dom::create("div");
+	_content = ui::dom::create("div");
 	_content.addClass("content");
 	_root.append(_content);
 
@@ -57,7 +57,7 @@ void SecondaryWindow::create(Localization::Str title, Localization::Str descript
 	p_desc.addClass("description").text(description());
 	_content.append(p_desc);
 
-	_elements	 = ui::dom::create("div");
+	_elements = ui::dom::create("div");
 	_elements.addClass("elements");
 	_content.append(_elements);
 
@@ -86,7 +86,7 @@ void SecondaryWindow::_addButton(std::string_view text, ui::dom::Element& out)
 	inner.text(text);
 	btn.append(inner);
 
-out = btn;
+	out = btn;
 	_buttons.push_back(btn);
 }
 
@@ -133,17 +133,17 @@ void SecondaryWindow::setType(Type type)
 
 	switch (type)
 	{
-		case Type::OK:
-			_buildOk();
-			break;
-		case Type::YesNo:
-			_buildYesNo();
-			break;
-		case Type::Wait:
-			_buildWait();
-			break;
-		default:
-			break;
+	case Type::OK:
+		_buildOk();
+		break;
+	case Type::YesNo:
+		_buildYesNo();
+		break;
+	case Type::Wait:
+		_buildWait();
+		break;
+	default:
+		break;
 	}
 
 	_event_click[_name].clear();
@@ -253,4 +253,3 @@ void SecondaryWindow::clearEventCancel()
 {
 	_event_cancel[_name].clear();
 }
-

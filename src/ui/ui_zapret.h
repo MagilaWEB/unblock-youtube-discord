@@ -12,7 +12,7 @@ class File;
 
 class UiZapret2
 {
-	std::shared_ptr<Ui> _ui;
+	std::shared_ptr<Ui>	  _ui;
 	std::shared_ptr<File> _file_service_list;
 
 	// Select list for strategy version

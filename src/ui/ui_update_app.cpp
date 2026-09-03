@@ -120,8 +120,8 @@ void Ui::_updateAppProgressWindowInfo()
 	LIMIT_UPDATE(Description, .5f, {
 		if (_window_wait_update_unblock->isShow())
 		{
-			auto disc_text = Localization::Str{ "str_window_wait_update_unblock" }();
-			float			   progress = _unblock->appUpdateProgress();
+			auto  disc_text = Localization::Str{ "str_window_wait_update_unblock" }();
+			float progress	= _unblock->appUpdateProgress();
 			_window_wait_update_unblock->setDescription(utils::format(disc_text, progress));
 		}
 	})

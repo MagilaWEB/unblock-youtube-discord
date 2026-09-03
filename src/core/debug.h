@@ -18,10 +18,10 @@ class CORE_API Debug
 		eFatal
 	};
 
-	inline static std::string	  _command_line{};
-	inline static std::string	  _version_str{};
-	inline static size_t		  _console_line{ 0 };
-	inline static CriticalSection _lock;
+	inline static std::string	   _command_line{};
+	inline static std::string	   _version_str{};
+	inline static size_t		   _console_line{ 0 };
+	inline static CriticalSection  _lock;
 	inline static std::atomic_bool _crash_handler_enabled{ true };
 
 public:
@@ -132,7 +132,7 @@ public:
 	/** Reads the last tail_lines lines from logs/log.txt. */
 	static std::string _readLogTail(size_t tail_lines);
 
-	static void setVersion(std::string_view version) { _version_str = version; }
+	static void				  setVersion(std::string_view version) { _version_str = version; }
 	static const std::string& version() { return _version_str; }
 
 	static void initialize(const std::string& command_line);

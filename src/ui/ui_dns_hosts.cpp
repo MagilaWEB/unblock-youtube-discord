@@ -5,15 +5,13 @@
 
 #include <algorithm>
 
-UiDnsHosts::UiDnsHosts(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock)
-    : _ui(std::move(ui)), _unblock(std::move(unblock))
+UiDnsHosts::UiDnsHosts(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock) : _ui(std::move(ui)), _unblock(std::move(unblock))
 {
 }
 
 void UiDnsHosts::initialize()
 {
-	_window_wait_response_from_server->create(Localization::Str{"str_please_wait"},
-											  "str_window_wait_response_from_server_description");
+	_window_wait_response_from_server->create(Localization::Str{ "str_please_wait" }, "str_window_wait_response_from_server_description");
 	_window_wait_response_from_server->setType(SecondaryWindow::Type::Info);
 
 	_window_check_region->create(Localization::Str{ "str_please_wait" }, "str_window_check_region_description");
@@ -24,7 +22,7 @@ void UiDnsHosts::initialize()
 
 void UiDnsHosts::_enableDnsHosts()
 {
-	_window_to_warn_enable_dns_hosts->create(Localization::Str{"str_warning"}, "");
+	_window_to_warn_enable_dns_hosts->create(Localization::Str{ "str_warning" }, "");
 
 	_window_to_warn_enable_dns_hosts->setType(SecondaryWindow::Type::YesNo);
 	_window_to_warn_enable_dns_hosts->addEventYesNo(
@@ -37,7 +35,7 @@ void UiDnsHosts::_enableDnsHosts()
 		}
 	);
 
-	_window_wait_update_dns->create(Localization::Str{"str_please_wait"}, "");
+	_window_wait_update_dns->create(Localization::Str{ "str_please_wait" }, "");
 
 	_window_wait_update_dns->setType(SecondaryWindow::Type::Wait);
 	_window_wait_update_dns->addEventCancel(
@@ -48,9 +46,11 @@ void UiDnsHosts::_enableDnsHosts()
 		}
 	);
 
-	_enable_dns_hosts
-		->create("#local_dns section .common", "str_checkbox_enable_dns_hosts_title",
-				 Localization::Str{"str_checkbox_enable_dns_hosts_description"});
+	_enable_dns_hosts->create(
+		"#local_dns section .common",
+		"str_checkbox_enable_dns_hosts_title",
+		Localization::Str{ "str_checkbox_enable_dns_hosts_description" }
+	);
 	_enable_dns_hosts->addTutorialStep("str_tour_dns_hosts_title", "str_tour_dns_hosts_description", 10);
 	_enable_dns_hosts->addEventClick(
 		[this](JSArgs args)
@@ -79,8 +79,7 @@ void UiDnsHosts::_enableDnsHosts()
 	);
 
 	_select_region
-		->create("#local_dns section .common", "str_select_dns_hosts_region_title",
-				 Localization::Str{ "str_select_dns_hosts_region_description" });
+		->create("#local_dns section .common", "str_select_dns_hosts_region_title", Localization::Str{ "str_select_dns_hosts_region_description" });
 	_select_region->addEventChange(
 		[this](JSArgs args)
 		{
@@ -109,10 +108,12 @@ void UiDnsHosts::_enableDnsHosts()
 		}
 	);
 
-	_region_list
-		->create("#local_dns section .common", Localization::Str{ "str_dns_hosts_regions_title" },
-				 Localization::Str{ "str_dns_hosts_regions_description" }(),
-				 Localization::Str{ "str_input_dns_hosts_region_placeholder" }());
+	_region_list->create(
+		"#local_dns section .common",
+		Localization::Str{ "str_dns_hosts_regions_title" },
+		Localization::Str{ "str_dns_hosts_regions_description" }(),
+		Localization::Str{ "str_input_dns_hosts_region_placeholder" }()
+	);
 	_region_list->setValidator(
 		[this](const std::string& value)
 		{
@@ -122,20 +123,30 @@ void UiDnsHosts::_enableDnsHosts()
 			if (std::ranges::find(_region_list->items(), value) != _region_list->items().end())
 				return false;
 
-			return std::ranges::all_of(value, [](unsigned char ch)
-			{
-				return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '-' || ch == '.';
-			});
+			return std::ranges::all_of(
+				value,
+				[](unsigned char ch)
+				{ return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '-' || ch == '.'; }
+			);
 		}
 	);
 
-	_region_list->addEventChange([this](JSArgs args) { _onRegionsChanged(args); return false; });
+	_region_list->addEventChange(
+		[this](JSArgs args)
+		{
+			_onRegionsChanged(args);
+			return false;
+		}
+	);
 
 	// The base geohide host is editable in case the service moves.
-	_dns_hosts_url
-		->create("#local_dns section .common", Input::Types::text, JSValue{ "geohide.ru" },
-				 Localization::Str{ "str_input_dns_hosts_url_title" },
-				 Localization::Str{ "str_input_dns_hosts_url_description" });
+	_dns_hosts_url->create(
+		"#local_dns section .common",
+		Input::Types::text,
+		JSValue{ "geohide.ru" },
+		Localization::Str{ "str_input_dns_hosts_url_title" },
+		Localization::Str{ "str_input_dns_hosts_url_description" }
+	);
 	_dns_hosts_url->addEventSubmit(
 		[this](JSArgs args)
 		{
@@ -174,11 +185,11 @@ void UiDnsHosts::_enableDnsHosts()
 
 void UiDnsHosts::updateInfoWindow()
 {
-	static std::string disc_text{Localization::Str{"str_window_wait_update_dns_description"}()};
+	static std::string disc_text{ Localization::Str{ "str_window_wait_update_dns_description" }() };
 	LIMIT_UPDATE(Description, .5f, {
 		if (_window_wait_update_dns->isShow())
 		{
-			float			   progress = _unblock->dnsHostsUpdateProgress();
+			float progress = _unblock->dnsHostsUpdateProgress();
 			_window_wait_update_dns->setDescription(utils::format(disc_text, progress));
 		}
 	})
@@ -305,14 +316,14 @@ void UiDnsHosts::_enableDnsHostsUpdate()
 
 void UiDnsHosts::_enableDnsHostsWarningUser()
 {
-	static std::string description{Localization::Str{"str_window_to_warn_enable_dns_hosts_description"}()};
+	static std::string description{ Localization::Str{ "str_window_to_warn_enable_dns_hosts_description" }() };
 
 	Core::get().addTask(
 		[this]
 		{
 			_window_wait_response_from_server->show();
 			std::string str_list_name{};
-			auto&	   list_name = _unblock->dnsHostsListName();
+			auto&		list_name = _unblock->dnsHostsListName();
 			for (auto& name : list_name)
 				str_list_name.append(name).append(", ");
 

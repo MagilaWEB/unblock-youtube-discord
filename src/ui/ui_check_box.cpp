@@ -25,7 +25,7 @@ void CheckBox::create(std::string_view selector, Localization::Str title, Locali
 	if (!parent.valid())
 		return;
 
-	_root			 = ui::dom::create("div");
+	_root = ui::dom::create("div");
 	_root.addClass("check_box").addClass("show");
 
 	if (first)
@@ -37,7 +37,7 @@ void CheckBox::create(std::string_view selector, Localization::Str title, Locali
 	div_check.addClass("check");
 	_root.append(div_check);
 
-	_input			 = ui::dom::create("input");
+	_input = ui::dom::create("input");
 	_input.setAttr("type", "checkbox").setAttr("id", _name).setAttr("name", "ckeck");
 	div_check.append(_input);
 

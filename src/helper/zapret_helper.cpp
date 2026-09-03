@@ -127,8 +127,8 @@ void ZapretHelper::_handleMessage(std::string_view message)
 			if (info.first == std::chrono::steady_clock::time_point{})
 				info.first = now;
 
-			info.last = now;
-			info.strategy	= std::string{ strat };
+			info.last	  = now;
+			info.strategy = std::string{ strat };
 			_valid_hosts.erase(host);
 			_cv.notify_all();
 		}
@@ -212,7 +212,7 @@ void ZapretHelper::_stopPool()
 
 void ZapretHelper::_idleStep()
 {
-	const auto		now = std::chrono::steady_clock::now();
+	const auto now = std::chrono::steady_clock::now();
 
 	if ((now - _last_recheck) > c_recheck_interval)
 	{

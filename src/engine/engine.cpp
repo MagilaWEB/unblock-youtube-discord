@@ -18,9 +18,9 @@ Engine::Engine()
 {
 	auto created = saucer::application::create(
 		{
-			.id = "com.unblock",
-			.argc = std::nullopt,
-			.argv = std::nullopt,
+			.id							= "com.unblock",
+			.argc						= std::nullopt,
+			.argv						= std::nullopt,
 			.quit_on_last_window_closed = true,
 		}
 	);
@@ -44,7 +44,7 @@ Engine::~Engine() noexcept
 		{
 			Debug::error("Exception thrown during Engine shutdown");
 		}
-		catch (...) // NOLINT(bugprone-empty-catch) - swallowing on purpose: a noexcept destructor must not propagate anything.
+		catch (...)	   // NOLINT(bugprone-empty-catch) - swallowing on purpose: a noexcept destructor must not propagate anything.
 		{
 		}
 	}
@@ -127,10 +127,7 @@ coco::stray Engine::_start(saucer::application* app)
 
 	// Center on the primary monitor.
 	const auto screen = app->screens().front();
-	_window->set_position(
-		{ .x = screen.position.x + (screen.size.w - width) / 2,
-		  .y = screen.position.y + (screen.size.h - height) / 2 }
-	);
+	_window->set_position({ .x = screen.position.x + (screen.size.w - width) / 2, .y = screen.position.y + (screen.size.h - height) / 2 });
 
 	const auto hwnd = _window->native().hwnd;
 
@@ -142,13 +139,13 @@ coco::stray Engine::_start(saucer::application* app)
 	// Smartview over the window (move-only -> optional).
 	auto view = saucer::smartview::create(
 		{
-			.window = _window,
-			.attributes = true,
-			.persistent_cookies = true,
+			.window				   = _window,
+			.attributes			   = true,
+			.persistent_cookies	   = true,
 			.hardware_acceleration = true,
-			.storage_path = std::nullopt,
-			.user_agent = std::nullopt,
-			.browser_flags = {},
+			.storage_path		   = std::nullopt,
+			.user_agent			   = std::nullopt,
+			.browser_flags		   = {},
 		}
 	);
 	if (!view)
@@ -216,17 +213,14 @@ void Engine::_setupScheme(saucer::smartview& view)
 				return;
 			}
 
-			std::vector<std::uint8_t> data(
-				(std::istreambuf_iterator<char>(stream)),
-				std::istreambuf_iterator<char>()
-			);
+			std::vector<std::uint8_t> data{ std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>() };
 
 			exec.resolve(
 				saucer::scheme::response{
-					.data = saucer::stash::from(std::move(data)),
-					.mime = "text/html",
+					.data	 = saucer::stash::from(std::move(data)),
+					.mime	 = "text/html",
 					.headers = {},
-					.status = 200,
+					.status	 = 200,
 				}
 			);
 		}
@@ -255,7 +249,7 @@ void Engine::showConsole()
 	freopen_s(&_fp_console, "CONOUT$", "w", stdout);
 	freopen_s(&_fp_console, "CONOUT$", "w", stderr);
 
-	_cinBuffer  = std::cin.rdbuf();
+	_cinBuffer	= std::cin.rdbuf();
 	_coutBuffer = std::cout.rdbuf();
 	_cerrBuffer = std::cerr.rdbuf();
 
@@ -299,7 +293,7 @@ void Engine::hideConsole()
 		std::cout.rdbuf(_coutBuffer);
 		std::cerr.rdbuf(_cerrBuffer);
 
-		_cinBuffer  = nullptr;
+		_cinBuffer	= nullptr;
 		_coutBuffer = nullptr;
 		_cerrBuffer = nullptr;
 
@@ -346,7 +340,7 @@ void Engine::_startUpdateTicker(saucer::application* app)
 		return;
 
 	_update_ticker_run = true;
-	_update_ticker		= std::jthread(
+	_update_ticker	   = std::jthread(
 		[this, app](std::stop_token token)
 		{
 			using namespace std::chrono;
@@ -393,7 +387,7 @@ void Engine::_finish()
 std::string Engine::_getSystemLocale()
 {
 	std::array<wchar_t, LOCALE_NAME_MAX_LENGTH> buffer{};
-	int									 chars = GetUserDefaultLocaleName(buffer.data(), static_cast<int>(buffer.size()));
+	int											chars = GetUserDefaultLocaleName(buffer.data(), static_cast<int>(buffer.size()));
 	if (chars == 0)
 		return "US";
 

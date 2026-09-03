@@ -6,7 +6,6 @@
 
 #include "../net.h"
 
-
 TEST_CASE("UdpSocket create/bind/nonBlocking on loopback", "[net][loopback]")
 {
 	Winsock	  winsock;

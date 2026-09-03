@@ -3,9 +3,9 @@
 
 class SelectList final : public BaseElement
 {
-	ui::dom::Element _select; // dropdown container
-	ui::dom::Element _label;  // label showing the currently selected option
-	std::string  _selected_value;
+	ui::dom::Element _select;	 // dropdown container
+	ui::dom::Element _label;	 // label showing the currently selected option
+	std::string		 _selected_value;
 
 public:
 	SelectList(std::string_view name);
@@ -31,4 +31,3 @@ public:
 	{                     \
 		#name             \
 	}
-

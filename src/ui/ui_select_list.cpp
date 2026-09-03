@@ -25,7 +25,7 @@ void SelectList::create(std::string_view selector, Localization::Str title, Loca
 	if (!parent.valid())
 		return;
 
-	_root		 = ui::dom::create("div");
+	_root = ui::dom::create("div");
 	_root.addClass("select_list").addClass("show");
 
 	if (first)
@@ -33,11 +33,11 @@ void SelectList::create(std::string_view selector, Localization::Str title, Loca
 	else
 		parent.append(_root);
 
-	_label		 = ui::dom::create("div");
+	_label = ui::dom::create("div");
 	_label.setAttr("tabindex", "0").addClass("label");
 	_root.append(_label);
 
-	_select		 = ui::dom::create("div");
+	_select = ui::dom::create("div");
 	_select.id(_name).addClass("select");
 	_root.append(_select);
 

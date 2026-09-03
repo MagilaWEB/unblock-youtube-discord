@@ -14,7 +14,7 @@ void ListUl::create(std::string_view selector, Localization::Str title, bool fir
 	if (!parent.valid())
 		return;
 
-	_root		 = ui::dom::create("div");
+	_root = ui::dom::create("div");
 	_root.addClass("list_ul").addClass("block").addClass("show");
 
 	if (first)
@@ -22,11 +22,11 @@ void ListUl::create(std::string_view selector, Localization::Str title, bool fir
 	else
 		parent.append(_root);
 
-	_h2			 = ui::dom::create("h2");
+	_h2 = ui::dom::create("h2");
 	_h2.text(title());
 	_root.append(_h2);
 
-	_ul			 = ui::dom::create("ul");
+	_ul = ui::dom::create("ul");
 	_root.append(_ul);
 
 	_created = true;

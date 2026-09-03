@@ -5,12 +5,12 @@
 #include <coco/utils/utils.hpp>
 
 std::pair<Input::Types, pcstr> Input::convert_types[]{
-	{	Input::Types::text,		"text" },
+	{	  Input::Types::text,	  "text" },
 	{ Input::Types::number, "number" },
-	{ Input::Types::color,	"color" },
-	{	Input::Types::time,		"time" },
-	{	Input::Types::ip,		"ip" },
-	{	Input::Types::port,		"port" },
+	{  Input::Types::color,  "color" },
+	{	  Input::Types::time,	  "time" },
+	{	  Input::Types::ip,		"ip" },
+	{	  Input::Types::port,	  "port" },
 };
 
 Input::Input(std::string_view name) : BaseElement(name)
@@ -22,10 +22,7 @@ void Input::initialize()
 	if (auto* view = BaseElement::view())
 		view->expose(
 			"CPPInputEventSubmit",
-			[](std::string element_name, std::string value) -> bool
-			{
-				return eventCPP({ std::move(element_name), std::move(value) }, _event_click);
-			}
+			[](std::string element_name, std::string value) -> bool { return eventCPP({ std::move(element_name), std::move(value) }, _event_click); }
 		);
 }
 
@@ -40,7 +37,7 @@ void Input::create(std::string_view selector, Types type, JSValue value, Localiz
 		if (id == type)
 			type_str = str;
 
-	_root		 = ui::dom::create("div");
+	_root = ui::dom::create("div");
 	_root.addClass("input").addClass("show");
 
 	if (first)
@@ -48,24 +45,15 @@ void Input::create(std::string_view selector, Types type, JSValue value, Localiz
 	else
 		parent.append(_root);
 
-	_input		 = ui::dom::create("input");
+	_input = ui::dom::create("input");
 	_input.addClass("check");
 
 	if (type == Types::ip)
-	{
-		_input.setAttr("name", "ip")
-			.setAttr("type", "text")
-			.setAttr("minlength", "7")
-			.setAttr("maxlength", "15")
-			.setAttr("size", "15");
-	}
+		_input.setAttr("name", "ip").setAttr("type", "text").setAttr("minlength", "7").setAttr("maxlength", "15").setAttr("size", "15");
 	else
-	{
 		_input.setAttr("name", type_str).setAttr("type", type_str);
-	}
 
-	_input.id(_name)
-		.setAttr("placeholder", std::string{ title() } + ": " + value.ToString());
+	_input.id(_name).setAttr("placeholder", std::string{ title() } + ": " + value.ToString());
 	_root.append(_input);
 
 	auto p_description = ui::dom::create("p");

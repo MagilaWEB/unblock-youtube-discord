@@ -339,8 +339,20 @@ namespace ui::dom
 	// Predefined references
 	// -------------------------------------------------------------------
 
-	Element body()	 { return querySelector("body"); }
-	Element main()	 { return querySelector("main"); }
-	Element footer() { return querySelector("footer"); }
-	Element nav()	 { return querySelector(".nav"); }
+	Element body()
+	{
+		return querySelector("body");
+	}
+	Element main()
+	{
+		return querySelector("main");
+	}
+	Element footer()
+	{
+		return querySelector("footer");
+	}
+	Element nav()
+	{
+		return querySelector(".nav");
+	}
 }

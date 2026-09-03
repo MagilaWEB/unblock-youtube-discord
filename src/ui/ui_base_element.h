@@ -29,23 +29,23 @@ public:
 	// One step of the interactive tutorial, registered by a widget itself.
 	struct TutorialStep
 	{
-		std::string name;     // element name or CSS selector
-		std::string type;     // button | checkbox | select | block | intro
-		std::string title;    // localization key
-		std::string desc;     // localization key
+		std::string name;	  // element name or CSS selector
+		std::string type;	  // button | checkbox | select | block | intro
+		std::string title;	  // localization key
+		std::string desc;	  // localization key
 		u32			priority{ type_max<u32> };
 	};
 
 protected:
 	const std::string _name;
-	std::string		  _tutorial_type; // button | checkbox | select | block | intro
-	ui::dom::Element	  _root;
+	std::string		  _tutorial_type;	 // button | checkbox | select | block | intro
+	ui::dom::Element  _root;
 	bool			  _created{ false };
 	bool			  _is_show{ true };
 
-	static saucer::smartview*					  _view;
-	static std::map<std::string, BaseElement*>	  _all_element;
-	static std::vector<TutorialStep>			  _tutorial_steps;
+	static saucer::smartview*				   _view;
+	static std::map<std::string, BaseElement*> _all_element;
+	static std::vector<TutorialStep>		   _tutorial_steps;
 
 	using MapEvent = std::map<std::string, std::vector<std::function<bool(JSArgs)>>>;
 	static MapEvent _event_click;
@@ -69,8 +69,8 @@ public:
 	 *  constructor (self-registration). */
 	void addTutorialStep(Localization::Str title, Localization::Str description, u32 priority = type_max<u32>);
 
-	static void initializeAll(saucer::smartview* view);
-	static void release();
+	static void				  initializeAll(saucer::smartview* view);
+	static void				  release();
 	static saucer::smartview* view();
 
 	/** Returns the root DOM element of the widget registered under \p name
@@ -84,4 +84,3 @@ public:
 protected:
 	static bool eventCPP(const JSArgs& args, MapEvent& map_event);
 };
-

@@ -106,7 +106,7 @@ void StrategiesDPIBase::_saveStrategies(std::string_view str)
 std::optional<std::string> StrategiesDPIBase::_getPath(std::string_view str, std::string_view prefix, std::filesystem::path path) const
 {
 	if (str.contains(prefix))
-		return std::regex_replace(std::string{str}, std::regex{ std::string{prefix} }, path.string() + "\\");
+		return std::regex_replace(std::string{ str }, std::regex{ std::string{ prefix } }, path.string() + "\\");
 
 	return std::nullopt;
 }
@@ -117,8 +117,8 @@ void StrategiesDPIBase::_sortFiles()
 		_strategy_files_list,
 		[](const std::string& left, const std::string& right)
 		{
-			std::smatch		  left_res;
-			std::smatch		  right_res;
+			std::smatch				left_res;
+			std::smatch				right_res;
 			static const std::regex reg{ "\\d+" };
 			if (std::regex_search(left, left_res, reg) && std::regex_search(right, right_res, reg))
 				return std::stoul(left_res.str()) < std::stoul(right_res.str());

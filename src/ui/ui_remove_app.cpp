@@ -41,7 +41,7 @@ void Ui::_removeAppRun()
 	// Uninstall is delegated to the standalone unblock_update.exe. We launch a
 	// %TEMP% copy of it because it must outlive engine.exe and then remove the
 	// application root it does not reside in itself.
-	const auto temp_root = Core::get().tempPath() / "unblock";
+	const auto		temp_root = Core::get().tempPath() / "unblock";
 	std::error_code ec;
 	std::filesystem::create_directories(temp_root, ec);
 
@@ -56,11 +56,10 @@ void Ui::_removeAppRun()
 	}
 
 	std::wstring cmd_line =
-		L"\"" + self.wstring() + L"\" \"" + Core::get().currentPath().wstring() + L"\" " + std::to_wstring(GetCurrentProcessId()) +
-		L" remove";
+		L"\"" + self.wstring() + L"\" \"" + Core::get().currentPath().wstring() + L"\" " + std::to_wstring(GetCurrentProcessId()) + L" remove";
 
-	STARTUPINFOW		 startup{};
-	PROCESS_INFORMATION	 process{};
+	STARTUPINFOW		startup{};
+	PROCESS_INFORMATION process{};
 	startup.cb = sizeof(startup);
 
 	if (!CreateProcessW(nullptr, cmd_line.data(), nullptr, nullptr, FALSE, 0, nullptr, temp_root.c_str(), &startup, &process))

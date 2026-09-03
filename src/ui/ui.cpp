@@ -15,9 +15,9 @@ void Ui::postConstruct()
 	self = shared_from_this();
 
 	_ui_dns_hosts = std::make_unique<UiDnsHosts>(self, _unblock);
-	_ui_proxy_tg = std::make_unique<UiProxyTg>(self, _unblock);
-	_ui_zapret2 = std::make_unique<UiZapret2>(self);
-	_ui_unblock = std::make_unique<UiUnblock>(self);
+	_ui_proxy_tg  = std::make_unique<UiProxyTg>(self, _unblock);
+	_ui_zapret2	  = std::make_unique<UiZapret2>(self);
+	_ui_unblock	  = std::make_unique<UiUnblock>(self);
 }
 
 // ------------------ Setup (JS bridge + window subscriptions) ------------------
@@ -27,10 +27,7 @@ void Ui::setup(saucer::smartview* view)
 		return;
 
 	// Global variables for the UI page (injected before the scripts load).
-	view->inject(
-		{ .code	 = "window.RUN_CPP = true; window.VERSION_APP = " + jsQuote(VERSION_STR) + ";",
-		  .run_at = saucer::script::time::creation }
-	);
+	view->inject({ .code = "window.RUN_CPP = true; window.VERSION_APP = " + jsQuote(VERSION_STR) + ";", .run_at = saucer::script::time::creation });
 
 	// JS -> CPP: translate a string by language key.
 	view->expose("CPPLangText", [this](std::string text_id) { return langText(std::move(text_id)); });
@@ -162,7 +159,7 @@ namespace
 	{
 		return Debug::buildReportIssueBody();
 	}
-} // namespace
+}	 // namespace
 
 void Ui::_footerElements()
 {
@@ -170,7 +167,9 @@ void Ui::_footerElements()
 	_link_to_github->addEventClick(
 		[](JSArgs)
 		{
-			Core::get().addTask([] { ShellExecuteA(nullptr, "open", "https://github.com/MagilaWEB/unblock-youtube-discord", nullptr, nullptr, SW_SHOWNORMAL); });
+			Core::get().addTask(
+				[] { ShellExecuteA(nullptr, "open", "https://github.com/MagilaWEB/unblock-youtube-discord", nullptr, nullptr, SW_SHOWNORMAL); }
+			);
 			return false;
 		}
 	);
@@ -278,8 +277,8 @@ void Ui::_checkWhitelist()
 		{
 			if (ui_self->_unblock->testUrl("https://yandex.ru") || ui_self->_unblock->testUrl("https://vk.com"))
 			{
-				const bool state_block =
-					ui_self->_unblock->testUrl("https://google.com") || ui_self->_unblock->testUrl("https://2ip.ru") || ui_self->_unblock->testUrl("https://github.com");
+				const bool state_block = ui_self->_unblock->testUrl("https://google.com") || ui_self->_unblock->testUrl("https://2ip.ru")
+									  || ui_self->_unblock->testUrl("https://github.com");
 
 				ui_self->_window_wait_test_whitelist->hide();
 

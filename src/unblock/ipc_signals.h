@@ -36,14 +36,14 @@
 class IPCSignals
 {
 public:
-	[[nodiscard]] static IPCSignals& get();
+	[[nodiscard]] static IPCSignals&		 get();
 	[[nodiscard]] std::optional<std::string> getString(std::string_view name);
 	[[nodiscard]] std::optional<bool>		 getBool(std::string_view name);
 	[[nodiscard]] std::optional<float>		 getFloat(std::string_view name);
 	[[nodiscard]] std::optional<uint32_t>	 getU32(std::string_view name);
 	[[nodiscard]] bool						 has(std::string_view name, std::string_view value);
-	void clear(std::string_view name);
-	void clearAll();
+	void									 clear(std::string_view name);
+	void									 clearAll();
 
 	IPCSignals(const IPCSignals&)			 = delete;
 	IPCSignals& operator=(const IPCSignals&) = delete;

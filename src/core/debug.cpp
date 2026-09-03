@@ -262,7 +262,7 @@ namespace
 
 			SetUnhandledExceptionFilter(old_filter);
 		}
-	} guard; // NOLINT(bugprone-throwing-static-initialization) - WinAPI setup, never throws
+	} guard;	// NOLINT(bugprone-throwing-static-initialization) - WinAPI setup, never throws
 }
 
 void Debug::initialize(const std::string& command_line)

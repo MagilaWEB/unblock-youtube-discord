@@ -3,7 +3,7 @@
 
 class Button final : public BaseElement
 {
-	ui::dom::Element _inner; // <button> element inside the root <div>
+	ui::dom::Element _inner;	// <button> element inside the root <div>
 
 public:
 	Button(std::string_view name);
@@ -20,4 +20,3 @@ public:
 	{                 \
 		#name         \
 	}
-

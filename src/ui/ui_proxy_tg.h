@@ -9,7 +9,7 @@ class Unblock;
 class UiProxyTg
 {
 private:
-	std::shared_ptr<Ui>		_ui;
+	std::shared_ptr<Ui>		 _ui;
 	std::shared_ptr<Unblock> _unblock;
 
 	CHECK_BOX(_proxy_tg_enable);
@@ -32,9 +32,9 @@ public:
 	const Ptr<CheckBox>& getCheckBoxProxyTg() const { return _proxy_tg_enable; }
 
 private:
-	void _enableProxyTg();
-	void _enableProxyLinkTg();
-	void _proxySettings();
-	void _applyProxySettings();
+	void		_enableProxyTg();
+	void		_enableProxyLinkTg();
+	void		_proxySettings();
+	void		_applyProxySettings();
 	std::string _settingValue(std::string_view key, std::string_view default_value);
 };

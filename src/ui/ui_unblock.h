@@ -21,9 +21,9 @@ public:
 
 	void initialize();
 
-	const Ptr<CheckBox>& getTestingDomainsStartup() const { return _testing_domains_startup; }
+	const Ptr<CheckBox>&		getTestingDomainsStartup() const { return _testing_domains_startup; }
 	const Ptr<SecondaryWindow>& getWindowWaitStopService() { return _window_wait_stop_service; }
-	void stopAllServices() const;
+	void						stopAllServices() const;
 
 private:
 	void _showConsole();

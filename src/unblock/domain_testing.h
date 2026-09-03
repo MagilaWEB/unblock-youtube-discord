@@ -19,9 +19,7 @@ public:
 
 	void loadDomain();
 
-	void test(
-		bool base_test, std::function<void(std::string url, bool state)>&& callback = [](std::string, bool) {}, bool reset_test = false
-	);
+	void test(bool base_test, std::function<void(std::string url, bool state)>&& callback = [](std::string, bool) {}, bool reset_test = false);
 
 	void changeProxy(std::string_view ip, u32 port);
 	void changeOptionalServices(std::list<std::string> list_services);
@@ -30,7 +28,7 @@ public:
 
 	inline bool isTesting() { return _is_testing.load(); }
 	inline bool isCancelTesting() { return _cancel_testing.load(); }
-	inline bool isResetConect() { return _reset_test.load(); } 
+	inline bool isResetConect() { return _reset_test.load(); }
 
 	u32	 successRate() const;
 	u32	 errorRate() const;

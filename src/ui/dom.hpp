@@ -24,7 +24,7 @@ namespace ui::dom
 	// -----------------------------------------------------------------------
 	class Element
 	{
-		int _h{-1};
+		int _h{ -1 };
 
 	public:
 		Element() = default;
@@ -62,7 +62,7 @@ namespace ui::dom
 		Element& append(const Element& child);
 		Element& prepend(const Element& child);
 		Element& removeChild(const Element& child);
-		Element  createChild(std::string_view tag);
+		Element	 createChild(std::string_view tag);
 		Element& remove();
 
 		// --- Navigation ---------------------------------------------------
@@ -94,7 +94,10 @@ namespace ui::dom
 		void tooltip(const Element& description);
 
 		// --- Geometry -----------------------------------------------------
-		struct Rect { double left{0}, top{0}, width{0}, height{0}; };
+		struct Rect
+		{
+			double left{ 0 }, top{ 0 }, width{ 0 }, height{ 0 };
+		};
 		void scrollIntoView(bool smooth = true);
 
 	private:

@@ -98,7 +98,7 @@ private:
 	{
 		CriticalSection::raii mt{ _lock };
 		std::string			  mod_text = utils::format(prefix, utils::format(text, args...));
-		mod_text = textColor(mod_text.c_str(), type, reset_color);
+		mod_text					   = textColor(mod_text.c_str(), type, reset_color);
 		Debug::print("{}", mod_text);
 	}
 

@@ -1,11 +1,11 @@
 #include "ui_base_element.h"
 
-saucer::smartview*							BaseElement::_view;
+saucer::smartview* BaseElement::_view;
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wglobal-constructors"
-std::map<std::string, BaseElement*>			BaseElement::_all_element; // NOLINT - global element registry
-std::vector<BaseElement::TutorialStep>		BaseElement::_tutorial_steps; // NOLINT - global tutorial registry
-BaseElement::MapEvent						BaseElement::_event_click; // NOLINT - global event registry
+std::map<std::string, BaseElement*>	   BaseElement::_all_element;		// NOLINT - global element registry
+std::vector<BaseElement::TutorialStep> BaseElement::_tutorial_steps;	// NOLINT - global tutorial registry
+BaseElement::MapEvent				   BaseElement::_event_click;		// NOLINT - global event registry
 #pragma clang diagnostic pop
 
 BaseElement::BaseElement(std::string_view name) : _name(name)

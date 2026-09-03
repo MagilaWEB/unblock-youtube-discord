@@ -19,11 +19,11 @@ public:
 
 	void handleMessage(std::string_view message) { helper._handleMessage(message); }
 
-	const std::unordered_set<std::string>&			  knownHosts() const { return helper._known_hosts; }
-	const std::unordered_set<std::string>&			  queue() const { return helper._queue; }
-	const std::unordered_set<std::string>&			  inCheck() const { return helper._in_check; }
+	const std::unordered_set<std::string>&							knownHosts() const { return helper._known_hosts; }
+	const std::unordered_set<std::string>&							queue() const { return helper._queue; }
+	const std::unordered_set<std::string>&							inCheck() const { return helper._in_check; }
 	const std::unordered_map<std::string, ZapretHelper::ErrorInfo>& errorHosts() const { return helper._error_hosts; }
-	const std::unordered_map<std::string, std::string>& valid() const { return helper._valid_hosts; }
+	const std::unordered_map<std::string, std::string>&				valid() const { return helper._valid_hosts; }
 
 	// helpers for ErrorInfo
 	std::string errorStrategy(const std::string& host) const
@@ -31,14 +31,13 @@ public:
 		auto it = helper._error_hosts.find(host);
 		return it == helper._error_hosts.end() ? std::string{} : it->second.strategy;
 	}
-	void setErrorTimes(const std::string& host, std::chrono::steady_clock::time_point firstSeen,
-					   std::chrono::steady_clock::time_point lastQueued)
+	void setErrorTimes(const std::string& host, std::chrono::steady_clock::time_point firstSeen, std::chrono::steady_clock::time_point lastQueued)
 	{
 		auto it = helper._error_hosts.find(host);
 		if (it != helper._error_hosts.end())
 		{
 			it->second.first = firstSeen;
-			it->second.last  = lastQueued;
+			it->second.last	 = lastQueued;
 		}
 	}
 	void setInCheck(const std::string& host, bool value)

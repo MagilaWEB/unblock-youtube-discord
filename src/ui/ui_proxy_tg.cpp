@@ -3,8 +3,7 @@
 #include "ui.h"
 #include "../unblock/unblock.h"
 
-UiProxyTg::UiProxyTg(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock)
-    : _ui(std::move(ui)), _unblock(std::move(unblock))
+UiProxyTg::UiProxyTg(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock) : _ui(std::move(ui)), _unblock(std::move(unblock))
 {
 }
 
@@ -17,9 +16,11 @@ void UiProxyTg::initialize()
 
 void UiProxyTg::_enableProxyTg()
 {
-	_proxy_tg_enable
-		->create("#tg_ws_proxy section .common", "str_checkbox_enable_proxy_tg_title",
-				 Localization::Str{"str_checkbox_enable_proxy_tg_description"});
+	_proxy_tg_enable->create(
+		"#tg_ws_proxy section .common",
+		"str_checkbox_enable_proxy_tg_title",
+		Localization::Str{ "str_checkbox_enable_proxy_tg_description" }
+	);
 	_proxy_tg_enable->addTutorialStep("str_tour_proxy_tg_title", "str_tour_proxy_tg_description", 12);
 	_proxy_tg_enable->setState(_unblock->localProxyTgIsRun());
 	_proxy_tg_enable->addEventClick(
@@ -81,13 +82,55 @@ void UiProxyTg::_proxySettings()
 	for (u32 i = 0; i < 4; i++)
 		dc_settings[i] = _settingValue(utils::format("dc_ip_{}", i + 1), dc_ip[i]);
 
-	_proxy_tg_host->create("#tg_ws_proxy section .common", Input::Types::ip, JSValue{ host.c_str() }, Localization::Str{"str_proxy_tg_host_title"}, Localization::Str{"str_proxy_tg_host_description"});
-	_proxy_tg_port->create("#tg_ws_proxy section .common", Input::Types::port, JSValue{ port.c_str() }, Localization::Str{"str_proxy_tg_port_title"}, Localization::Str{"str_proxy_tg_port_description"});
-	_proxy_tg_dc_ip_1->create("#tg_ws_proxy section .common", Input::Types::ip, JSValue{ dc_settings[0].c_str() }, Localization::Str{"str_proxy_tg_dc_ip_1_title"}, Localization::Str{"str_proxy_tg_dc_ip_1_description"});
-	_proxy_tg_dc_ip_2->create("#tg_ws_proxy section .common", Input::Types::ip, JSValue{ dc_settings[1].c_str() }, Localization::Str{"str_proxy_tg_dc_ip_2_title"}, Localization::Str{"str_proxy_tg_dc_ip_2_description"});
-	_proxy_tg_dc_ip_3->create("#tg_ws_proxy section .common", Input::Types::ip, JSValue{ dc_settings[2].c_str() }, Localization::Str{"str_proxy_tg_dc_ip_3_title"}, Localization::Str{"str_proxy_tg_dc_ip_3_description"});
-	_proxy_tg_dc_ip_4->create("#tg_ws_proxy section .common", Input::Types::ip, JSValue{ dc_settings[3].c_str() }, Localization::Str{"str_proxy_tg_dc_ip_4_title"}, Localization::Str{"str_proxy_tg_dc_ip_4_description"});
-	_proxy_tg_cfproxy_domain->create("#tg_ws_proxy section .common", Input::Types::text, JSValue{ cfproxy.c_str() }, Localization::Str{"str_proxy_tg_cfproxy_domain_title"}, Localization::Str{"str_proxy_tg_cfproxy_domain_description"});
+	_proxy_tg_host->create(
+		"#tg_ws_proxy section .common",
+		Input::Types::ip,
+		JSValue{ host.c_str() },
+		Localization::Str{ "str_proxy_tg_host_title" },
+		Localization::Str{ "str_proxy_tg_host_description" }
+	);
+	_proxy_tg_port->create(
+		"#tg_ws_proxy section .common",
+		Input::Types::port,
+		JSValue{ port.c_str() },
+		Localization::Str{ "str_proxy_tg_port_title" },
+		Localization::Str{ "str_proxy_tg_port_description" }
+	);
+	_proxy_tg_dc_ip_1->create(
+		"#tg_ws_proxy section .common",
+		Input::Types::ip,
+		JSValue{ dc_settings[0].c_str() },
+		Localization::Str{ "str_proxy_tg_dc_ip_1_title" },
+		Localization::Str{ "str_proxy_tg_dc_ip_1_description" }
+	);
+	_proxy_tg_dc_ip_2->create(
+		"#tg_ws_proxy section .common",
+		Input::Types::ip,
+		JSValue{ dc_settings[1].c_str() },
+		Localization::Str{ "str_proxy_tg_dc_ip_2_title" },
+		Localization::Str{ "str_proxy_tg_dc_ip_2_description" }
+	);
+	_proxy_tg_dc_ip_3->create(
+		"#tg_ws_proxy section .common",
+		Input::Types::ip,
+		JSValue{ dc_settings[2].c_str() },
+		Localization::Str{ "str_proxy_tg_dc_ip_3_title" },
+		Localization::Str{ "str_proxy_tg_dc_ip_3_description" }
+	);
+	_proxy_tg_dc_ip_4->create(
+		"#tg_ws_proxy section .common",
+		Input::Types::ip,
+		JSValue{ dc_settings[3].c_str() },
+		Localization::Str{ "str_proxy_tg_dc_ip_4_title" },
+		Localization::Str{ "str_proxy_tg_dc_ip_4_description" }
+	);
+	_proxy_tg_cfproxy_domain->create(
+		"#tg_ws_proxy section .common",
+		Input::Types::text,
+		JSValue{ cfproxy.c_str() },
+		Localization::Str{ "str_proxy_tg_cfproxy_domain_title" },
+		Localization::Str{ "str_proxy_tg_cfproxy_domain_description" }
+	);
 
 	_unblock->setTgProxyParams(host, port, dc_settings, cfproxy);
 
@@ -111,15 +154,13 @@ void UiProxyTg::_applyProxySettings()
 			_unblock->localProxyTg(false);
 			_ui->getUiUnblock()->getWindowWaitStopService()->hide();
 
-			const auto host	 = JSToCPP<std::string>(_proxy_tg_host->getValue());
-			const auto port	 = JSToCPP<std::string>(_proxy_tg_port->getValue());
-			const auto cfproxy = JSToCPP<std::string>(_proxy_tg_cfproxy_domain->getValue());
-			std::array<std::string, 4> dc_ip{
-				JSToCPP<std::string>(_proxy_tg_dc_ip_1->getValue()),
-				JSToCPP<std::string>(_proxy_tg_dc_ip_2->getValue()),
-				JSToCPP<std::string>(_proxy_tg_dc_ip_3->getValue()),
-				JSToCPP<std::string>(_proxy_tg_dc_ip_4->getValue())
-			};
+			const auto				   host	   = JSToCPP<std::string>(_proxy_tg_host->getValue());
+			const auto				   port	   = JSToCPP<std::string>(_proxy_tg_port->getValue());
+			const auto				   cfproxy = JSToCPP<std::string>(_proxy_tg_cfproxy_domain->getValue());
+			std::array<std::string, 4> dc_ip{ JSToCPP<std::string>(_proxy_tg_dc_ip_1->getValue()),
+											  JSToCPP<std::string>(_proxy_tg_dc_ip_2->getValue()),
+											  JSToCPP<std::string>(_proxy_tg_dc_ip_3->getValue()),
+											  JSToCPP<std::string>(_proxy_tg_dc_ip_4->getValue()) };
 
 			_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", "host", host);
 			_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", "port", port);

@@ -16,14 +16,14 @@ class EditableList final : public BaseElement
 	ui::dom::Element _list;
 	ui::dom::Element _input;
 
-	std::vector<std::string>						  _items;
+	std::vector<std::string>				_items;
 	std::function<bool(const std::string&)> _validator;
 
 public:
 	EditableList(std::string_view name);
 
-	void addEventClick(std::function<bool(JSArgs)>&& callback)								= delete;
-	void create(std::string_view selector, Localization::Str title, bool first = false)	= delete;
+	void addEventClick(std::function<bool(JSArgs)>&& callback)							= delete;
+	void create(std::string_view selector, Localization::Str title, bool first = false) = delete;
 
 	void initialize() override;
 

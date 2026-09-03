@@ -7,8 +7,8 @@ class SecondaryWindow final : public BaseElement
 	ui::dom::Element _elements;
 
 	static std::vector<SecondaryWindow*> _all_window;
-	static MapEvent _event_yes_no;
-	static MapEvent _event_cancel;
+	static MapEvent						 _event_yes_no;
+	static MapEvent						 _event_cancel;
 
 	std::atomic_bool _is_showing{ false };
 	std::atomic_bool _wait_show{ false };
@@ -30,7 +30,7 @@ public:
 	void initialize() override;
 
 	void create(std::string_view selector, Localization::Str title, bool first = false) = delete;
-	void addEventClick(std::function<bool(JSArgs)>&& callback) = delete;
+	void addEventClick(std::function<bool(JSArgs)>&& callback)							= delete;
 
 	void create(Localization::Str title, Localization::Str description);
 	void setType(Type type);
@@ -66,4 +66,3 @@ private:
 	{                          \
 		#name                  \
 	}
-

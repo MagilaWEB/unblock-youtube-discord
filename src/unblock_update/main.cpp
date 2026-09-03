@@ -51,22 +51,11 @@ namespace
 	{
 		std::wstring cmd_line{ L"\"" + exe.wstring() + L"\"" };
 
-		STARTUPINFOW	startup{};
+		STARTUPINFOW		startup{};
 		PROCESS_INFORMATION process{};
 		startup.cb = sizeof(startup);
 
-		if (!CreateProcessW(
-				nullptr,
-				cmd_line.data(),
-				nullptr,
-				nullptr,
-				FALSE,
-				0,
-				nullptr,
-				work_dir.c_str(),
-				&startup,
-				&process
-			))
+		if (!CreateProcessW(nullptr, cmd_line.data(), nullptr, nullptr, FALSE, 0, nullptr, work_dir.c_str(), &startup, &process))
 			return false;
 
 		CloseHandle(process.hThread);
@@ -83,7 +72,7 @@ namespace
 	int updateMode(const fs::path& app_root, const fs::path& update_root, const fs::path& log_path)
 	{
 		const fs::path update_src = update_root / L"unblock";
-		const fs::path self		   = selfPath();
+		const fs::path self		  = selfPath();
 
 		std::error_code ec;
 
@@ -137,7 +126,7 @@ namespace
 		}
 		return 0;
 	}
-} // namespace
+}	 // namespace
 
 int wmain(int argc, wchar_t* argv[])
 {
@@ -145,9 +134,9 @@ int wmain(int argc, wchar_t* argv[])
 	if (argc < 4)
 		return 1;
 
-	const fs::path   app_root	 = argv[1];
-	const DWORD		 engine_pid	 = static_cast<DWORD>(std::wcstoul(argv[2], nullptr, 10));
-	const std::wstring mode		 = argv[3];
+	const fs::path	   app_root	  = argv[1];
+	const DWORD		   engine_pid = static_cast<DWORD>(std::wcstoul(argv[2], nullptr, 10));
+	const std::wstring mode		  = argv[3];
 
 	const fs::path log_path = fs::temp_directory_path() / L"unblock_update.log";
 	log(log_path, L"[start] mode=" + mode + L" appRoot=" + app_root.wstring());

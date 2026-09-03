@@ -1,8 +1,8 @@
 #pragma once
 #include "http_load_content.h"
 
-const std::regex& reg_ipv4_pattern();
-const std::regex& reg_domain_regex();
+const std::regex&						 reg_ipv4_pattern();
+const std::regex&						 reg_domain_regex();
 extern const std::vector<unsigned char>& data_vec();
 
 class DNSHost final : public utils::DefaultInit
@@ -65,10 +65,10 @@ public:
 
 	float percentageCompletion() const;
 
-	void setRegion(std::string_view region);
+	void			   setRegion(std::string_view region);
 	const std::string& region() const { return _region; }
 
-	void setBaseUrl(std::string_view url);
+	void			   setBaseUrl(std::string_view url);
 	const std::string& baseUrl() const { return _base_url; }
 
 	bool regionAvailable(std::string_view region) const;

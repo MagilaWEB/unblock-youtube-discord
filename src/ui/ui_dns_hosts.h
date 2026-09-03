@@ -12,7 +12,7 @@ class Unblock;
 class UiDnsHosts
 {
 private:
-	std::shared_ptr<Ui>		_ui;
+	std::shared_ptr<Ui>		 _ui;
 	std::shared_ptr<Unblock> _unblock;
 
 	CHECK_BOX(_enable_dns_hosts);
