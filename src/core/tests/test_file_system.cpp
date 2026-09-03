@@ -358,6 +358,47 @@ TEST_CASE("writeSectionParameter updates existing parameter", "[file][write]")
     CHECK(content.find("foo=old") == std::string::npos);
 }
 
+TEST_CASE("parameterSectionVector splits by ';'", "[file][parameter]")
+{
+    auto path = createFile("param_vec.ini", "[List]\nitems=ru;eu;us\n");
+    File f;
+    f.open(path, "", true);
+
+    auto res = f.parameterSectionVector("List", "items");
+    REQUIRE(res.has_value());
+    REQUIRE(res->size() == 3);
+    CHECK((*res)[0] == "ru");
+    CHECK((*res)[1] == "eu");
+    CHECK((*res)[2] == "us");
+}
+
+TEST_CASE("parameterSectionVector skips empty items", "[file][parameter]")
+{
+    auto path = createFile("param_vec_empty.ini", "[List]\nitems=ru;;us;\n");
+    File f;
+    f.open(path, "", true);
+
+    auto res = f.parameterSectionVector("List", "items");
+    REQUIRE(res.has_value());
+    REQUIRE(res->size() == 2);
+    CHECK((*res)[0] == "ru");
+    CHECK((*res)[1] == "us");
+}
+
+TEST_CASE("writeSectionParameterVector joins by ';'", "[file][write]")
+{
+    auto path = createFile("write_vec.ini", "[Test]\n");
+    File f;
+    f.open(path, "", true);
+
+    f.writeSectionParameterVector("Test", "items", { "ru", "eu", "us" });
+    f.save();
+
+    std::ifstream ifs(path);
+    std::string content((std::istreambuf_iterator<char>(ifs)), {});
+    CHECK(content.find("items=ru;eu;us") != std::string::npos);
+}
+
 TEST_CASE("close saves when open and dirty", "[file][write]")
 {
     auto path = createFile("close_save.txt", "original\n");

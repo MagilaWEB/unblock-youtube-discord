@@ -175,8 +175,8 @@ void DNSHost::update()
 		if (isHostsUser())
 			_file_hosts_user.clear();
 
-		// Готовый hosts-файл geohide.ru для выбранного региона — база
-		// сопоставлений; локальные домены unblock ниже имеют приоритет.
+		// The ready geohide.ru hosts file for the selected region is the base;
+		// local unblock domains below take priority.
 		HttpsLoad geohide{ _regionUrl() };
 		auto	  geohide_lines = geohide.run();
 		if (geohide.codeResult() == 200 && !geohide_lines.empty())
@@ -252,8 +252,8 @@ void DNSHost::setRegion(std::string_view region)
 
 void DNSHost::setBaseUrl(std::string_view url)
 {
-	// Храним только хост (без протокола), как в telegram proxy. Если ввели
-	// полный URL — срезаем схему и хвостовой слеш.
+	// Store only the host (no scheme), like in the telegram proxy. If a full
+	// URL is passed in, strip the scheme and the trailing slash.
 	std::string host{ url };
 
 	if (host.starts_with("https://"))
@@ -328,8 +328,8 @@ void DNSHost::_loadInfo()
 		}
 
 		// Service sections are "# <name>" comments. The file header and the
-		// fallback blocks ("Сервисные IP", "Резервные", ...) are Cyrillic or
-		// bare IPs, so only ASCII names that are not IPv4 addresses qualify.
+		// fallback blocks (the Cyrillic "Сервисные IP", "Резервные", ...) are
+		// rejected by the ASCII check, so only real service names qualify.
 		static const std::regex ipv4_regex{ R"(^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$)" };
 
 		for (auto& line : lines)

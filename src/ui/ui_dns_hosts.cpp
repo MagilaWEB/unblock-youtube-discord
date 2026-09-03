@@ -5,7 +5,6 @@
 
 #include <algorithm>
 #include <regex>
-#include <sstream>
 
 UiDnsHosts::UiDnsHosts(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock)
     : _ui(std::move(ui)), _unblock(std::move(unblock))
@@ -80,7 +79,6 @@ void UiDnsHosts::_enableDnsHosts()
 		}
 	);
 
-	// Активный регион (select) — из списка ниже.
 	_select_region
 		->create("#local_dns section .common", "str_select_dns_hosts_region_title",
 				 Localization::Str{ "str_select_dns_hosts_region_description" });
@@ -112,8 +110,6 @@ void UiDnsHosts::_enableDnsHosts()
 		}
 	);
 
-	// Редактируемый список регионов: по умолчанию ru / eu / us, пользователь
-	// может добавить свой (поддомен geohide.ru) или удалить лишний.
 	_region_list
 		->create("#local_dns section .common", Localization::Str{ "str_dns_hosts_regions_title" },
 				 Localization::Str{ "str_dns_hosts_regions_description" }(),
@@ -124,11 +120,9 @@ void UiDnsHosts::_enableDnsHosts()
 			if (value.empty())
 				return false;
 
-			// Регион не должен дублироваться.
 			if (std::ranges::find(_region_list->items(), value) != _region_list->items().end())
 				return false;
 
-			// Регион — поддомен: латиница, цифры, дефис, точка.
 			return std::ranges::all_of(value, [](unsigned char ch)
 			{
 				return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '-' || ch == '.';
@@ -138,7 +132,7 @@ void UiDnsHosts::_enableDnsHosts()
 
 	_region_list->addEventChange([this](JSArgs args) { _onRegionsChanged(args); return false; });
 
-	// Базовый URL geohide — редактируемый, на случай если автор перенесёт сервис.
+	// The base geohide host is editable in case the service moves.
 	_dns_hosts_url
 		->create("#local_dns section .common", Input::Types::text, JSValue{ "geohide.ru" },
 				 Localization::Str{ "str_input_dns_hosts_url_title" },
@@ -154,22 +148,14 @@ void UiDnsHosts::_enableDnsHosts()
 		}
 	);
 
-	// Инициализация из конфига: список регионов через ';', иначе дефолт.
 	std::vector<std::string> regions{ "ru", "eu", "us" };
-	if (auto cfg = _ui->userConfig()->parameterSection<std::string>("SYSTEM", "dns_hosts_regions"))
-	{
-		regions.clear();
-		std::stringstream stream{ cfg.value() };
-		std::string		item;
-		while (std::getline(stream, item, ';'))
-			if (!item.empty())
-				regions.push_back(item);
-	}
+	if (auto cfg = _ui->userConfig()->parameterSectionVector("SYSTEM", "dns_hosts_regions"))
+		if (!cfg.value().empty())
+			regions = std::move(cfg.value());
 
 	_region_list->setItems(regions);
 	_rebuildRegionSelect();
 
-	// Активный регион из конфига, иначе первый в списке.
 	std::string active = JSToCPP<std::string>(_select_region->getSelectedOptionValue());
 	if (auto cfg = _ui->userConfig()->parameterSection<std::string>("SYSTEM", "dns_hosts_region"))
 		if (std::ranges::find(regions, cfg.value()) != regions.end())
@@ -178,7 +164,6 @@ void UiDnsHosts::_enableDnsHosts()
 	_select_region->setSelectedOptionValue(active);
 	_unblock->setDnsHostsRegion(active);
 
-	// Базовый хост из конфига, иначе дефолт.
 	std::string base_url = "geohide.ru";
 	if (auto cfg = _ui->userConfig()->parameterSection<std::string>("SYSTEM", "dns_hosts_url"))
 		base_url = cfg.value();
@@ -211,23 +196,13 @@ void UiDnsHosts::_updateDnsHosts()
 
 void UiDnsHosts::_saveRegions()
 {
-	const auto& items = _region_list->items();
-
-	std::string joined;
-	for (std::size_t i = 0; i < items.size(); i++)
-	{
-		if (i)
-			joined.push_back(';');
-		joined += items[i];
-	}
-	_ui->userConfig()->writeSectionParameter("SYSTEM", "dns_hosts_regions", joined);
+	_ui->userConfig()->writeSectionParameterVector("SYSTEM", "dns_hosts_regions", _region_list->items());
 }
 
 void UiDnsHosts::_rebuildRegionSelect()
 {
 	const auto& items = _region_list->items();
 
-	// Сохраняем текущий выбор, если он ещё есть в списке.
 	std::string active = JSToCPP<std::string>(_select_region->getSelectedOptionValue());
 	if (active.empty() || std::ranges::find(items, active) == items.end())
 		active = items.empty() ? "" : items.front();
@@ -245,7 +220,7 @@ void UiDnsHosts::_onRegionsChanged(JSArgs args)
 	_saveRegions();
 	_rebuildRegionSelect();
 
-	// Только что добавленный пользователем регион проверяем на доступность.
+	// A region added by the user is checked for availability right away.
 	if (args.size() >= 2 && JSToCPP<std::string>(args[0]) == "add")
 	{
 		const auto region = JSToCPP<std::string>(args[1]);
@@ -260,7 +235,7 @@ void UiDnsHosts::_onRegionsChanged(JSArgs args)
 		);
 	}
 
-	// DNS не пересобираем: активный регион меняется только выбором в селекте.
+	// DNS is not rebuilt here: the active region only changes via the select.
 }
 
 void UiDnsHosts::_checkRegionAvailability(std::string region)
@@ -292,7 +267,6 @@ void UiDnsHosts::_applyBaseUrl(const std::string& url)
 
 bool UiDnsHosts::_isValidHost(const std::string& host) const
 {
-	// Хост без схемы: домен или IP, опционально с портом.
 	static const std::regex host_regex{ R"(^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?(:[0-9]{1,5})?$)" };
 	return std::regex_match(host, host_regex);
 }

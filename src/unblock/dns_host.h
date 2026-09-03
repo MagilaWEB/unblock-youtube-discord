@@ -71,7 +71,6 @@ public:
 	void setBaseUrl(std::string_view url);
 	const std::string& baseUrl() const { return _base_url; }
 
-	// Проверяет, что hosts-файл для региона доступен (HTTP 200).
 	bool regionAvailable(std::string_view region) const;
 
 private:

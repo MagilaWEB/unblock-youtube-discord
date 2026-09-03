@@ -5,12 +5,12 @@
 #include <string>
 #include <vector>
 
-// EditableList — универсальный редактируемый список.
+// EditableList — a generic editable list.
 //
-// Отображает набор строк с кнопкой удаления на каждом элементе и полем
-// ввода внизу для добавления новых. Перед добавлением значение проходит
-// через валидатор (setValidator). Каждое изменение уведомляет подписчиков
-// через addEventChange.
+// Renders a set of strings, each with a remove button, and an input field at
+// the bottom for adding new entries. Values pass through a validator
+// (setValidator) before being added. Every change notifies subscribers via
+// addEventChange.
 class EditableList final : public BaseElement
 {
 	ui::dom::Element _list;
@@ -42,7 +42,7 @@ public:
 
 private:
 	void _renderItems();
-	// Передаёт подписчикам событие change с {action, value}: "add"/"remove".
+	// Fires the change event with {action, value}: "add"/"remove".
 	void _notifyChange(std::string_view action, std::string_view value);
 };
 

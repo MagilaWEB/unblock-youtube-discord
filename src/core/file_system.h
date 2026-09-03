@@ -50,8 +50,12 @@ public:
 	template<concepts::VallidALL TypeReturn>
 	std::expected<TypeReturn, std::string> parameterSection(std::string_view section, std::string paramert);
 
+	std::expected<std::vector<std::string>, std::string> parameterSectionVector(std::string_view section, std::string paramert);
+
 	void writeText(std::string_view str);
 	void writeSectionParameter(std::string_view section, std::string paramert, std::string value_argument);
+
+	void writeSectionParameterVector(std::string_view section, std::string paramert, const std::vector<std::string>& values);
 
 private:
 	void _normalize();

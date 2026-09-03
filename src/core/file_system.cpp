@@ -270,6 +270,35 @@ void File::writeSectionParameter(std::string_view section, std::string parameter
 	_normalize();
 }
 
+std::expected<std::vector<std::string>, std::string> File::parameterSectionVector(std::string_view section, std::string parameter)
+{
+	auto result = parameterSection<std::string>(section, std::move(parameter));
+	if (!result)
+		return std::unexpected(result.error());
+
+	std::vector<std::string> list;
+	std::stringstream		 stream{ result.value() };
+	std::string				 item;
+	while (std::getline(stream, item, ';'))
+		if (!item.empty())
+			list.push_back(std::move(item));
+
+	return list;
+}
+
+void File::writeSectionParameterVector(std::string_view section, std::string parameter, const std::vector<std::string>& values)
+{
+	std::string joined;
+	for (std::size_t i = 0; i < values.size(); i++)
+	{
+		if (i)
+			joined.push_back(';');
+		joined += values[i];
+	}
+
+	writeSectionParameter(section, std::move(parameter), std::move(joined));
+}
+
 std::string File::name() const
 {
 	return _path_file.filename().string();
