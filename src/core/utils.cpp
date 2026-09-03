@@ -212,7 +212,7 @@ bool utils::isValidNetwork(std::string_view network)
 			return false;
 	}
 
-	const bool is_ipv6 = address.find(':') != std::string_view::npos;
+	const bool is_ipv6 = address.contains(':');
 
 	if (!prefix.empty())
 	{
