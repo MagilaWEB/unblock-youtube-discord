@@ -46,23 +46,34 @@ FetchContent_Declare(
   GIT_TAG v8.0.5
 )
 
-# Load GitHub curl binaries
+# zlib (для статической сборки curl — нужен для декодирования gzip/deflate).
+# Используем только zlibstatic; shared zlib.dll не нужна (EXCLUDE_FROM_ALL).
+# Внешние таргеты скрываются из CMake Targets View в VS через VSWorkspaceSettings.json.
+FetchContent_Declare(
+  zlib
+  GIT_REPOSITORY https://github.com/madler/zlib
+  GIT_TAG v1.3.1
+)
+
+# Load curl из исходников (статическая сборка)
 FetchContent_Declare(
   curl
-  URL https://github.com/MagilaWEB/curl_binaries/releases/download/v8.12/curl_binaries.7z
-  SOURCE_DIR curl
+  GIT_REPOSITORY https://github.com/curl/curl
+  GIT_TAG curl-8_12_0
 )
 
 FetchContent_Declare(
   bit7z
   URL https://github.com/rikyoz/bit7z/releases/download/v4.0.10/bit7z-v4.0.10-msvc2015_x64.7z
   SOURCE_DIR bit7z
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
 FetchContent_Declare(
   7za
   URL https://www.7-zip.org/a/7z2501-extra.7z
   SOURCE_DIR 7za
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
 FetchContent_Declare(
@@ -72,9 +83,48 @@ FetchContent_Declare(
 )
 
 # Build
+# zlib + curl собираем статикой (BUILD_SHARED_LIBS временно OFF, чтобы
+# curl::libcurl указал на статическую библиотеку). Саucer и остальные
+# FetchContent-зависимости собираются ниже в общем вызове.
+set(ZLIB_BUILD_EXAMPLES OFF)
+FetchContent_MakeAvailable(zlib)
+
+# Используем только zlibstatic; shared zlib.dll не нужна.
+# if(TARGET) на случай закешированного старого zlib-src без shared-таргета
+if(TARGET zlib)
+  set_target_properties(zlib PROPERTIES EXCLUDE_FROM_ALL TRUE)
+endif()
+
+set(ZLIB_FOUND TRUE)
+if(NOT TARGET ZLIB::ZLIB)
+  add_library(ZLIB::ZLIB ALIAS zlibstatic)
+endif()
+
+set(BUILD_SHARED_LIBS OFF)
+set(BUILD_STATIC_LIBS ON)
+set(BUILD_CURL_EXE OFF)
+set(CURL_USE_SCHANNEL ON)
+set(CURL_USE_OPENSSL OFF)
+set(HTTP_ONLY ON)
+set(CURL_ZLIB OFF)
+set(CURL_USE_LIBPSL OFF)
+set(USE_LIBIDN2 OFF)
+set(CURL_USE_LIBSSH2 OFF)
+set(CURL_USE_LIBSSH OFF)
+set(USE_NGHTTP2 OFF)
+set(CURL_DISABLE_INSTALL ON)
+set(CURL_ENABLE_EXPORT_TARGET OFF)
+set(CURL_DISABLE_TESTS ON)
+set(BUILD_TESTING OFF)
+set(BUILD_EXAMPLES OFF)
+
+FetchContent_MakeAvailable(curl)
+
+set(BUILD_SHARED_LIBS ON)
+set(BUILD_TESTING ON)
+
 FetchContent_MakeAvailable(
     saucer
-    curl
     bit7z
     7za
     Zapret2
@@ -89,21 +139,43 @@ if (BUILD_TESTS)
   FetchContent_MakeAvailable(Catch2)
 endif ()
 
-# Include libcurl
-set(CURL_DIR ${CMAKE_BINARY_DIR}/curl)
-set(CURL_DIR_RELEASE ${CURL_DIR}/release)
-set(CURL_DIR_DEBUG ${CURL_DIR}/debug)
+# Глушим предупреждения во всех FetchContent-таргетах (zlib, curl, saucer...):
+# чужой код заваливает лог -Wdeprecated-declarations из Windows SDK и прочим шумом.
+# BUILDSYSTEM_TARGETS — свойство директории, поэтому собираем таргеты рекурсивно.
+macro(collect_targets_recursive _result _dir)
+  get_property(_subdirs DIRECTORY ${_dir} PROPERTY SUBDIRECTORIES)
+  foreach(_subdir IN LISTS _subdirs)
+    collect_targets_recursive(${_result} ${_subdir})
+  endforeach()
+  get_property(_dir_targets DIRECTORY ${_dir} PROPERTY BUILDSYSTEM_TARGETS)
+  list(APPEND ${_result} ${_dir_targets})
+endmacro()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(ZLIB_LIBRARY ${CURL_DIR_DEBUG}/lib/zlibd.lib)
-    set(CURL_LIBRARY ${CURL_DIR_DEBUG}/lib/libcurl-d.lib)
-else()
-    set(ZLIB_LIBRARY ${CURL_DIR_RELEASE}/lib/zlib.lib)
-    set(CURL_LIBRARY ${CURL_DIR_RELEASE}/lib/libcurl.lib)
-endif()
-
-set(CURL_INCLUDE_DIR ${CURL_DIR}/include)
-set(ZLIB_INCLUDE_DIR ${CURL_INCLUDE_DIR})
+set(third_party_targets)
+collect_targets_recursive(third_party_targets ${CMAKE_SOURCE_DIR})
+foreach(third_party_target IN LISTS third_party_targets)
+  if (NOT TARGET ${third_party_target})
+    continue()
+  endif ()
+  get_target_property(third_party_type ${third_party_target} TYPE)
+  if (third_party_type MATCHES "^(ALIAS_LIBRARY|ALIAS_EXECUTABLE|INTERFACE_LIBRARY|UTILITY)$")
+    continue()
+  endif ()
+  get_target_property(third_party_imported ${third_party_target} IMPORTED)
+  if (third_party_imported)
+    continue()
+  endif ()
+  get_target_property(third_party_source_dir ${third_party_target} SOURCE_DIR)
+  if (NOT third_party_source_dir OR NOT third_party_source_dir MATCHES "^${CMAKE_BINARY_DIR}/_deps/")
+    continue()
+  endif ()
+  target_compile_options(${third_party_target} PRIVATE
+    $<$<C_COMPILER_ID:Clang,GNU>:-w>
+    $<$<CXX_COMPILER_ID:Clang,GNU>:-w>
+    $<$<C_COMPILER_ID:MSVC>:/w>
+    $<$<CXX_COMPILER_ID:MSVC>:/w>
+  )
+endforeach()
 
 # Include bit7z
 set(BIT7Z_DIR ${CMAKE_BINARY_DIR}/bit7z)
@@ -138,6 +210,10 @@ set(PROJECT_WARNING_FLAGS -Wall -Wextra -Wpedantic -Werror
     -Wno-exit-time-destructors
     -Wno-unsafe-buffer-usage
 )
+
+# Собственные библиотеки (core/ui/unblock) линкуются статически —
+# макрос делает *_API пустыми вместо __declspec(dllimport/dllexport)
+add_compile_definitions(UNBLOCK_STATIC)
 
 # Add submodules
 add_subdirectory(src/engine)

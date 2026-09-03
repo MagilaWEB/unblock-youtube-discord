@@ -5,7 +5,7 @@ file(GLOB src_h "*.h")
 file(GLOB src_hpp "*.hpp")
 #file(GLOB ${NAME}_src_modules "*.ixx")
 
-add_library(${NAME} SHARED ${src_h} ${src_hpp} ${src_cpp})
+add_library(${NAME} STATIC ${src_h} ${src_hpp} ${src_cpp})
 
 target_precompile_headers(${NAME} PRIVATE pch.h)
 

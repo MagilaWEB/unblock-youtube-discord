@@ -1,14 +1,15 @@
 ## Build
 
 - Конфигурация: `configure-ninja-ai.bat` (использует `CMakePresets.json`, пресет `debug`)
-- Бинарники в `bin/`, деп-зависимости через FetchContent (ultralight, curl, bit7z, 7za, zapret2) — первый конфиг долгий
+- Бинарники в `bin/`, деп-зависимости через FetchContent (saucer, curl+zlib из исходников, bit7z, 7za, zapret2) — первый конфиг долгий
 - Сборка без тестов: пресеты `debug-min`/`release-min` (BUILD_TESTS=OFF)
 - Скрипты-обёртки: `build-ai.ps1` (сборка), `test-ai.ps1` (ctest), `fmt-ai.ps1` (clang-format) — slash-команды `/build`, `/test`, `/fmt`
 
 ## Tests
 
 - Тесты каждого модуля — в `src/<module>/tests/`, свой exe (`test_helper`, `test_*` из core)
-- ВАЖНО: Debug-сборка `test_helper.exe` требует `libcurl-d.dll` из `_build_ai/curl/debug/bin/` — добавить в `PATH` перед запуском (делает `test-ai.ps1`)
+- curl/zlib собираются статически из исходников (Schannel, HTTP-only) — runtime DLL для `test_helper`/`zapret_helper` не нужны, PATH подмешивать не требуется
+- `test_helper` линкует `core` (общий `tap_main.cpp` тянет конструкторы `File`/`CriticalSection`)
 - Для доступа теста к приватным членам используется `friend`-класс, обёрнутый в `#ifdef HELPER_TESTS` (макрос задаётся только при BUILD_TESTS)
 
 ## Architecture

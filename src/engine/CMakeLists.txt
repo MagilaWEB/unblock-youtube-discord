@@ -60,18 +60,6 @@ if(CUPY_LIBS_DLL_TO_BIN)
     add_custom_command(TARGET ${NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${7ZA_BIN} $<TARGET_FILE_DIR:${NAME}>
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<IF:$<CONFIG:Debug>,${CURL_DIR_DEBUG}/bin/libcurl-d.dll,${CURL_DIR_RELEASE}/bin/libcurl.dll>"
-            $<TARGET_FILE_DIR:${NAME}>
-        COMMAND ${CMAKE_COMMAND} -E $<IF:$<CONFIG:Debug>,copy_if_different,echo>
-            "${CURL_DIR_DEBUG}/bin/libcurl-d.pdb"
-            $<TARGET_FILE_DIR:${NAME}>
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<IF:$<CONFIG:Debug>,${CURL_DIR_DEBUG}/bin/zlibd1.dll,${CURL_DIR_RELEASE}/bin/zlib1.dll>"
-            $<TARGET_FILE_DIR:${NAME}>
-        COMMAND ${CMAKE_COMMAND} -E $<IF:$<CONFIG:Debug>,copy_if_different,echo>
-            "${CURL_DIR_DEBUG}/bin/zlibd.pdb"
-            $<TARGET_FILE_DIR:${NAME}>
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${CMAKE_SOURCE_DIR}/src/engine/unblock.ico"
             $<TARGET_FILE_DIR:${NAME}>
         COMMENT "Copying runtime DLLs to output directory"
