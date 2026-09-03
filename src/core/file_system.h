@@ -4,7 +4,7 @@
 
 using namespace std::filesystem;
 
-class CORE_API File final
+class File final
 {
 	CriticalSection lock;
 

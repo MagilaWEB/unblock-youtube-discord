@@ -1,6 +1,6 @@
 #pragma once
 
-class CORE_API Core final
+class Core final
 {
 	FastLock						  _task_lock;
 	FastLock						  _task_complete_lock;

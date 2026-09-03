@@ -13,7 +13,7 @@
 #include <memory>
 #include <string_view>
 
-class UI_API Ui final : public utils::DefaultInit,
+class Ui final : public utils::DefaultInit,
 						public std::enable_shared_from_this<Ui>
 {
 	friend class UiUnblock;

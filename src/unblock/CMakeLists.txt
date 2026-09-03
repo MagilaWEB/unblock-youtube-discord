@@ -22,5 +22,4 @@ target_link_libraries(${NAME} PRIVATE
         ${BIT7Z_LIB}
 )
 
-# Define EXPORTS when building the libraries
-target_compile_definitions(${NAME} PRIVATE UNBLOCK_EXPORTS ${ALL_MACRO_CPP})
+target_compile_definitions(${NAME} PRIVATE ${ALL_MACRO_CPP})

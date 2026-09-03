@@ -1,7 +1,7 @@
 #pragma once
 #include "virtual_key_codes.hpp"
 
-class CORE_API InputConsole final
+class InputConsole final
 {
 	inline static CriticalSection _lock;
 	enum class ColorType : u16

@@ -44,24 +44,25 @@ FetchContent_Declare(
   saucer
   GIT_REPOSITORY https://github.com/saucer/saucer
   GIT_TAG v8.0.5
+  GIT_SHALLOW TRUE
 )
 
-# zlib (для статической сборки curl — нужен для декодирования gzip/deflate).
-# Используем только zlibstatic; shared zlib.dll не нужна (EXCLUDE_FROM_ALL).
-# Внешние таргеты скрываются из CMake Targets View в VS через VSWorkspaceSettings.json.
+# zlib for the static curl build (gzip/deflate)
 FetchContent_Declare(
   zlib
   GIT_REPOSITORY https://github.com/madler/zlib
   GIT_TAG v1.3.1
+  GIT_SHALLOW TRUE
 )
 
-# Load curl из исходников (статическая сборка)
+# curl from source (static build; release tarball instead of git clone)
 FetchContent_Declare(
   curl
-  GIT_REPOSITORY https://github.com/curl/curl
-  GIT_TAG curl-8_12_0
+  URL https://github.com/curl/curl/releases/download/curl-8_12_0/curl-8.12.0.tar.xz
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
+# DOWNLOAD_EXTRACT_TIMESTAMP: VS cmake cannot extract .7z with --touch
 FetchContent_Declare(
   bit7z
   URL https://github.com/rikyoz/bit7z/releases/download/v4.0.10/bit7z-v4.0.10-msvc2015_x64.7z
@@ -83,18 +84,16 @@ FetchContent_Declare(
 )
 
 # Build
-# zlib + curl собираем статикой (BUILD_SHARED_LIBS временно OFF, чтобы
-# curl::libcurl указал на статическую библиотеку). Саucer и остальные
-# FetchContent-зависимости собираются ниже в общем вызове.
+# zlib before curl: curl links zlibstatic via ZLIB::ZLIB
 set(ZLIB_BUILD_EXAMPLES OFF)
 FetchContent_MakeAvailable(zlib)
 
-# Используем только zlibstatic; shared zlib.dll не нужна.
-# if(TARGET) на случай закешированного старого zlib-src без shared-таргета
+# shared zlib.dll is not needed
 if(TARGET zlib)
   set_target_properties(zlib PROPERTIES EXCLUDE_FROM_ALL TRUE)
 endif()
 
+# with CURL_ZLIB=OFF curl expects ZLIB::ZLIB - alias it to zlibstatic
 set(ZLIB_FOUND TRUE)
 if(NOT TARGET ZLIB::ZLIB)
   add_library(ZLIB::ZLIB ALIAS zlibstatic)
@@ -120,7 +119,7 @@ set(BUILD_EXAMPLES OFF)
 
 FetchContent_MakeAvailable(curl)
 
-set(BUILD_SHARED_LIBS ON)
+set(BUILD_SHARED_LIBS ON) # restore for the remaining FetchContent dependencies
 set(BUILD_TESTING ON)
 
 FetchContent_MakeAvailable(
@@ -135,13 +134,14 @@ if (BUILD_TESTS)
     Catch2
     GIT_REPOSITORY https://github.com/catchorg/Catch2.git
     GIT_TAG v3.7.0
+    GIT_SHALLOW TRUE
   )
+  set(BUILD_SHARED_LIBS OFF) # no Catch2d.dll in bin/
   FetchContent_MakeAvailable(Catch2)
+  set(BUILD_SHARED_LIBS ON)
 endif ()
 
-# Глушим предупреждения во всех FetchContent-таргетах (zlib, curl, saucer...):
-# чужой код заваливает лог -Wdeprecated-declarations из Windows SDK и прочим шумом.
-# BUILDSYSTEM_TARGETS — свойство директории, поэтому собираем таргеты рекурсивно.
+# _deps targets build with -w: third-party code is noisy under -Werror
 macro(collect_targets_recursive _result _dir)
   get_property(_subdirs DIRECTORY ${_dir} PROPERTY SUBDIRECTORIES)
   foreach(_subdir IN LISTS _subdirs)
@@ -191,7 +191,7 @@ endif()
 set(7ZA_DIR ${CMAKE_BINARY_DIR}/7za)
 set(7ZA_BIN ${7ZA_DIR}/x64/7za.dll)
 
-# WebView2 headers (nuget package, ставится saucer'ом во время конфигурации)
+# WebView2 headers (nuget package, installed by saucer during configure)
 file(GLOB WEBVIEW2_INCLUDE_DIRS
     ${CMAKE_BINARY_DIR}/_deps/saucer-build/nuget/packages/Microsoft.Web.WebView2.*/build/native/include
 )
@@ -210,10 +210,6 @@ set(PROJECT_WARNING_FLAGS -Wall -Wextra -Wpedantic -Werror
     -Wno-exit-time-destructors
     -Wno-unsafe-buffer-usage
 )
-
-# Собственные библиотеки (core/ui/unblock) линкуются статически —
-# макрос делает *_API пустыми вместо __declspec(dllimport/dllexport)
-add_compile_definitions(UNBLOCK_STATIC)
 
 # Add submodules
 add_subdirectory(src/engine)

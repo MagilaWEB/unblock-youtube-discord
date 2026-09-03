@@ -2,7 +2,7 @@
 typedef void	  CURL;
 typedef long long curl_off_t;
 
-class UNBLOCK_API DomainTesting final
+class DomainTesting final
 {
 public:
 	struct CurlDomain

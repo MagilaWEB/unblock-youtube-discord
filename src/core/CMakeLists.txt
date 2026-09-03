@@ -15,8 +15,7 @@ target_compile_options(${NAME} PRIVATE ${PROJECT_WARNING_FLAGS})
 # Link
 #target_link_libraries(${NAME} PRIVATE)
 
-# Define EXPORTS when building the libraries
-target_compile_definitions(${NAME} PRIVATE CORE_EXPORTS ${ALL_MACRO_CPP})
+target_compile_definitions(${NAME} PRIVATE ${ALL_MACRO_CPP})
 
 if (BUILD_TESTS)
   add_subdirectory(tests)

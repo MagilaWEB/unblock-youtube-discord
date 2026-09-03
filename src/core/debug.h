@@ -5,7 +5,7 @@
 #include <atomic>
 #include "file_system.h"
 
-class CORE_API Debug
+class Debug
 {
 	enum MessageTypes
 	{

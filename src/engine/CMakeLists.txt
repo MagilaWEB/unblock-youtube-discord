@@ -30,10 +30,10 @@ add_executable(${NAME} ${src_h} ${src_hpp} ${src_cpp} engine.rc)
 target_precompile_headers(${NAME} PRIVATE pch.h)
 
 target_compile_options(${NAME} PRIVATE ${PROJECT_WARNING_FLAGS})
-# WebView2.h содержит enum с 0xffffffff, не помещающийся в int
+# WebView2.h has an enum value that does not fit into int
 target_compile_options(${NAME} PRIVATE -Wno-microsoft-enum-value)
 
-# Заголовки WebView2 (saucer/modules/stable/webview2.hpp утаскивает WebView2.h)
+# WebView2 headers (saucer/modules/stable/webview2.hpp pulls in WebView2.h)
 if(WEBVIEW2_INCLUDE_DIRS)
     target_include_directories(${NAME} PRIVATE ${WEBVIEW2_INCLUDE_DIRS})
 endif()
@@ -47,8 +47,7 @@ target_link_libraries(${NAME} PRIVATE
         dwmapi.lib
 )
 
-# Define EXPORTS when building the libraries
-target_compile_definitions(${NAME} PRIVATE CONSOLE ENGINE_EXPORTS ${ALL_MACRO_CPP})
+target_compile_definitions(${NAME} PRIVATE CONSOLE ${ALL_MACRO_CPP})
 
 target_link_options(${NAME} PRIVATE
         "LINKER:/ENTRY:mainCRTStartup"

@@ -18,5 +18,4 @@ target_link_libraries(${NAME} PRIVATE
         saucer::saucer
 )
 
-# Define EXPORTS when building the libraries
-target_compile_definitions(${NAME} PRIVATE UI_EXPORTS ${ALL_MACRO_CPP})
+target_compile_definitions(${NAME} PRIVATE ${ALL_MACRO_CPP})

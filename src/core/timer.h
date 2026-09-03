@@ -1,5 +1,5 @@
 #pragma once
-class CORE_API Timer final
+class Timer final
 {
 public:
 	using Clock	   = std::chrono::high_resolution_clock;

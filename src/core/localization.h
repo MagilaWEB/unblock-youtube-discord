@@ -2,7 +2,7 @@
 
 #include "file_system.h"
 
-class CORE_API Localization final
+class Localization final
 {
 	FastLock						   _lock;
 	Ptr<File>						   _lang_file_string{ false };

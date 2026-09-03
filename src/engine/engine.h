@@ -19,7 +19,7 @@
 
 class Ui;
 
-class ENGINE_API Engine final : public IEngineAPI
+class Engine final : public IEngineAPI
 {
 	std::optional<saucer::application> _app;
 	std::shared_ptr<saucer::window>	   _window;

@@ -2,7 +2,7 @@
 #include "timer.h"
 #include "winsvc.h"
 
-class CORE_API Service final
+class Service final
 {
 public:
 	struct Config

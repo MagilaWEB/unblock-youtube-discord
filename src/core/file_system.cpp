@@ -207,15 +207,15 @@ std::expected<TypeReturn, std::string> File::parameterSection(std::string_view s
 	return Debug::str_unexpected("Не удалось найти параметр [{}] в секции [{}]!", parameter, section);
 }
 
-template CORE_API std::expected<std::string, std::string> File::parameterSection<std::string>(std::string_view section, std::string parameter);
-template CORE_API std::expected<cpcstr, std::string> File::parameterSection<cpcstr>(std::string_view section, std::string parameter);
-template CORE_API std::expected<pcstr, std::string> File::parameterSection<pcstr>(std::string_view section, std::string parameter);
-template CORE_API std::expected<bool, std::string> File::parameterSection<bool>(std::string_view section, std::string parameter);
-template CORE_API std::expected<float, std::string> File::parameterSection<float>(std::string_view section, std::string parameter);
-template CORE_API std::expected<s32, std::string> File::parameterSection<s32>(std::string_view section, std::string parameter);
-template CORE_API std::expected<u8, std::string> File::parameterSection<u8>(std::string_view section, std::string parameter);
-template CORE_API std::expected<u32, std::string> File::parameterSection<u32>(std::string_view section, std::string parameter);
-template CORE_API std::expected<u64, std::string> File::parameterSection<u64>(std::string_view section, std::string parameter);
+template std::expected<std::string, std::string> File::parameterSection<std::string>(std::string_view section, std::string parameter);
+template std::expected<cpcstr, std::string> File::parameterSection<cpcstr>(std::string_view section, std::string parameter);
+template std::expected<pcstr, std::string> File::parameterSection<pcstr>(std::string_view section, std::string parameter);
+template std::expected<bool, std::string> File::parameterSection<bool>(std::string_view section, std::string parameter);
+template std::expected<float, std::string> File::parameterSection<float>(std::string_view section, std::string parameter);
+template std::expected<s32, std::string> File::parameterSection<s32>(std::string_view section, std::string parameter);
+template std::expected<u8, std::string> File::parameterSection<u8>(std::string_view section, std::string parameter);
+template std::expected<u32, std::string> File::parameterSection<u32>(std::string_view section, std::string parameter);
+template std::expected<u64, std::string> File::parameterSection<u64>(std::string_view section, std::string parameter);
 
 void File::writeText(std::string_view str)
 {

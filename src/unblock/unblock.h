@@ -8,7 +8,7 @@
 
 #include "../core/service.h"
 
-class UNBLOCK_API Unblock final : public std::enable_shared_from_this<Unblock>
+class Unblock final : public std::enable_shared_from_this<Unblock>
 {
 	Service _zapret{ "zapret2", "SvcHost.exe" };
 	Service _zapret_helper{ "zapret2_helper", "SvcHost.exe" };

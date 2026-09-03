@@ -1,11 +1,11 @@
 #pragma once
 
-class CORE_API CriticalSection
+class CriticalSection
 {
 	CRITICAL_SECTION pmutex;
 
 public:
-	struct CORE_API raii
+	struct raii
 	{
 		explicit raii(CriticalSection&);
 		~raii();
@@ -24,12 +24,12 @@ public:
 };
 
 // Non recursive
-class CORE_API FastLock
+class FastLock
 {
 	SRWLOCK srw;
 
 public:
-	struct CORE_API raii
+	struct raii
 	{
 		raii(FastLock&, bool shared = false);
 		~raii();
