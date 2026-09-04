@@ -556,3 +556,224 @@ TEST_CASE("File parameterSection with empty value", "[file][edge]")
 	auto res = f.parameterSection<std::string>("S", "k");
 	CHECK_FALSE(res.has_value());
 }
+
+// ─── Regression: empty sections/params, duplicates, order ───────────────
+
+static std::vector<std::string> fileLines(const fs::path& p)
+{
+	std::vector<std::string> lines;
+	std::ifstream ifs(p);
+	std::string  line;
+	while (std::getline(ifs, line))
+		lines.push_back(line);
+	return lines;
+}
+
+static std::string fileContent(const fs::path& p)
+{
+	std::ifstream ifs(p);
+	return std::string(std::istreambuf_iterator<char>(ifs), {});
+}
+
+static int countOf(const std::string& haystack, const std::string& needle)
+{
+	int count = 0;
+	for (auto pos = haystack.find(needle); pos != std::string::npos; pos = haystack.find(needle, pos + needle.size()))
+		count++;
+	return count;
+}
+
+/// Collects the [X] section headers in order of appearance.
+static std::vector<std::string> sectionTitles(const std::vector<std::string>& lines)
+{
+	std::vector<std::string> titles;
+	for (auto& l : lines)
+		if ((!l.empty()) && l.front() == '[' && l.back() == ']')
+			titles.push_back(l);
+	return titles;
+}
+
+TEST_CASE("regression: reads do not create empty section stubs on first run", "[file][regression]")
+{
+	// Simulates the first run: the UI reads a bunch of sections (not in the file yet)
+	// and then only writes real values.
+	auto path = createFile("reg_first.ini", "");
+	File f;
+	f.open(path, "", true);
+
+	(void)f.parameterSection<std::string>("SYSTEM", "enable_dns_hosts");
+	(void)f.parameterSection<std::string>("TG_WS_PROXY", "host");
+	(void)f.parameterSection<std::string>("REMEMBER_CONFIGURATION", "config");
+	(void)f.parameterSection<std::string>("UNBLOCK", "enable_game_mod");
+	(void)f.parameterSection<std::string>("ZAPRET", "custom_hosts");
+
+	f.writeSectionParameter("WINDOW", "width", "1040");
+	f.writeSectionParameter("WINDOW", "height", "1020");
+	f.writeSectionParameter("SYSTEM", "enable_dns_hosts", "false");
+	f.writeSectionParameter("UNBLOCK", "enable_game_mod", "true");
+	f.save();
+	f.close();
+
+	auto content = fileContent(path);
+
+	// empty stub sections did not survive
+	CHECK(content.find("[TG_WS_PROXY]") == std::string::npos);
+	CHECK(content.find("[ZAPRET]") == std::string::npos);
+
+	// real sections present and not duplicated
+	REQUIRE(countOf(content, "[WINDOW]") == 1);
+	REQUIRE(countOf(content, "[SYSTEM]") == 1);
+	REQUIRE(countOf(content, "[UNBLOCK]") == 1);
+}
+
+TEST_CASE("regression: empty value parameter is not written", "[file][regression]")
+{
+	auto path = createFile("reg_empty_val.ini", "");
+	File f;
+	f.open(path, "", true);
+
+	f.writeSectionParameter("ZAPRET", "custom_hosts", "");
+	f.writeSectionParameter("ZAPRET", "custom_ip_set", "");
+	f.writeSectionParameter("UNBLOCK", "enable_game_mod", "true");
+	f.save();
+	f.close();
+
+	auto content = fileContent(path);
+	CHECK(content.find("custom_hosts=") == std::string::npos);
+	CHECK(content.find("[ZAPRET]") == std::string::npos);
+	CHECK(content.find("enable_game_mod=true") != std::string::npos);
+}
+
+TEST_CASE("regression: empty vector writer does not create empty parameter", "[file][regression]")
+{
+	auto path = createFile("reg_empty_vec.ini", "");
+	File f;
+	f.open(path, "", true);
+
+	f.writeSectionParameterVector("ZAPRET", "custom_hosts", {});
+	f.writeSectionParameterVector("ZAPRET", "custom_domains_exclude", {});
+	f.writeSectionParameter("UNBLOCK", "enable_facebook", "true");
+	f.save();
+	f.close();
+
+	auto content = fileContent(path);
+	CHECK(content.find("custom_hosts=") == std::string::npos);
+	CHECK(content.find("[ZAPRET]") == std::string::npos);
+	CHECK(content.find("enable_facebook=true") != std::string::npos);
+}
+
+TEST_CASE("regression: non-empty vector value is kept", "[file][regression]")
+{
+	auto path = createFile("reg_keep.ini", "");
+	File f;
+	f.open(path, "", true);
+
+	f.writeSectionParameterVector("ZAPRET", "custom_hosts", { "ru", "eu" });
+	f.writeSectionParameter("UNBLOCK", "enable_game_mod", "true");
+	f.save();
+	f.close();
+
+	auto content = fileContent(path);
+	CHECK(content.find("custom_hosts=ru;eu") != std::string::npos);
+	CHECK(content.find("[ZAPRET]") != std::string::npos);
+	// not split or duplicated
+	REQUIRE(countOf(content, "custom_hosts=") == 1);
+}
+
+TEST_CASE("regression: empty value update keeps existing value", "[file][regression]")
+{
+	auto path = createFile("reg_empty_update.ini", "[SYSTEM]\nenable_dns_hosts=false\nshow_console=true\n");
+	File f;
+	f.open(path, "", true);
+
+	// attempting to overwrite with empty must be ignored
+	f.writeSectionParameter("SYSTEM", "show_console", "");
+	f.save();
+	f.close();
+
+	auto content = fileContent(path);
+	CHECK(content.find("show_console=true") != std::string::npos);
+	// no separate empty show_console= appeared
+	CHECK(content.find("show_console=\n") == std::string::npos);
+	REQUIRE(countOf(content, "show_console=") == 1);
+}
+
+TEST_CASE("regression: reopen and update does not duplicate sections or params", "[file][regression]")
+{
+	auto path = createFile("reg_sessions.ini", "");
+
+	{
+		File f;
+		f.open(path, "", true);
+		f.writeSectionParameter("WINDOW", "width", "1040");
+		f.writeSectionParameter("WINDOW", "height", "1020");
+		f.writeSectionParameter("SYSTEM", "enable_dns_hosts", "false");
+	}
+	{
+		File f;
+		f.open(path, "", true);
+		(void)f.parameterSection<std::string>("SYSTEM", "enable_dns_hosts");
+		f.writeSectionParameter("WINDOW", "height", "1022");
+		f.writeSectionParameter("SYSTEM", "show_console", "true");
+	}
+	{
+		File f;
+		f.open(path, "", true);
+		f.writeSectionParameter("WINDOW", "height", "1000");
+		f.writeSectionParameter("UNBLOCK", "enable_game_mod", "true");
+	}
+
+	auto content = fileContent(path);
+	REQUIRE(countOf(content, "[WINDOW]") == 1);
+	REQUIRE(countOf(content, "[SYSTEM]") == 1);
+	REQUIRE(countOf(content, "height=") == 1);
+	REQUIRE(countOf(content, "enable_dns_hosts=") == 1);
+
+	// the last write wins
+	CHECK(content.find("height=1000") != std::string::npos);
+	CHECK(content.find("height=1020") == std::string::npos);
+	CHECK(content.find("height=1022") == std::string::npos);
+}
+
+TEST_CASE("regression: section order follows creation, not alphabetical", "[file][regression]")
+{
+	auto path = createFile("reg_order.ini", "");
+	File f;
+	f.open(path, "", true);
+
+	// Alphabetical order would have been: REMEMBER, SYSTEM, UNBLOCK, WINDOW.
+	f.writeSectionParameter("WINDOW", "width", "1040");
+	f.writeSectionParameter("SYSTEM", "enable_dns_hosts", "false");
+	f.writeSectionParameter("UNBLOCK", "enable_game_mod", "true");
+	f.writeSectionParameter("REMEMBER_CONFIGURATION", "config", "strategy.config");
+	f.save();
+	f.close();
+
+	auto titles = sectionTitles(fileLines(path));
+	REQUIRE(titles.size() == 4);
+	CHECK(titles[0] == "[WINDOW]");
+	CHECK(titles[1] == "[SYSTEM]");
+	CHECK(titles[2] == "[UNBLOCK]");
+	CHECK(titles[3] == "[REMEMBER_CONFIGURATION]");
+}
+
+TEST_CASE("regression: sanitizer cleans polluted file on reopen", "[file][regression]")
+{
+	// On-disk file already polluted (empty params/sections) from an old version.
+	auto path = createFile("reg_polluted.ini",
+		"[ZAPRET]\ncustom_hosts=\ncustom_ip_set=\n\n[SYSTEM]\nenable_dns_hosts=false\nshow_console=\n");
+	File f;
+	f.open(path, "", true);
+
+	// any write forces _normalize() → the empties get swept out
+	f.writeSectionParameter("SYSTEM", "check_update_app_startup", "true");
+	f.save();
+	f.close();
+
+	auto content = fileContent(path);
+	CHECK(content.find("custom_hosts=") == std::string::npos);
+	CHECK(content.find("show_console=") == std::string::npos);
+	CHECK(content.find("[ZAPRET]") == std::string::npos);
+	CHECK(content.find("enable_dns_hosts=false") != std::string::npos);
+	CHECK(content.find("check_update_app_startup=true") != std::string::npos);
+}

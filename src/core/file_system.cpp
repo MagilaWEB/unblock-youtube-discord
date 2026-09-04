@@ -74,7 +74,8 @@ void File::forLineSection(std::string_view section, std::function<bool(std::stri
 			}
 		);
 
-		_normalize();
+		if (start)
+			_registerSectionOrder(section);
 	}
 
 	for (auto& str : list_string)
@@ -238,6 +239,15 @@ void File::writeSectionParameter(std::string_view section, std::string parameter
 
 	_is_write = true;
 
+	// Empty parameter (key=) is never written to the config — warn and ignore,
+	// so empty values never linger in the map (from reads or empty vector lists).
+	if (auto trimmed = value_argument; utils::trim(trimmed), trimmed.empty())
+	{
+		if (info_debug)
+			Debug::warning("File [{}]: rejected empty value for [{}] in section [{}]!", name(), parameter, section);
+		return;
+	}
+
 	bool stoped{ false };
 	forLineSection(
 		section,
@@ -267,6 +277,7 @@ void File::writeSectionParameter(std::string_view section, std::string parameter
 		return;
 
 	_map_list_string[std::string{ section }].emplace_back(std::format("{}={}", parameter, value_argument));
+	_registerSectionOrder(section);
 	_normalize();
 }
 
@@ -358,6 +369,7 @@ void File::open(std::filesystem::path file, std::string_view expansion, bool no_
 
 	_line_string.clear();
 	_map_list_string.clear();
+	_section_order.clear();
 
 	std::string str;
 	while (getline(_stream, str))
@@ -378,6 +390,7 @@ void File::clear()
 
 	_line_string.clear();
 	_map_list_string.clear();
+	_section_order.clear();
 }
 
 void File::save()
@@ -410,35 +423,107 @@ void File::close()
 
 void File::_normalize()
 {
-	for (auto& [section, list_string] : _map_list_string)
+	// WriteText-only files (no sections) are not touched.
+	if (_map_list_string.empty())
+		return;
+
+	struct SectionLines
 	{
-		std::string key{ std::format("[{}]", section) };
+		std::vector<std::string> lines; // parameters (for untouched sections)
+		bool touched{ false };			// present in _map_list_string
+		bool in_file{ false };			// found in _line_string
+	};
 
-		bool	  is_section{ false };
-		ptrdiff_t it = 0;
-		for (; static_cast<size_t>(it) < _line_string.size(); it++)
+	std::map<std::string, SectionLines> sections;
+	std::vector<std::string>			order;
+
+	// 1. Collect current sections from _line_string in file order and their untouched lines.
+	std::string current;
+	for (auto& line : _line_string)
+	{
+		std::smatch m;
+		if (std::regex_search(line, m, r_section_name()))
 		{
-			auto& str = _line_string[static_cast<size_t>(it)];
-			if ((!is_section) && std::regex_match(str, r_section_name()) && str.contains(key))
-				is_section = true;
-			else if (is_section && std::regex_match(str, r_section_name()))
-				break;
+			auto header = m.str();
+			auto close	= header.find(']');
+			auto name	= (close == std::string::npos) ? header : header.substr(1, close - 1);
 
-			if (is_section)
+			if (sections.find(name) == sections.end())
 			{
-				_line_string.erase(_line_string.begin() + it);
-				it--;
+				order.push_back(name);
+				sections[name].in_file = true;
 			}
+			current = name;
+			continue;
 		}
 
-		_line_string.insert(_line_string.begin() + it, key);
-
-		for (auto& str : list_string)
-			_line_string.insert(_line_string.begin() + ++it, str);
-
-		if (++it; static_cast<size_t>(it) < _line_string.size())
-			_line_string.insert(_line_string.begin() + it, "\n");
+		if ((!current.empty()) && (!line.empty()) && (!sections[current].touched))
+			sections[current].lines.push_back(line);
 	}
+
+	// 2. Modified sections take their values from the map (map wins), the rest keep file lines.
+	for (auto& [section, list_string] : _map_list_string)
+	{
+		auto& entry = sections[section];
+		entry.touched = true;
+		entry.lines.clear();
+		entry.lines.reserve(list_string.size());
+		for (auto& str : list_string)
+			entry.lines.push_back(str);
+	}
+
+	// 3. New sections (not present in the file yet) are appended in creation order.
+	for (auto& section : _section_order)
+		if ((!sections[section].in_file) &&
+			std::find(order.begin(), order.end(), section) == order.end())
+			order.push_back(section);
+
+	// Fallback: map sections that ended up outside the creation order (to avoid data loss).
+	for (auto& [section, list_string] : _map_list_string)
+		if ((!sections[section].in_file) &&
+			std::find(order.begin(), order.end(), section) == order.end())
+			order.push_back(section);
+
+	// 4. Rebuild _line_string: no empty sections, blank line as separator.
+	_line_string.clear();
+	for (auto& section : order)
+	{
+		auto& entry = sections[section];
+
+		// Drop parameters with an empty value (key=) — those are not written to the config.
+		std::vector<std::string> final_lines;
+		final_lines.reserve(entry.lines.size());
+		for (auto& line : entry.lines)
+		{
+			if (auto eq = line.find('='); eq != std::string::npos)
+			{
+				auto value = line.substr(eq + 1);
+				utils::trim(value);
+				if (value.empty())
+					continue;
+			}
+			final_lines.push_back(std::move(line));
+		}
+
+		if (final_lines.empty())
+			continue;
+
+		_line_string.emplace_back(std::format("[{}]", section));
+		for (auto& line : final_lines)
+			_line_string.emplace_back(std::move(line));
+		_line_string.emplace_back("");
+	}
+
+	// Drop the trailing blank separator after the last section.
+	while ((!_line_string.empty()) && _line_string.back().empty())
+		_line_string.pop_back();
+}
+
+void File::_registerSectionOrder(std::string_view section)
+{
+	auto name = std::string{ section };
+	if (std::ranges::find(_section_order, name) == _section_order.end())
+		_section_order.push_back(std::move(name));
 }
 
 void File::_removeEmptyLine()
