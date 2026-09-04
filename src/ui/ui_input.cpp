@@ -32,6 +32,8 @@ void Input::create(std::string_view selector, Types type, JSValue value, Localiz
 	if (!parent.valid())
 		return;
 
+	ASSERT_ARGS(!_created, "This element has already been created; recreating it is a critical error! Element name {}.", _name);
+
 	pcstr type_str = nullptr;
 	for (const auto& [id, str] : convert_types)
 		if (id == type)

@@ -25,6 +25,8 @@ void CheckBox::create(std::string_view selector, Localization::Str title, Locali
 	if (!parent.valid())
 		return;
 
+	ASSERT_ARGS(!_created, "This element has already been created; recreating it is a critical error! Element name {}.", _name);
+
 	_root = ui::dom::create("div");
 	_root.addClass("check_box").addClass("show");
 

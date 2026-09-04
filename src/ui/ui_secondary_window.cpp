@@ -41,6 +41,8 @@ void SecondaryWindow::initialize()
 
 void SecondaryWindow::create(Localization::Str title, Localization::Str description)
 {
+	ASSERT_ARGS(!_created, "This element has already been created; recreating it is a critical error! Element name {}.", _name);
+
 	_root = ui::dom::create("div");
 	_root.id(_name).addClass("secondary_window");
 	ui::dom::body().append(_root);
