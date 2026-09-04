@@ -1,5 +1,5 @@
 ### geohide.ru: hosts file
-# Последнее обновление: 03.09.2026 16:40:06
+# Последнее обновление: 04.09.2026 04:14:34
 # Регион серверов: RU
 # Все IP-адреса серверов GeoHide DNS:
 # 193.233.112.67
@@ -2616,33 +2616,24 @@
 143.20.64.192 game.boombeachgame.com
 31.25.239.132 game.boombeachgame.com
 2.27.118.34 game.boombeachgame.com
-54.237.236.94 game.squadbustersgame.com
-3.92.32.132 game.squadbustersgame.com
-54.162.52.223 game.squadbustersgame.com
-54.172.157.224 game.squadbustersgame.com
-35.174.4.109 game.squadbustersgame.com
-44.247.254.192 game.clashroyaleapp.com
-34.220.221.168 game.clashroyaleapp.com
-54.218.61.101 game.clashroyaleapp.com
-35.91.222.2 game.clashroyaleapp.com
-54.71.224.86 game.clashroyaleapp.com
-44.255.53.245 game.clashroyaleapp.com
-44.244.164.148 game.clashroyaleapp.com
-44.248.0.34 game.clashroyaleapp.com
-185.246.223.127 game.brawlstarsgame.com
+62.133.62.97 game.clashroyaleapp.com
+54.174.195.209 gamea.clashofclans.com
+54.197.19.151 gamea.clashofclans.com
+54.210.24.40 gamea.clashofclans.com
+3.88.26.198 gamea.clashofclans.com
+34.205.15.69 gamea.clashofclans.com
+13.223.89.67 gamea.clashofclans.com
+3.239.30.32 gamea.clashofclans.com
+3.86.211.25 gamea.clashofclans.com
+44.227.138.182 game.brawlstarsgame.com
+44.241.61.155 game.brawlstarsgame.com
+52.33.95.61 game.brawlstarsgame.com
+108.61.167.26 game.squadbustersgame.com
 217.60.245.219 game.mocogame.com
 217.60.245.233 game.mocogame.com
 143.20.64.192 game.mocogame.com
 31.25.239.132 game.mocogame.com
 2.27.118.34 game.mocogame.com
-3.234.139.17 gamea.clashofclans.com
-3.237.202.251 gamea.clashofclans.com
-3.95.232.8 gamea.clashofclans.com
-54.87.191.57 gamea.clashofclans.com
-98.81.87.177 gamea.clashofclans.com
-3.91.222.29 gamea.clashofclans.com
-100.27.231.116 gamea.clashofclans.com
-98.93.160.240 gamea.clashofclans.com
 217.60.245.219 security.id.supercell.com
 217.60.245.233 security.id.supercell.com
 143.20.64.192 security.id.supercell.com
