@@ -1,16 +1,10 @@
-function(add_core_test name)
+function(add_dom_test name)
     add_executable(${name} ${name}.cpp tap_main.cpp)
-    target_link_libraries(${name} PRIVATE Catch2::Catch2 core)
-    target_compile_definitions(${name} PRIVATE CORE_TESTS)
+    target_link_libraries(${name} PRIVATE Catch2::Catch2 dom)
     target_compile_options(${name} PRIVATE
         $<$<CXX_COMPILER_ID:Clang>:-Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-global-constructors -Wno-c2y-extensions -Wno-header-hygiene -Wno-shadow-field-in-constructor -Wno-nonportable-system-include-path -Wno-newline-eof -Wno-language-extension-token -Wno-sign-conversion -Wno-dangling-else -Wno-undefined-func-template>
     )
     add_test(NAME ${name} COMMAND ${name} --reporter TAP)
 endfunction()
 
-add_core_test(test_file_system)
-add_core_test(test_localization)
-add_core_test(test_debug)
-add_core_test(test_utils)
-add_core_test(test_core)
-add_core_test(test_scheduler)
+add_dom_test(test_tour_layout)

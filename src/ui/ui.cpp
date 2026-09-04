@@ -27,6 +27,8 @@ void Ui::setup(saucer::smartview* view)
 	if (!view)
 		return;
 
+	ui::dom::bind(view);
+
 	// Global variables for the UI page (injected before the scripts load).
 	view->inject({ .code = "window.RUN_CPP = true; window.VERSION_APP = " + jsQuote(VERSION_STR) + ";", .run_at = saucer::script::time::creation });
 
@@ -60,6 +62,8 @@ void Ui::_domReady()
 	auto* view = _engine->webview();
 	if (!view)
 		return;
+
+	ui::dom::bind(view);
 
 	// Page title shown in Task Manager for the WebView2 process: "Unblock <version>".
 	view->execute("document.title = {}", jsQuote(std::string("Unblock ") + VERSION_STR));

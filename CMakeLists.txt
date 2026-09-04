@@ -214,6 +214,7 @@ set(PROJECT_WARNING_FLAGS -Wall -Wextra -Wpedantic -Werror
 # Add submodules
 add_subdirectory(src/engine)
 add_subdirectory(src/core)
+add_subdirectory(src/dom)
 add_subdirectory(src/ui)
 add_subdirectory(src/unblock)
 add_subdirectory(src/helper)

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "utils_saucer.hpp"
-#include "dom.hpp"
+#include "../dom/dom.hpp"
 #include "../core/localization.h"
 
 #include <saucer/smartview.hpp>

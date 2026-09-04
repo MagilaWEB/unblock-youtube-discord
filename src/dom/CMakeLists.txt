@@ -1,9 +1,8 @@
-set(NAME ui)
+set(NAME dom)
 
 file(GLOB src_cpp "*.cpp")
 file(GLOB src_h "*.h")
 file(GLOB src_hpp "*.hpp")
-#file(GLOB ${NAME}_src_modules "*.ixx")
 
 add_library(${NAME} STATIC ${src_h} ${src_hpp} ${src_cpp})
 
@@ -11,12 +10,11 @@ target_precompile_headers(${NAME} PRIVATE pch.h)
 
 target_compile_options(${NAME} PRIVATE ${PROJECT_WARNING_FLAGS})
 
-# Link
-target_link_libraries(${NAME} PRIVATE
-        core
-        dom
-        unblock
-        saucer::saucer
-)
+# saucer PUBLIC: smartview* leaks into headers (dom_view/dom_element).
+target_link_libraries(${NAME} PUBLIC saucer::saucer)
 
 target_compile_definitions(${NAME} PRIVATE ${ALL_MACRO_CPP})
+
+if (BUILD_TESTS)
+  add_subdirectory(tests)
+endif ()

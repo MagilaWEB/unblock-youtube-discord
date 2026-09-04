@@ -18,6 +18,11 @@ class EditableList final : public BaseElement
 
 	std::vector<std::string>				_items;
 	std::function<bool(const std::string&)> _validator;
+	// Remove buttons parallel to _items (rebuilt in _renderItems).
+	// A click is identified by button handle, not by index/value: the index
+	// goes stale on fast clicks, the value is ambiguous on duplicates,
+	// and a stale handle is simply not found — the click is dropped.
+	std::vector<ui::dom::Element>			_remove_btns;
 
 public:
 	EditableList(std::string_view name);
@@ -42,6 +47,9 @@ public:
 
 private:
 	void _renderItems();
+	// Remove by button handle (click from the "remove:<handle>" UI-expose).
+	// A stale handle (fast-click race) is silently dropped.
+	void _removeByButton(int handle);
 	// Fires the change event with {action, value}: "add"/"remove".
 	void _notifyChange(std::string_view action, std::string_view value);
 };

@@ -58,9 +58,9 @@ void CheckBox::create(std::string_view selector, Localization::Str title, Locali
 	p_description.addClass("info_description").text(description());
 	ui::dom::body().append(p_description);
 
-	_root.tooltip(p_description);
+	_root.hoverPopup(p_description, "info_description_active");
 
-	_input.onChange("CPPCheckBoxEventClick_" + _name, _name);
+	_input.on(ui::dom::Event::Change, "CPPCheckBoxEventClick_" + _name, _name);
 
 	_event_click[_name].clear();
 	_created = true;

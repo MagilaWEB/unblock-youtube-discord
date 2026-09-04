@@ -9,7 +9,10 @@ Button::Button(std::string_view name) : BaseElement(name)
 void Button::initialize()
 {
 	if (auto* view = BaseElement::view())
-		view->expose("CPPButtonEventClick", [](std::string element_name) -> bool { return eventCPP({ std::move(element_name) }, _event_click); });
+		view->expose(
+			"CPPButtonEventClick",
+			[](std::string element_name, std::string) -> bool { return eventCPP({ std::move(element_name) }, _event_click); }
+		);
 }
 
 void Button::create(std::string_view selector, Localization::Str title, bool first)
@@ -32,7 +35,7 @@ void Button::create(std::string_view selector, Localization::Str title, bool fir
 	_inner.text(title());
 	_root.append(_inner);
 
-	_inner.onClick("CPPButtonEventClick", _name);
+	_inner.on(ui::dom::Event::Click, "CPPButtonEventClick", _name);
 
 	_event_click[_name].clear();
 	_created = true;

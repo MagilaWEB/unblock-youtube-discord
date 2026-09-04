@@ -62,9 +62,9 @@ void Input::create(std::string_view selector, Types type, JSValue value, Localiz
 	p_description.addClass("info_description").text(description());
 	ui::dom::body().append(p_description);
 
-	_root.tooltip(p_description);
+	_root.hoverPopup(p_description, "info_description_active");
 
-	_input.onSubmit("CPPInputEventSubmit", _name);
+	_input.on(ui::dom::Event::Submit, "CPPInputEventSubmit", _name);
 
 	_event_click[_name].clear();
 	_created = true;
@@ -80,17 +80,10 @@ void Input::addEventSubmit(std::function<bool(JSArgs)>&& callback)
 
 JSValue Input::getValue()
 {
-	auto* view = BaseElement::view();
-	if (!view)
-		return JSValue{ _value };
-
-	// Live read of the input value from the DOM. Called only from background
-	// threads (Core::addTask), so we block with coco::await — UI stays free.
-	// __dom[] may have no entry if the handle is invalid; evaluate returns ""
-	// in that case. An empty field falls back to the value set via setValue.
-	const auto result = coco::await(view->evaluate<std::string>("(__dom[{}] && __dom[{}].value) || ''", _input.handle(), _input.handle()));
-
-	const std::string dom_value = result.value_or(std::string{});
+	// Live field value from the DOM via the universal bridge (blocking
+	// getter — call only from background tasks, see dom_element.hpp).
+	// An empty field falls back to the value set via setValue.
+	const std::string dom_value = _input.valueStr();
 	if (!dom_value.empty())
 		return JSValue{ dom_value };
 

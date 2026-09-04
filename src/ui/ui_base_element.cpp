@@ -33,6 +33,7 @@ void BaseElement::initializeAll(saucer::smartview* view)
 		return;
 
 	_view = view;
+	ui::dom::bind(view);
 
 	for (const auto& [name, element] : _all_element)
 		if (element)
@@ -42,10 +43,15 @@ void BaseElement::initializeAll(saucer::smartview* view)
 void BaseElement::release()
 {
 	_view = nullptr;
+	ui::dom::release();
 }
 
 saucer::smartview* BaseElement::view()
 {
+	// View is owned by the dom lib (see dom_view.hpp); here a thin forward
+	// to avoid a ui <-> dom dependency cycle.
+	if (auto* v = ui::dom::view())
+		return v;
 	return _view;
 }
 

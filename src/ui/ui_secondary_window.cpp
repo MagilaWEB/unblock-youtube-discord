@@ -26,15 +26,25 @@ void SecondaryWindow::initialize()
 	{
 		view->expose(
 			"CPPSecondaryWindowEventOK",
-			[](std::string element_name) -> bool { return eventCPP({ std::move(element_name) }, _event_click); }
+			[](std::string element_name, std::string) -> bool { return eventCPP({ std::move(element_name) }, _event_click); }
 		);
+		// Yes/No travel as tags "yes:<name>"/"no:<name>" (see _buildYesNo):
+		// the expose is shared by all windows (no this capture), the widget
+		// name comes from the tag. bool is mapped here.
 		view->expose(
 			"CPPSecondaryWindowEventYESNO",
-			[](std::string element_name, bool yes) -> bool { return eventCPP({ std::move(element_name), yes }, _event_yes_no); }
+			[](std::string tag, std::string) -> bool
+			{
+				const std::string_view view{ tag };
+				const auto			   pos = view.find(':');
+				const bool			   yes = view.substr(0, pos) == "yes";
+				std::string			   name{ (pos == std::string_view::npos) ? std::string_view{} : view.substr(pos + 1) };
+				return eventCPP({ std::move(name), yes }, _event_yes_no);
+			}
 		);
 		view->expose(
 			"CPPSecondaryWindowEventCancel",
-			[](std::string element_name) -> bool { return eventCPP({ std::move(element_name) }, _event_cancel); }
+			[](std::string element_name, std::string) -> bool { return eventCPP({ std::move(element_name) }, _event_cancel); }
 		);
 	}
 }
@@ -96,7 +106,7 @@ void SecondaryWindow::_buildOk()
 {
 	ui::dom::Element btn;
 	_addButton(Localization::Str{ "str_b_secondary_window_ok" }(), btn);
-	btn.onClickPersist("CPPSecondaryWindowEventOK", _name);
+	btn.on(ui::dom::Event::Click, "CPPSecondaryWindowEventOK", _name, { .persist = true });
 	_elements.addClass("horizontally");
 }
 
@@ -104,11 +114,11 @@ void SecondaryWindow::_buildYesNo()
 {
 	ui::dom::Element yes;
 	_addButton(Localization::Str{ "str_b_secondary_window_yes" }(), yes);
-	yes.onYesNoPersist("CPPSecondaryWindowEventYESNO", _name, true);
+	yes.on(ui::dom::Event::Click, "CPPSecondaryWindowEventYESNO", "yes:" + _name, { .persist = true });
 
 	ui::dom::Element no;
 	_addButton(Localization::Str{ "str_b_secondary_window_no" }(), no);
-	no.onYesNoPersist("CPPSecondaryWindowEventYESNO", _name, false);
+	no.on(ui::dom::Event::Click, "CPPSecondaryWindowEventYESNO", "no:" + _name, { .persist = true });
 
 	_elements.addClass("horizontally");
 }
@@ -121,7 +131,7 @@ void SecondaryWindow::_buildWait()
 
 	ui::dom::Element cancel;
 	_addButton(Localization::Str{ "str_b_secondary_window_cancel" }(), cancel);
-	cancel.onClickPersist("CPPSecondaryWindowEventCancel", _name);
+	cancel.on(ui::dom::Event::Click, "CPPSecondaryWindowEventCancel", _name, { .persist = true });
 
 	_elements.addClass("vertically");
 }

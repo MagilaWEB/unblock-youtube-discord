@@ -1,5 +1,7 @@
 #include "ui_editable_list.h"
 
+#include <charconv>
+
 EditableList::EditableList(std::string_view name) : BaseElement(name)
 {
 }
@@ -22,17 +24,20 @@ void EditableList::initialize()
 			}
 		);
 
+		// Remove-button clicks. Protocol: ("remove:<handle>", "") —
+		// a handle identifies the row better than an index (see _remove_btns).
 		view->expose(
-			"CPPEditableListRemove_" + _name,
-			[this](std::string, int index) -> bool
+			"CPPEditableListUI_" + _name,
+			[this](std::string action, std::string) -> bool
 			{
-				if (index >= 0 && static_cast<std::size_t>(index) < _items.size())
-				{
-					const std::string removed = _items[static_cast<std::size_t>(index)];
-					_items.erase(_items.begin() + index);
-					_renderItems();
-					_notifyChange("remove", removed);
-				}
+				constexpr std::string_view kPrefix{ "remove:" };
+				if (!action.starts_with(kPrefix))
+					return false;
+				const auto number	 = std::string_view{ action }.substr(kPrefix.size());
+				int		   handle	 = -1;
+				const auto [ptr, ec] = std::from_chars(number.data(), number.data() + number.size(), handle);
+				if (ec == std::errc{} && ptr == number.data() + number.size())
+					_removeByButton(handle);
 				return false;
 			}
 		);
@@ -64,7 +69,7 @@ void EditableList::create(std::string_view selector, Localization::Str title, st
 		auto p_description = ui::dom::create("p");
 		p_description.addClass("info_description").text(description);
 		ui::dom::body().append(p_description);
-		_root.tooltip(p_description);
+		_root.hoverPopup(p_description, "info_description_active");
 	}
 
 	_list = ui::dom::create("div");
@@ -77,7 +82,7 @@ void EditableList::create(std::string_view selector, Localization::Str title, st
 		_input.setAttr("placeholder", placeholder);
 	_root.append(_input);
 
-	_input.onSubmit("CPPEditableListAdd_" + _name, _name);
+	_input.on(ui::dom::Event::Submit, "CPPEditableListAdd_" + _name, _name);
 
 	_event_click[_name].clear();
 	_created = true;
@@ -137,6 +142,7 @@ void EditableList::addEventChange(std::function<bool(JSArgs)>&& callback)
 void EditableList::_renderItems()
 {
 	_list.html("");
+	_remove_btns.clear();
 
 	for (const auto& item : _items)
 	{
@@ -150,10 +156,29 @@ void EditableList::_renderItems()
 		auto remove_btn = ui::dom::create("button");
 		remove_btn.addClass("editable_list_remove").text("✕");
 		row.append(remove_btn);
-		remove_btn.listRemove("CPPEditableListRemove_" + _name, _name);
+		// The button reports its own handle — the shim neither computes indices
+		// nor knows about rows (see _remove_btns in the header).
+		remove_btn.on(ui::dom::Event::Click, "CPPEditableListUI_" + _name, "remove:" + std::to_string(remove_btn.handle()), { .persist = true });
 
+		_remove_btns.push_back(remove_btn);
 		_list.append(row);
 	}
+}
+
+void EditableList::_removeByButton(int handle)
+{
+	const auto it = std::ranges::find_if(_remove_btns, [&](const auto& btn) { return btn.handle() == handle; });
+	if (it == _remove_btns.end())
+		return;	   // stale click (rows already re-rendered) — drop it
+
+	const auto index = static_cast<std::size_t>(std::distance(_remove_btns.begin(), it));
+	if (index >= _items.size())
+		return;
+
+	const std::string removed = _items[index];
+	_items.erase(_items.begin() + static_cast<std::ptrdiff_t>(index));
+	_renderItems();
+	_notifyChange("remove", removed);
 }
 
 void EditableList::_notifyChange(std::string_view action, std::string_view value)
