@@ -70,9 +70,6 @@ str_please_wait=⏳ Please wait...
 str_warning=⚠ Warning
 str_error=❌ Error
 
-str_window_wait_response_from_server_description=⏳ Waiting for server response...
-Loading data. This may take a few seconds.
-
 str_warning_copy_application_running=Unblock is already running. Cannot start another instance.
 
 // Removing
@@ -101,6 +98,7 @@ Check your connection and try again.
 
 // Check update
 str_bottom_check_update_app_startup_title=🔍 Check for updates
+str_button_check_update_app_progress_title=🔍 Checking for updates...
 
 // Secondary Window
 str_b_secondary_window_ok=✅ OK
@@ -145,9 +143,6 @@ Do you want to install the update now?
 
 str_window_wait_update_unblock=⏳ Downloading Unblock update [{:.2f}%]...
 Do not close the application. It will restart automatically when finished.
-
-str_window_check_update_unblock=🔍 Checking for updates...
-Looking for available Unblock updates.
 
 // Secondary Window continue select strategy
 str_window_continue_select_strategy_title=✅ Configuration selected
@@ -494,6 +489,13 @@ str_tour_proxy_apply_description=Restarts the proxy with changed settings: stops
 str_tour_remove_app_title=🗑 Uninstall Unblock
 str_tour_remove_app_description=Full removal of the application: stops services, restores system settings and resets parameters.
 The process is irreversible — be careful.
+
+str_tasks_indicator_title=⚙ Background ({})
+str_tasks_window_title=⚙ Background tasks
+str_task_check_update_title=🔍 Checking for updates
+str_task_dns_hosts_title=📁 Checking and caching GeoHide DNS data
+str_tour_tasks_title=⚙ Background tasks
+str_tour_tasks_description=Indicator of quiet background tasks in the screen corner. Visible only while something is running. Click to see the list with progress bars.
 
 // Tutorial tour buttons
 str_tour_next=Next →

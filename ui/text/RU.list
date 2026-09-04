@@ -70,9 +70,6 @@ str_please_wait=⏳ Подождите...
 str_warning=⚠ Внимание
 str_error=❌ Ошибка
 
-str_window_wait_response_from_server_description=⏳ Ожидание ответа от сервера...
-Загрузка данных. Это может занять несколько секунд.
-
 str_warning_copy_application_running=Unblock уже запущен. Повторный запуск невозможен.
 
 // Removing
@@ -101,6 +98,7 @@ str_window_error_update_unblock=❌ Ошибка обновления
 
 // Check update
 str_bottom_check_update_app_startup_title=🔍 Проверить обновления
+str_button_check_update_app_progress_title=🔍 Проверка обновлений...
 
 // Secondary Window
 str_b_secondary_window_ok=✅ OK
@@ -145,9 +143,6 @@ str_window_update_unblock=🔄 Доступно обновление Unblock v{}
 
 str_window_wait_update_unblock=⏳ Выполняется загрузка обновления Unblock [{:.2f}%]...
 Не закрывайте приложение. После завершения оно перезапустится автоматически.
-
-str_window_check_update_unblock=🔍 Проверка обновлений...
-Ищем доступные обновления для Unblock.
 
 // Secondary Window continue select strategy
 str_window_continue_select_strategy_title=✅ Конфигурация подобрана
@@ -494,6 +489,13 @@ str_tour_proxy_apply_description=Перезапускает прокси с из
 str_tour_remove_app_title=🗑 Удалить Unblock
 str_tour_remove_app_description=Полное удаление приложения: остановка служб, восстановление системных настроек и сброс параметров.
 Процесс необратим — будьте внимательны.
+
+str_tasks_indicator_title=⚙ Фон ({})
+str_tasks_window_title=⚙ Фоновые задачи
+str_task_check_update_title=🔍 Проверка обновлений
+str_task_dns_hosts_title=📁 Проверка и кэширование данных GeoHide DNS
+str_tour_tasks_title=⚙ Фоновые задачи
+str_tour_tasks_description=Индикатор тихих фоновых задач в углу экрана. Виден только когда что-то выполняется. Нажмите, чтобы увидеть список с прогрессбарами.
 
 // Tutorial tour buttons
 str_tour_next=Далее →

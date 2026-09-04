@@ -9,12 +9,13 @@
 #include "ui_proxy_tg.h"
 #include "ui_zapret.h"
 #include "ui_unblock.h"
+#include "ui_background_tasks.h"
 
 #include <memory>
 #include <string_view>
 
 class Ui final : public utils::DefaultInit,
-						public std::enable_shared_from_this<Ui>
+				 public std::enable_shared_from_this<Ui>
 {
 	friend class UiUnblock;
 	friend class UiZapret2;
@@ -32,10 +33,11 @@ class Ui final : public utils::DefaultInit,
 	BUTTON(_remove_app);
 	SECONDARY_WINDOW(_window_remove_app);
 
-	std::unique_ptr<UiDnsHosts> _ui_dns_hosts;
-	std::unique_ptr<UiProxyTg>	_ui_proxy_tg;
-	std::unique_ptr<UiZapret2>	_ui_zapret2;
-	std::unique_ptr<UiUnblock>	_ui_unblock;
+	std::unique_ptr<UiDnsHosts>		   _ui_dns_hosts;
+	std::unique_ptr<UiProxyTg>		   _ui_proxy_tg;
+	std::unique_ptr<UiZapret2>		   _ui_zapret2;
+	std::unique_ptr<UiUnblock>		   _ui_unblock;
+	std::unique_ptr<UiBackgroundTasks> _ui_background_tasks;
 
 	// Root directory error
 	SECONDARY_WINDOW(_window_root_directory_error);
@@ -44,7 +46,6 @@ class Ui final : public utils::DefaultInit,
 	SECONDARY_WINDOW(_window_update_unblock);
 	SECONDARY_WINDOW(_window_wait_update_unblock);
 	SECONDARY_WINDOW(_window_error_update_unblock);
-	SECONDARY_WINDOW(_window_wait_check_update_unblock);
 
 	SECONDARY_WINDOW(_window_warning_conflict_service);
 
@@ -82,6 +83,8 @@ public:
 	void setup(saucer::smartview* view);
 
 	const Ptr<SecondaryWindow>& getWindowWaitStartService() { return _window_wait_start_service; }
+
+	UiBackgroundTasks* backgroundTasks() { return _ui_background_tasks.get(); }
 
 	const Ptr<CheckBox>& getTestingDomainsStartup() const { return _ui_unblock->getTestingDomainsStartup(); }
 

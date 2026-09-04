@@ -120,7 +120,7 @@ footer {
         border-color 0.2s ease;
 }
 
-footer:hover {
+footer:hover:not(:has(.tasks_indicator:hover)) {
     bottom          : 0;
     border-top-color: rgba(255, 255, 255, 0.22);
 }
@@ -129,7 +129,7 @@ footer::after {
     content       : ". . .";
     position      : absolute;
     left          : 0;
-    top           : -0.7em;
+    top           : -0.5em;
     text-align    : center;
     font-weight   : 700;
     font-size     : 1.5em;
@@ -171,7 +171,7 @@ footer .button.show {
         visibility 0s linear 0.25s;
 }
 
-footer:hover .button.show {
+footer:hover:not(:has(.tasks_indicator:hover)) .button.show {
     opacity  : 1;
     visibility: visible;
     transform: scale(1) translateY(0);

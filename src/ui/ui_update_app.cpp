@@ -39,22 +39,29 @@ void Ui::_updateApp()
 
 void Ui::_checkAppUpdate()
 {
-	_window_wait_check_update_unblock->show();
+	// Guard against re-entry: startup check and manual button share this path.
+	if (_ui_background_tasks->exists("check_update"))
+		return;
+
+	_start_check_update_app->setTitle(Localization::Str{ "str_button_check_update_app_progress_title" });
+
+	_ui_background_tasks->start("check_update", "str_task_check_update_title");
 
 	Core::get().addTask(
 		[self = self]
 		{
 			if (auto new_version = self->_unblock->checkUpdate())
 			{
-				self->_window_wait_check_update_unblock->hide();
-
 				static auto desc = Localization::Str{ "str_window_update_unblock" }();
 				self->_window_update_unblock->setDescription(utils::format(desc, new_version.value()));
 				self->_window_update_unblock->show();
+				self->_ui_background_tasks->finish("check_update");
+				self->_start_check_update_app->setTitle(Localization::Str{ "str_bottom_check_update_app_startup_title" });
 				return;
 			}
 
-			self->_window_wait_check_update_unblock->hide();
+			self->_ui_background_tasks->finish("check_update");
+			self->_start_check_update_app->setTitle(Localization::Str{ "str_bottom_check_update_app_startup_title" });
 		}
 	);
 }
@@ -63,9 +70,6 @@ void Ui::_updateAppWindow()
 {
 	_window_wait_update_unblock->create(Localization::Str{ "str_please_wait" }, "str_window_wait_update_unblock");
 	_window_wait_update_unblock->setType(SecondaryWindow::Type::Info);
-
-	_window_wait_check_update_unblock->create(Localization::Str{ "str_please_wait" }, "str_window_check_update_unblock");
-	_window_wait_check_update_unblock->setType(SecondaryWindow::Type::Info);
 
 	_window_error_update_unblock->create(Localization::Str{ "str_error" }, "str_window_error_update_unblock");
 	_window_error_update_unblock->setType(SecondaryWindow::Type::OK);

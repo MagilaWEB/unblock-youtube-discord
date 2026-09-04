@@ -23,7 +23,6 @@ private:
 
 	SECONDARY_WINDOW(_window_to_warn_enable_dns_hosts);
 	SECONDARY_WINDOW(_window_wait_update_dns);
-	SECONDARY_WINDOW(_window_wait_response_from_server);
 	SECONDARY_WINDOW(_window_check_region);
 
 public:

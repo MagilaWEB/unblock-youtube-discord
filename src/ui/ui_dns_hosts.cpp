@@ -11,9 +11,6 @@ UiDnsHosts::UiDnsHosts(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock)
 
 void UiDnsHosts::initialize()
 {
-	_window_wait_response_from_server->create(Localization::Str{ "str_please_wait" }, "str_window_wait_response_from_server_description");
-	_window_wait_response_from_server->setType(SecondaryWindow::Type::Info);
-
 	_window_check_region->create(Localization::Str{ "str_please_wait" }, "str_window_check_region_description");
 	_window_check_region->setType(SecondaryWindow::Type::Wait);
 
@@ -290,22 +287,21 @@ void UiDnsHosts::_enableDnsHostsUpdate()
 		else
 			_start_update_dns_hosts->hide();
 
-		_window_wait_response_from_server->show();
+		_ui->backgroundTasks()->start("dns_hosts_apply", "str_task_dns_hosts_title");
 
 		Core::get().addTask(
 			[this, state]
 			{
 				if (state && (!_unblock->dnsHostsCheck()))
 				{
-					_window_wait_response_from_server->hide();
 					_window_wait_update_dns->show();
 					_unblock->dnsHostsUpdate();
 					_window_wait_update_dns->hide();
 				}
-				else
-					_window_wait_response_from_server->hide();
 
 				_unblock->dnsHosts(state);
+
+				_ui->backgroundTasks()->finish("dns_hosts_apply");
 			}
 		);
 	}
@@ -323,13 +319,10 @@ void UiDnsHosts::_enableDnsHostsWarningUser()
 	Core::get().addTask(
 		[this]
 		{
-			_window_wait_response_from_server->show();
 			std::string str_list_name{};
 			auto&		list_name = _unblock->dnsHostsListName();
 			for (auto& name : list_name)
 				str_list_name.append(name).append(", ");
-
-			_window_wait_response_from_server->hide();
 
 			// The list may be empty (pop_back on an empty string is UB).
 			if (!str_list_name.empty())

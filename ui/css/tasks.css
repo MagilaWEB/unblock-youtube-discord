@@ -1,0 +1,121 @@
+footer .button.tasks_indicator.show {
+    position: absolute;
+    bottom: 100%;
+    right: 1vw;
+    margin-bottom: 0;
+    width: auto;
+    min-width: 4vw;
+    height: auto;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    /* Above footer::after (the full-width "..." strip): it paints last and
+       would otherwise steal the hover and slide the footer out. */
+    z-index: 2;
+}
+
+footer .button.tasks_indicator.show button {
+    font-size: 1.2vw;
+    padding: 0.4vw 0.8vw;
+    border-radius: 20px;
+    width: auto;
+    height: auto;
+}
+
+/* Invisible hit-area: overlaps a chunk of the footer strip below (and a bit
+   to the sides), so near-misses still land on the button — and thanks to the
+   :has() guard the footer stays shut. Clicks pass through to the button. */
+footer .button.tasks_indicator.show::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: -1vw;
+    right: -1vw;
+    height: 3em;
+}
+
+.tasks_panel {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    margin-bottom: 0.4em;
+    width: max-content;
+    max-width: 70vw;
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(1vw);
+    overflow: hidden;
+    z-index: 30;
+    background-color: rgba(28, 31, 46, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 0 1.1vw;
+    transition: opacity 0.3s ease, transform 0.3s ease, max-height 0.3s ease, padding 0.3s ease;
+    pointer-events: none;
+}
+
+.tasks_panel.show {
+    max-height: 60vh;
+    opacity: 1;
+    transform: translateY(0);
+    overflow: auto;
+    padding: 0.9vw 1.1vw;
+    pointer-events: auto;
+}
+
+.tasks_panel_title {
+    font-size: 1.8vw;
+    text-align: center;
+    margin-bottom: 0.6vw;
+    white-space: nowrap;
+}
+
+.tasks_panel_list {
+    display: flex;
+    flex-direction: column;
+}
+
+.tasks_row {
+    margin: 0.6vw 0;
+    width: max-content;
+    min-width: 100%;
+}
+
+.tasks_label {
+    font-size: 1.6vw;
+    margin-bottom: 0.3vw;
+    text-align: left;
+    white-space: nowrap;
+    max-width: 64vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tasks_bar {
+    height: 0.8vw;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.tasks_fill {
+    height: 100%;
+    width: 0%;
+    background: #4caf50;
+    border-radius: 6px;
+    transition: width 0.4s ease;
+}
+
+.tasks_fill.tasks_indeterminate {
+    width: 40%;
+    animation: tasks_slide 1.2s ease-in-out infinite;
+}
+
+@keyframes tasks_slide {
+    0% {
+        margin-left: -40%;
+    }
+    100% {
+        margin-left: 100%;
+    }
+}

@@ -14,10 +14,11 @@ void Ui::postConstruct()
 {
 	self = shared_from_this();
 
-	_ui_dns_hosts = std::make_unique<UiDnsHosts>(self, _unblock);
-	_ui_proxy_tg  = std::make_unique<UiProxyTg>(self, _unblock);
-	_ui_zapret2	  = std::make_unique<UiZapret2>(self);
-	_ui_unblock	  = std::make_unique<UiUnblock>(self);
+	_ui_dns_hosts		 = std::make_unique<UiDnsHosts>(self, _unblock);
+	_ui_proxy_tg		 = std::make_unique<UiProxyTg>(self, _unblock);
+	_ui_zapret2			 = std::make_unique<UiZapret2>(self);
+	_ui_unblock			 = std::make_unique<UiUnblock>(self);
+	_ui_background_tasks = std::make_unique<UiBackgroundTasks>();
 }
 
 // ------------------ Setup (JS bridge + window subscriptions) ------------------
@@ -136,6 +137,7 @@ void Ui::initialize()
 
 	_initializeWindowBase();
 
+	_ui_background_tasks->initialize();
 	_initializeAppState();
 	_initComponents();
 	_initializeFooter();
@@ -151,6 +153,7 @@ void Ui::update()
 	_ui_zapret2->updateHelperValid();
 	_ui_zapret2->updateHelperError();
 	_updateAppProgressWindowInfo();
+	_ui_background_tasks->update();
 }
 
 namespace
