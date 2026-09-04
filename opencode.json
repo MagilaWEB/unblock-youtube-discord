@@ -1,5 +1,28 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  // ПРИМЕЧАНИЕ: opencode читает этот файл как JSONC, комментарии допустимы.
+  //
+  // КАК ВСЁ ПОДНЯТЬ НОВОМУ РАЗРАБОТЧИКУ (или модели, которая его онбордит):
+  // 1. Поставь Node.js >= 18 и добавь его в PATH. Если лень — просто запускай
+  //    через run_opencode.bat: он сам подхватит %ProgramFiles%\nodejs в PATH.
+  // 2. Поставь LLVM (нужен clangd.exe) и добавь его bin/ в PATH.
+  //    Сервер clangd-nav по умолчанию берёт clangd именно из PATH.
+  // 3. Установи clangd-mcp-server (исходники:
+  //    https://github.com/felipeerias/clangd-mcp-server.git):
+  //      git clone <url> && cd clangd-mcp-server && npm install && npm run build
+  //    и положи его в %LOCALAPPDATA%\opencode\clangd-mcp-server
+  //    (постоянное per-user место; НЕ %TEMP% — его чистят Disk Cleanup и co).
+  //    Общекомпьютерный вариант: %ProgramData%\opencode\clangd-mcp-server.
+  // 4. Сконфигурируй сборку, чтобы лежал _build_ai/compile_commands.json:
+  //    configure-ninja-ai.bat, затем сборка через build-ai.ps1.
+  //    Без compile_commands.json навигация работать не будет.
+  // 5. Запускай opencode СТРОГО через run_opencode.bat из корня репо: он выставляет
+  //    CLANGD_MCP_SERVER_JS и чинит PATH. При прямом запуске `opencode` выставь
+  //    CLANGD_MCP_SERVER_JS вручную (путь с ПРЯМЫМИ слешами, см. ниже).
+  // ДИАГНОСТИКА: `run_opencode.bat mcp list` — clangd-nav должен быть `connected`.
+  // Типичная ошибка `MCP error -32000: Connection closed` = сервер не стартовал:
+  // нет node в PATH, нет dist/index.js по указанному пути или битый JSON из-за
+  // обратных слешей в подставленном пути.
   "formatter": {
     "clang-format": {}
   },
@@ -7,12 +30,21 @@
   "mcp": {
     "clangd-nav": {
       "type": "local",
-      "command": ["node", "C:/Users/belas/AppData/Local/Temp/opencode/clangd-mcp-server/dist/index.js"],
+      // ВАЖНО: {env:...} подставляется в текст конфига ДО парсинга JSON, поэтому
+      // значение CLANGD_MCP_SERVER_JS обязано быть с прямыми слешами (C:/...).
+      // Обратные слеши (C:\...) ломают JSON-эскейпы и валят весь конфиг.
+      // run_opencode.bat находит сервер сам (LOCALAPPDATA -> ProgramData -> TEMP)
+      // и нормализует слеши; руками задаётся так:
+      //   set "CLANGD_MCP_SERVER_JS=C:/Users/<ты>/AppData/Local/opencode/clangd-mcp-server/dist/index.js"
+      "command": ["node", "{env:CLANGD_MCP_SERVER_JS}"],
       "enabled": true,
       "environment": {
-        "PROJECT_ROOT": "I:/dev/unblock",
-        "COMPILE_COMMANDS_DIR": "I:/dev/unblock/_build_ai",
-        "CLANGD_PATH": "C:/Program Files/LLVM/bin/clangd.exe"
+        // Относительный путь от корня проекта — портативно для любой буквы диска.
+        // PROJECT_ROOT не задаём: сервер по умолчанию берёт cwd (корень при
+        // запуске через run_opencode.bat). CLANGD_PATH не задаём: берётся из PATH;
+        // кому нужен свой clangd — прописать в своём глобальном
+        // ~/.config/opencode/opencode.json, а не в этот общий файл.
+        "COMPILE_COMMANDS_DIR": "_build_ai"
       }
     },
     "gh_grep": {
