@@ -190,14 +190,23 @@ void UiZapret2::_selectStrategyVersionUpdate()
 	_select_version_strategy->show();
 
 	auto strategy_dirs = _ui->_unblock->listVersionStrategy();
+	if (strategy_dirs.empty())
+		return;
 
 	for (const auto& strategy_dir : strategy_dirs)
 		_select_version_strategy->createOption(strategy_dir, strategy_dir);
 
+	// Default to the first (newest) version when the config has no valid value.
+	// Without this the config selector below stays empty (changeDirVersion("")
+	// yields no strategies at all).
+	std::string active_version = strategy_dirs.front();
 	if (auto strategy_version = _ui->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "version_strategy"))
-		_select_version_strategy->setSelectedOptionValue(strategy_version.value());
+		if (std::ranges::find(strategy_dirs, strategy_version.value()) != strategy_dirs.end())
+			active_version = strategy_version.value();
 
-	_ui->_unblock->changeDirVersionStrategy(JSToCPP<std::string>(_select_version_strategy->getSelectedOptionValue()));
+	_select_version_strategy->setSelectedOptionValue(active_version);
+	_ui->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "version_strategy", active_version);
+	_ui->_unblock->changeDirVersionStrategy(active_version);
 
 	_selectConfigUpdate();
 }
@@ -234,19 +243,15 @@ void UiZapret2::_selectConfigUpdate()
 	for (const auto& strategy : strategies_list)
 		_select_config->createOption(strategy, strategy);
 
+	// Default to the first config when the config has no valid value.
+	// An empty selection would hit the assert in changeStrategy() below.
+	std::string active_config = strategies_list[0];
 	if (auto config = _ui->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
-	{
 		if (std::ranges::find(strategies_list, config.value()) != strategies_list.end())
-		{
-			_select_config->setSelectedOptionValue(config.value());
-			_ui->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", JSToCPP(_select_config->getSelectedOptionValue()));
-		}
-		else
-		{
-			_ui->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", strategies_list[0]);
-			_select_config->setSelectedOptionValue(strategies_list[0]);
-		}
-	}
+			active_config = config.value();
+
+	_ui->userConfig()->writeSectionParameter("REMEMBER_CONFIGURATION", "config", active_config);
+	_select_config->setSelectedOptionValue(active_config);
 
 	_buttonUpdate();
 	_ui->_unblock->changeStrategy(JSToCPP(_select_config->getSelectedOptionValue()));
@@ -427,6 +432,8 @@ bool UiZapret2::_autoStartTryNext() const
 		return true;
 
 	auto strategy_dirs = _ui->_unblock->listVersionStrategy();
+	if (strategy_dirs.empty())
+		return false;
 
 	auto it = std::ranges::find(strategy_dirs, JSToCPP<std::string>(_select_version_strategy->getSelectedOptionValue()));
 
