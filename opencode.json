@@ -1,0 +1,37 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "formatter": {
+    "clang-format": {}
+  },
+  "lsp": {},
+  "mcp": {
+    "clangd-nav": {
+      "type": "local",
+      "command": ["node", "C:/Users/belas/AppData/Local/Temp/opencode/clangd-mcp-server/dist/index.js"],
+      "enabled": true,
+      "environment": {
+        "PROJECT_ROOT": "I:/dev/unblock",
+        "COMPILE_COMMANDS_DIR": "I:/dev/unblock/_build_ai",
+        "CLANGD_PATH": "C:/Program Files/LLVM/bin/clangd.exe"
+      }
+    },
+    "gh_grep": {
+      "type": "remote",
+      "url": "https://mcp.grep.app",
+      "enabled": true
+    }
+  },
+  "agent": {
+    "build": {
+      "description": "C++ builder for unblock (Ninja+clang, _build_ai)",
+      "tools": {
+        "clangd-nav*": true,
+        "gh_grep*": true
+      }
+    }
+  },
+  "watcher": {
+    "ignore": ["_build_ai/**", "_build/**", "**/_deps/**", "bin/**", ".git/**"]
+  },
+  "plugin": ["opencode-morph-fast-apply", "opencode-shell-strategy", "opencode-dynamic-context-pruning"]
+}

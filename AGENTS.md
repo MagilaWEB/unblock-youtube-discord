@@ -25,3 +25,10 @@
 ## Style
 
 - Личные правила общения и работы — см. глобальный скил `dev-communication`.
+
+## MCP / Navigation (opencode)
+
+- Навигация по C++: используй `clangd-nav` (`find_definition`, `find_references`, `get_hover`, `workspace_symbol_search`), не выдумывай API — проверяй через hover/definition.
+- Примеры извне: `gh_grep`, доки по либам: `context7`.
+- После правки: `pwsh -NoProfile -File build-ai.ps1`, потом `ctest --test-dir _build_ai --output-on-failure`. Lua правится в `resources/lua/` + сборка (копия в `binaries/lua/`).
+- Не индексируй мусор: `_build_ai/`, `_build/`, `_deps/`, `bin/`.
