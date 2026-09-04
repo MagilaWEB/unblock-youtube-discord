@@ -53,7 +53,7 @@ void Tutorial::onDomReady()
 		return;
 
 	auto btn = ui::dom::create("div");
-	btn.addClass("button").addClass("show");
+	btn.addClass("button").show();
 	container.append(btn);
 
 	auto inner = ui::dom::create("button");

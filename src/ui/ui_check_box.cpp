@@ -9,8 +9,11 @@ CheckBox::CheckBox(std::string_view name) : BaseElement(name)
 void CheckBox::initialize()
 {
 	if (auto* view = BaseElement::view())
+		// Per-widget exposed name (like SelectList/EditableList): a shared name
+		// would keep only the first widget's lambda (saucer emplace), routing
+		// every checkbox's state into the wrong object.
 		view->expose(
-			"CPPCheckBoxEventClick",
+			"CPPCheckBoxEventClick_" + _name,
 			[this](std::string element_name, bool state) -> bool
 			{
 				_state = state;
@@ -28,7 +31,7 @@ void CheckBox::create(std::string_view selector, Localization::Str title, Locali
 	ASSERT_ARGS(!_created, "This element has already been created; recreating it is a critical error! Element name {}.", _name);
 
 	_root = ui::dom::create("div");
-	_root.addClass("check_box").addClass("show");
+	_root.addClass("check_box").show();
 
 	if (first)
 		parent.prepend(_root);
@@ -57,7 +60,7 @@ void CheckBox::create(std::string_view selector, Localization::Str title, Locali
 
 	_root.tooltip(p_description);
 
-	_input.onChange("CPPCheckBoxEventClick", _name);
+	_input.onChange("CPPCheckBoxEventClick_" + _name, _name);
 
 	_event_click[_name].clear();
 	_created = true;

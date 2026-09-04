@@ -81,7 +81,7 @@ void SecondaryWindow::_clearElements()
 void SecondaryWindow::_addButton(std::string_view text, ui::dom::Element& out)
 {
 	auto btn = ui::dom::create("div");
-	btn.addClass("button").addClass("show");
+	btn.addClass("button").show();
 	_elements.append(btn);
 
 	auto inner = ui::dom::create("button");

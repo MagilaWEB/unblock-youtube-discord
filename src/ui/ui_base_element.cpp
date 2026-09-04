@@ -65,7 +65,7 @@ void BaseElement::show()
 		return;
 
 	_is_show = true;
-	_root.addClass("show");
+	_root.show();
 }
 
 void BaseElement::hide()
@@ -74,7 +74,7 @@ void BaseElement::hide()
 		return;
 
 	_is_show = false;
-	_root.removeClass("show");
+	_root.hide();
 }
 
 bool BaseElement::isCreate() const

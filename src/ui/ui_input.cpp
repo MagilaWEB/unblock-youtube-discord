@@ -40,7 +40,7 @@ void Input::create(std::string_view selector, Types type, JSValue value, Localiz
 			type_str = str;
 
 	_root = ui::dom::create("div");
-	_root.addClass("input").addClass("show");
+	_root.addClass("input").show();
 
 	if (first)
 		parent.prepend(_root);

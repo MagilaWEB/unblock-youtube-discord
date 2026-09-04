@@ -4,12 +4,21 @@
 
 #include <atomic>
 #include <format>
+#include <map>
+#include <mutex>
 
 namespace ui::dom
 {
 	namespace
 	{
 		std::atomic<int> s_nextHandle{ 0 };
+
+		// Visibility epochs: every show()/hide() bumps a per-handle counter and
+		// the JS side applies only strictly newer states. A re-executed (stale)
+		// script — backend replay or cross-thread inversion — is ignored, so a
+		// hidden modal can never be resurrected and ordering stays causal.
+		std::mutex			s_visMutex;
+		std::map<int, long> s_visEpoch;
 	}
 
 	static inline saucer::smartview* sv()
@@ -41,12 +50,30 @@ namespace ui::dom
 
 	Element& Element::show()
 	{
-		return addClass("show");
+		if (auto* v = sv(); v && _h >= 0)
+		{
+			long epoch = 0;
+			{
+				std::lock_guard lk{ s_visMutex };
+				epoch = ++s_visEpoch[_h];
+			}
+			v->execute("__dom_show({}, {})", _h, epoch);
+		}
+		return *this;
 	}
 
 	Element& Element::hide()
 	{
-		return removeClass("show");
+		if (auto* v = sv(); v && _h >= 0)
+		{
+			long epoch = 0;
+			{
+				std::lock_guard lk{ s_visMutex };
+				epoch = ++s_visEpoch[_h];
+			}
+			v->execute("__dom_hide({}, {})", _h, epoch);
+		}
+		return *this;
 	}
 
 	// -------------------------------------------------------------------
@@ -133,14 +160,17 @@ namespace ui::dom
 	Element& Element::append(const Element& child)
 	{
 		if (auto* v = sv(); v && _h >= 0 && child._h >= 0)
-			v->execute("__dom[{}].appendChild(__dom[{}])", _h, child._h);
+			// Idempotent attach (see create()): re-appending an already attached
+			// node only moves it, so a re-executed script skips instead.
+			v->execute("__dom_appendOnce({}, {})", _h, child._h);
 		return *this;
 	}
 
 	Element& Element::prepend(const Element& child)
 	{
 		if (auto* v = sv(); v && _h >= 0 && child._h >= 0)
-			v->execute("__dom_prepend({}, {})", _h, child._h);
+			// Idempotent attach (see append()).
+			v->execute("__dom_prependOnce({}, {})", _h, child._h);
 		return *this;
 	}
 
@@ -156,7 +186,8 @@ namespace ui::dom
 		if (auto* v = sv(); v && _h >= 0)
 		{
 			int ch = s_nextHandle++;
-			v->execute("__dom[{}] = document.createElement({}); __dom[{}].appendChild(__dom[{}])", ch, tag, _h, ch);
+			// Idempotent allocation (see create()): a re-executed script must not orphan the registry.
+			v->execute("if (!__dom[{}]) {{ __dom[{}] = document.createElement({}); __dom[{}].appendChild(__dom[{}]); }}", ch, ch, tag, _h, ch);
 			return Element(ch);
 		}
 		return Element(-1);
@@ -304,7 +335,11 @@ namespace ui::dom
 	{
 		int h = s_nextHandle++;
 		if (auto* v = sv())
-			v->execute("__dom[{}] = document.createElement({})", h, tag);
+			// Idempotent allocation: the WebView2 backend was observed (Release only)
+			// to re-execute a slice of the init ExecuteScript burst seconds later.
+			// A second pass must not allocate an orphan twin node and hijack the
+			// handle in __dom[] — keep the first node instead.
+			v->execute("if (!__dom[{}]) __dom[{}] = document.createElement({})", h, h, tag);
 		return Element(h);
 	}
 

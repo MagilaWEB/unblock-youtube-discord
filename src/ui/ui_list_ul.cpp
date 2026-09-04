@@ -17,7 +17,7 @@ void ListUl::create(std::string_view selector, Localization::Str title, bool fir
 	ASSERT_ARGS(!_created, "This element has already been created; recreating it is a critical error! Element name {}.", _name);
 
 	_root = ui::dom::create("div");
-	_root.addClass("list_ul").addClass("block").addClass("show");
+	_root.addClass("list_ul").addClass("block").show();
 
 	if (first)
 		parent.prepend(_root);

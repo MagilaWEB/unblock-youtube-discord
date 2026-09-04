@@ -48,7 +48,7 @@ void EditableList::create(std::string_view selector, Localization::Str title, st
 	ASSERT_ARGS(!_created, "This element has already been created; recreating it is a critical error! Element name {}.", _name);
 
 	_root = ui::dom::create("div");
-	_root.addClass("editable_list").addClass("show");
+	_root.addClass("editable_list").show();
 
 	if (first)
 		parent.prepend(_root);

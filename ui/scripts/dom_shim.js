@@ -33,11 +33,49 @@ window.__dom_prepend = function(hp, hc) {
 		__dom[hp].insertBefore(__dom[hc], __dom[hp].firstChild);
 };
 
-// --- Event wiring (DOM listen -> exposed C++ function) ----------
+// Idempotent attach: the WebView2 backend was observed (Release only) to
+// re-execute a slice of already-fired scripts seconds later. Re-appending an
+// already attached node would only move it, so a re-executed script skips
+// instead of scrambling the layout.
+window.__dom_appendOnce = function(hp, hc) {
+	var p = __dom[hp], c = __dom[hc];
+	if (!p || !c || c.parentNode === p) return;
+	p.appendChild(c);
+};
+window.__dom_prependOnce = function(hp, hc) {
+	var p = __dom[hp], c = __dom[hc];
+	if (!p || !c || p.firstChild === c) return;
+	p.insertBefore(c, p.firstChild);
+};
 
-window.__dom_listen_click = function(h, cppName, name) {
+// Epoch-guarded visibility: every C++ show()/hide() carries a strictly
+// increasing per-node number; only the newest state is applied. A re-executed
+// (or cross-thread inverted) script carries a stale number and is ignored,
+// so a hidden window can never be resurrected by one.
+window.__dom_show = function(h, epoch) {
 	var el = __dom[h];
 	if (!el) return;
+	if (epoch < (el.__vep || 0)) return;
+	el.__vep = epoch;
+	el.classList.add("show");
+};
+window.__dom_hide = function(h, epoch) {
+	var el = __dom[h];
+	if (!el) return;
+	if (epoch < (el.__vep || 0)) return;
+	el.__vep = epoch;
+	el.classList.remove("show");
+};
+
+// --- Event wiring (DOM listen -> exposed C++ function) ----------
+
+// Note: every listener below is attached at most once per node and per event
+// kind. A re-executed wiring script (see __dom_appendOnce) must not stack
+// duplicate handlers, or one click would drive the C++ backend twice.
+window.__dom_listen_click = function(h, cppName, name) {
+	var el = __dom[h];
+	if (!el || el.__wiredClick) return;
+	el.__wiredClick = true;
 	var hnd = async () => {
 		if (await window.saucer.exposed[cppName](name))
 			el.removeEventListener("click", hnd);
@@ -47,7 +85,8 @@ window.__dom_listen_click = function(h, cppName, name) {
 
 window.__dom_listen_check = function(h, cppName, name) {
 	var el = __dom[h];
-	if (!el) return;
+	if (!el || el.__wiredCheck) return;
+	el.__wiredCheck = true;
 	var hnd = async () => {
 		if (await window.saucer.exposed[cppName](name, !!el.checked))
 			el.removeEventListener("change", hnd);
@@ -57,7 +96,8 @@ window.__dom_listen_check = function(h, cppName, name) {
 
 window.__dom_listen_submit = function(h, cppName, name) {
 	var el = __dom[h];
-	if (!el) return;
+	if (!el || el.__wiredSubmit) return;
+	el.__wiredSubmit = true;
 	el.addEventListener("keyup", async (ev) => {
 		if (ev.keyCode === 13)
 			await window.saucer.exposed[cppName](name, el.value);
@@ -67,7 +107,8 @@ window.__dom_listen_submit = function(h, cppName, name) {
 // Persistent listeners (no self-removal) — used by secondary windows.
 window.__dom_listen_click_persist = function(h, cppName, name) {
 	var el = __dom[h];
-	if (!el) return;
+	if (!el || el.__wiredClickPersist) return;
+	el.__wiredClickPersist = true;
 	el.addEventListener("click", async () => {
 		await window.saucer.exposed[cppName](name);
 	});
@@ -75,7 +116,8 @@ window.__dom_listen_click_persist = function(h, cppName, name) {
 
 window.__dom_listen_yesno_persist = function(h, cppName, name, yes) {
 	var el = __dom[h];
-	if (!el) return;
+	if (!el || el.__wiredYesNo) return;
+	el.__wiredYesNo = true;
 	el.addEventListener("click", async () => {
 		await window.saucer.exposed[cppName](name, yes);
 	});
@@ -86,7 +128,8 @@ window.__dom_listen_yesno_persist = function(h, cppName, name, yes) {
 window.__dom_select_init = function(h_div, h_label, h_select, cppName, name) {
 	var label = __dom[h_label];
 	var select = __dom[h_select];
-	if (!label || !select) return;
+	if (!label || !select || select.__selInit) return;
+	select.__selInit = true;
 	var active = false;
 	var mouseover = false;
 
@@ -140,7 +183,8 @@ window.__dom_select_clear = function(h_select) {
 // The remove button of an editable-list row. Reports the row index.
 window.__dom_list_remove = function(h_btn, cppName, name) {
 	var btn = __dom[h_btn];
-	if (!btn) return;
+	if (!btn || btn.__wiredRemove) return;
+	btn.__wiredRemove = true;
 	btn.addEventListener("click", async () => {
 		var row = btn.closest ? btn.closest(".editable_list_item") : null;
 		if (!row || !row.parentNode) return;
@@ -281,7 +325,8 @@ window.__dom_tour_end = function(h_overlay) {
 window.__dom_tooltip = function(h_el, h_desc) {
 	var element = __dom[h_el];
 	var desc = __dom[h_desc];
-	if (!element || !desc) return;
+	if (!element || !desc || element.__tip) return;
+	element.__tip = true;
 	desc.style.position = "fixed";
 
 	var IsValid = event => {

@@ -24,6 +24,8 @@
     left      : -3vw;
     right     : -3vw;
     bottom    : -3vw;
+    /* The extended hit area must not swallow clicks meant for the content below. */
+    pointer-events: none;
 }
 
 .nav:hover {

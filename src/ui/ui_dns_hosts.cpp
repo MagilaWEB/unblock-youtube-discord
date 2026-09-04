@@ -329,8 +329,12 @@ void UiDnsHosts::_enableDnsHostsWarningUser()
 
 			_window_wait_response_from_server->hide();
 
-			str_list_name.pop_back();
-			str_list_name.pop_back();
+			// The list may be empty (pop_back on an empty string is UB).
+			if (!str_list_name.empty())
+			{
+				str_list_name.pop_back();
+				str_list_name.pop_back();
+			}
 
 			_window_to_warn_enable_dns_hosts->setDescription(utils::format(description, str_list_name));
 			_window_to_warn_enable_dns_hosts->show();
