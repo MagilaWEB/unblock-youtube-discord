@@ -5,8 +5,11 @@ rem Persistent home is %LOCALAPPDATA%\opencode\clangd-mcp-server - %TEMP% is onl
 rem fallback (anything can wipe it: Disk Cleanup, storage sense, etc).
 rem NOTE: opencode substitutes {env:...} as raw text before JSON parsing, so the path must use
 rem forward slashes - backslashes (C:\...) break JSON escapes. Normalized below via :\=/.
+rem PATH зависит от того, кто и откуда запускает (терминал, IDE, планировщик) — чиним
+rem все известные дыры здесь, чтобы MCP не дохли с -32000 в «не той» среде.
 where node >nul 2>nul
 if errorlevel 1 if exist "%ProgramFiles%\nodejs\node.exe" set "PATH=%ProgramFiles%\nodejs;%PATH%"
+if exist "%USERPROFILE%\.local\bin\github-mcp-server.exe" set "PATH=%USERPROFILE%\.local\bin;%PATH%"
 if not defined CLANGD_MCP_SERVER_JS if exist "%LOCALAPPDATA%\opencode\clangd-mcp-server\dist\index.js" set "CLANGD_MCP_SERVER_JS=%LOCALAPPDATA%\opencode\clangd-mcp-server\dist\index.js"
 if not defined CLANGD_MCP_SERVER_JS if exist "%ProgramData%\opencode\clangd-mcp-server\dist\index.js" set "CLANGD_MCP_SERVER_JS=%ProgramData%\opencode\clangd-mcp-server\dist\index.js"
 if not defined CLANGD_MCP_SERVER_JS if exist "%TEMP%\opencode\clangd-mcp-server\dist\index.js" set "CLANGD_MCP_SERVER_JS=%TEMP%\opencode\clangd-mcp-server\dist\index.js"
