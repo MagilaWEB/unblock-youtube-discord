@@ -238,7 +238,7 @@ Safe: when disabled, Unblock restores the original hosts file content.
 str_select_dns_hosts_region_title=🌍 Active region
 str_select_dns_hosts_region_description=🌍 Region for which geohide.ru builds the hosts file (from the list below).
 str_dns_hosts_regions_title=📋 Region list
-str_dns_hosts_regions_description=📋 Choose the region the site addresses are picked for: ru — Russian servers acting as bridges to foreign ones, eu — European servers for direct connection, us — American servers for direct connection. Picking your own region is usually enough. You can add your own option or remove unused ones.
+str_dns_hosts_regions_description=📋 Regions the site addresses are picked for are added here: ru — Russian servers acting as bridges to foreign ones, eu — European servers for direct connection, us — American servers for direct connection. Your own region is usually enough. You can add your own option or remove unused ones. If the service has no such region or it is unavailable — adding will be cancelled, the region will be removed from the list.
 str_input_dns_hosts_region_placeholder=Add a region (e.g. ua) and press Enter
 str_input_dns_hosts_url_title=🔗 geohide host
 str_input_dns_hosts_url_description=🔗 Host the hosts file is downloaded from (without https://, e.g. geohide.ru). Change it if the service moves.
@@ -381,6 +381,8 @@ The hosts file is checked first on any network request, so the substitution happ
 This bypasses both DNS blocks and regional restrictions without additional software.
 
 The «🔄 Update local DNS» button refreshes the mapping list manually.
+«🌍 Active region» — the region geohide.ru builds the hosts file for (picked from the region list below).
+«📋 Region list» — adding your own regions: if the service has no such region or it is unavailable — adding will be cancelled.
 Safe: when disabled, Unblock restores the original hosts file content.
 
 str_tutorial_tab_tg_title=📱 Telegram proxy tab
@@ -469,6 +471,14 @@ Safe: when disabled, the hosts content is restored.
 str_tour_update_dns_title=🔄 Update local DNS
 str_tour_update_dns_description=Refreshes the mappings in the hosts file manually.
 The button is available when Local DNS is enabled.
+
+str_tour_dns_active_region_title=🌍 Active region
+str_tour_dns_active_region_description=The region geohide.ru builds the hosts file for (picked from the region list below).
+When switched, the region is checked: if it is unavailable — the choice is cancelled and the previous one is restored.
+
+str_tour_dns_region_list_title=📋 Region list
+str_tour_dns_region_list_description=Adding regions to the list, not picking: enter a region code and press Enter.
+If the service has no such region or it is unavailable — adding will be cancelled, the region will be removed from the list.
 
 str_tour_proxy_tg_title=📱 Proxy for Telegram
 str_tour_proxy_tg_description=Creates a local proxy server on your device to bypass Telegram blocking.

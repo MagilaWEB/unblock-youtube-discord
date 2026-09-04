@@ -80,6 +80,7 @@ void UiDnsHosts::_enableDnsHosts()
 
 	_select_region
 		->create("#local_dns section .common", "str_select_dns_hosts_region_title", Localization::Str{ "str_select_dns_hosts_region_description" });
+	_select_region->addTutorialStep("str_tour_dns_active_region_title", "str_tour_dns_active_region_description", 12);
 	_select_region->addEventChange(
 		[this](JSArgs args)
 		{
@@ -114,6 +115,7 @@ void UiDnsHosts::_enableDnsHosts()
 		Localization::Str{ "str_dns_hosts_regions_description" }(),
 		Localization::Str{ "str_input_dns_hosts_region_placeholder" }()
 	);
+	_region_list->addTutorialStep("str_tour_dns_region_list_title", "str_tour_dns_region_list_description", 13);
 	_region_list->setValidator(
 		[this](const std::string& value)
 		{
