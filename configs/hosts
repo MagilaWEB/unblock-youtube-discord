@@ -1,5 +1,5 @@
 ### geohide.ru: hosts file
-# Последнее обновление: 04.09.2026 04:14:34
+# Последнее обновление: 05.09.2026 03:33:57
 # Регион серверов: RU
 # Все IP-адреса серверов GeoHide DNS:
 # 193.233.112.67
@@ -2617,17 +2617,10 @@
 31.25.239.132 game.boombeachgame.com
 2.27.118.34 game.boombeachgame.com
 62.133.62.97 game.clashroyaleapp.com
-54.174.195.209 gamea.clashofclans.com
-54.197.19.151 gamea.clashofclans.com
-54.210.24.40 gamea.clashofclans.com
-3.88.26.198 gamea.clashofclans.com
-34.205.15.69 gamea.clashofclans.com
-13.223.89.67 gamea.clashofclans.com
-3.239.30.32 gamea.clashofclans.com
-3.86.211.25 gamea.clashofclans.com
-44.227.138.182 game.brawlstarsgame.com
+193.23.209.189 gamea.clashofclans.com
 44.241.61.155 game.brawlstarsgame.com
 52.33.95.61 game.brawlstarsgame.com
+44.227.138.182 game.brawlstarsgame.com
 108.61.167.26 game.squadbustersgame.com
 217.60.245.219 game.mocogame.com
 217.60.245.233 game.mocogame.com
@@ -3768,4 +3761,10 @@
 193.233.112.67 www.opencode.ai
 193.233.112.68 www.opencode.ai
 46.8.158.6 www.opencode.ai
+193.233.112.67 arduino.cc
+193.233.112.68 arduino.cc
+46.8.158.6 arduino.cc
+193.233.112.68 www.arduino.cc
+193.233.112.67 www.arduino.cc
+46.8.158.6 www.arduino.cc
 ### geohide.ru: end hosts file
