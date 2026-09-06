@@ -130,14 +130,14 @@
 
 @keyframes selectPopIn {
     60% {
-        transform: scale(1.02) translateY(2px);
-        opacity  : 0.7;
+        transform      : scale(1.02) translateY(2px);
+        opacity        : 0.7;
     }
 
     100% {
-        opacity  : 1;
-        transform: scale(1) translateY(0);
-        filter   : blur(0);
+        opacity        : 1;
+        transform      : scale(1) translateY(0);
+        filter         : blur(0);
     }
 }
 
@@ -244,12 +244,12 @@
     width           : 40vw;
     padding         : 0.1vw 1vw;
     margin-left     : 1em;
-    background-color: rgba(32, 35, 50, 0.92);
-    border          : 1px solid rgba(255, 255, 255, 0.11);
+    background-color: rgba(32, 35, 50, 0.73);
+    border          : 1px solid rgba(255, 255, 255, 0.17);
     border-radius   : 12px;
     transform       : rotate(-14deg);
     transform-origin: top left;
-    backdrop-filter : blur(4px);
+    backdrop-filter : blur(3px);
     pointer-events  : none;
     will-change     : transform, opacity;
 }

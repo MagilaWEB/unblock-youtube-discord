@@ -52,11 +52,18 @@ void EditableList::create(std::string_view selector, Localization::Str title, st
 		{
 			auto s_value = value.ToString();
 			if (_validator && !_validator(s_value))
-				return false;
+			{
+				_input.addClass("input_error_validator");
 
-			_items.insert(_items.begin(), s_value);
+				using namespace std::chrono_literals;
+				Scheduler::get().after(1100ms, [this]() mutable { _input.removeClass("input_error_validator"); });
+				return false;
+			}
+
+			_items.insert(_items.end(), s_value);
 			_renderItems();
 			_notifyChange("add", s_value);
+			_input.value("");
 			return false;
 		},
 		_name
@@ -148,8 +155,8 @@ void EditableList::_renderItems()
 				if (!action.starts_with(kPrefix))
 					return false;
 
-				const auto number	 = std::string_view{ action }.substr(kPrefix.size());
-				int		   handle	 = -1;
+				const auto number = std::string_view{ action }.substr(kPrefix.size());
+				int		   handle = -1;
 
 				const auto [ptr, ec] = std::from_chars(number.data(), number.data() + number.size(), handle);
 				if (ec == std::errc{} && ptr == number.data() + number.size())

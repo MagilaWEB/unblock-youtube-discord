@@ -150,8 +150,9 @@ void UiDnsHosts::_enableDnsHosts()
 		[this](JSArgs args)
 		{
 			const auto host = JSToCPP<std::string>(args[0]);
-			if (!utils::isValidHost(host))
+			if (!utils::isValidHostName(host))
 				return false;
+
 			_applyBaseUrl(host);
 			return false;
 		}

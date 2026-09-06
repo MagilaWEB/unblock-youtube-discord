@@ -1,20 +1,20 @@
 /* ============ Editable list ============ */
 
 .editable_list {
-    display       : flex;
-    flex-direction: column;
-    gap           : 0.7vw;
-    padding       : 0.9vw 1.2vw;
+    display         : flex;
+    flex-direction  : column;
+    gap             : 0.7vw;
+    padding         : 0.9vw 1.2vw;
     background-color: rgba(32, 35, 50, 0.75);
-    border        : 1px solid rgba(255, 255, 255, 0.09);
-    border-radius : 10px;
+    border          : 1px solid rgba(255, 255, 255, 0.09);
+    border-radius   : 10px;
 }
 
 .editable_list .title {
-    margin    : 0;
-    font-size : 1.6vw;
+    margin     : 0;
+    font-size  : 1.6vw;
     font-weight: 600;
-    color     : #ffffff;
+    color      : #ffffff;
 }
 
 .editable_list .editable_list_items {
@@ -24,23 +24,23 @@
 }
 
 .editable_list .editable_list_item {
-    display        : flex;
-    align-items    : center;
-    justify-content: space-between;
-    gap            : 0.6vw;
-    padding        : 0.3vw 0.7vw;
+    display         : flex;
+    align-items     : center;
+    justify-content : space-between;
+    gap             : 0.6vw;
+    padding         : 0.3vw 0.7vw;
     background-color: rgba(45, 50, 66, 0.6);
-    border         : 1px solid rgba(255, 255, 255, 0.08);
-    border-radius  : 6px;
+    border          : 1px solid rgba(255, 255, 255, 0.08);
+    border-radius   : 6px;
 }
 
 .editable_list .editable_list_item span {
-    flex        : 1;
-    font-size   : 1.35vw;
-    color       : rgba(240, 240, 240, 0.92);
-    word-break  : break-word;
-    white-space : nowrap;
-    overflow    : hidden;
+    flex         : 1;
+    font-size    : 1.35vw;
+    color        : rgba(240, 240, 240, 0.92);
+    word-break   : break-word;
+    white-space  : nowrap;
+    overflow     : hidden;
     text-overflow: ellipsis;
 }
 
@@ -67,16 +67,22 @@
 }
 
 .editable_list .editable_list_input {
-    width        : 100%;
-    padding      : 0.45vw 0.8vw;
-    font-size    : 1.35vw;
-    color        : #f0f0f0;
+    width           : 100%;
+    padding         : 0.45vw 0.8vw;
+    font-size       : 1.35vw;
+    color           : #f0f0f0;
     background-color: rgba(25, 28, 42, 0.7);
-    border       : 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 6px;
-    outline      : none;
+    border          : 1px solid rgba(255, 255, 255, 0.12);
+    border-radius   : 6px;
+    transition      : border-color 200ms ease, background-color 200ms ease;
+    outline         : none;
 }
 
 .editable_list .editable_list_input:focus {
     border-color: rgba(0, 232, 160, 0.5);
+}
+
+.editable_list .input_error_validator {
+    border-color: rgba(222, 9, 9, 0.693) !important;
+    background-color: rgba(135, 27, 0, 0.7);
 }

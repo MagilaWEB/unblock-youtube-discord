@@ -23,10 +23,10 @@ UiZapret2::UiZapret2(std::shared_ptr<Ui> ui) : _ui(std::move(ui))
 void UiZapret2::initialize()
 {
 	_initMainControls();
-	_initCustomLists();
 	_testingInit();
 	_selectStrategyVersion();
 	_selectConfig();
+	_initCustomLists();
 	_listEnableServices();
 	_initHelperChecking();
 	_initHelperSeen();
@@ -94,15 +94,15 @@ void UiZapret2::_listEnableServicesUpdate()
 void UiZapret2::_initCustomLists()
 {
 	_list_custom_hosts->create(
-		"#zapret .custom",
+		"#zapret .common",
 		Localization::Str{ "str_zapret_custom_hosts_title" },
 		Localization::Str{ "str_zapret_custom_hosts_description" }(),
 		Localization::Str{ "str_input_zapret_custom_hosts_placeholder" }()
 	);
-	_list_custom_hosts->setValidator([](const std::string& value) { return utils::isValidHost(value); });
+	_list_custom_hosts->setValidator([](const std::string& value) { return utils::isValidHostName(value); });
 
 	_list_custom_ip_set->create(
-		"#zapret .custom",
+		"#zapret .common",
 		Localization::Str{ "str_zapret_custom_ip_set_title" },
 		Localization::Str{ "str_zapret_custom_ip_set_description" }(),
 		Localization::Str{ "str_input_zapret_custom_ip_set_placeholder" }()
@@ -110,15 +110,15 @@ void UiZapret2::_initCustomLists()
 	_list_custom_ip_set->setValidator([](const std::string& value) { return utils::isValidNetwork(value); });
 
 	_list_custom_domains_exclude->create(
-		"#zapret .custom",
+		"#zapret .common",
 		Localization::Str{ "str_zapret_custom_domains_exclude_title" },
 		Localization::Str{ "str_zapret_custom_domains_exclude_description" }(),
 		Localization::Str{ "str_input_zapret_custom_domains_exclude_placeholder" }()
 	);
-	_list_custom_domains_exclude->setValidator([](const std::string& value) { return utils::isValidHost(value); });
+	_list_custom_domains_exclude->setValidator([](const std::string& value) { return utils::isValidHostName(value); });
 
 	_list_custom_ip_exclude->create(
-		"#zapret .custom",
+		"#zapret .common",
 		Localization::Str{ "str_zapret_custom_ip_exclude_title" },
 		Localization::Str{ "str_zapret_custom_ip_exclude_description" }(),
 		Localization::Str{ "str_input_zapret_custom_ip_exclude_placeholder" }()
