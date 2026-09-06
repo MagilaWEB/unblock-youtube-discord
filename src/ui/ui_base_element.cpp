@@ -52,6 +52,7 @@ saucer::smartview* BaseElement::view()
 	// to avoid a ui <-> dom dependency cycle.
 	if (auto* v = ui::dom::view())
 		return v;
+
 	return _view;
 }
 

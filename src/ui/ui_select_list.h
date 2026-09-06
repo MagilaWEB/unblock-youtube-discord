@@ -32,8 +32,6 @@ public:
 	void addEventClick(std::function<bool(JSArgs)>&& callback)							= delete;
 	void create(std::string_view selector, Localization::Str title, bool first = false) = delete;
 
-	void initialize() override;
-
 	void create(std::string_view selector, Localization::Str title, Localization::Str description, bool first = false);
 	void createOption(JSValue value, Localization::Str text, bool select = false);
 
@@ -43,6 +41,12 @@ public:
 	JSValue getSelectedOptionValue();
 
 	void clear();
+
+private:
+
+	// Internal dropdown state machine. Protocol: (action, detail),
+	// action — open/blur/enter/leave/choose:<value> (see create()).
+	bool _action(std::string action);
 };
 
 #define SELECT_LIST(name) \

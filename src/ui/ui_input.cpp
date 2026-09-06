@@ -17,15 +17,6 @@ Input::Input(std::string_view name) : BaseElement(name)
 {
 }
 
-void Input::initialize()
-{
-	if (auto* view = BaseElement::view())
-		view->expose(
-			"CPPInputEventSubmit",
-			[](std::string element_name, std::string value) -> bool { return eventCPP({ std::move(element_name), std::move(value) }, _event_click); }
-		);
-}
-
 void Input::create(std::string_view selector, Types type, JSValue value, Localization::Str title, Localization::Str description, bool first)
 {
 	auto parent = ui::dom::querySelector(selector);
@@ -64,7 +55,11 @@ void Input::create(std::string_view selector, Types type, JSValue value, Localiz
 
 	_root.hoverPopup(p_description, "info_description_active");
 
-	_input.on(ui::dom::Event::Submit, "CPPInputEventSubmit", _name);
+	_input.on(
+		ui::dom::Event::Submit,
+		[](std::string element_name, js::Value value) -> bool { return eventCPP({ std::move(element_name), std::move(value) }, _event_click); },
+		_name
+	);
 
 	_event_click[_name].clear();
 	_created = true;

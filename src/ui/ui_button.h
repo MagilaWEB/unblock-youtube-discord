@@ -8,8 +8,6 @@ class Button final : public BaseElement
 public:
 	Button(std::string_view name);
 
-	void initialize() override;
-
 	void create(std::string_view selector, Localization::Str title, bool first = false);
 	void addEventClick(std::function<bool(JSArgs)>&& callback);
 	void setTitle(Localization::Str title);

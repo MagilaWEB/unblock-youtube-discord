@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils_saucer.hpp"
+#include "../dom/utils_saucer.hpp"
 #include "../dom/dom.hpp"
 #include "../core/localization.h"
 
@@ -79,7 +79,10 @@ public:
 
 	[[nodiscard]] static const std::vector<TutorialStep>& tutorialSteps();
 
-	virtual void initialize() = 0;
+	/** Called once from initializeAll() after the view is bound.
+	 *  Default is a no-op: widgets wire their events in create(), override
+	 *  only when something must run at view-bind time. */
+	virtual void initialize() {}
 
 protected:
 	static bool eventCPP(const JSArgs& args, MapEvent& map_event);

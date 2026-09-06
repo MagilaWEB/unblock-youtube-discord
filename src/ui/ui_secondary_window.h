@@ -27,8 +27,6 @@ public:
 	SecondaryWindow(std::string_view name);
 	~SecondaryWindow() override;
 
-	void initialize() override;
-
 	void create(std::string_view selector, Localization::Str title, bool first = false) = delete;
 	void addEventClick(std::function<bool(JSArgs)>&& callback)							= delete;
 

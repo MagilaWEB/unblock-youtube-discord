@@ -27,8 +27,6 @@ public:
 	void addEventClick(std::function<bool(JSArgs)>&& fn)								= delete;
 	void create(std::string_view selector, Localization::Str title, bool first = false) = delete;
 
-	void initialize() override;
-
 	void create(std::string_view selector, Types type, JSValue value, Localization::Str title, Localization::Str description, bool first = false);
 	void addEventSubmit(std::function<bool(JSArgs)>&& callback);
 

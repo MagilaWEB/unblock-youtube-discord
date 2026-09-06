@@ -10,8 +10,6 @@ class CheckBox final : public BaseElement
 public:
 	CheckBox(std::string_view name);
 
-	void initialize() override;
-
 	void create(std::string_view selector, Localization::Str title, bool first = false) = delete;
 	void create(std::string_view selector, Localization::Str title, Localization::Str description, bool first = false);
 

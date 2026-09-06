@@ -20,35 +20,6 @@ SecondaryWindow::~SecondaryWindow()
 		_all_window.erase(it);
 }
 
-void SecondaryWindow::initialize()
-{
-	if (auto* view = BaseElement::view())
-	{
-		view->expose(
-			"CPPSecondaryWindowEventOK",
-			[](std::string element_name, std::string) -> bool { return eventCPP({ std::move(element_name) }, _event_click); }
-		);
-		// Yes/No travel as tags "yes:<name>"/"no:<name>" (see _buildYesNo):
-		// the expose is shared by all windows (no this capture), the widget
-		// name comes from the tag. bool is mapped here.
-		view->expose(
-			"CPPSecondaryWindowEventYESNO",
-			[](std::string tag, std::string) -> bool
-			{
-				const std::string_view view{ tag };
-				const auto			   pos = view.find(':');
-				const bool			   yes = view.substr(0, pos) == "yes";
-				std::string			   name{ (pos == std::string_view::npos) ? std::string_view{} : view.substr(pos + 1) };
-				return eventCPP({ std::move(name), yes }, _event_yes_no);
-			}
-		);
-		view->expose(
-			"CPPSecondaryWindowEventCancel",
-			[](std::string element_name, std::string) -> bool { return eventCPP({ std::move(element_name) }, _event_cancel); }
-		);
-	}
-}
-
 void SecondaryWindow::create(Localization::Str title, Localization::Str description)
 {
 	ASSERT_ARGS(!_created, "This element has already been created; recreating it is a critical error! Element name {}.", _name);
@@ -106,19 +77,33 @@ void SecondaryWindow::_buildOk()
 {
 	ui::dom::Element btn;
 	_addButton(Localization::Str{ "str_b_secondary_window_ok" }(), btn);
-	btn.on(ui::dom::Event::Click, "CPPSecondaryWindowEventOK", _name, { .persist = true });
+	btn.on(
+		ui::dom::Event::Click,
+		[](std::string element_name, js::Value) -> bool { return eventCPP({ std::move(element_name) }, _event_click); },
+		_name,
+		{ .persist = true }
+	);
 	_elements.addClass("horizontally");
 }
 
 void SecondaryWindow::_buildYesNo()
 {
+	auto yes_no = [](std::string tag, js::Value) -> bool
+	{
+		const std::string_view view{ tag };
+		const auto			   pos = view.find(':');
+		const bool			   yes = view.substr(0, pos) == "yes";
+		std::string			   name{ (pos == std::string_view::npos) ? std::string_view{} : view.substr(pos + 1) };
+		return eventCPP({ std::move(name), yes }, _event_yes_no);
+	};
+
 	ui::dom::Element yes;
 	_addButton(Localization::Str{ "str_b_secondary_window_yes" }(), yes);
-	yes.on(ui::dom::Event::Click, "CPPSecondaryWindowEventYESNO", "yes:" + _name, { .persist = true });
+	yes.on(ui::dom::Event::Click, yes_no, "yes:" + _name, { .persist = true });
 
 	ui::dom::Element no;
 	_addButton(Localization::Str{ "str_b_secondary_window_no" }(), no);
-	no.on(ui::dom::Event::Click, "CPPSecondaryWindowEventYESNO", "no:" + _name, { .persist = true });
+	no.on(ui::dom::Event::Click, yes_no, "no:" + _name, { .persist = true });
 
 	_elements.addClass("horizontally");
 }
@@ -131,7 +116,12 @@ void SecondaryWindow::_buildWait()
 
 	ui::dom::Element cancel;
 	_addButton(Localization::Str{ "str_b_secondary_window_cancel" }(), cancel);
-	cancel.on(ui::dom::Event::Click, "CPPSecondaryWindowEventCancel", _name, { .persist = true });
+	cancel.on(
+		ui::dom::Event::Click,
+		[](std::string element_name, js::Value) -> bool { return eventCPP({ std::move(element_name) }, _event_cancel); },
+		_name,
+		{ .persist = true }
+	);
 
 	_elements.addClass("vertically");
 }

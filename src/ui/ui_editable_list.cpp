@@ -6,44 +6,6 @@ EditableList::EditableList(std::string_view name) : BaseElement(name)
 {
 }
 
-void EditableList::initialize()
-{
-	if (auto* view = BaseElement::view())
-	{
-		view->expose(
-			"CPPEditableListAdd_" + _name,
-			[this](std::string, std::string value) -> bool
-			{
-				if (_validator && !_validator(value))
-					return false;
-
-				_items.insert(_items.begin(), value);
-				_renderItems();
-				_notifyChange("add", value);
-				return false;
-			}
-		);
-
-		// Remove-button clicks. Protocol: ("remove:<handle>", "") —
-		// a handle identifies the row better than an index (see _remove_btns).
-		view->expose(
-			"CPPEditableListUI_" + _name,
-			[this](std::string action, std::string) -> bool
-			{
-				constexpr std::string_view kPrefix{ "remove:" };
-				if (!action.starts_with(kPrefix))
-					return false;
-				const auto number	 = std::string_view{ action }.substr(kPrefix.size());
-				int		   handle	 = -1;
-				const auto [ptr, ec] = std::from_chars(number.data(), number.data() + number.size(), handle);
-				if (ec == std::errc{} && ptr == number.data() + number.size())
-					_removeByButton(handle);
-				return false;
-			}
-		);
-	}
-}
-
 void EditableList::create(std::string_view selector, Localization::Str title, std::string description, std::string placeholder, bool first)
 {
 	auto parent = ui::dom::querySelector(selector);
@@ -78,11 +40,27 @@ void EditableList::create(std::string_view selector, Localization::Str title, st
 
 	_input = ui::dom::create("input");
 	_input.addClass("editable_list_input").setAttr("type", "text");
+
 	if (!placeholder.empty())
 		_input.setAttr("placeholder", placeholder);
+
 	_root.append(_input);
 
-	_input.on(ui::dom::Event::Submit, "CPPEditableListAdd_" + _name, _name);
+	_input.on(
+		ui::dom::Event::Submit,
+		[this](std::string, js::Value value) -> bool
+		{
+			auto s_value = value.ToString();
+			if (_validator && !_validator(s_value))
+				return false;
+
+			_items.insert(_items.begin(), s_value);
+			_renderItems();
+			_notifyChange("add", s_value);
+			return false;
+		},
+		_name
+	);
 
 	_event_click[_name].clear();
 	_created = true;
@@ -141,6 +119,10 @@ void EditableList::addEventChange(std::function<bool(JSArgs)>&& callback)
 
 void EditableList::_renderItems()
 {
+	// Remove old buttons explicitly: html("") only kills DOM nodes, the C++
+	// lambdas would stay exposed in saucer forever (persist subscriptions).
+	for (auto& btn : _remove_btns)
+		btn.remove();
 	_list.html("");
 	_remove_btns.clear();
 
@@ -158,7 +140,26 @@ void EditableList::_renderItems()
 		row.append(remove_btn);
 		// The button reports its own handle — the shim neither computes indices
 		// nor knows about rows (see _remove_btns in the header).
-		remove_btn.on(ui::dom::Event::Click, "CPPEditableListUI_" + _name, "remove:" + std::to_string(remove_btn.handle()), { .persist = true });
+		remove_btn.on(
+			ui::dom::Event::Click,
+			[this](std::string action, js::Value) -> bool
+			{
+				constexpr std::string_view kPrefix{ "remove:" };
+				if (!action.starts_with(kPrefix))
+					return false;
+
+				const auto number	 = std::string_view{ action }.substr(kPrefix.size());
+				int		   handle	 = -1;
+
+				const auto [ptr, ec] = std::from_chars(number.data(), number.data() + number.size(), handle);
+				if (ec == std::errc{} && ptr == number.data() + number.size())
+					_removeByButton(handle);
+
+				return false;
+			},
+			"remove:" + std::to_string(remove_btn.handle()),
+			{ .persist = true }
+		);
 
 		_remove_btns.push_back(remove_btn);
 		_list.append(row);

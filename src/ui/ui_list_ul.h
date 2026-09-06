@@ -11,8 +11,6 @@ public:
 
 	void addEventClick(std::function<bool(JSArgs)>&& fn) = delete;
 
-	void initialize() override;
-
 	void create(std::string_view selector, Localization::Str title, bool first = false);
 
 	void setTitle(std::string text);

@@ -30,8 +30,6 @@ public:
 	void addEventClick(std::function<bool(JSArgs)>&& callback)							= delete;
 	void create(std::string_view selector, Localization::Str title, bool first = false) = delete;
 
-	void initialize() override;
-
 	void create(std::string_view selector, Localization::Str title, std::string description = {}, std::string placeholder = {}, bool first = false);
 
 	void setValidator(std::function<bool(const std::string&)> validator);

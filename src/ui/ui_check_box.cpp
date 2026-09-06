@@ -6,22 +6,6 @@ CheckBox::CheckBox(std::string_view name) : BaseElement(name)
 	_tutorial_type = "checkbox";
 }
 
-void CheckBox::initialize()
-{
-	if (auto* view = BaseElement::view())
-		// Per-widget exposed name (like SelectList/EditableList): a shared name
-		// would keep only the first widget's lambda (saucer emplace), routing
-		// every checkbox's state into the wrong object.
-		view->expose(
-			"CPPCheckBoxEventClick_" + _name,
-			[this](std::string element_name, bool state) -> bool
-			{
-				_state = state;
-				return eventCPP({ std::move(element_name), state }, _event_click);
-			}
-		);
-}
-
 void CheckBox::create(std::string_view selector, Localization::Str title, Localization::Str description, bool first)
 {
 	auto parent = ui::dom::querySelector(selector);
@@ -60,7 +44,15 @@ void CheckBox::create(std::string_view selector, Localization::Str title, Locali
 
 	_root.hoverPopup(p_description, "info_description_active");
 
-	_input.on(ui::dom::Event::Change, "CPPCheckBoxEventClick_" + _name, _name);
+	_input.on(
+		ui::dom::Event::Change,
+		[this](std::string element_name, js::Value state) -> bool
+		{
+			_state = state.ToBoolean();
+			return eventCPP({ std::move(element_name), state }, _event_click);
+		},
+		_name
+	);
 
 	_event_click[_name].clear();
 	_created = true;

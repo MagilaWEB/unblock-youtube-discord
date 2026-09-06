@@ -4,10 +4,6 @@ ListUl::ListUl(std::string_view name) : BaseElement(name)
 {
 }
 
-void ListUl::initialize()
-{
-}
-
 void ListUl::create(std::string_view selector, Localization::Str title, bool first)
 {
 	auto parent = ui::dom::querySelector(selector);

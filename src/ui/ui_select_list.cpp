@@ -8,50 +8,6 @@ SelectList::SelectList(std::string_view name) : BaseElement(name)
 	_tutorial_type = "select";
 }
 
-void SelectList::initialize()
-{
-	if (auto* view = BaseElement::view())
-	{
-		// Public selection callbacks (the widget's public protocol).
-		view->expose(
-			"CPPSelectEventChange_" + _name,
-			[this](std::string element_name, std::string value) -> bool
-			{
-				_selected_value = value;
-				return eventCPP({ std::move(element_name), std::move(value) }, _event_click);
-			}
-		);
-		// Internal dropdown state machine. Protocol: (action, detail),
-		// action — open/blur/enter/leave/choose:<value> (see create()).
-		view->expose(
-			"CPPSelectUI_" + _name,
-			[this](std::string action, std::string) -> bool
-			{
-				if (action == "open")
-				{
-					_open = true;
-					_label.focus();
-					_select.addClass("select_active");
-				}
-				else if (action == "blur")
-				{
-					// As in the old shim: blur past the options does not close —
-					// the option click follows the blur, hover saves it.
-					if (!_hover)
-						close();
-				}
-				else if (action == "enter")
-					_hover = true;
-				else if (action == "leave")
-					_hover = false;
-				else if (constexpr std::string_view kPrefix{ "choose:" }; action.starts_with(kPrefix))
-					choose(std::string_view{ action }.substr(kPrefix.size()));
-				return false;
-			}
-		);
-	}
-}
-
 void SelectList::create(std::string_view selector, Localization::Str title, Localization::Str description, bool first)
 {
 	auto parent = ui::dom::querySelector(selector);
@@ -86,13 +42,13 @@ void SelectList::create(std::string_view selector, Localization::Str title, Loca
 
 	_root.hoverPopup(p_description, "info_description_active");
 
-	// State machine lives in C++ (see initialize()): label opens,
+	// State machine lives in C++ (_action): label opens,
 	// blur closes (except hovering over the options), hover tracks the cursor.
-	const std::string ui = "CPPSelectUI_" + _name;
-	_label.on(ui::dom::Event::Click, ui, "open", { .persist = true });
-	_label.on(ui::dom::Event::Blur, ui, "blur");
-	_select.on(ui::dom::Event::MouseEnter, ui, "enter");
-	_select.on(ui::dom::Event::MouseLeave, ui, "leave");
+	auto action = [this](std::string action, js::Value) -> bool { return _action(action); };
+	_label.on(ui::dom::Event::Click, action, "open", { .persist = true });
+	_label.on(ui::dom::Event::Blur, action, "blur");
+	_select.on(ui::dom::Event::MouseEnter, action, "enter");
+	_select.on(ui::dom::Event::MouseLeave, action, "leave");
 
 	_event_click[_name].clear();
 	_created = true;
@@ -108,8 +64,14 @@ void SelectList::createOption(JSValue value, Localization::Str text, bool select
 	auto option = ui::dom::create("div");
 	option.addClass("option").text(text());
 	option.setAttr("value", value_str);
+
 	// Each option reports its own value — the shim does not look up ".option".
-	option.on(ui::dom::Event::Click, "CPPSelectUI_" + _name, "choose:" + value_str, { .persist = true });
+	option.on(
+		ui::dom::Event::Click,
+		[this](std::string action, js::Value) -> bool { return _action(action); },
+		"choose:" + value_str,
+		{ .persist = true }
+	);
 	_select.append(option);
 
 	_options.emplace_back(value_str, option);
@@ -145,6 +107,10 @@ void SelectList::clear()
 	if (!_created)
 		return;
 
+	// Remove old options explicitly: html("") only kills DOM nodes, the C++
+	// lambdas would stay exposed in saucer forever (persist subscriptions).
+	for (auto& opt : _options)
+		opt.second.remove();
 	_options.clear();
 	_selected_value.clear();
 	_select.html("");
@@ -179,4 +145,29 @@ void SelectList::showValue(std::string_view value)
 
 	_label.html("");
 	_label.append(it->second.cloneFirstChild());
+}
+
+bool SelectList::_action(std::string action)
+{
+	if (action == "open")
+	{
+		_open = true;
+		_label.focus();
+		_select.addClass("select_active");
+	}
+	else if (action == "blur")
+	{
+		// As in the old shim: blur past the options does not close —
+		// the option click follows the blur, hover saves it.
+		if (!_hover)
+			close();
+	}
+	else if (action == "enter")
+		_hover = true;
+	else if (action == "leave")
+		_hover = false;
+	else if (constexpr std::string_view kPrefix{ "choose:" }; action.starts_with(kPrefix))
+		choose(std::string_view{ action }.substr(kPrefix.size()));
+
+	return false;
 }
