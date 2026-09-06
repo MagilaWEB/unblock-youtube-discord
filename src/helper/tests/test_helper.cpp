@@ -288,6 +288,22 @@ TEST_CASE("ERR overwrites previous strategy", "[helper][err]")
 	CHECK(t.errorStrategy("google.com") == "9");
 }
 
+TEST_CASE("ERR duplicate keeps first/last timestamps (spam-safe)", "[helper][err]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("ERR:dup.com:3");
+	const auto now = std::chrono::steady_clock::now();
+	// Pretend the first report is old so a timestamp overwrite would be visible.
+	t.setErrorTimes("dup.com", now - std::chrono::minutes(10), now - std::chrono::minutes(10));
+	const auto firstBefore = t.errorHosts().at("dup.com").first;
+	const auto lastBefore  = t.errorHosts().at("dup.com").last;
+
+	t.handleMessage("ERR:dup.com:9");
+	CHECK(t.errorStrategy("dup.com") == "9");
+	CHECK(t.errorHosts().at("dup.com").first == firstBefore);
+	CHECK(t.errorHosts().at("dup.com").last == lastBefore);
+}
+
 TEST_CASE("unknown prefix ignored", "[helper][unknown]")
 {
 	ZapretHelperTest t;
@@ -633,3 +649,4 @@ TEST_CASE("idleStep fresh error host does not duplicate when in_check", "[helper
 	t.idleStep();
 	CHECK_FALSE(t.queue().contains("fresh2.com"));
 }
+

@@ -122,15 +122,25 @@ void ZapretHelper::_handleMessage(std::string_view message)
 		const auto		strat = (pos != std::string_view::npos) ? rest.substr(pos + 1) : std::string_view{};
 		if (_isValidHost(host))
 		{
-			const auto now	= std::chrono::steady_clock::now();
-			auto&	   info = _error_hosts[host];
-			if (info.first == std::chrono::steady_clock::time_point{})
-				info.first = now;
-
-			info.last	  = now;
-			info.strategy = std::string{ strat };
-			_valid_hosts.erase(host);
-			_cv.notify_all();
+			// Duplicate ERR while the host is already tracked: refresh only
+			// the strategy name. first/last timestamps are owned by the first
+			// report so packet spam on port 10000 cannot postpone the
+			// scheduled recheck in _idleStep.
+			if (const auto it = _error_hosts.find(host); it != _error_hosts.end())
+			{
+				it->second.strategy = std::string{ strat };
+			}
+			else
+			{
+				const auto now = std::chrono::steady_clock::now();
+				ErrorInfo	 info;
+				info.first	  = now;
+				info.last	  = now;
+				info.strategy = std::string{ strat };
+				_error_hosts.emplace(host, std::move(info));
+				_valid_hosts.erase(host);
+				_cv.notify_all();
+			}
 		}
 
 		for (auto& [host, info] : _error_hosts)
