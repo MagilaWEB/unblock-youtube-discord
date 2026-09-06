@@ -30,10 +30,20 @@ class Unblock final : public std::enable_shared_from_this<Unblock>
 	std::string				   _tg_cfproxy_domain{ "unblock.kermanua1488.workers.dev" };
 
 	// Accessed only from the JS thread (via Ui::update)
+	// The checking/error/valid lists are mutually exclusive: one host lives
+	// in exactly one of them (seen stays out of the sync). A single timestamp
+	// tracks the last consumed helper signal; after c_helper_signal_ttl of
+	// total silence every list is dropped, so the UI never shows dead hosts.
+	static constexpr auto c_helper_signal_ttl{ std::chrono::seconds(5) };
+	std::chrono::steady_clock::time_point	  _helper_last_signal{};
 	std::unordered_set<std::string>				 _helper_checking;
 	std::unordered_set<std::string>				 _helper_seen;
 	std::unordered_map<std::string, std::string> _helper_errors;
 	std::unordered_map<std::string, std::string> _helper_valid;
+
+	// Drops every helper list if the helper stayed silent past the TTL.
+	// Returns true when expired (all lists are empty afterwards).
+	bool _dropExpiredHelperStates(std::chrono::steady_clock::time_point now);
 
 public:
 	Unblock();

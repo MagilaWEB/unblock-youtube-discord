@@ -280,37 +280,73 @@ bool Unblock::activeService()
 	return _zapret.isRun();
 }
 
+bool Unblock::_dropExpiredHelperStates(std::chrono::steady_clock::time_point now)
+{
+	if ((now - _helper_last_signal) > c_helper_signal_ttl)
+	{
+		_helper_checking.clear();
+		_helper_seen.clear();
+		_helper_errors.clear();
+		_helper_valid.clear();
+		return true;
+	}
+	return false;
+}
+
 std::vector<std::string> Unblock::helperCheckingHosts()
 {
-	auto& ipc = IPCSignals::get();
+	auto&	  ipc = IPCSignals::get();
+	const auto now = std::chrono::steady_clock::now();
 
 	while (auto host = ipc.getString("helper_checking"))
-		_helper_checking.insert(std::move(*host));
+	{
+		_helper_last_signal = now;
+		std::string name  = std::move(*host);
+		// Sync: one host lives in a single list (seen stays out of the sync).
+		_helper_errors.erase(name);
+		_helper_valid.erase(name);
+		_helper_checking.insert(std::move(name));
+	}
 
 	while (auto host = ipc.getString("helper_done"))
+	{
+		_helper_last_signal = now;
 		_helper_checking.erase(*host);
+	}
+
+	if (_dropExpiredHelperStates(now))
+		return {};
 
 	return { _helper_checking.begin(), _helper_checking.end() };
 }
 
 std::vector<std::string> Unblock::helperSeenHosts()
 {
-	auto& ipc = IPCSignals::get();
+	auto&	  ipc = IPCSignals::get();
+	const auto now = std::chrono::steady_clock::now();
 
 	while (auto host = ipc.getString("helper_seen"))
+	{
+		_helper_last_signal = now;
 		_helper_seen.insert(std::move(*host));
+	}
+
+	if (_dropExpiredHelperStates(now))
+		return {};
 
 	return { _helper_seen.begin(), _helper_seen.end() };
 }
 
 std::vector<std::pair<std::string, std::string>> Unblock::helperErrorHosts()
 {
-	auto& ipc = IPCSignals::get();
+	auto&	  ipc = IPCSignals::get();
+	const auto now = std::chrono::steady_clock::now();
 
 	auto entry = ipc.getString("helper_error");
 
 	if (entry)
 	{
+		_helper_last_signal = now;
 		_helper_errors.clear();
 
 		do
@@ -318,11 +354,18 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperErrorHosts()
 			const auto pos = entry->rfind(':');
 			if (pos != std::string::npos)
 			{
-				const auto host		 = entry->substr(0, pos);
+				const auto host = entry->substr(0, pos);
+				// Sync: evict from the sibling lists (seen stays out of the sync).
+				_helper_checking.erase(host);
+				_helper_valid.erase(host);
 				_helper_errors[host] = entry->substr(pos + 1);
 			}
+			_helper_last_signal = now;
 		} while ((entry = ipc.getString("helper_error")));
 	}
+
+	if (_dropExpiredHelperStates(now))
+		return {};
 
 	std::vector<std::pair<std::string, std::string>> result;
 	result.reserve(_helper_errors.size());
@@ -334,12 +377,14 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperErrorHosts()
 
 std::vector<std::pair<std::string, std::string>> Unblock::helperValidHosts()
 {
-	auto& ipc = IPCSignals::get();
+	auto&	  ipc = IPCSignals::get();
+	const auto now = std::chrono::steady_clock::now();
 
 	auto entry = ipc.getString("helper_valid");
 
 	if (entry)
 	{
+		_helper_last_signal = now;
 		_helper_valid.clear();
 
 		do
@@ -347,11 +392,18 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperValidHosts()
 			const auto pos = entry->rfind(':');
 			if (pos != std::string::npos)
 			{
-				const auto host		= entry->substr(0, pos);
+				const auto host = entry->substr(0, pos);
+				// Sync: evict from the sibling lists (seen stays out of the sync).
+				_helper_checking.erase(host);
+				_helper_errors.erase(host);
 				_helper_valid[host] = entry->substr(pos + 1);
 			}
+			_helper_last_signal = now;
 		} while ((entry = ipc.getString("helper_valid")));
 	}
+
+	if (_dropExpiredHelperStates(now))
+		return {};
 
 	std::vector<std::pair<std::string, std::string>> result;
 	result.reserve(_helper_valid.size());
