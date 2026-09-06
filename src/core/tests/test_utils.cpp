@@ -150,26 +150,41 @@ TEST_CASE("utils::trim empty string", "[utils][trim]")
 	CHECK(s.empty());
 }
 
-TEST_CASE("utils::isValidHost valid domains", "[utils][host]")
+TEST_CASE("utils::isValidHostName valid domains", "[utils][host]")
 {
-	CHECK(utils::isValidHost("example.com"));
-	CHECK(utils::isValidHost("www.example.com"));
-	CHECK(utils::isValidHost("sub.domain.example.com"));
-	CHECK(utils::isValidHost("a"));
-	CHECK(utils::isValidHost("xn--80aswg.xn--p1ai"));
-	CHECK(utils::isValidHost("example.com:8080"));
-	CHECK(utils::isValidHost("1.2.3.4"));
+	CHECK(utils::isValidHostName("example.com"));
+	CHECK(utils::isValidHostName("www.example.com"));
+	CHECK(utils::isValidHostName("sub.domain.example.com"));
+	CHECK(utils::isValidHostName("a"));
+	CHECK(utils::isValidHostName("xn--80aswg.xn--p1ai"));
 }
 
-TEST_CASE("utils::isValidHost invalid values", "[utils][host]")
+TEST_CASE("utils::isValidHostNamePort valid values", "[utils][host]")
 {
-	CHECK_FALSE(utils::isValidHost(""));
-	CHECK_FALSE(utils::isValidHost(" example.com"));
-	CHECK_FALSE(utils::isValidHost("example.com "));
-	CHECK_FALSE(utils::isValidHost("-example.com"));
-	CHECK_FALSE(utils::isValidHost("example.com:abc"));
-	CHECK_FALSE(utils::isValidHost("example.com:123456"));
-	CHECK_FALSE(utils::isValidHost("exa mple.com"));
+	CHECK(utils::isValidHostNamePort("example.com"));
+	CHECK(utils::isValidHostNamePort("example.com:8080"));
+	CHECK(utils::isValidHostNamePort("1.2.3.4"));
+	CHECK_FALSE(utils::isValidHostName("example.com:8080"));
+}
+
+TEST_CASE("utils::isValidHostName invalid values", "[utils][host]")
+{
+	CHECK_FALSE(utils::isValidHostName(""));
+	CHECK_FALSE(utils::isValidHostName(" example.com"));
+	CHECK_FALSE(utils::isValidHostName("example.com "));
+	CHECK_FALSE(utils::isValidHostName("-example.com"));
+	CHECK_FALSE(utils::isValidHostName("exa mple.com"));
+}
+
+TEST_CASE("utils::isValidHostNamePort invalid values", "[utils][host]")
+{
+	CHECK_FALSE(utils::isValidHostNamePort(""));
+	CHECK_FALSE(utils::isValidHostNamePort(" example.com"));
+	CHECK_FALSE(utils::isValidHostNamePort("example.com "));
+	CHECK_FALSE(utils::isValidHostNamePort("-example.com"));
+	CHECK_FALSE(utils::isValidHostNamePort("example.com:abc"));
+	CHECK_FALSE(utils::isValidHostNamePort("example.com:123456"));
+	CHECK_FALSE(utils::isValidHostNamePort("exa mple.com"));
 }
 
 TEST_CASE("utils::isValidNetwork valid IPv4", "[utils][network]")

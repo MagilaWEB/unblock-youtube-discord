@@ -1,11 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "../pch.h"
-#include "../scheduler.h"
-
-#include <atomic>
-#include <chrono>
-#include <thread>
 
 using namespace std::chrono_literals;
 

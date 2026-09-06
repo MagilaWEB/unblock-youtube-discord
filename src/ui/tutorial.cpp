@@ -1,12 +1,6 @@
 #include <saucer/smartview.hpp>
 #include "tutorial.h"
 
-#include "../core/scheduler.h"
-
-#include <algorithm>
-#include <chrono>
-#include <cmath>
-#include <format>
 
 // -----------------------------------------------------------------------
 // Registries / step data

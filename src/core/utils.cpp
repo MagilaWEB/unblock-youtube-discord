@@ -97,6 +97,46 @@ void utils::trim(std::string& str)
 
 namespace
 {
+	// Извлечение порта и хоста из строки вида [host]:port или host:port
+	std::optional<std::pair<std::string_view, std::string_view>> splitHostPort(std::string_view input)
+	{
+		if (input.empty())
+			return std::nullopt;
+
+		if (input.front() == '[')
+		{
+			size_t close = input.find(']');
+			if (close == std::string_view::npos)
+				return std::nullopt;
+
+			std::string_view host = input.substr(1, close - 1);
+			std::string_view port;
+			if (close + 1 < input.size())
+			{
+				if (input[close + 1] != ':')
+					return std::nullopt;
+
+				port = input.substr(close + 2);
+			}
+
+			return std::make_pair(host, port);
+		}
+
+		size_t colon = input.rfind(':');
+		if (colon == std::string_view::npos)
+			return std::make_pair(input, std::string_view{});
+
+		std::string_view port = input.substr(colon + 1);
+		for (char c : port)
+			if (!std::isdigit(c))
+				return std::nullopt;
+
+		if (input.rfind(':', colon - 1) != std::string_view::npos)
+			return std::nullopt;
+
+		return std::make_pair(input.substr(0, colon), port);
+	}
+
 	bool isValidIpv4(std::string_view address)
 	{
 		int				 octets = 0;
@@ -189,10 +229,75 @@ namespace
 	}
 }	 // namespace
 
-bool utils::isValidHost(std::string_view host)
+bool utils::isValidHostName(std::string_view str)
 {
-	static const std::regex host_regex{ R"(^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?(:[0-9]{1,5})?$)" };
-	return std::regex_match(host.begin(), host.end(), host_regex);
+	if (str.empty() || str.size() > 253)
+		return false;
+
+	size_t start  = 0;
+	int	   labels = 0;
+	for (size_t i = 0; i <= str.size(); ++i)
+	{
+		if (i == str.size() || str[i] == '.')
+		{
+			if (i == start)
+				return false;
+
+			size_t len = i - start;
+			if (len > 63)
+				return false;
+
+			for (size_t j = start; j < i; ++j)
+			{
+				char c = str[j];
+				if (!std::isalnum(c) && c != '-' && c != '_')
+					return false;
+
+				if (c == '-' && (j == start || j == i - 1))
+					return false;
+			}
+
+			++labels;
+			start = i + 1;
+		}
+	}
+
+	return labels > 0;
+}
+
+bool utils::isValidHostNamePort(std::string_view host)
+{
+	if (host.empty())
+		return false;
+
+	auto parts = splitHostPort(host);
+	if (!parts)
+		return false;
+
+	auto & [host_part, port_part] = *parts;
+
+	if (!port_part.empty())
+	{
+		int port	   = 0;
+		auto [ptr, ec] = std::from_chars(port_part.data(), port_part.data() + port_part.size(), port);
+		if (ec != std::errc{} || port < 0 || port > 65'535)
+			return false;
+	}
+
+	if (host_part.empty())
+		return false;
+
+	if (host_part.front() == '[' && host_part.back() == ']')
+	{
+		std::string_view ipv6 = host_part.substr(1, host_part.size() - 2);
+		return isValidIpv6(ipv6);
+	}
+	else if (host_part.find(':') != std::string_view::npos)
+		return isValidIpv6(host_part);
+	else if (host_part.find('.') != std::string_view::npos && isValidIpv4(host_part))
+		return true;
+
+	return isValidHostName(host_part);
 }
 
 bool utils::isValidNetwork(std::string_view network)

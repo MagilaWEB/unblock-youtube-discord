@@ -25,8 +25,11 @@ namespace utils
 	void rtrim(std::string& str);
 	void trim(std::string& str);
 
+	/** Проверяет, что строка — валидное имя хоста (домен). */
+	bool isValidHostName(std::string_view str);
+
 	/** Проверяет, что строка — валидное имя хоста (домен), опционально с портом. */
-	bool isValidHost(std::string_view host);
+	bool isValidHostNamePort(std::string_view host);
 
 	/** Проверяет, что строка — валидный IP-адрес или подсеть (IPv4/IPv6, опционально с префиксом /N). */
 	bool isValidNetwork(std::string_view network);
