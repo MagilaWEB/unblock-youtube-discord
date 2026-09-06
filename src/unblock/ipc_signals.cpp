@@ -233,10 +233,6 @@ void IPCSignals::_listen()
 			_data[std::string(key)].values.emplace_back(val);
 			_data[std::string(key)].created = std::chrono::steady_clock::now();
 		}
-
-#ifdef DEBUG
-		Debug::info("IPC: {} {}={}", type, key, val);
-#endif
 	}
 }
 
