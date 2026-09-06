@@ -239,12 +239,33 @@ void File::writeSectionParameter(std::string_view section, std::string parameter
 
 	_is_write = true;
 
-	// Empty parameter (key=) is never written to the config — warn and ignore,
-	// so empty values never linger in the map (from reads or empty vector lists).
+	// Empty value means the parameter must be deleted entirely, so empty
+	// values never linger in the map (from reads or empty vector lists).
 	if (auto trimmed = value_argument; utils::trim(trimmed), trimmed.empty())
 	{
 		if (info_debug)
-			Debug::warning("File [{}]: rejected empty value for [{}] in section [{}]!", name(), parameter, section);
+			Debug::warning("File [{}]: deleted [{}] from section [{}] (empty value)!", name(), parameter, section);
+		// Populate the section cache, then drop the key. _normalize() rebuilds
+		// the file lines without it (and drops the section if left empty).
+		forLineSection(section, [](std::string&) { return false; });
+		if (auto it = _map_list_string.find(std::string{ section }); it != _map_list_string.end())
+		{
+			std::erase_if(
+				it->second,
+				[&parameter](const std::string& str)
+				{
+					std::smatch para;
+					if (std::regex_search(str, para, reg_equally()))
+					{
+						auto key = para.prefix().str();
+						utils::trim(key);
+						return key == parameter;
+					}
+					return false;
+				}
+			);
+		}
+		_normalize();
 		return;
 	}
 

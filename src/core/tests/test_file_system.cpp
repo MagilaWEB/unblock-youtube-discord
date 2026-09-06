@@ -680,22 +680,36 @@ TEST_CASE("regression: non-empty vector value is kept", "[file][regression]")
 	REQUIRE(countOf(content, "custom_hosts=") == 1);
 }
 
-TEST_CASE("regression: empty value update keeps existing value", "[file][regression]")
+TEST_CASE("regression: empty value update deletes the parameter", "[file][regression]")
 {
 	auto path = createFile("reg_empty_update.ini", "[SYSTEM]\nenable_dns_hosts=false\nshow_console=true\n");
 	File f;
 	f.open(path, "", true);
 
-	// attempting to overwrite with empty must be ignored
+	// overwriting with empty deletes the parameter entirely
 	f.writeSectionParameter("SYSTEM", "show_console", "");
 	f.save();
 	f.close();
 
 	auto content = fileContent(path);
-	CHECK(content.find("show_console=true") != std::string::npos);
-	// no separate empty show_console= appeared
-	CHECK(content.find("show_console=\n") == std::string::npos);
-	REQUIRE(countOf(content, "show_console=") == 1);
+	CHECK(content.find("show_console=") == std::string::npos);
+	// neighbours are untouched
+	CHECK(content.find("enable_dns_hosts=false") != std::string::npos);
+}
+
+TEST_CASE("regression: deleting the last parameter drops the section", "[file][regression]")
+{
+	auto path = createFile("reg_delete_last.ini", "[SOLO]\nonly_key=1\n");
+	File f;
+	f.open(path, "", true);
+
+	f.writeSectionParameter("SOLO", "only_key", "");
+	f.save();
+	f.close();
+
+	auto content = fileContent(path);
+	CHECK(content.find("only_key=") == std::string::npos);
+	CHECK(content.find("[SOLO]") == std::string::npos);
 }
 
 TEST_CASE("regression: reopen and update does not duplicate sections or params", "[file][regression]")
