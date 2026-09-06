@@ -11,7 +11,8 @@ target_precompile_headers(${NAME} PRIVATE pch.h)
 target_compile_options(${NAME} PRIVATE ${PROJECT_WARNING_FLAGS})
 
 # saucer PUBLIC: smartview* leaks into headers (dom_view/dom_element).
-target_link_libraries(${NAME} PUBLIC saucer::saucer)
+# core PUBLIC: utils_saucer.hpp (js::Value/JSToCPP) uses s64/concepts/Debug.
+target_link_libraries(${NAME} PUBLIC saucer::saucer core)
 
 target_compile_definitions(${NAME} PRIVATE ${ALL_MACRO_CPP})
 

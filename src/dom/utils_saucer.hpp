@@ -1,8 +1,10 @@
 #pragma once
-
+// Self-contained: pulls the full core context (types, `debug` flag,
+// CriticalSection/File, windows.h for __forceinline, std::regex, utils,
+// Debug) because debug.h is not self-contained and consumers (e.g. dom
+// tests) have no core PCH. Same god-header approach as src/ui/pch.h.
+#include "../core/pch.h"
 #include "../core/concepts.h"
-#include "../core/types.inl"
-#include "../core/debug.h"
 
 #include <concepts>
 #include <variant>
