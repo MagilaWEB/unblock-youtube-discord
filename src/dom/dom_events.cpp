@@ -6,45 +6,124 @@ namespace ui::dom
 
 	namespace
 	{
-		// Kind listener, deduped per node+kind — protection against
-		// WebView2 script replay (see ab59fbd). Reply protocol:
+		// Kind listener, re-registered per node+kind — a second on() replaces
+		// the previous handler instead of stacking duplicates (protection
+		// against WebView2 script replay, see ab59fbd). Reply protocol:
 		// exposed[tag](tag, detail), detail depends on kind
-		// (click/focus/blur/mouseenter/mouseleave — "", change — bool,
-		// enter — field value). Non-persist click/change detach when
-		// C++ returns true (the dedup flag is reset, a later on() re-wires).
-		void listenKind(int h, std::string_view kind, std::string_view cpp_name, std::string_view tag, bool persist)
+		// (click/focus/blur/mouseenter/mouseleave — "", change — "true"/"false",
+		// enter — field value). All details cross the bridge as strings
+		// (see the shim: String(...), never bare toString()). Non-persist listeners self-remove when
+		// C++ returns true; persist ones hang forever. Re-exposing the same
+		// cppName replaces the C++ lambda (saucer keeps first only, so
+		// unexpose first), keeping both sides in sync with the shim.
+		// The handle makes the name unique per node: subscriptions that share
+		// a tag (e.g. "choose:<value>" options in different dropdowns) must
+		// not steal each other's events.
+		void listenKind(int h, std::string_view kind, std::function<bool(std::string, js::Value)> func, std::string_view tag, bool persist)
 		{
 			if (auto* v = view(); v && h >= 0)
+			{
+				const std::string cpp_name{ std::string{ "CPP_" } + std::string{ kind } + '_' + std::to_string(h) + '_' + std::string{ tag } };
+
+				v->unexpose(cpp_name);
+				// Self-detach mirrors the shim: when a non-persist listener reports
+				// done, the JS handler drops itself — the C++ lambda must die here
+				// too, otherwise every on() leaks one saucer map entry forever.
+				// (Unexposing from inside the call is safe: saucer dispatches on
+				// a shared_ptr copy taken under lock before invoking.)
+				v->expose(
+					cpp_name,
+					[func, cpp_name, h, persist](std::string element_name, std::string value) -> bool
+					{
+						const bool done = func(element_name, js::Value(value));
+						if (done && !persist)
+						{
+							if (auto* held = view())
+								held->unexpose(cpp_name);
+							detail::forgetExposed(h, cpp_name);
+						}
+						return done;
+					}
+				);
+				detail::trackExposed(h, cpp_name);
 				v->execute("__dom_listen_kind({}, {}, {}, {}, {})", h, cpp_name, tag, kind, persist);
+			}
+		}
+
+		void listenKindRemove(int h, std::string_view kind, std::string_view tag)
+		{
+			const std::string cpp_name{ std::string{ "CPP_" } + std::string{ kind } + '_' + std::to_string(h) + '_' + std::string{ tag } };
+
+			// Always untrack (even with no view): a dead view leaves nothing
+			// to unexpose, but the registry must not outlive the node.
+			detail::forgetExposed(h, cpp_name);
+			if (auto* v = view(); v && h >= 0)
+			{
+				v->unexpose(cpp_name);
+				v->execute("__dom_listen_kind_remove({}, {})", h, kind);
+			}
 		}
 	}
 
-	void Element::on(Event event, std::string_view cpp_name, std::string_view tag, ListenOpts opts)
+
+	void Element::on(Event event, std::function<bool(std::string, js::Value)> func, std::string_view tag, ListenOpts opts) const
 	{
 		if (_h < 0)
 			return;
+
 		switch (event)
 		{
 		case Event::Click:
-			listenKind(_h, "click", cpp_name, tag, opts.persist);
+			ui::dom::listenKind(_h, "click", func, tag, opts.persist);
 			break;
 		case Event::Change:
-			listenKind(_h, "change", cpp_name, tag, opts.persist);
+			ui::dom::listenKind(_h, "change", func, tag, opts.persist);
 			break;
 		case Event::Submit:
-			listenKind(_h, "enter", cpp_name, tag, true);
+			ui::dom::listenKind(_h, "enter", func, tag, true);
 			break;
 		case Event::Focus:
-			listenKind(_h, "focus", cpp_name, tag, true);
+			ui::dom::listenKind(_h, "focus", func, tag, true);
 			break;
 		case Event::Blur:
-			listenKind(_h, "blur", cpp_name, tag, true);
+			ui::dom::listenKind(_h, "blur", func, tag, true);
 			break;
 		case Event::MouseEnter:
-			listenKind(_h, "mouseenter", cpp_name, tag, true);
+			ui::dom::listenKind(_h, "mouseenter", func, tag, true);
 			break;
 		case Event::MouseLeave:
-			listenKind(_h, "mouseleave", cpp_name, tag, true);
+			ui::dom::listenKind(_h, "mouseleave", func, tag, true);
+			break;
+		}
+	}
+
+	void Element::remove_on(Event event, std::string_view tag) const
+	{
+		if (_h < 0)
+			return;
+
+		switch (event)
+		{
+		case Event::Click:
+			ui::dom::listenKindRemove(_h, "click", tag);
+			break;
+		case Event::Change:
+			ui::dom::listenKindRemove(_h, "change", tag);
+			break;
+		case Event::Submit:
+			ui::dom::listenKindRemove(_h, "enter", tag);
+			break;
+		case Event::Focus:
+			ui::dom::listenKindRemove(_h, "focus", tag);
+			break;
+		case Event::Blur:
+			ui::dom::listenKindRemove(_h, "blur", tag);
+			break;
+		case Event::MouseEnter:
+			ui::dom::listenKindRemove(_h, "mouseenter", tag);
+			break;
+		case Event::MouseLeave:
+			ui::dom::listenKindRemove(_h, "mouseleave", tag);
 			break;
 		}
 	}
@@ -54,5 +133,4 @@ namespace ui::dom
 		if (auto* v = view(); v && _h >= 0 && popup._h >= 0)
 			v->execute("__dom_hover({}, {}, {})", _h, popup._h, active_class);
 	}
-
 }

@@ -49,6 +49,7 @@ namespace ui::dom::tour
 			pleft				   = (vw - pw) / 2;
 			pleft				   = std::clamp(pleft, margin, vw - pw - margin);
 		}
+
 		return { pleft, ptop };
 	}
 

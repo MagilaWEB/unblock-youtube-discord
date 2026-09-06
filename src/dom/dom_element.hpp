@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dom_view.hpp"
+#include "utils_saucer.hpp"
 
 #include <optional>
 #include <string>
@@ -136,23 +137,32 @@ namespace ui::dom
 		[[nodiscard]] Element cloneFirstChild() const;
 
 		// --- Navigation -------------------------------------------------
-		Element				  query(std::string_view selector);
+		Element				  query(std::string_view selector) const;
 		/// Nearest ancestor by selector (including self).
 		/// @note Allocates a new handle; yields a null node when absent.
 		/// @example auto art = el.closest("article"); art.getAttr("id");
 		[[nodiscard]] Element closest(std::string_view selector) const;
 
 		// --- Events (the single subscription path) -------------------------
-		/// @param cpp_name exposed C++ function name, @param tag string that
-		///   JS returns as the first argument (widget name or "action[:payload]"
-		///   for internal state machines like SelectList).
+		/// @param func receives (tag, detail) and returns true to detach a
+		///   non-persist listener, @param tag string that JS returns as the
+		///   first argument (widget name or "action[:payload]" for internal
+		///   state machines like SelectList).
 		/// Reply protocol (tag, detail): Click/Focus/Blur/Hover — detail "",
-		/// Change — checked (bool), Submit — field value (string).
+		/// Change — "true"/"false" (string), Submit — field value (string).
 		/// Non-persist Click/Change detach when C++ returns true;
 		/// persist listeners and other kinds hang forever.
-		/// @example btn.on(Event::Click, "CPPButtonEventClick", name);
+		/// @example btn.on(Event::Click, function, name);
 		/// @example label.on(Event::Click, ui, "open", { .persist = true });
-		void on(Event event, std::string_view cpp_name, std::string_view tag, ListenOpts opts = {});
+
+		void on(Event event, std::function<bool(std::string, js::Value)> func, std::string_view tag, ListenOpts opts = {}) const;
+		/// Explicit teardown for one subscription kind (drops the JS handler
+		/// via __dom_listen_kind_remove and unexposes cppName).
+		/// @note Reserved for future use: no widget calls it yet. Non-persist
+		///   listeners already self-remove when C++ returns true; this is for
+		///   cases where C++ must detach a listener proactively (e.g. widget
+		///   teardown while the DOM node outlives it).
+		void remove_on(Event event, std::string_view tag) const;
 
 		// --- Hover pop-up (universal, replaces widget tooltip) ------------
 		/// The pop-up follows the cursor, shown/hidden on mouseover/out.

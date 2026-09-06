@@ -27,6 +27,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0)
 			v->execute("__dom[{}].classList.add({})", _h, cls);
+
 		return *this;
 	}
 
@@ -34,6 +35,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0)
 			v->execute("__dom[{}].classList.remove({})", _h, cls);
+
 		return *this;
 	}
 
@@ -41,6 +43,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0)
 			v->execute("__dom[{}].classList.toggle({})", _h, cls);
+
 		return *this;
 	}
 
@@ -49,6 +52,7 @@ namespace ui::dom
 		auto* v = view();
 		if (!v || _h < 0)
 			return false;
+
 		const auto r = coco::await(v->evaluate<std::string>("__dom[{}] ? (__dom[{}].classList.contains({}) ? '1' : '0') : '0'", _h, _h, cls));
 		return r.value_or("0") == "1";
 	}
@@ -91,6 +95,7 @@ namespace ui::dom
 			// Idempotent (ab59fbd): a second pass only moves the node,
 			// a replayed script is skipped instead of scrambling layout.
 			v->execute("__dom_appendOnce({}, {})", _h, child._h);
+
 		return *this;
 	}
 
@@ -98,6 +103,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0 && child._h >= 0)
 			v->execute("__dom_prependOnce({}, {})", _h, child._h);
+
 		return *this;
 	}
 
@@ -105,6 +111,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0 && child._h >= 0)
 			v->execute("__dom[{}].removeChild(__dom[{}])", _h, child._h);
+
 		return *this;
 	}
 
@@ -116,13 +123,25 @@ namespace ui::dom
 			v->execute("if (!__dom[{}]) {{ __dom[{}] = document.createElement({}); __dom[{}].appendChild(__dom[{}]); }}", ch, ch, tag, _h, ch);
 			return Element(ch);
 		}
+
 		return Element(-1);
 	}
 
 	Element& Element::remove()
 	{
-		if (auto* v = view(); v && _h >= 0)
-			v->execute("__dom_remove({})", _h);
+		if (_h >= 0)
+		{
+			// Drain the C++ side of every subscription first: saucer cannot
+			// enumerate its map, the registry in dom_view is the only list.
+			const auto exposed = detail::takeExposed(_h);
+			if (auto* v = view())
+			{
+				v->execute("__dom_remove({})", _h);
+				for (const auto& name : exposed)
+					v->unexpose(name);
+			}
+		}
+
 		_h = -1;
 		return *this;
 	}
@@ -131,15 +150,17 @@ namespace ui::dom
 	{
 		if (_h < 0)
 			return Element(-1);
+
 		int h = s_nextHandle++;
 		if (auto* v = view())
 			v->execute("__dom[{}] = __dom[{}].firstChild ? __dom[{}].firstChild.cloneNode(true) : document.createElement('span')", h, _h, _h);
+
 		return Element(h);
 	}
 
 	// --- Navigation -----------------------------------------------------
 
-	Element Element::query(std::string_view selector)
+	Element Element::query(std::string_view selector) const
 	{
 		return queryIn(*this, selector);
 	}
@@ -148,9 +169,11 @@ namespace ui::dom
 	{
 		if (_h < 0)
 			return Element(-1);
+
 		int h = s_nextHandle++;
 		if (auto* v = view())
 			v->execute("__dom[{}] = __dom_closest({}, {})", h, _h, selector);
+
 		return Element(h);
 	}
 
@@ -162,6 +185,7 @@ namespace ui::dom
 		if (auto* v = view())
 			// Idempotent (ab59fbd): a second pass keeps the first node.
 			v->execute("if (!__dom[{}]) __dom[{}] = document.createElement({})", h, h, tag);
+
 		return Element(h);
 	}
 
@@ -170,6 +194,7 @@ namespace ui::dom
 		int h = s_nextHandle++;
 		if (auto* v = view())
 			v->execute("__dom[{}] = document.getElementById({})", h, id);
+
 		return Element(h);
 	}
 
@@ -178,6 +203,7 @@ namespace ui::dom
 		int h = s_nextHandle++;
 		if (auto* v = view())
 			v->execute("__dom[{}] = document.querySelector({})", h, sel);
+
 		return Element(h);
 	}
 
@@ -185,9 +211,11 @@ namespace ui::dom
 	{
 		if (parent._h < 0)
 			return Element(-1);
+
 		int h = s_nextHandle++;
 		if (auto* v = view())
 			v->execute("__dom[{}] = __dom_queryIn({}, {})", h, parent._h, sel);
+
 		return Element(h);
 	}
 

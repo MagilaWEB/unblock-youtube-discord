@@ -10,6 +10,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0)
 			v->execute("__dom[{}].textContent = {}", _h, value);
+
 		return *this;
 	}
 
@@ -17,6 +18,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0)
 			v->execute("__dom[{}].innerHTML = {}", _h, value);
+
 		return *this;
 	}
 
@@ -26,6 +28,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0)
 			v->execute("__dom[{}].style.{} = {}", _h, prop, value);
+
 		return *this;
 	}
 
@@ -33,6 +36,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0)
 			v->execute("__dom[{}].style.{} = {}", _h, prop, value);
+
 		return *this;
 	}
 
@@ -40,6 +44,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0)
 			v->execute("__dom[{}].style.removeProperty({})", _h, prop);
+
 		return *this;
 	}
 
@@ -47,6 +52,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0)
 			v->execute("__dom[{}].style.cssText = {}", _h, css);
+
 		return *this;
 	}
 
@@ -61,6 +67,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0)
 			v->execute("__dom[{}].setAttribute({}, {})", _h, attr, value);
+
 		return *this;
 	}
 
@@ -69,6 +76,7 @@ namespace ui::dom
 		auto* v = view();
 		if (!v || _h < 0)
 			return {};
+
 		const auto r = coco::await(v->evaluate<std::string>("__dom_getAttr({}, {})", _h, attr));
 		return r.value_or(std::string{});
 	}
@@ -78,6 +86,7 @@ namespace ui::dom
 		auto* v = view();
 		if (!v || _h < 0)
 			return false;
+
 		const auto r = coco::await(v->evaluate<std::string>("__dom[{}] ? (__dom[{}].hasAttribute({}) ? '1' : '0') : '0'", _h, _h, attr));
 		return r.value_or("0") == "1";
 	}
@@ -86,6 +95,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0)
 			v->execute("__dom[{}].removeAttribute({})", _h, attr);
+
 		return *this;
 	}
 
@@ -95,6 +105,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0)
 			v->execute("__dom[{}].value = {}", _h, val);
+
 		return *this;
 	}
 
@@ -103,6 +114,7 @@ namespace ui::dom
 		auto* v = view();
 		if (!v || _h < 0)
 			return {};
+
 		const auto r = coco::await(v->evaluate<std::string>("(__dom[{}] && __dom[{}].value) || ''", _h, _h));
 		return r.value_or(std::string{});
 	}
@@ -111,6 +123,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0)
 			v->execute("__dom[{}].checked = {}", _h, state);
+
 		return *this;
 	}
 
@@ -119,6 +132,7 @@ namespace ui::dom
 		auto* v = view();
 		if (!v || _h < 0)
 			return false;
+
 		const auto r = coco::await(v->evaluate<std::string>("__dom[{}] ? (__dom[{}].checked ? '1' : '0') : '0'", _h, _h));
 		return r.value_or("0") == "1";
 	}

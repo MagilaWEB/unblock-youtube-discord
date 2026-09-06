@@ -22,8 +22,10 @@ namespace ui::dom
 				const auto [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), out[i]);
 				if (ec != std::errc{} || ptr != token.data() + token.size())
 					return false;
+
 				if (comma == std::string_view::npos)
 					return i == n - 1;
+
 				rest.remove_prefix(comma + 1);
 			}
 			return true;
@@ -68,13 +70,16 @@ namespace ui::dom
 		auto* v = view();
 		if (!v || _h < 0)
 			return std::nullopt;
+
 		const auto		  r = coco::await(v->evaluate<std::string>("__dom_rect({})", _h));
 		const std::string s = r.value_or(std::string{});
 		if (s.empty())
 			return std::nullopt;
+
 		double nums[4]{};
 		if (!parseNums(s, nums, 4))
 			return std::nullopt;
+
 		return Rect{ nums[0], nums[1], nums[2], nums[3] };
 	}
 
@@ -83,13 +88,16 @@ namespace ui::dom
 		auto* v = view();
 		if (!v || _h < 0)
 			return std::nullopt;
+
 		const auto		  r = coco::await(v->evaluate<std::string>("__dom_size({})", _h));
 		const std::string s = r.value_or(std::string{});
 		if (s.empty())
 			return std::nullopt;
+
 		double nums[2]{};
 		if (!parseNums(s, nums, 2))
 			return std::nullopt;
+
 		return Size{ nums[0], nums[1] };
 	}
 
@@ -98,11 +106,13 @@ namespace ui::dom
 		auto* v = view();
 		if (!v)
 			return {};
+
 		const auto		  r = coco::await(v->evaluate<std::string>("__dom_viewport()"));
 		const std::string s = r.value_or(std::string{});
 		double			  nums[2]{};
 		if (!parseNums(s, nums, 2))
 			return {};
+
 		return Size{ nums[0], nums[1] };
 	}
 
@@ -123,6 +133,7 @@ namespace ui::dom
 				_h,
 				height
 			);
+
 		return *this;
 	}
 
@@ -135,6 +146,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0)
 			v->execute("__dom[{}].style.left = {} + 'px'; __dom[{}].style.top = {} + 'px'", _h, left, _h, top);
+
 		return *this;
 	}
 }
