@@ -67,15 +67,14 @@ void Tutorial::onDomReady()
 	inner.text(Localization::Str{ "str_tutorial_tour_start_button" }());
 	btn.append(inner);
 
-	btn.on(ui::dom::Event::Click, "CPPTutorialStart", "tutorial_tour_start");
-
-	_view->expose(
-		"CPPTutorialStart",
-		[](std::string, std::string) -> bool
+	btn.on(
+		ui::dom::Event::Click,
+		[](std::string, js::Value) -> bool
 		{
 			startTour();
 			return false;	 // stay registered
-		}
+		},
+		"tutorial_tour_start"
 	);
 }
 
@@ -130,6 +129,7 @@ void Tutorial::startTour()
 	_overlay.append(_spotlight);
 
 	_dimmers.clear();
+
 	for (const char* side : { "top", "bottom", "left", "right" })
 	{
 		auto dimmer = ui::dom::create("div");
@@ -160,22 +160,9 @@ void Tutorial::startTour()
 
 	_btn_prev = ui::dom::create("button");
 	_btn_prev.addClass("tour_btn").addClass("tour_btn_prev");
-	_btn_prev.on(ui::dom::Event::Click, "CPPTutorialPrev", "tutorial_tour_prev");
-	buttons.append(_btn_prev);
-
-	_btn_skip = ui::dom::create("button");
-	_btn_skip.addClass("tour_btn").addClass("tour_btn_skip");
-	_btn_skip.on(ui::dom::Event::Click, "CPPTutorialSkip", "tutorial_tour_skip");
-	buttons.append(_btn_skip);
-
-	_btn_next = ui::dom::create("button");
-	_btn_next.addClass("tour_btn").addClass("tour_btn_next");
-	_btn_next.on(ui::dom::Event::Click, "CPPTutorialNext", "tutorial_tour_next");
-	buttons.append(_btn_next);
-
-	_view->expose(
-		"CPPTutorialPrev",
-		[](std::string, std::string) -> bool
+	_btn_prev.on(
+		ui::dom::Event::Click,
+		[](std::string, js::Value) -> bool
 		{
 			if (_index > 0)
 			{
@@ -183,11 +170,30 @@ void Tutorial::startTour()
 				showStep();
 			}
 			return false;
-		}
+		},
+		"tutorial_tour_prev"
 	);
-	_view->expose(
-		"CPPTutorialNext",
-		[](std::string, std::string) -> bool
+	buttons.append(_btn_prev);
+
+	_btn_skip = ui::dom::create("button");
+	_btn_skip.addClass("tour_btn").addClass("tour_btn_skip");
+	_btn_skip.on(
+		ui::dom::Event::Click,
+		[](std::string, js::Value) -> bool
+		{
+			endTour();
+			return false;
+		
+		},
+		"tutorial_tour_skip"
+	);
+	buttons.append(_btn_skip);
+
+	_btn_next = ui::dom::create("button");
+	_btn_next.addClass("tour_btn").addClass("tour_btn_next");
+	_btn_next.on(
+		ui::dom::Event::Click,
+		[](std::string, js::Value) -> bool
 		{
 			if (_index >= static_cast<int>(_steps.size()) - 1)
 				endTour();
@@ -196,17 +202,13 @@ void Tutorial::startTour()
 				_index++;
 				showStep();
 			}
+
 			return false;
-		}
+		
+		},
+		"tutorial_tour_next"
 	);
-	_view->expose(
-		"CPPTutorialSkip",
-		[](std::string, std::string) -> bool
-		{
-			endTour();
-			return false;
-		}
-	);
+	buttons.append(_btn_next);
 
 	showStep();
 }
@@ -225,10 +227,13 @@ void Tutorial::endTour()
 	// builds its own.
 	if (_spotlight.valid())
 		_spotlight.removeClass("tour_spotlight_show");
+
 	for (auto& dim : _dimmers)
 		dim.removeClass("tour_dimmer_show");
+
 	if (_panel.valid())
 		_panel.addClass("tour_panel_hidden");
+
 	auto old_overlay = _overlay;
 	using namespace std::chrono_literals;
 	Scheduler::get().after(250ms, [old_overlay]() mutable { old_overlay.remove(); });
@@ -268,6 +273,7 @@ std::string Tutorial::resolveTab(const Step& step, const ui::dom::Element& targe
 {
 	if (!step.tab.empty())
 		return step.tab;
+
 	if (target.valid())
 	{
 		auto art = target.closest("article");
@@ -278,6 +284,7 @@ std::string Tutorial::resolveTab(const Step& step, const ui::dom::Element& targe
 				return "#" + id;
 		}
 	}
+
 	return "#tutorial";
 }
 
@@ -298,6 +305,7 @@ void Tutorial::resetOverlayVisual(int gen)
 	// hide must not fight it.
 	for (auto& dim : _dimmers)
 		dim.removeClass("tour_dimmer_show");
+
 	auto dims = _dimmers;
 	using namespace std::chrono_literals;
 	Scheduler::get().after(
@@ -306,12 +314,15 @@ void Tutorial::resetOverlayVisual(int gen)
 		{
 			if (stale(gen))
 				return;
+
 			for (auto& dim : dims)
 				dim.style("display", "none");
 		}
 	);
+
 	if (_spotlight.valid())
 		_spotlight.removeClass("tour_spotlight_show");
+
 	if (_panel.valid())
 		_panel.addClass("tour_panel_hidden");
 }
@@ -332,6 +343,7 @@ void Tutorial::scheduleCenter(int gen)
 		{
 			if (stale(gen))
 				return;
+
 			centerNow();
 		}
 	);
@@ -348,14 +360,17 @@ void Tutorial::scheduleLayout(int gen, Step step, ui::dom::Element target)
 		{
 			if (stale(gen))
 				return;
+
 			switchTab(resolveTab(step, target));
 			target.scrollIntoView(true);
+
 			Scheduler::get().after(
 				450ms,
 				[gen, target]
 				{
 					if (stale(gen))
 						return;
+
 					if (auto r = target.rect())
 						layoutNow(*r);
 					else
@@ -409,6 +424,7 @@ void Tutorial::centerNow()
 	const auto			ps = _panel.offsetSize();
 	if (vp.w <= 0 || vp.h <= 0 || !ps || ps->w <= 0 || ps->h <= 0)
 		return;
+
 	const auto pos = ui::dom::tour::centerPanel(vp, *ps);
 	_panel.moveTo(pos.left, pos.top);
 	_panel.removeClass("tour_panel_hidden");

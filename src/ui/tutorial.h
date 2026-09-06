@@ -66,7 +66,6 @@ private:
 
 	static void				buildStepList();
 	static ui::dom::Element targetFor(const Step& step);
-	static std::string		typeToSelector(const Step& step);
 
 	static void startTour();
 	static void endTour();
