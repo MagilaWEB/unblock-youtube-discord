@@ -158,7 +158,7 @@ coco::stray Engine::_start(saucer::application* app)
 	auto window = saucer::window::create(app);
 	if (!window)
 	{
-		Debug::error("Failed to create window: {}", window.error().message());
+		Debug::error("Failed to create window: {}", window.error());
 		app->quit();
 		// NOLINTNEXTLINE(readability-static-accessed-through-instance) - coroutine promise_type artifact, see _start().
 		co_return;
@@ -181,7 +181,9 @@ coco::stray Engine::_start(saucer::application* app)
 		if (auto icon = saucer::icon::from(icon_path); icon)
 		{
 			_window->set_icon(*icon);
-			if (HICON small_icon = static_cast<HICON>(LoadImageW(nullptr, icon_path.c_str(), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_LOADFROMFILE)))
+			if (HICON small_icon = static_cast<HICON>(
+					LoadImageW(nullptr, icon_path.c_str(), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_LOADFROMFILE)
+				))
 				SendMessageW(hwnd, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(small_icon));
 		}
 		else
@@ -209,7 +211,7 @@ coco::stray Engine::_start(saucer::application* app)
 	);
 	if (!view)
 	{
-		Debug::error("Failed to create webview: {}", view.error().message());
+		Debug::error("Failed to create webview: {}", view.error());
 		app->quit();
 		// NOLINTNEXTLINE(readability-static-accessed-through-instance) - coroutine promise_type artifact, see _start().
 		co_return;
@@ -399,9 +401,8 @@ void Engine::_installMoveHook()
 
 	// Manual subclass (no comctl32 dependency): saucer already hooked the
 	// window at creation, so chain to whatever proc is current.
-	_prev_wndproc = reinterpret_cast<WNDPROC>(
-		SetWindowLongPtrW(_window->native().hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(&Engine::_windowHookProc))
-	);
+	_prev_wndproc =
+		reinterpret_cast<WNDPROC>(SetWindowLongPtrW(_window->native().hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(&Engine::_windowHookProc)));
 }
 
 // NOLINTNEXTLINE(bugprone-exception-escape) - Win32 proc; exceptions must not cross it, and the body below does not throw.
@@ -436,9 +437,9 @@ void Engine::flushWindowGeometry()
 void Engine::_onSizeMoveEnd()
 {
 	// Persist the final position. Pure moves are reported by nothing else
-	// (saucer has resize but no move event). No size roundtrip here: the
-	// physical size is untouched mid-drag, and a logical roundtrip would
-	// only lose pixels to saucer's float truncation on fractional DPIs.
+	// (saucer has resize but no move event). No size roundtrip here: saucer
+	// owns sizing across the transition, and a logical roundtrip would only
+	// lose pixels to float truncation on fractional DPIs.
 	markWindowGeometryDirty();
 }
 
@@ -471,8 +472,8 @@ void Engine::_restoreWindowGeometry()
 	const auto saved_y	 = _file_user_setting->parameterSection<s32>("WINDOW", "y");
 	const auto saved_dpi = _file_user_setting->parameterSection<u32>("WINDOW", "dpi");
 
-	window_geometry::Geometry geo		 = window_geometry::defaultGeometry(cursor_area);
-	bool						 use_saved_size = false;
+	window_geometry::Geometry geo			 = window_geometry::defaultGeometry(cursor_area);
+	bool					  use_saved_size = false;
 	// Legacy entries carry physical x/y (wrong units) but their logical w/h
 	// is still valid — keep the size, recenter once.
 	if ((!saved_v || saved_v.value() < 2) && saved_w && saved_h)
@@ -511,8 +512,8 @@ void Engine::_restoreWindowGeometry()
 	if (use_saved_size && saved_dpi && saved_dpi.value() != 0 && target->dpi != 0 && saved_dpi.value() != target->dpi)
 	{
 		const double ratio = static_cast<double>(saved_dpi.value()) / target->dpi;
-		geo.w = std::max(static_cast<int>(std::lround(geo.w * ratio)), window_geometry::kMinWidth);
-		geo.h = std::max(static_cast<int>(std::lround(geo.h * ratio)), window_geometry::kMinHeight);
+		geo.w			   = std::max(static_cast<int>(std::lround(geo.w * ratio)), window_geometry::kMinWidth);
+		geo.h			   = std::max(static_cast<int>(std::lround(geo.h * ratio)), window_geometry::kMinHeight);
 	}
 
 	geo = window_geometry::clampPositionToArea(geo, *target);
@@ -524,9 +525,7 @@ void Engine::_restoreWindowGeometry()
 
 	_window->set_size({ geo.w, geo.h });
 	// set_position takes physical pixels: convert back with the target DPI.
-	_window->set_position(
-		{ .x = window_geometry::toPhysical(geo.x, target->dpi), .y = window_geometry::toPhysical(geo.y, target->dpi) }
-	);
+	_window->set_position({ .x = window_geometry::toPhysical(geo.x, target->dpi), .y = window_geometry::toPhysical(geo.y, target->dpi) });
 }
 
 void Engine::_reapplyWindowGeometry()
@@ -536,8 +535,7 @@ void Engine::_reapplyWindowGeometry()
 
 	_window->set_size({ _restored_geo.w, _restored_geo.h });
 	_window->set_position(
-		{ .x = window_geometry::toPhysical(_restored_geo.x, _restored_dpi),
-		  .y = window_geometry::toPhysical(_restored_geo.y, _restored_dpi) }
+		{ .x = window_geometry::toPhysical(_restored_geo.x, _restored_dpi), .y = window_geometry::toPhysical(_restored_geo.y, _restored_dpi) }
 	);
 }
 
@@ -574,11 +572,11 @@ void Engine::_flushWindowGeometry()
 			return;
 
 		// position() is physical; persist logical so restore math is DPI-clean.
-		const HWND	 hwnd		= _window->native().hwnd;
-		const unsigned dpi		= GetDpiForWindow(hwnd);
-		const auto	 pos		= _window->position();
-		const int	 logical_x = window_geometry::toLogical(pos.x, dpi);
-		const int	 logical_y = window_geometry::toLogical(pos.y, dpi);
+		const HWND	   hwnd		 = _window->native().hwnd;
+		const unsigned dpi		 = GetDpiForWindow(hwnd);
+		const auto	   pos		 = _window->position();
+		const int	   logical_x = window_geometry::toLogical(pos.x, dpi);
+		const int	   logical_y = window_geometry::toLogical(pos.y, dpi);
 
 		_file_user_setting->writeSectionParameter("WINDOW", "v", "3");
 		_file_user_setting->writeSectionParameter("WINDOW", "dpi", std::to_string(dpi));

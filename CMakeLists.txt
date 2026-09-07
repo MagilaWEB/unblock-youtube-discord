@@ -18,6 +18,11 @@ endif (WIN32)
 
 set (LOG4CPLUS_WORKING_LOCALE_DEFAULT ON)
 
+# Kill the min/max macros from windows.h: they break standards-compliant
+# headers (e.g. glaze's std::numeric_limits<size_t>::max()). Our code only
+# uses std::min/std::max, so nothing depends on the macros.
+add_compile_definitions(NOMINMAX)
+
 # Enable C++23
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -43,7 +48,7 @@ set(saucer_backend "WebView2")
 FetchContent_Declare(
   saucer
   GIT_REPOSITORY https://github.com/saucer/saucer
-  GIT_TAG v8.0.5
+  GIT_TAG ver/8.2.0
   GIT_SHALLOW TRUE
   # Live-drag guard for WM_DPICHANGED (see cmake/patches/); runs on fresh populates.
   PATCH_COMMAND ${CMAKE_COMMAND} -DSAUCER_SRC=${CMAKE_BINARY_DIR}/_deps/saucer-src -P ${CMAKE_SOURCE_DIR}/cmake/patches/saucer_win32_dpichanged.cmake
@@ -211,6 +216,7 @@ set(PROJECT_WARNING_FLAGS -Wall -Wextra -Wpedantic -Werror
     -Wno-padded
     -Wno-exit-time-destructors
     -Wno-unsafe-buffer-usage
+    -Wno-missing-designated-field-initializers
 )
 
 # Add submodules
