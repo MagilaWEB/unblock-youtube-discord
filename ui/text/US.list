@@ -214,6 +214,10 @@ str_input_zapret_custom_ip_exclude_placeholder=Add an IP or subnet (e.g. 192.168
 str_checkbox_show_console_title=📟 Show console
 str_checkbox_show_console_description=Opens a console window with Unblock logs.
 
+// Setting common keep physical window size across monitors
+str_checkbox_keep_physical_size_title=🖥 Same window size on all monitors
+str_checkbox_keep_physical_size_description=Preserve the physical window size when dragging between monitors with different scaling. Handy when monitors match in inches but not in resolution. Applies on restart.
+
 // Setting common testing on startup
 str_checkbox_testing_startup_title=🧪 Test at startup
 str_checkbox_testing_startup_description=🧪 Automatically test site availability when the application starts.

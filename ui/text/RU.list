@@ -214,6 +214,10 @@ str_input_zapret_custom_ip_exclude_placeholder=Добавить IP или под
 str_checkbox_show_console_title=📟 Показывать консоль
 str_checkbox_show_console_description=Открывает окно с логами работы Unblock.
 
+// Setting common keep physical window size across monitors
+str_checkbox_keep_physical_size_title=🖥 Одинаковый размер окна на всех мониторах
+str_checkbox_keep_physical_size_description=Сохранять физический размер окна при перетаскивании между мониторами с разным масштабом. Удобно, когда мониторы одинаковые в дюймах, но с разным разрешением. Применяется после перезапуска.
+
 // Setting common testing on startup
 str_checkbox_testing_startup_title=🧪 Тестировать при запуске
 str_checkbox_testing_startup_description=🧪 Автоматическое тестирование доступности сайтов при запуске приложения.

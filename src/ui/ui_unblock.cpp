@@ -12,6 +12,7 @@ void UiUnblock::initialize()
 {
 	_showConsole();
 	_testDomainsStartup();
+	_keepPhysicalSize();
 	_stopService();
 }
 
@@ -36,6 +37,28 @@ void UiUnblock::_showConsole()
 		);
 	}
 #endif
+}
+
+void UiUnblock::_keepPhysicalSize()
+{
+	_keep_physical_size->create(
+		"#unblock section .common",
+		"str_checkbox_keep_physical_size_title",
+		Localization::Str{ "str_checkbox_keep_physical_size_description" }
+	);
+
+	// Enabled by default; the engine reads it at startup into a window
+	// property, so toggling applies on restart.
+	const auto result = _ui->userConfig()->parameterSection<bool>("WINDOW", "keep_physical_size");
+	_keep_physical_size->setState(!result || result.value());
+
+	_keep_physical_size->addEventClick(
+		[self = _ui](JSArgs args)
+		{
+			self->userConfig()->writeSectionParameter("WINDOW", "keep_physical_size", JSToCPP(args[0]));
+			return false;
+		}
+	);
 }
 
 void UiUnblock::_testDomainsStartup()

@@ -165,6 +165,18 @@ coco::stray Engine::_start(saucer::application* app)
 	}
 	_window = std::move(window).value();
 
+	// Physical-size preservation across monitors (saucer WM_DPICHANGED guard,
+	// see cmake/patches/): opt out via config, enabled by default so the
+	// window looks the same on same-inch monitors whatever their resolution.
+	{
+		const auto hwnd = _window->native().hwnd;
+		const auto keep = _file_user_setting->parameterSection<bool>("WINDOW", "keep_physical_size");
+		if (!keep || keep.value())
+			SetPropW(hwnd, L"UnblockKeepPhysicalSize", reinterpret_cast<HANDLE>(1));
+		else
+			RemovePropW(hwnd, L"UnblockKeepPhysicalSize");
+	}
+
 	// Saucer works in logical pixels (96 DPI base) and scales to physical
 	// itself per-monitor, so no manual GetSystemMetrics scaling here.
 	_window->set_min_size({ window_geometry::kMinWidth, window_geometry::kMinHeight });

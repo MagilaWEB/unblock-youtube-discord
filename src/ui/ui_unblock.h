@@ -11,6 +11,7 @@ class UiUnblock
 
 	CHECK_BOX(_show_console);
 	CHECK_BOX(_testing_domains_startup);
+	CHECK_BOX(_keep_physical_size);
 
 	// Stop all services
 	BUTTON(_stop_service_all);
@@ -28,5 +29,6 @@ public:
 private:
 	void _showConsole();
 	void _testDomainsStartup();
+	void _keepPhysicalSize();
 	void _stopService();
 };
