@@ -1,19 +1,23 @@
 #pragma once
 
 #include "engine_api.hpp"
+#include "window_geometry.h"
 
 #include "../core/file_system.h"
 
 #include <saucer/smartview.hpp>
 
 #include <atomic>
+#include <chrono>
 #include <cstdio>
 #include <fstream>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <streambuf>
 #include <string>
 #include <thread>
+#include <vector>
 
 #include <windows.h>
 
@@ -37,6 +41,26 @@ class Engine final : public IEngineAPI
 	std::jthread	  _update_ticker;
 	std::atomic<bool> _update_ticker_run{ false };
 
+	// Debounced WINDOW geometry persistence (see markWindowGeometryDirty).
+	std::atomic<bool>							   _geom_dirty{ false };
+	std::chrono::steady_clock::time_point		   _geom_dirty_since{};
+	std::mutex									   _geom_mutex{};
+	static constexpr std::chrono::milliseconds kGeomFlushDelay{ 500 };
+
+	// Move/resize hook (WM_EXITSIZEMOVE): saucer has no move event, so the
+	// final position/size after a drag is settled and persisted here.
+	WNDPROC _prev_wndproc{ nullptr };
+
+	// Geometry decided by _restoreWindowGeometry, re-applied after show():
+	// saucer caches the DPI at window creation (primary monitor), so the
+	// pre-show set_size computes the physical size with a stale DPI when
+	// restoring onto another monitor. After show() the cache is synced via
+	// WM_DPICHANGED and the same logical values land correctly.
+	window_geometry::Geometry _restored_geo{};
+	unsigned				 _restored_dpi{ 96 };
+	bool					 _have_restored{ false };
+	static LRESULT CALLBACK _windowHookProc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
+
 public:
 	Engine();
 	~Engine() noexcept override;
@@ -51,6 +75,8 @@ public:
 	void							showConsole() override;
 	void							hideConsole() override;
 	void							quit() override;
+	void							markWindowGeometryDirty() override;
+	void							flushWindowGeometry() override;
 
 	std::shared_ptr<File>& userConfig() override;
 
@@ -59,6 +85,13 @@ public:
 private:
 	bool		_checkRunApp();
 	void		_finish();
+	void		_restoreWindowGeometry();
+	void		_reapplyWindowGeometry();
+	void		_maybeFlushWindowGeometry();
+	void		_flushWindowGeometry();
+	void		_installMoveHook();
+	void		_removeMoveHook();
+	void		_onSizeMoveEnd();
 	std::string _getSystemLocale();
 	void		_forceSetWindowIcon(HWND hwnd, const wchar_t* iconPath);
 	void		_applyDarkTitleBar(HWND hwnd);

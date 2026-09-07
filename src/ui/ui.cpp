@@ -35,14 +35,10 @@ void Ui::setup(saucer::smartview* view)
 	// JS -> CPP: translate a string by language key.
 	view->expose("CPPLangText", [this](std::string text_id) { return langText(std::move(text_id)); });
 
-	// Save window size to config.
-	view->parent().on<saucer::window::event::resize>(
-		[this](int width, int height)
-		{
-			_engine->userConfig()->writeSectionParameter("WINDOW", "width", std::to_string(width));
-			_engine->userConfig()->writeSectionParameter("WINDOW", "height", std::to_string(height));
-		}
-	);
+	// Window geometry is persisted by the engine with a debounce — never
+	// run config regex/normalize on the resize hot path (DPI transitions
+	// fire a storm of these while WebView2 recreates its surface).
+	view->parent().on<saucer::window::event::resize>([this](int, int) { _engine->markWindowGeometryDirty(); });
 
 	// Window close — full UI reset (the engine shuts itself down on the last closed window).
 	view->parent().on<saucer::window::event::closed>([this]() { _closeWindow(); });
@@ -53,6 +49,9 @@ void Ui::setup(saucer::smartview* view)
 
 void Ui::_closeWindow()
 {
+	// Fires on the UI thread while the loop is alive: last chance to persist
+	// geometry (pure moves report through nothing else).
+	_engine->flushWindowGeometry();
 	Tutorial::release();
 	BaseElement::release();
 }

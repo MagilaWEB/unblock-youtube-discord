@@ -45,6 +45,7 @@ target_link_libraries(${NAME} PRIVATE
         unblock
         saucer::saucer
         dwmapi.lib
+        shcore.lib
 )
 
 target_compile_definitions(${NAME} PRIVATE CONSOLE ${ALL_MACRO_CPP})

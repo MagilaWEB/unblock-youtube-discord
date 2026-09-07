@@ -7,10 +7,12 @@
 
 #include <cwctype>
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 
 #include <dwmapi.h>
 #include <shellapi.h>
+#include <shellscalingapi.h>
 
 #include <filesystem>
 
@@ -95,6 +97,59 @@ void Engine::run()
 	_finish();
 }
 
+namespace
+{
+	// saucer's screens() returns raw rcMonitor with x/y swapped, so work areas
+	// are enumerated directly via Win32 (rcWork excludes the taskbar).
+	BOOL CALLBACK collectWorkArea(HMONITOR monitor, HDC, LPRECT, LPARAM user_data)
+	{
+		auto* out = reinterpret_cast<std::vector<window_geometry::Area>*>(user_data);
+
+		MONITORINFO info{};
+		info.cbSize = sizeof(info);
+		if (!GetMonitorInfoW(monitor, &info))
+			return TRUE;
+
+		unsigned dpi{ 96 };
+		if (UINT dx{ 0 }, dy{ 0 }; SUCCEEDED(GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &dx, &dy)) && dx != 0)
+			dpi = dx;
+
+		out->push_back(
+			{
+				.x	 = static_cast<int>(info.rcWork.left),
+				.y	 = static_cast<int>(info.rcWork.top),
+				.w	 = static_cast<int>(info.rcWork.right - info.rcWork.left),
+				.h	 = static_cast<int>(info.rcWork.bottom - info.rcWork.top),
+				.dpi = dpi,
+			}
+		);
+		return TRUE;
+	}
+
+	std::vector<window_geometry::Area> listWorkAreas()
+	{
+		std::vector<window_geometry::Area> areas;
+		EnumDisplayMonitors(nullptr, nullptr, collectWorkArea, reinterpret_cast<LPARAM>(&areas));
+		return areas;
+	}
+
+	// Index of the work area containing the cursor; falls back to primary.
+	size_t cursorAreaIndex(const std::vector<window_geometry::Area>& areas)
+	{
+		POINT cursor{};
+		if (GetCursorPos(&cursor))
+		{
+			for (size_t i = 0; i < areas.size(); ++i)
+			{
+				const auto& a = areas[i];
+				if (cursor.x >= a.x && cursor.x < a.x + a.w && cursor.y >= a.y && cursor.y < a.y + a.h)
+					return i;
+			}
+		}
+		return 0;
+	}
+}	 // namespace
+
 // clang-tidy resolves coco::stray's promise_type through the coroutine instance below;
 // that's an artifact of the coroutine machinery, not a real instance-access bug.
 // NOLINTNEXTLINE(readability-static-accessed-through-instance)
@@ -110,31 +165,35 @@ coco::stray Engine::_start(saucer::application* app)
 	}
 	_window = std::move(window).value();
 
-	const u32 screen_scale = static_cast<u32>(GetSystemMetrics(SM_CYSCREEN)) / 520;
+	// Saucer works in logical pixels (96 DPI base) and scales to physical
+	// itself per-monitor, so no manual GetSystemMetrics scaling here.
+	_window->set_min_size({ window_geometry::kMinWidth, window_geometry::kMinHeight });
+	_window->set_resizable(true);
+	_window->set_background({ .r = 13, .g = 14, .b = 20, .a = 255 });
+	_window->set_title(("Unblock " + std::format("Version: {}", VERSION_STR)).c_str());
 
-	int width{ 520 * static_cast<int>(screen_scale) };
-	int height{ 510 * static_cast<int>(screen_scale) };
-
-	if (auto config_width = _file_user_setting->parameterSection<u32>("WINDOW", "width"))
+	// Icon via saucer (big icon). One Win32 line complements the small
+	// title-bar icon — saucer's Win32 backend only sends ICON_BIG upstream.
+	const auto hwnd = _window->native().hwnd;
 	{
-		width = static_cast<int>(config_width.value());
-
-		if (auto config_height = _file_user_setting->parameterSection<u32>("WINDOW", "height"))
-			height = static_cast<int>(config_height.value());
+		// NB: unblock.ico lives in bin/, not in currentPath() (project root).
+		const auto icon_path = Core::get().binPath() / "unblock.ico";
+		if (auto icon = saucer::icon::from(icon_path); icon)
+		{
+			_window->set_icon(*icon);
+			if (HICON small_icon = static_cast<HICON>(LoadImageW(nullptr, icon_path.c_str(), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), LR_LOADFROMFILE)))
+				SendMessageW(hwnd, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(small_icon));
+		}
+		else
+			_forceSetWindowIcon(hwnd, L"./unblock.ico");
 	}
 
-	_window->set_size({ width, height });
+	_restoreWindowGeometry();
+	_installMoveHook();
 
-	// Center on the primary monitor.
-	const auto screen = app->screens().front();
-	_window->set_position({ .x = screen.position.x + (screen.size.w - width) / 2, .y = screen.position.y + (screen.size.h - height) / 2 });
-
-	const auto hwnd = _window->native().hwnd;
-
+	// No saucer API for the frame chrome; applied once after show() below
+	// so DWM does not fight the compositor during initial placement.
 	_applyDarkTitleBar(hwnd);
-	_forceSetWindowIcon(hwnd, L"./unblock.ico");
-
-	_window->set_title(("Unblock " + std::format("Version: {}", VERSION_STR)).c_str());
 
 	// Smartview over the window (move-only -> optional).
 	auto view = saucer::smartview::create(
@@ -176,6 +235,10 @@ coco::stray Engine::_start(saucer::application* app)
 
 	webview->set_url("ui://root/main.html");
 	_window->show();
+	// Second geometry pass: by now WM_DPICHANGED has synced saucer's DPI
+	// cache to the actual monitor, so the same logical values produce the
+	// correct physical size. Runs before the loop pumps paint — no flicker.
+	_reapplyWindowGeometry();
 
 	_startUpdateTicker(app);
 
@@ -310,6 +373,8 @@ std::shared_ptr<File>& Engine::userConfig()
 
 void Engine::quit()
 {
+	// Loop is still alive here (quit() is what ends it) — safe to persist.
+	_flushWindowGeometry();
 	if (_app)
 		_app->quit();
 }
@@ -325,6 +390,208 @@ bool Engine::hasCyrillicOrSpaceInBinaryPath()
 	};
 
 	return std::ranges::any_of(Core::get().binariesPath().wstring(), is_cyrillic_or_space);
+}
+
+void Engine::_installMoveHook()
+{
+	if (!_window || _prev_wndproc)
+		return;
+
+	// Manual subclass (no comctl32 dependency): saucer already hooked the
+	// window at creation, so chain to whatever proc is current.
+	_prev_wndproc = reinterpret_cast<WNDPROC>(
+		SetWindowLongPtrW(_window->native().hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(&Engine::_windowHookProc))
+	);
+}
+
+// NOLINTNEXTLINE(bugprone-exception-escape) - Win32 proc; exceptions must not cross it, and the body below does not throw.
+LRESULT CALLBACK Engine::_windowHookProc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
+{
+	Engine& self = Engine::get();
+
+	if (msg == WM_EXITSIZEMOVE)
+		self._onSizeMoveEnd();
+
+	if (self._prev_wndproc)
+		return CallWindowProcW(self._prev_wndproc, hwnd, msg, w_param, l_param);
+	return DefWindowProcW(hwnd, msg, w_param, l_param);
+}
+
+void Engine::_removeMoveHook()
+{
+	// Restore saucer's pristine window-proc chain first thing at teardown:
+	// our proc must not sit in the path of DestroyWindow and friends.
+	if (_window && _prev_wndproc)
+	{
+		SetWindowLongPtrW(_window->native().hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(_prev_wndproc));
+		_prev_wndproc = nullptr;
+	}
+}
+
+void Engine::flushWindowGeometry()
+{
+	_flushWindowGeometry();
+}
+
+void Engine::_onSizeMoveEnd()
+{
+	// Persist the final position. Pure moves are reported by nothing else
+	// (saucer has resize but no move event). No size roundtrip here: the
+	// physical size is untouched mid-drag, and a logical roundtrip would
+	// only lose pixels to saucer's float truncation on fractional DPIs.
+	markWindowGeometryDirty();
+}
+
+void Engine::_restoreWindowGeometry()
+{
+	const auto areas = listWorkAreas();
+	if (areas.empty())
+	{
+		_window->set_size({ window_geometry::kBaseWidth, window_geometry::kBaseHeight });
+		return;
+	}
+
+	// Work in logical units throughout; saucer size() is logical while its
+	// position() is physical, so areas are converted once up front.
+	std::vector<window_geometry::Area> logical;
+	logical.reserve(areas.size());
+	for (const auto& area : areas)
+		logical.push_back(window_geometry::logicalArea(area));
+
+	const auto& cursor_area = logical[cursorAreaIndex(areas)];
+
+	// Stored x/y/w/h are logical. v3 additionally stores the DPI they were
+	// saved with, so reopening on a different-DPI monitor keeps the physical
+	// size instead of shrinking. Older entries lack the DPI — their size is
+	// kept as-is (same-monitor assumption) or recentered when unusable.
+	const auto saved_v	 = _file_user_setting->parameterSection<u32>("WINDOW", "v");
+	const auto saved_w	 = _file_user_setting->parameterSection<u32>("WINDOW", "width");
+	const auto saved_h	 = _file_user_setting->parameterSection<u32>("WINDOW", "height");
+	const auto saved_x	 = _file_user_setting->parameterSection<s32>("WINDOW", "x");
+	const auto saved_y	 = _file_user_setting->parameterSection<s32>("WINDOW", "y");
+	const auto saved_dpi = _file_user_setting->parameterSection<u32>("WINDOW", "dpi");
+
+	window_geometry::Geometry geo		 = window_geometry::defaultGeometry(cursor_area);
+	bool						 use_saved_size = false;
+	// Legacy entries carry physical x/y (wrong units) but their logical w/h
+	// is still valid — keep the size, recenter once.
+	if ((!saved_v || saved_v.value() < 2) && saved_w && saved_h)
+	{
+		geo.w = std::max(static_cast<int>(saved_w.value()), window_geometry::kMinWidth);
+		geo.h = std::max(static_cast<int>(saved_h.value()), window_geometry::kMinHeight);
+		geo.x = cursor_area.x + (cursor_area.w - geo.w) / 2;
+		geo.y = cursor_area.y + (cursor_area.h - geo.h) / 2;
+	}
+	else if (saved_v && saved_v.value() >= 2 && saved_w && saved_h && saved_x && saved_y)
+	{
+		geo = {
+			.x = saved_x.value(),
+			.y = saved_y.value(),
+			.w = static_cast<int>(saved_w.value()),
+			.h = static_cast<int>(saved_h.value()),
+		};
+		use_saved_size = true;
+		if (!window_geometry::isVisibleAnywhere(geo, logical))
+			geo = window_geometry::defaultGeometry(cursor_area);
+	}
+
+	// Pull into view on the area holding the top-left corner (or the cursor
+	// area when centered). The size is kept as closed — never shrunk to fit.
+	const window_geometry::Area* target = &cursor_area;
+	for (const auto& area : logical)
+	{
+		if (geo.x >= area.x && geo.x < area.x + area.w && geo.y >= area.y && geo.y < area.y + area.h)
+		{
+			target = &area;
+			break;
+		}
+	}
+	// v3: the saved size is logical for the saved monitor's DPI — scale it
+	// to the target monitor so the window keeps its physical size there.
+	if (use_saved_size && saved_dpi && saved_dpi.value() != 0 && target->dpi != 0 && saved_dpi.value() != target->dpi)
+	{
+		const double ratio = static_cast<double>(saved_dpi.value()) / target->dpi;
+		geo.w = std::max(static_cast<int>(std::lround(geo.w * ratio)), window_geometry::kMinWidth);
+		geo.h = std::max(static_cast<int>(std::lround(geo.h * ratio)), window_geometry::kMinHeight);
+	}
+
+	geo = window_geometry::clampPositionToArea(geo, *target);
+
+	// Stash for the post-show re-apply (saucer DPI cache syncs on show).
+	_restored_geo  = geo;
+	_restored_dpi  = target->dpi;
+	_have_restored = true;
+
+	_window->set_size({ geo.w, geo.h });
+	// set_position takes physical pixels: convert back with the target DPI.
+	_window->set_position(
+		{ .x = window_geometry::toPhysical(geo.x, target->dpi), .y = window_geometry::toPhysical(geo.y, target->dpi) }
+	);
+}
+
+void Engine::_reapplyWindowGeometry()
+{
+	if (!_have_restored || !_window)
+		return;
+
+	_window->set_size({ _restored_geo.w, _restored_geo.h });
+	_window->set_position(
+		{ .x = window_geometry::toPhysical(_restored_geo.x, _restored_dpi),
+		  .y = window_geometry::toPhysical(_restored_geo.y, _restored_dpi) }
+	);
+}
+
+void Engine::markWindowGeometryDirty()
+{
+	std::lock_guard lock{ _geom_mutex };
+	_geom_dirty		  = true;
+	_geom_dirty_since = std::chrono::steady_clock::now();
+}
+
+void Engine::_maybeFlushWindowGeometry()
+{
+	{
+		std::lock_guard lock{ _geom_mutex };
+		if (!_geom_dirty || std::chrono::steady_clock::now() - _geom_dirty_since < kGeomFlushDelay)
+			return;
+		_geom_dirty = false;
+	}
+	_flushWindowGeometry();
+}
+
+void Engine::_flushWindowGeometry()
+{
+	try
+	{
+		if (!_window || !_file_user_setting)
+			return;
+		// Minimized windows report a degenerate size; never persist that.
+		if (_window->minimized())
+			return;
+
+		const auto size = _window->size();
+		if (size.w < window_geometry::kMinWidth || size.h < window_geometry::kMinHeight)
+			return;
+
+		// position() is physical; persist logical so restore math is DPI-clean.
+		const HWND	 hwnd		= _window->native().hwnd;
+		const unsigned dpi		= GetDpiForWindow(hwnd);
+		const auto	 pos		= _window->position();
+		const int	 logical_x = window_geometry::toLogical(pos.x, dpi);
+		const int	 logical_y = window_geometry::toLogical(pos.y, dpi);
+
+		_file_user_setting->writeSectionParameter("WINDOW", "v", "3");
+		_file_user_setting->writeSectionParameter("WINDOW", "dpi", std::to_string(dpi));
+		_file_user_setting->writeSectionParameter("WINDOW", "width", std::to_string(size.w));
+		_file_user_setting->writeSectionParameter("WINDOW", "height", std::to_string(size.h));
+		_file_user_setting->writeSectionParameter("WINDOW", "x", std::to_string(logical_x));
+		_file_user_setting->writeSectionParameter("WINDOW", "y", std::to_string(logical_y));
+		_file_user_setting->save();
+	}
+	catch (...)
+	{
+		// Geometry persistence must never break the UI thread or shutdown.
+	}
 }
 
 bool Engine::_checkRunApp()
@@ -354,7 +621,12 @@ void Engine::_startUpdateTicker(saucer::application* app)
 				app->post(
 					[this]()
 					{
-						if (_update_ticker_run && _ui)
+						if (!_update_ticker_run)
+							return;
+						_maybeFlushWindowGeometry();
+						// No DOM sync for a minimized window: WebView2 has no
+						// visible surface and every execute() is wasted work.
+						if (_ui && !(_window && _window->minimized()))
 							_ui->update();
 					}
 				);
@@ -377,6 +649,9 @@ void Engine::_stopUpdateTicker()
 void Engine::_finish()
 {
 	_stopUpdateTicker();
+	// No saucer calls below this point: the message loop is dead and our
+	// hook is uninstalled first, so teardown follows the pristine path.
+	_removeMoveHook();
 	hideConsole();
 	_ui.reset();
 	_view.reset();
