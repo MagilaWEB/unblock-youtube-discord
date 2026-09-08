@@ -1,10 +1,10 @@
-# Patches saucer (src/win32.window.impl.cpp, WM_DPICHANGED) so a live user
-# drag across monitors with different DPI does not fight Windows: while the
-# window holds the mouse capture (modal move/resize loop), Windows keeps the
-# window under the cursor on its own. Hosts preserving physical size across
-# monitors opt in per window via the "UnblockKeepPhysicalSize" property
-# (absent == stock behavior). DPI bookkeeping (and min/max refresh) always
-# runs; only the forced geometry is guarded.
+# Patches saucer (src/win32.window.impl.cpp, WM_DPICHANGED) so hosts can opt
+# out of the live rescale during a user drag across monitors with different
+# DPI: while the window holds the mouse capture (modal move/resize loop),
+# the forced reposition/resize is skipped and the window keeps its current
+# pixel size. Hosts opt in per window via the "UnblockKeepPhysicalSize"
+# property (absent == stock behavior). DPI bookkeeping (and min/max
+# refresh) always runs; only the forced geometry is guarded.
 #
 # Supports both v8.0.5 and ver/8.2.0 handler layouts (auto-detected).
 # Idempotent: re-runs are a no-op (marker SAUCER_DPICHANGED_LIVEDRAG_FIX).
@@ -46,9 +46,9 @@ string(CONCAT new_805
 	"            self->platform->dpi = HIWORD(w_param);\n"
 	"\n"
 	"            // SAUCER_DPICHANGED_LIVEDRAG_FIX: during a live user drag the\n"
-	"            // window holds the mouse capture and Windows keeps it under\n"
-	"            // the cursor itself. Hosts preserving physical size opt in\n"
-	"            // via the UnblockKeepPhysicalSize window property.\n"
+	"            // window holds the mouse capture. Hosts preferring\n"
+	"            // pixel-stable drags opt in via the UnblockKeepPhysicalSize\n"
+	"            // window property.\n"
 	"            const bool keep_physical = GetPropW(hwnd, L\"UnblockKeepPhysicalSize\") != nullptr;\n"
 	"            if (GetCapture() != hwnd || !keep_physical)\n"
 	"            {\n"
@@ -100,9 +100,9 @@ string(CONCAT new_820
 	"            }\n"
 	"\n"
 	"            // SAUCER_DPICHANGED_LIVEDRAG_FIX: during a live user drag the\n"
-	"            // window holds the mouse capture and Windows keeps it under\n"
-	"            // the cursor itself. Hosts preserving physical size opt in\n"
-	"            // via the UnblockKeepPhysicalSize window property.\n"
+	"            // window holds the mouse capture. Hosts preferring\n"
+	"            // pixel-stable drags opt in via the UnblockKeepPhysicalSize\n"
+	"            // window property.\n"
 	"            const bool keep_physical = GetPropW(hwnd, L\"UnblockKeepPhysicalSize\") != nullptr;\n"
 	"            if (GetCapture() != hwnd || !keep_physical)\n"
 	"            {\n"

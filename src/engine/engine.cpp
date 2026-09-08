@@ -165,9 +165,10 @@ coco::stray Engine::_start(saucer::application* app)
 	}
 	_window = std::move(window).value();
 
-	// Physical-size preservation across monitors (saucer WM_DPICHANGED guard,
-	// see cmake/patches/): opt out via config, enabled by default so the
-	// window looks the same on same-inch monitors whatever their resolution.
+	// Optional WM_DPICHANGED guard (see cmake/patches/): while a live drag is
+	// in flight the window keeps its current pixel size instead of rescaling
+	// to the new monitor. Enabled by default, opt out via the
+	// "keep_physical_size" config key.
 	{
 		const auto hwnd = _window->native().hwnd;
 		const auto keep = _file_user_setting->parameterSection<bool>("WINDOW", "keep_physical_size");

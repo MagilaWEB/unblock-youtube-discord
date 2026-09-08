@@ -50,9 +50,10 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/saucer/saucer
   GIT_TAG ver/8.2.0
   GIT_SHALLOW TRUE
-  # Optional live-drag guard for WM_DPICHANGED (see cmake/patches/): preserves
-  # the physical window size mid-drag for hosts opting in via the
-  # UnblockKeepPhysicalSize window property. Runs on fresh populates.
+  # Optional guard for WM_DPICHANGED (see cmake/patches/): during a live drag
+  # the window keeps its pixel size instead of rescaling to the new monitor.
+  # Hosts opt in per window via the UnblockKeepPhysicalSize property.
+  # Runs on fresh populates.
   PATCH_COMMAND ${CMAKE_COMMAND} -DSAUCER_SRC=${CMAKE_BINARY_DIR}/_deps/saucer-src -P ${CMAKE_SOURCE_DIR}/cmake/patches/saucer_win32_dpichanged.cmake
 )
 
