@@ -21,6 +21,8 @@ private:
 	std::map<std::string, FakeBinParam> _fake_bin_params{};
 	std::list<std::string>				_section_opt_service_names{};
 	u32									_max_strategy_count{ 0 };
+	bool								_numbering_active{ false };
+	u32									_strategy_index{ 0 };
 
 public:
 	StrategiesDPI();

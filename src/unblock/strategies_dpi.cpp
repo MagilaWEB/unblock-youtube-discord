@@ -139,7 +139,7 @@ void StrategiesDPI::_blob_init_to_zapret()
 			if (data.init)
 				data.init = false;
 
-		static const std::regex pattern{ R"(:blob=([^:]+)|:seqovl_pattern=([^:]+))" };
+		static const std::regex pattern{ R"(:blob=([^:]+)|:seqovl_pattern=([^:]+)|:pattern=([^:]+))" };
 
 		auto& file_strategy = *_file_strategy_dpi;
 		for (auto& line : file_strategy)
@@ -166,7 +166,7 @@ void StrategiesDPI::_blob_init_to_zapret()
 			std::smatch match;
 			if (std::regex_search(line, match, pattern))
 			{
-				constexpr std::string_view fake_default[]{ "fake_default_tls", "fake_default_http", "fake_default_udp" };
+				constexpr std::string_view fake_default[]{ "fake_default_tls", "fake_default_http", "fake_default_udp", "fake_default_quic" };
 				for (auto i : std::ranges::iota_view(1U, match.size()))
 				{
 					auto key_fake = match[i].str();
@@ -216,6 +216,8 @@ void StrategiesDPI::_normalizeStrategyString(std::string& str) const
 void StrategiesDPI::_normalizeStrategyFinal()
 {
 	_max_strategy_count = 0;
+	_numbering_active	= false;
+	_strategy_index		= 0;
 
 	for (auto& line : _strategy_dpi)
 	{
@@ -296,42 +298,54 @@ void StrategiesDPI::_getAllPorts(std::string& str) const
 void StrategiesDPI::_luaDesyncNumberStrategy(std::string& str)
 {
 	constexpr std::string_view maker_start_strategy[]{ "--lua-desync=circular", "--lua-desync=auto_strategy" };
+	static const std::regex	   reg_manual_strategy{ ":strategy=(\\d+)" };
 
-	static bool start{ false };
-
-	if (!start)
+	if (!_numbering_active)
 	{
 		for (auto marker : maker_start_strategy)
 		{
 			if (str.starts_with(marker))
 			{
-				start = true;
+				_numbering_active = true;
 				return;
 			}
 		}
+
+		return;
 	}
 
-	if (start)
+	if (str.empty() || str.starts_with("\n"))
+		return;
+
+	if (str.contains("--new"))
 	{
-		static u32 index{ 0 };
-
-		if (str.empty() || str.starts_with("\n"))
-			return;
-
-		if (str.contains("--new"))
-		{
-			start = false;
-			index = 0;
-			return;
-		}
-
-		if (str.starts_with("--lua-desync") && (!str.contains(":strategy") && !str.contains(":final")))
-		{
-			index++;
-			str.append(std::format(":strategy={}", index));
-		}
-
-		if (_max_strategy_count < index)
-			_max_strategy_count = index;
+		_numbering_active = false;
+		_strategy_index	  = 0;
+		return;
 	}
+
+	if (!str.starts_with("--lua-desync"))
+		return;
+
+	// manual numbering is respected: the counter follows the highest explicit number,
+	// auto numbers continue after it without collisions. several instances may share
+	// the same number - that is a composite strategy
+	std::smatch manual;
+	if (std::regex_search(str, manual, reg_manual_strategy))
+	{
+		const auto number = static_cast<u32>(std::stoul(manual[1].str()));
+
+		if (number < _strategy_index)
+			Debug::warning("manual strategy={} is lower than the counter {} in the line [{}]", number, _strategy_index, str);
+		else
+			_strategy_index = number;
+	}
+	else if (!str.contains(":final"))
+	{
+		_strategy_index++;
+		str.append(std::format(":strategy={}", _strategy_index));
+	}
+
+	if (_max_strategy_count < _strategy_index)
+		_max_strategy_count = _strategy_index;
 }
