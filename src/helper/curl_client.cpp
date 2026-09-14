@@ -1,7 +1,10 @@
 #include "curl_client.h"
 
+#include <chrono>
 #include <format>
 #include <memory>
+#include <string_view>
+#include <thread>
 
 namespace
 {
@@ -11,6 +14,16 @@ namespace
 	inline constexpr u32 c_check_timeout_sec{ 6 };
 	inline constexpr u32 c_connect_timeout_sec{ 5 };
 	inline constexpr u32 c_max_redirects{ 5 };
+
+	// Voice-gateway probe: overall budget and the ping/pong exchange shape.
+	inline constexpr u32 c_voice_timeout_sec{ 14 };
+	inline constexpr u32 c_voice_ping_count{ 4 };
+	inline constexpr u32 c_voice_ping_gap_ms{ 1'500 };
+	inline constexpr u32 c_voice_recv_step_ms{ 100 };
+
+	// RFC 6455 sample key: the gateway never validates it, the value only
+	// has to be a valid base64 of 16 bytes.
+	inline constexpr std::string_view c_ws_key{ "dGhlIHNhbXBsZSBub25jZQ==" };
 }
 
 void CurlCleanup::operator()(CURL* curl) const
@@ -98,4 +111,113 @@ std::expected<long, int> CurlClient::checkHost(const std::string& host)
 		return _fetch(url, false);
 
 	return result;
+}
+
+std::expected<long, int> CurlClient::checkVoiceHost(const std::string& host)
+{
+	std::unique_ptr<CURL, CurlCleanup> curl{ curl_easy_init() };
+	if (!curl)
+		return std::unexpected(static_cast<int>(CURLE_FAILED_INIT));
+
+	// CONNECT_ONLY=2: TLS to the host, then raw send/recv over the socket.
+	curl_easy_setopt(curl.get(), CURLOPT_URL, std::format("https://{}", host).c_str());
+	curl_easy_setopt(curl.get(), CURLOPT_NOSIGNAL, 1L);
+	curl_easy_setopt(curl.get(), CURLOPT_FRESH_CONNECT, 1L);
+	curl_easy_setopt(curl.get(), CURLOPT_CONNECT_ONLY, 2L);
+	curl_easy_setopt(curl.get(), CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_DEFAULT);
+	curl_easy_setopt(curl.get(), CURLOPT_SSL_VERIFYPEER, 0L);
+	curl_easy_setopt(curl.get(), CURLOPT_USERAGENT, c_user_agent);
+	curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT, static_cast<long>(c_connect_timeout_sec));
+
+	CURLcode res = curl_easy_perform(curl.get());
+	if (res != CURLE_OK)
+		return std::unexpected(static_cast<int>(res));
+
+	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(c_voice_timeout_sec);
+
+	// WebSocket upgrade (RFC 6455). The gateway answers 101 and pushes its
+	// hello frame; a rejection with 4xx is fine too - any status proves the
+	// server appdata path, which is exactly what the killer starves.
+	const std::string request = std::format(
+		"GET /?v=10 HTTP/1.1\r\n"
+		"Host: {}\r\n"
+		"Upgrade: websocket\r\n"
+		"Connection: Upgrade\r\n"
+		"Sec-WebSocket-Key: {}\r\n"
+		"Sec-WebSocket-Version: 13\r\n"
+		"User-Agent: {}\r\n"
+		"\r\n",
+		host,
+		c_ws_key,
+		c_user_agent
+	);
+
+	size_t sent = 0;
+	res			= curl_easy_send(curl.get(), request.data(), request.size(), &sent);
+	if (res != CURLE_OK || sent != request.size())
+		return std::unexpected(static_cast<int>(res == CURLE_OK ? CURLE_SEND_ERROR : res));
+
+	// Read until the end of the response headers.
+	std::string response;
+	long		code = 0;
+	while (std::chrono::steady_clock::now() < deadline)
+	{
+		char   buffer[512];
+		size_t received = 0;
+		res				= curl_easy_recv(curl.get(), buffer, sizeof(buffer), &received);
+		if (res == CURLE_OK && received > 0)
+		{
+			response.append(buffer, received);
+
+			if (const auto body = response.find("\r\n\r\n"); body != std::string::npos)
+			{
+				if (const auto space = response.find(' '); space != std::string::npos)
+					code = std::atol(response.c_str() + space + 1);
+				break;
+			}
+			continue;
+		}
+
+		if (res == CURLE_AGAIN)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(c_voice_recv_step_ms));
+			continue;
+		}
+
+		// CURLE_OK with zero bytes = clean close: the appdata path is dead.
+		return std::unexpected(static_cast<int>(res == CURLE_OK ? CURLE_RECV_ERROR : res));
+	}
+
+	if (code == 0)
+		return std::unexpected(static_cast<int>(CURLE_OPERATION_TIMEDOUT));
+
+	// Sustained exchange: masked ping frames, expecting pong or any inbound
+	// bytes. An empty-payload client frame still requires the MASK bit per
+	// RFC 6455.
+	const std::string ping{ "\x89\x80\x00\x00\x00\x00", 6 };
+	for (u32 i = 0; i < c_voice_ping_count && std::chrono::steady_clock::now() < deadline; ++i)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(c_voice_ping_gap_ms));
+
+		res = curl_easy_send(curl.get(), ping.data(), ping.size(), &sent);
+		if (res != CURLE_OK)
+			return std::unexpected(static_cast<int>(res));
+
+		const auto pong_deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(c_voice_ping_gap_ms);
+		while (std::chrono::steady_clock::now() < pong_deadline)
+		{
+			char   buffer[256];
+			size_t received = 0;
+			res				= curl_easy_recv(curl.get(), buffer, sizeof(buffer), &received);
+			if (res == CURLE_OK && received > 0)
+				break;	  // any inbound byte = the path is alive
+
+			if (res != CURLE_AGAIN)
+				return std::unexpected(static_cast<int>(res == CURLE_OK ? CURLE_RECV_ERROR : res));
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(c_voice_recv_step_ms));
+		}
+	}
+
+	return code;
 }

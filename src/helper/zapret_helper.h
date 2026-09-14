@@ -68,6 +68,11 @@ private:
 	/** Host is valid (not empty and contains at least one letter). */
 	static bool _isValidHost(std::string_view host);
 
+	/** Voice media endpoint (c-<region>-<hash>.discord.media): not an HTTP
+	 *  site, curl cannot validate it. Such hosts are skipped so their
+	 *  verdicts never poison auto_strategy. */
+	static bool _isVoiceMediaHost(std::string_view host);
+
 	/** Send a UDP message to target_ip and the given port. */
 	void					   _send(std::string_view message, u32 port) const;
 	/** Send a log entry to unblock (port 9999). */

@@ -16,6 +16,16 @@ bool ZapretHelper::_isValidHost(std::string_view host)
 	return !host.empty() && std::ranges::any_of(host, [](char ch) { return std::isalpha(static_cast<unsigned char>(ch)); });
 }
 
+bool ZapretHelper::_isVoiceMediaHost(std::string_view host)
+{
+	// Voice endpoints live on *.discord.media subdomains in several shapes
+	// (c-<region>-<hash> and bare <region><digits> without the c- prefix).
+	// The bare domain is a website and keeps the regular check, so only
+	// suffix matches qualify. These hosts are checked by the voice-path
+	// probe (WebSocket upgrade), never by the plain curl.
+	return host.ends_with(".discord.media");
+}
+
 void ZapretHelper::_send(std::string_view message, u32 port) const
 {
 	std::lock_guard lock(_send_mutex);
@@ -133,7 +143,7 @@ void ZapretHelper::_handleMessage(std::string_view message)
 			else
 			{
 				const auto now = std::chrono::steady_clock::now();
-				ErrorInfo	 info;
+				ErrorInfo  info;
 				info.first	  = now;
 				info.last	  = now;
 				info.strategy = std::string{ strat };
@@ -150,9 +160,11 @@ void ZapretHelper::_handleMessage(std::string_view message)
 
 void ZapretHelper::_checkHost(std::string_view host)
 {
-	_log(std::format("check {}", host));
+	const bool voice = _isVoiceMediaHost(host);
 
-	const auto result = CurlClient::checkHost(std::string{ host });
+	_log(std::format("{} {}", voice ? "voice check" : "check", host));
+
+	const auto result = voice ? CurlClient::checkVoiceHost(std::string{ host }) : CurlClient::checkHost(std::string{ host });
 	_send(_makeDoneSignal(host), c_ipc_port);
 
 	if (result)

@@ -41,6 +41,16 @@ public:
 	 */
 	static std::expected<long, int> checkHost(const std::string& host);
 
+	/**
+	 * Voice-gateway check: TLS connect, then a raw WebSocket upgrade and a
+	 * sustained ping/pong exchange. Plain curl only proves the TLS
+	 * handshake, which survives on almost every strategy; the upgrade
+	 * response and the following frames are the server appdata the killer
+	 * starves, so this check reflects the actual voice path.
+	 * @return HTTP response code of the upgrade, or curl error code.
+	 */
+	static std::expected<long, int> checkVoiceHost(const std::string& host);
+
 private:
 	/** Perform a single request (head or get). */
 	static std::expected<long, int> _fetch(const std::string& url, bool head);
