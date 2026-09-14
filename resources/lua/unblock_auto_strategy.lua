@@ -21,8 +21,11 @@
 --      очередь успехов _G.udp_strategy_success. Детект как в zapret2
 --      (process_udp_fail): успех — только входящий пакет (server.pcounter >
 --      udp_in), фейл — только исходящий (client.pcounter >= udp_out при
---      server.pcounter <= udp_in). Вердикт финализируется один раз на
---      соединение, поэтому объём трафика сам по себе не переключает стратегии.
+--      server.pcounter <= udp_in). Вердикты перезаряжаемые: срабатывают на
+--      смене состояния, не чаще одного раза на udp_out исходящих пакетов
+--      (водяной знак udp_judged_client в lua_state соединения). Долгоживущие
+--      потоки (голос Discord, WireGuard) перебирают стратегии без
+--      переподключения.
 --   8. Все стратегии перебраны (exhausted) → прямой трафик
 --
 -- Перебор: 1, 2, 3, 4, ..., N (последовательно)
@@ -35,13 +38,21 @@
 --   udp_out=N      — исходящих UDP пакетов для вердикта FAIL (по умолч. 4)
 --   udp_in=N       — входящих UDP пакетов: больше N — успех, иначе фейл (по умолч. 1)
 --   reset          — отправлять RST при ошибке
+--   start=N        — начальный номер стратегии (0 = direct, по умолч. 0)
 -- auto_host_group — группирует хосты одного семейства в общую стратегию.
 -- googlevideo (rr*-sn-*.googlevideo.com) — все такие хосты делят один hrec:
 -- подобранная стратегия применяется ко всем сразу, при сбое/FAIL переключается
 -- для всей группы, а не для каждого rr-хоста отдельно.
+-- Голос Discord — вся семья *.discord.media: и c-<регион>-<хэш> (хэш уникален
+-- на сессию), и формы без c- вроде finland14144.discord.media. Без группировки
+-- каждая новая сессия/форма начинала бы перебор заново; с группировкой
+-- подобранная стратегия помнится на всю семью .discord.media.
 function auto_host_group(hostkey)
     if hostkey and hostkey:find("googlevideo%.com$") then
         return "googlevideo.com"
+    end
+    if hostkey and hostkey:find("%.discord%.media$") then
+        return "discord.media"
     end
     return hostkey
 end
@@ -49,12 +60,35 @@ end
 -- askey — table key inside autostate. TCP and UDP live in different winws2
 -- profiles with their own strategy numbering, so their state is fully
 -- separate: a UDP strategy switch must never touch TCP state and vice versa.
+-- Profiles with different plans (broad TLS 29 strategies vs voice TCP 7) are
+-- separated too: the fingerprint of the plan is appended to the askey, so a
+-- host group record created by one profile can never poison another profile
+-- whose plan has different strategy numbers.
 function auto_host_record(desync, askey)
     local hostkey
     if desync.track and desync.track.hostname then
         hostkey = auto_host_group(desync.track.hostname)
     else
         hostkey = host_ip(desync)
+        -- Same voice server, different client protocols: browser WebRTC
+        -- (stun/dtls) works on direct while the desktop app
+        -- (discord_ip_discovery) dies after one reply. Without separation
+        -- the healthy STUN flow keeps confirming 'direct' and resets the
+        -- shared fails counter, so the dying discovery flow never rotates
+        -- past the first strategy. Key raw-IP UDP records by the
+        -- connection's protocol class, fixed at the first packet.
+        if askey and askey:find("_udp") and desync.track then
+            local crec = auto_conn_record(desync)
+            if crec then
+                if not crec.proto_class then
+                    local pt = desync.l7payload
+                    crec.proto_class = (pt and pt ~= "unknown" and pt ~= "") and pt or "raw"
+                end
+                if crec.proto_class ~= "raw" then
+                    hostkey = hostkey .. "#" .. crec.proto_class
+                end
+            end
+        end
     end
 
     if not hostkey then
@@ -75,6 +109,22 @@ function auto_host_record(desync, askey)
     end
 
     return autostate[askey][hostkey]
+end
+
+-- Fingerprint of the profile's plan: number of distinct strategy numbers in
+-- it. Profiles with the same protocol but different plans (broad TLS 29
+-- strategies vs voice TCP 7) get different askeys through this.
+function auto_plan_id(plan)
+    local uniq = {}
+    local n = 0
+    for _, instance in pairs(plan) do
+        local s = tonumber(instance.arg.strategy)
+        if s and not uniq[s] then
+            uniq[s] = true
+            n = n + 1
+        end
+    end
+    return n
 end
 
 function auto_conn_record(desync)
@@ -142,7 +192,9 @@ function auto_do_switch(rec, success_list, reason, peer, dport, send_exhausted)
         if rec.nstrategy < rec.ctstrategy then
             rec.nstrategy = rec.nstrategy + 1
 
-            while not auto_check_valid_strategy(rec, success_list) do
+            -- climb stays inside this plan's numbers: a number above
+            -- ctstrategy belongs to another profile and executes nothing
+            while rec.nstrategy < rec.ctstrategy and not auto_check_valid_strategy(rec, success_list) do
                 rec.nstrategy = rec.nstrategy + 1
             end
         else
@@ -159,6 +211,18 @@ function auto_do_switch(rec, success_list, reason, peer, dport, send_exhausted)
 
     if not rec.sstrategy then
         rec.sstrategy = 1
+    end
+
+    -- Apply only strategy numbers that exist in THIS plan's strategy set:
+    -- success entries were confirmed by possibly another profile (broad TLS
+    -- vs voice TCP), and applying a foreign number here would execute no
+    -- instances at all.
+    while rec.sstrategy <= #success_list do
+        local n = success_list[rec.sstrategy] or 0
+        if rec.strategy_set and rec.strategy_set[n] then
+            break
+        end
+        rec.sstrategy = rec.sstrategy + 1
     end
 
     local count_strategy_success = #success_list
@@ -270,8 +334,14 @@ function auto_strategy(ctx, desync)
 
     -- TCP and UDP run in different winws2 profiles with different strategy
     -- numbering, so the host record (and all queues) is per protocol.
+    -- Profiles with different plans (e.g. broad TLS vs voice TCP) are further
+    -- separated by the plan fingerprint: a shared host group (discord.media)
+    -- must keep per-profile records, otherwise the record's nstrategy points
+    -- to strategy numbers that do not exist in the other profile's plan and
+    -- no instances are executed at all.
     local is_udp = desync.dis.udp ~= nil
-    local hrec = auto_host_record(desync, is_udp and "auto_strategy_udp" or "auto_strategy")
+    local askey = (is_udp and "auto_strategy_udp" or "auto_strategy") .. "#" .. auto_plan_id(desync.plan)
+    local hrec = auto_host_record(desync, askey)
     if not hrec then
         return
     end
@@ -304,10 +374,16 @@ function auto_strategy(ctx, desync)
             error("circular: strategies numbers must start from 1 and increment. gaps are not allowed.")
         end
         hrec.ctstrategy = n
+        -- the set of strategy numbers that exist in THIS plan; strategy
+        -- numbers from other plans must never be applied here
+        hrec.strategy_set = uniq
     end
 
     if not hrec.nstrategy then
-        hrec.nstrategy = 0
+        -- start=N skips the direct phase (arg from the desync line).
+        -- Useful for profiles where direct is known-broken, e.g. voice
+        -- media over TCP 8443 that DPI throttles by SNI.
+        hrec.nstrategy = tonumber(desync.arg.start) or 0
     end
 
     if hrec.ctstrategy == 0 then
@@ -449,15 +525,23 @@ function auto_strategy(ctx, desync)
             local pos_client = desync.track.pos.client and desync.track.pos.client.pcounter or 0
             local pos_server = desync.track.pos.server and desync.track.pos.server.pcounter or 0
 
+            -- Long-lived flows (Discord voice, WireGuard, game UDP) must be
+            -- re-judged as their state changes: a one-shot per-connection
+            -- verdict freezes the strategy until reconnect, and a single
+            -- fail never accumulates to the switch threshold. Verdicts fire
+            -- on state transitions instead, at most once per udp_out
+            -- outgoing packets (judged_client watermark in lua_state).
+            local judged_client = crec.udp_judged_client or 0
+
             -- Success: the server answers. Incoming packets only, the same
             -- semantics as zapret2 process_udp_fail (server.pcounter >
-            -- udp_in).
+            -- udp_in). Confirmed once per success streak: re-judging only
+            -- happens when the server goes silent again (fail branch).
             if pos_server > arg.udp_in then
-                -- One verdict per connection (failure_detect_finalized
-                -- semantics): late packets of an already judged connection
-                -- are never counted again.
-                if not crec.udp_done then
-                    crec.udp_done = true
+                crec.udp_judged_client = pos_client
+
+                if not crec.udp_success then
+                    crec.udp_success = true
 
                     ULOG("OK", "zapret:auto_strategy: CONFIRMED UDP " .. name .. "->" .. host_or_ip ..
                         ":" .. dport)
@@ -476,21 +560,22 @@ function auto_strategy(ctx, desync)
             end
 
             -- Failure: many outgoing packets with no server reply. Outgoing
-            -- only, finalized once per connection, so packet volume alone
-            -- cannot force a switch (the same principle as TCP retrans).
-            if desync.outgoing and pos_client >= arg.udp_out then
-                if not crec.udp_done then
-                    crec.udp_done = true
+            -- only, re-armed every udp_out outgoing packets, so a broken
+            -- long-lived flow keeps switching strategies instead of freezing
+            -- on the first verdict.
+            if desync.outgoing and pos_client >= arg.udp_out and (pos_client - judged_client) >= arg.udp_out then
+                crec.udp_judged_client = pos_client
 
-                    ULOG("WARNING", "zapret:auto_strategy: FAIL UDP " .. name .. "->" .. host_or_ip ..
-                        ":" .. dport .. " out=" .. pos_client .. " in=" .. pos_server)
+                ULOG("WARNING", "zapret:auto_strategy: FAIL UDP " .. name .. "->" .. host_or_ip ..
+                    ":" .. dport .. " out=" .. pos_client .. " in=" .. pos_server)
 
-                    if auto_check_fails(hrec, arg) then
-                        auto_do_switch(hrec, auto_strategy_success_list(true), "UDP", host_or_ip, dport, false)
-                    end
+                if crec.udp_success then
+                    crec.udp_success = nil
                 end
 
-                return auto_strategy_plan(desync, hrec, verdict)
+                if auto_check_fails(hrec, arg) then
+                    auto_do_switch(hrec, auto_strategy_success_list(true), "UDP", host_or_ip, dport, false)
+                end
             end
 
             -- Not enough evidence yet: pass with the current strategy.
@@ -513,3 +598,6 @@ function args_defaults(arg)
         helper_time = arg.helper_time or arg.time or 300
     }
 end
+
+
+
