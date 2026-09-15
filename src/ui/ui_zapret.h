@@ -77,7 +77,6 @@ class UiZapret2
 	INPUT(_helper_recheck_min);
 	INPUT(_helper_errors_progress_min);
 	INPUT(_helper_errors_recheck_sec);
-	BUTTON(_helper_apply);
 
 public:
 	UiZapret2(std::shared_ptr<Ui> ui);

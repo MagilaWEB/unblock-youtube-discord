@@ -602,6 +602,12 @@ void UiZapret2::_initHelperSettings()
 	const u32 err_progress = _helperSettingU32("errors_progress_min", 3);
 	const u32 err_recheck  = _helperSettingU32("errors_recheck_sec", 30);
 
+	auto submit = [this](JSArgs)
+	{
+		_applyHelperSettings();
+		return false;
+	};
+
 	_helper_pool->create(
 		"#zapret .common",
 		Input::Types::count,
@@ -610,6 +616,8 @@ void UiZapret2::_initHelperSettings()
 		Localization::Str{ "str_helper_pool_description" },
 		Input::Options{ 1, 64, "" }
 	);
+	_helper_pool->addEventSubmit(submit);
+
 	// Timeouts stay strict seconds: the helper applies whole seconds
 	// (check_timeout_sec / connect_timeout_sec), sub-second input
 	// would be false precision.
@@ -621,6 +629,8 @@ void UiZapret2::_initHelperSettings()
 		Localization::Str{ "str_helper_check_timeout_description" },
 		Input::Options{ 1, 60, "sec" }
 	);
+	_helper_check_timeout->addEventSubmit(submit);
+
 	_helper_connect_timeout->create(
 		"#zapret .common",
 		Input::Types::duration_sec,
@@ -629,6 +639,8 @@ void UiZapret2::_initHelperSettings()
 		Localization::Str{ "str_helper_connect_timeout_description" },
 		Input::Options{ 1, 30, "sec" }
 	);
+	_helper_connect_timeout->addEventSubmit(submit);
+
 	_helper_max_redirects->create(
 		"#zapret .common",
 		Input::Types::count,
@@ -637,6 +649,8 @@ void UiZapret2::_initHelperSettings()
 		Localization::Str{ "str_helper_max_redirects_description" },
 		Input::Options{ 0, 10, "" }
 	);
+	_helper_max_redirects->addEventSubmit(submit);
+
 	_helper_recheck_min->create(
 		"#zapret .common",
 		Input::Types::duration_min,
@@ -645,6 +659,8 @@ void UiZapret2::_initHelperSettings()
 		Localization::Str{ "str_helper_recheck_min_description" },
 		Input::Options{ 5, 180, "min" }
 	);
+	_helper_recheck_min->addEventSubmit(submit);
+
 	_helper_errors_progress_min->create(
 		"#zapret .common",
 		Input::Types::duration_min,
@@ -653,6 +669,8 @@ void UiZapret2::_initHelperSettings()
 		Localization::Str{ "str_helper_errors_progress_min_description" },
 		Input::Options{ 1, 30, "min" }
 	);
+	_helper_errors_progress_min->addEventSubmit(submit);
+
 	_helper_errors_recheck_sec->create(
 		"#zapret .common",
 		Input::Types::duration_sec,
@@ -661,15 +679,7 @@ void UiZapret2::_initHelperSettings()
 		Localization::Str{ "str_helper_errors_recheck_sec_description" },
 		Input::Options{ 5, 300, "sec" }
 	);
-
-	_helper_apply->create("#zapret .common", "str_b_helper_apply");
-	_helper_apply->addEventClick(
-		[this](JSArgs)
-		{
-			_applyHelperSettings();
-			return false;
-		}
-	);
+	_helper_errors_recheck_sec->addEventSubmit(submit);
 
 	_pushHelperSettings();
 }

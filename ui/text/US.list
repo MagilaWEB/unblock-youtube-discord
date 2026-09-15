@@ -237,7 +237,6 @@ Plain integers only, no suffixes. Guards against an endless dead-host loop.
 Small (5) — revived hosts are noticed faster, but more background noise.
 Large (180+) — quiet air, but a revived host sits in errors until the next full period.
 Hosts currently being checked are never duplicated by the throttle.
-str_b_helper_apply=💾 Apply helper settings
 
 // Zapret custom lists
 str_zapret_custom_title=🛠️ Custom lists
