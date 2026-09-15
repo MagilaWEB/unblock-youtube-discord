@@ -2,6 +2,7 @@
 #include "ui_button.h"
 #include "ui_check_box.h"
 #include "ui_editable_list.h"
+#include "ui_input.h"
 #include "ui_list_ul.h"
 #include "ui_select_list.h"
 #include "ui_secondary_window.h"
@@ -65,6 +66,19 @@ class UiZapret2
 	UL_LIST(_list_helper_error);
 	std::vector<std::pair<std::string, std::string>> _last_helper_error;
 
+	// Helper runtime settings ([HELPER] section). The on-disk file is stale
+	// while unblock runs, so Apply writes userConfig (memory) + pushes UDP
+	// CONFIG: to the running helper + stores the message in Unblock for the
+	// next startService() push.
+	INPUT(_helper_pool);
+	INPUT(_helper_check_timeout);
+	INPUT(_helper_connect_timeout);
+	INPUT(_helper_max_redirects);
+	INPUT(_helper_recheck_min);
+	INPUT(_helper_errors_progress_min);
+	INPUT(_helper_errors_recheck_sec);
+	BUTTON(_helper_apply);
+
 public:
 	UiZapret2(std::shared_ptr<Ui> ui);
 
@@ -125,4 +139,9 @@ private:
 	void _initHelperSeen();
 	void _initHelperValid();
 	void _initHelperError();
+
+	void _initHelperSettings();
+	void _applyHelperSettings();
+	u32	 _helperSettingU32(std::string_view key, u32 fallback) const;
+	void _pushHelperSettings() const;
 };

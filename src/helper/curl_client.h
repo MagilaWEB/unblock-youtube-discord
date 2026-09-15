@@ -35,6 +35,9 @@ public:
 class CurlClient
 {
 public:
+	/** Apply runtime timeouts (from HelperConfig / UDP CONFIG:). Values are clamped. */
+	static void configure(u32 check_timeout_sec, u32 connect_timeout_sec, u32 max_redirects);
+
 	/**
 	 * Check host availability. HEAD first, falls back to GET on 403/405 or error.
 	 * @return HTTP response code, or curl error code on failure.

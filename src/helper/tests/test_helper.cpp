@@ -1,10 +1,15 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <cstdio>
+#include <filesystem>
+#include <format>
+#include <fstream>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 
+#include "../helper_config.h"
 #include "../zapret_helper.h"
 
 /** Test harness with friend access to ZapretHelper internals. */
@@ -52,7 +57,10 @@ public:
 
 	void idleStep() { helper._idleStep(); }
 	void setLastRecheckNow() { helper._last_recheck = std::chrono::steady_clock::now(); }
-	void setLastRecheckInPast() { helper._last_recheck -= ZapretHelper::c_recheck_interval + std::chrono::seconds(1); }
+	void setLastRecheckInPast() { helper._last_recheck -= helper._recheck_interval + std::chrono::seconds(1); }
+
+	void applyConfig(const HelperConfig& cfg) { helper.applyConfig(cfg); }
+	u32	 poolSize() const { return helper._pool_size; }
 
 	std::string makeLog(std::string_view text) const { return ZapretHelper::_makeLog(text); }
 	std::string makeValidSignal(std::string_view h, std::string_view s) const { return ZapretHelper::_makeValidSignal(h, s); }
@@ -650,3 +658,96 @@ TEST_CASE("idleStep fresh error host does not duplicate when in_check", "[helper
 	CHECK_FALSE(t.queue().contains("fresh2.com"));
 }
 
+namespace
+{
+	std::filesystem::path writeTempConfig(const std::string& body)
+	{
+		auto		  path = std::filesystem::temp_directory_path() / std::format("helper_cfg_{}.ini", ::rand());
+		std::ofstream out(path);
+		out << body;
+		out.close();
+		return path;
+	}
+}	 // namespace
+
+TEST_CASE("HelperConfig defaults match legacy constexpr", "[helper][config]")
+{
+	const auto cfg = HelperConfig::defaults();
+	CHECK(cfg.pool_size == 20);
+	CHECK(cfg.check_timeout_sec == 6);
+	CHECK(cfg.connect_timeout_sec == 5);
+	CHECK(cfg.max_redirects == 5);
+	CHECK(cfg.recheck_interval_min == 30);
+	CHECK(cfg.errors_progress_min == 3);
+	CHECK(cfg.errors_recheck_sec == 30);
+}
+
+TEST_CASE("HelperConfig missing file -> defaults", "[helper][config]")
+{
+	const auto cfg = HelperConfig::loadFrom("Z:/no/such/dir/setting.config");
+	CHECK(cfg.pool_size == 20);
+	CHECK(cfg.check_timeout_sec == 6);
+}
+
+TEST_CASE("HelperConfig reads only [HELPER]", "[helper][config]")
+{
+	const auto path = writeTempConfig("[SYSTEM]\npool_size=99\n[HELPER]\npool_size=7\ncheck_timeout_sec=9\n[OTHER]\npool_size=100\n");
+	const auto cfg	= HelperConfig::loadFrom(path);
+	CHECK(cfg.pool_size == 7);
+	CHECK(cfg.check_timeout_sec == 9);
+	CHECK(cfg.connect_timeout_sec == 5);
+	std::error_code ec;
+	std::filesystem::remove(path, ec);
+}
+
+TEST_CASE("HelperConfig clamps out-of-range values", "[helper][config]")
+{
+	const auto path = writeTempConfig("[HELPER]\npool_size=9999\ncheck_timeout_sec=0\nmax_redirects=99\nrecheck_interval_min=1\n");
+	const auto cfg	= HelperConfig::loadFrom(path);
+	CHECK(cfg.pool_size == 64);
+	CHECK(cfg.check_timeout_sec == 1);
+	CHECK(cfg.max_redirects == 10);
+	CHECK(cfg.recheck_interval_min == 5);
+	std::error_code ec;
+	std::filesystem::remove(path, ec);
+}
+
+TEST_CASE("HelperConfig ignores garbage lines", "[helper][config]")
+{
+	const auto path = writeTempConfig("[HELPER]\nno-equals-here\npool_size=12\n[object Undefined]\npool_size=50\n");
+	const auto cfg	= HelperConfig::loadFrom(path);
+	// The [object Undefined] header closes [HELPER], so 50 must not win.
+	CHECK(cfg.pool_size == 12);
+	std::error_code ec;
+	std::filesystem::remove(path, ec);
+}
+
+TEST_CASE("HelperConfig CONFIG: payload round trip", "[helper][config]")
+{
+	const auto cfg = HelperConfig::parsePayload("pool_size=8;check_timeout_sec=9;errors_recheck_sec=45");
+	CHECK(cfg.pool_size == 8);
+	CHECK(cfg.check_timeout_sec == 9);
+	CHECK(cfg.errors_recheck_sec == 45);
+	CHECK(cfg.connect_timeout_sec == 5);
+
+	const std::string msg = cfg.makeMessage();
+	CHECK(msg.starts_with("CONFIG:"));
+	CHECK(msg.contains("pool_size=8"));
+}
+
+TEST_CASE("CONFIG: message updates runtime without restart", "[helper][config]")
+{
+	ZapretHelperTest t;
+	CHECK(t.poolSize() == 20);
+	t.handleMessage("CONFIG:pool_size=4;check_timeout_sec=9;recheck_interval_min=45;errors_recheck_sec=60");
+	CHECK(t.poolSize() == 4);
+	// Pool is empty in tests (workers start in run()), so no thread churn.
+	CHECK(t.queue().empty());
+}
+
+TEST_CASE("CONFIG: clamps garbage, keeps running", "[helper][config]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("CONFIG:pool_size=9999;check_timeout_sec=abc");
+	CHECK(t.poolSize() == 64);
+}

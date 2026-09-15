@@ -295,13 +295,13 @@ bool Unblock::_dropExpiredHelperStates(std::chrono::steady_clock::time_point now
 
 std::vector<std::string> Unblock::helperCheckingHosts()
 {
-	auto&	  ipc = IPCSignals::get();
+	auto&	   ipc = IPCSignals::get();
 	const auto now = std::chrono::steady_clock::now();
 
 	while (auto host = ipc.getString("helper_checking"))
 	{
 		_helper_last_signal = now;
-		std::string name  = std::move(*host);
+		std::string name	= std::move(*host);
 		// Sync: one host lives in a single list (seen stays out of the sync).
 		_helper_errors.erase(name);
 		_helper_valid.erase(name);
@@ -322,7 +322,7 @@ std::vector<std::string> Unblock::helperCheckingHosts()
 
 std::vector<std::string> Unblock::helperSeenHosts()
 {
-	auto&	  ipc = IPCSignals::get();
+	auto&	   ipc = IPCSignals::get();
 	const auto now = std::chrono::steady_clock::now();
 
 	while (auto host = ipc.getString("helper_seen"))
@@ -339,7 +339,7 @@ std::vector<std::string> Unblock::helperSeenHosts()
 
 std::vector<std::pair<std::string, std::string>> Unblock::helperErrorHosts()
 {
-	auto&	  ipc = IPCSignals::get();
+	auto&	   ipc = IPCSignals::get();
 	const auto now = std::chrono::steady_clock::now();
 
 	auto entry = ipc.getString("helper_error");
@@ -377,7 +377,7 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperErrorHosts()
 
 std::vector<std::pair<std::string, std::string>> Unblock::helperValidHosts()
 {
-	auto&	  ipc = IPCSignals::get();
+	auto&	   ipc = IPCSignals::get();
 	const auto now = std::chrono::steady_clock::now();
 
 	auto entry = ipc.getString("helper_valid");
@@ -559,6 +559,42 @@ void Unblock::stopService()
 	_zapret_helper.stop();
 }
 
+namespace
+{
+	void sendHelperUdp(const std::string& message, u32 retries = 5)
+	{
+		if (message.empty())
+			return;
+
+		for (u32 attempt = 0; attempt < retries; ++attempt)
+		{
+			auto sock = socket(AF_INET, SOCK_DGRAM, 0);
+			if (sock == INVALID_SOCKET)
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(200));
+				continue;
+			}
+
+			sockaddr_in addr{};
+			addr.sin_family		 = AF_INET;
+			addr.sin_port		 = htons(10'000);
+			addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+			sendto(sock, message.c_str(), static_cast<int>(message.size()), 0, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
+			closesocket(sock);
+
+			// The helper may not have bound 10000 yet right after service
+			// start; a short burst covers the bind race without blocking long.
+			if (attempt + 1 < retries)
+				std::this_thread::sleep_for(std::chrono::milliseconds(200));
+		}
+	}
+}	 // namespace
+
+void Unblock::pushHelperConfig() const
+{
+	sendHelperUdp(_helper_config_message, 3);
+}
+
 void Unblock::startService()
 {
 	_helper_seen.clear();
@@ -589,6 +625,12 @@ void Unblock::startService()
 		_zapret.start();
 	}
 
+	// Fresh settings first: the on-disk setting.config is stale while
+	// unblock runs (File::save on close), so the helper cannot rely on
+	// reading the file at startup. Then the domain list, both with retries
+	// for the helper bind race.
+	pushHelperConfig();
+
 	// send domain list to zapret-helper
 	{
 		auto		list_host = _domain_testing.listHost();
@@ -609,16 +651,7 @@ void Unblock::startService()
 			}
 
 			list.pop_back();
-			auto sock = socket(AF_INET, SOCK_DGRAM, 0);
-			if (sock != INVALID_SOCKET)
-			{
-				sockaddr_in addr{};
-				addr.sin_family		 = AF_INET;
-				addr.sin_port		 = htons(10'000);
-				addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-				sendto(sock, list.c_str(), static_cast<int>(list.size()), 0, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
-				closesocket(sock);
-			}
+			sendHelperUdp(list);
 		}
 	}
 }

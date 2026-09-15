@@ -8,7 +8,52 @@
 
 ZapretHelper::~ZapretHelper()
 {
-	_stopPool();
+	_running = false;
+	_cv.notify_all();
+	_stopWorkers();
+}
+
+HelperConfig ZapretHelper::currentConfig() const
+{
+	HelperConfig cfg;
+	cfg.pool_size			 = _pool_size;
+	cfg.recheck_interval_min = static_cast<u32>(_recheck_interval.count());
+	cfg.errors_progress_min	 = static_cast<u32>(_errors_progress_interval.count());
+	cfg.errors_recheck_sec	 = static_cast<u32>(_errors_recheck_interval.count());
+	// Curl timeouts live in CurlClient; the merge base keeps current values
+	// for keys the CONFIG: payload does not carry. Read them back is not
+	// possible, so keep configured copies here is overkill: parsePayload()
+	// merges over defaults, then applyConfig() overwrites everything.
+	return cfg;
+}
+
+void ZapretHelper::applyConfig(const HelperConfig& cfg)
+{
+	HelperConfig norm = cfg;
+	norm.normalize();
+
+	_pool_size				  = norm.pool_size;
+	_recheck_interval		  = std::chrono::minutes{ norm.recheck_interval_min };
+	_errors_progress_interval = std::chrono::minutes{ norm.errors_progress_min };
+	_errors_recheck_interval  = std::chrono::seconds{ norm.errors_recheck_sec };
+
+	CurlClient::configure(norm.check_timeout_sec, norm.connect_timeout_sec, norm.max_redirects);
+
+	if (!_pool.empty() && _pool.size() != _pool_size)
+	{
+		_stopWorkers();
+		_startWorkers(_pool_size);
+		_log(std::format("config applied: pool={}", _pool_size));
+	}
+}
+
+void ZapretHelper::_handleConfigMessage(std::string_view payload)
+{
+	// Merge over compiled defaults; every key is carried in the message,
+	// so a partial payload cannot resurrect stale values.
+	HelperConfig cfg = HelperConfig::parsePayload(payload);
+	applyConfig(cfg);
+	_log(std::format("config updated: {}", cfg.makeMessage()));
 }
 
 bool ZapretHelper::_isValidHost(std::string_view host)
@@ -156,6 +201,17 @@ void ZapretHelper::_handleMessage(std::string_view message)
 		for (auto& [host, info] : _error_hosts)
 			_send(_makeErrorSignal(host, info.strategy), c_ipc_port);
 	}
+	else if (message.starts_with("CONFIG:"))
+	{
+		// Fresh settings pushed by Unblock (the on-disk file is stale while
+		// unblock is running). Pool resize happens inside applyConfig().
+		_handleConfigMessage(message.substr(7));
+	}
+	else if (message.starts_with("RELOAD:"))
+	{
+		applyConfig(HelperConfig::load());
+		_log("config reloaded from file");
+	}
 }
 
 void ZapretHelper::_checkHost(std::string_view host)
@@ -220,9 +276,14 @@ void ZapretHelper::_workerRoutine()
 	}
 }
 
-void ZapretHelper::_stopPool()
+void ZapretHelper::_startWorkers(u32 count)
 {
-	_running = false;
+	for (u32 i = 0; i < count; ++i)
+		_pool.emplace_back([this] { _workerRoutine(); });
+}
+
+void ZapretHelper::_stopWorkers()
+{
 	_cv.notify_all();
 
 	for (auto& worker : _pool)
@@ -232,11 +293,18 @@ void ZapretHelper::_stopPool()
 	_pool.clear();
 }
 
+void ZapretHelper::_stopPool()
+{
+	_running = false;
+	_cv.notify_all();
+	_stopWorkers();
+}
+
 void ZapretHelper::_idleStep()
 {
 	const auto now = std::chrono::steady_clock::now();
 
-	if ((now - _last_recheck) > c_recheck_interval)
+	if ((now - _last_recheck) > _recheck_interval)
 	{
 		std::lock_guard lock(_mutex);
 		for (const auto& host : _known_hosts)
@@ -261,11 +329,11 @@ void ZapretHelper::_idleStep()
 		if (_queue.contains(host) || _in_check.contains(host))
 			continue;
 
-		if ((now - info.first) < c_errors_progress_recheck_interval)
+		if ((now - info.first) < _errors_progress_interval)
 		{
 			_queue.insert(host);
 		}
-		else if ((now - info.last) > c_errors_recheck_interval)
+		else if ((now - info.last) > _errors_recheck_interval)
 		{
 			info.last = now;
 			_queue.insert(host);
@@ -275,11 +343,16 @@ void ZapretHelper::_idleStep()
 
 int ZapretHelper::run()
 {
+	// Cold start / PC reboot fallback: the file was flushed on unblock close,
+	// so it holds the last applied values. Fresh values arrive via UDP
+	// CONFIG: right after Unblock launches the helper (the on-disk file is
+	// stale while unblock is running).
+	applyConfig(HelperConfig::load());
+
 	if (!_socket.create() || !_socket.bind(c_receive_port) || !_socket.nonBlocking())
 		return 1;
 
-	for (u32 i = 0; i < c_pool_size; ++i)
-		_pool.emplace_back([this] { _workerRoutine(); });
+	_startWorkers(_pool_size);
 
 	while (_running)
 	{

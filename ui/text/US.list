@@ -195,6 +195,50 @@ str_zapret_helper_error_title=🔍 Hosts with errors ({}):
 str_zapret_helper_error_item={} - {}
 str_zapret_helper_valid_item={} - {}
 
+// Helper runtime settings ([HELPER])
+str_helper_pool_title=🧵 Helper thread pool
+str_helper_pool_description=How many hosts zapret-helper checks in parallel (1..64, default 20).
+Each worker does a HEAD request with a GET fallback. The pool resizes live, no service restart.
+Few threads (1..5) — the queue drains slowly, verdicts lag and auto_strategy rotates longer.
+Many (40+) — spikes network and CPU load; on a weak link checks start hitting timeouts.
+10..30 is enough for most. Stored in [HELPER], survives reboots.
+str_helper_check_timeout_title=⏱ HTTP check timeout
+str_helper_check_timeout_description=Overall curl timeout per request in seconds (1..60, default 6).
+Accepts 6, 6s, 5000ms, 0.1m — ms/s/m/h suffixes understood, a bare number means seconds.
+Too low (1..2) — slow hosts get a false FAIL and the strategy rotates for nothing.
+Too high (30+) — one hanging host pins a worker and stalls the whole queue.
+Applies to new checks immediately. Does not affect the Discord media voice probe (own 14s budget).
+str_helper_connect_timeout_title=🔌 HTTP connect timeout
+str_helper_connect_timeout_description=Cap for the TCP+TLS handshake in seconds (1..30, default 5).
+Same suffixes: 5, 5s, 3000ms. Should not exceed the overall timeout — the overall one wins anyway.
+Small (1..2) — dead or DPI-throttled hosts fail fast, the queue keeps spinning.
+Large (15+) — the helper waits long on throttled hosts instead of moving on.
+Applies to new checks immediately.
+str_helper_max_redirects_title=↪ Max redirects
+str_helper_max_redirects_description=How many HTTP redirects (301/302/307) curl follows per check (0..10, default 5).
+0 — no redirect following: short links and consent pages will be reported as FAIL.
+High values are almost free, but looping chains just burn the timeout budget.
+Applies to new checks immediately.
+str_helper_recheck_min_title=🔁 Full recheck period
+str_helper_recheck_min_description=How often the helper rechecks ALL known hosts, in minutes (5..180, default 30).
+Accepts 30, 30m, 1h — a bare number means minutes. On expiry every host is requeued at once.
+Frequent (5..10) — fresh verdicts, but constant background traffic and load.
+Rare (120+) — quiet, but OK/FAIL verdicts stay stale long after a network or strategy change.
+Applies immediately, the next cycle already uses the new period.
+str_helper_errors_progress_min_title=🚨 Aggressive recheck of fresh errors
+str_helper_errors_progress_min_description=How many minutes after the first error a host is rechecked aggressively, with no pauses (1..30, default 3).
+During the hot phase every pass requeues the host with no throttling.
+So a failed host recovers fast once the strategy or network heals.
+Short window (1) — less check spam; long (20+) — stubborn hammering of sick hosts.
+Pairs with the next parameter: once the hot phase ends, the interval above kicks in.
+str_helper_errors_recheck_sec_title=🐢 Stale-error recheck interval
+str_helper_errors_recheck_sec_description=Stale errors are rechecked at most once per N seconds (5..300, default 30).
+Accepts 30, 30s, 5000ms — a bare number means seconds. Guards against an endless dead-host loop.
+Small (5) — revived hosts are noticed faster, but more background noise.
+Large (180+) — quiet air, but a revived host sits in errors until the next full period.
+Hosts currently being checked are never duplicated by the throttle.
+str_b_helper_apply=💾 Apply helper settings
+
 // Zapret custom lists
 str_zapret_custom_title=🛠️ Custom lists
 str_zapret_custom_hosts_title=🌐 Custom hosts

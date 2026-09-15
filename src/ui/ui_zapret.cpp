@@ -28,6 +28,7 @@ void UiZapret2::initialize()
 	_selectConfig();
 	_initCustomLists();
 	_listEnableServices();
+	_initHelperSettings();
 	_initHelperChecking();
 	_initHelperSeen();
 	_initHelperValid();
@@ -589,6 +590,87 @@ void UiZapret2::_initHelperChecking()
 	_list_helper_checking->create("#zapret section", utils::format(Localization::Str{ "str_zapret_helper_checking_title" }(), 0));
 }
 
+void UiZapret2::_initHelperSettings()
+{
+	// Defaults mirror HelperConfig::defaults() (src/helper/helper_config.h).
+	// Kept as literals: ui target does not link the helper parser.
+	const u32 pool		   = _helperSettingU32("pool_size", 20);
+	const u32 check		   = _helperSettingU32("check_timeout_sec", 6);
+	const u32 connect	   = _helperSettingU32("connect_timeout_sec", 5);
+	const u32 redirects	   = _helperSettingU32("max_redirects", 5);
+	const u32 recheck	   = _helperSettingU32("recheck_interval_min", 30);
+	const u32 err_progress = _helperSettingU32("errors_progress_min", 3);
+	const u32 err_recheck  = _helperSettingU32("errors_recheck_sec", 30);
+
+	_helper_pool->create(
+		"#zapret .common",
+		Input::Types::count,
+		JSValue{ static_cast<int>(pool) },
+		Localization::Str{ "str_helper_pool_title" },
+		Localization::Str{ "str_helper_pool_description" },
+		Input::Options{ 1, 64, "" }
+	);
+	_helper_check_timeout->create(
+		"#zapret .common",
+		Input::Types::duration_sec,
+		JSValue{ static_cast<int>(check) },
+		Localization::Str{ "str_helper_check_timeout_title" },
+		Localization::Str{ "str_helper_check_timeout_description" },
+		Input::Options{ 1, 60, "sec" }
+	);
+	_helper_connect_timeout->create(
+		"#zapret .common",
+		Input::Types::duration_sec,
+		JSValue{ static_cast<int>(connect) },
+		Localization::Str{ "str_helper_connect_timeout_title" },
+		Localization::Str{ "str_helper_connect_timeout_description" },
+		Input::Options{ 1, 30, "sec" }
+	);
+	_helper_max_redirects->create(
+		"#zapret .common",
+		Input::Types::count,
+		JSValue{ static_cast<int>(redirects) },
+		Localization::Str{ "str_helper_max_redirects_title" },
+		Localization::Str{ "str_helper_max_redirects_description" },
+		Input::Options{ 0, 10, "" }
+	);
+	_helper_recheck_min->create(
+		"#zapret .common",
+		Input::Types::duration_min,
+		JSValue{ static_cast<int>(recheck) },
+		Localization::Str{ "str_helper_recheck_min_title" },
+		Localization::Str{ "str_helper_recheck_min_description" },
+		Input::Options{ 5, 180, "min" }
+	);
+	_helper_errors_progress_min->create(
+		"#zapret .common",
+		Input::Types::duration_min,
+		JSValue{ static_cast<int>(err_progress) },
+		Localization::Str{ "str_helper_errors_progress_min_title" },
+		Localization::Str{ "str_helper_errors_progress_min_description" },
+		Input::Options{ 1, 30, "min" }
+	);
+	_helper_errors_recheck_sec->create(
+		"#zapret .common",
+		Input::Types::duration_sec,
+		JSValue{ static_cast<int>(err_recheck) },
+		Localization::Str{ "str_helper_errors_recheck_sec_title" },
+		Localization::Str{ "str_helper_errors_recheck_sec_description" },
+		Input::Options{ 5, 300, "sec" }
+	);
+
+	_helper_apply->create("#zapret .common", "str_b_helper_apply");
+	_helper_apply->addEventClick(
+		[this](JSArgs)
+		{
+			_applyHelperSettings();
+			return false;
+		}
+	);
+
+	_pushHelperSettings();
+}
+
 void UiZapret2::updateHelperChecking()
 {
 	if (!_list_helper_checking->isCreate())
@@ -678,4 +760,77 @@ void UiZapret2::updateHelperError()
 	_list_helper_error->clear();
 	for (auto& [host, strategy] : entries)
 		_list_helper_error->createLiSuccess(utils::format(Localization::Str{ "str_zapret_helper_error_item" }(), host, strategy));
+}
+
+u32 UiZapret2::_helperSettingU32(std::string_view key, u32 fallback) const
+{
+	if (auto v = _ui->userConfig()->parameterSection<std::string>("HELPER", std::string{ key }))
+	{
+		try
+		{
+			return static_cast<u32>(std::stoul(v.value()));
+		}
+		catch (...)
+		{
+			return fallback;
+		}
+	}
+	return fallback;
+}
+
+void UiZapret2::_applyHelperSettings()
+{
+	// Blocking DOM getters: never on the JS thread, always via background task.
+	Core::get().addTask(
+		[this]
+		{
+			const u32 pool		   = _helper_pool->getValueU32(Input::Types::count, 20, 1, 64);
+			const u32 check		   = _helper_check_timeout->getValueU32(Input::Types::duration_sec, 6, 1, 60);
+			const u32 connect	   = _helper_connect_timeout->getValueU32(Input::Types::duration_sec, 5, 1, 30);
+			const u32 redirects	   = _helper_max_redirects->getValueU32(Input::Types::count, 5, 0, 10);
+			const u32 recheck	   = _helper_recheck_min->getValueU32(Input::Types::duration_min, 30, 5, 180);
+			const u32 err_progress = _helper_errors_progress_min->getValueU32(Input::Types::duration_min, 3, 1, 30);
+			const u32 err_recheck  = _helper_errors_recheck_sec->getValueU32(Input::Types::duration_sec, 30, 5, 300);
+
+			_ui->userConfig()->writeSectionParameter("HELPER", "pool_size", std::to_string(pool));
+			_ui->userConfig()->writeSectionParameter("HELPER", "check_timeout_sec", std::to_string(check));
+			_ui->userConfig()->writeSectionParameter("HELPER", "connect_timeout_sec", std::to_string(connect));
+			_ui->userConfig()->writeSectionParameter("HELPER", "max_redirects", std::to_string(redirects));
+			_ui->userConfig()->writeSectionParameter("HELPER", "recheck_interval_min", std::to_string(recheck));
+			_ui->userConfig()->writeSectionParameter("HELPER", "errors_progress_min", std::to_string(err_progress));
+			_ui->userConfig()->writeSectionParameter("HELPER", "errors_recheck_sec", std::to_string(err_recheck));
+
+			_pushHelperSettings();
+		}
+	);
+}
+
+void UiZapret2::_pushHelperSettings() const
+{
+	const u32 pool		   = _helperSettingU32("pool_size", 20);
+	const u32 check		   = _helperSettingU32("check_timeout_sec", 6);
+	const u32 connect	   = _helperSettingU32("connect_timeout_sec", 5);
+	const u32 redirects	   = _helperSettingU32("max_redirects", 5);
+	const u32 recheck	   = _helperSettingU32("recheck_interval_min", 30);
+	const u32 err_progress = _helperSettingU32("errors_progress_min", 3);
+	const u32 err_recheck  = _helperSettingU32("errors_recheck_sec", 30);
+
+	_ui->_unblock->setHelperConfigMessage(
+		utils::format(
+			"CONFIG:pool_size={};check_timeout_sec={};connect_timeout_sec={};max_redirects={};recheck_interval_min={};errors_progress_min={};errors_"
+			"recheck_sec={}",
+			pool,
+			check,
+			connect,
+			redirects,
+			recheck,
+			err_progress,
+			err_recheck
+		)
+	);
+
+	// Live push when the helper is already running; startService() repeats
+	// the same message right after launch (bind-race retries inside).
+	if (_ui->_unblock->activeService())
+		_ui->_unblock->pushHelperConfig();
 }

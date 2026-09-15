@@ -29,13 +29,18 @@ class Unblock final : public std::enable_shared_from_this<Unblock>
 	std::array<std::string, 4> _tg_dc_ip{ "149.154.175.50", "91.105.192.100", "149.154.175.100", "149.154.167.91" };
 	std::string				   _tg_cfproxy_domain{ "unblock.kermanua1488.workers.dev" };
 
+	// Fresh [HELPER] message (UDP CONFIG:...) from the UI. The on-disk
+	// setting.config is stale while unblock runs (File::save on close),
+	// so startService() pushes this instead of letting the helper read it.
+	std::string _helper_config_message{};
+
 	// Accessed only from the JS thread (via Ui::update)
 	// The checking/error/valid lists are mutually exclusive: one host lives
 	// in exactly one of them (seen stays out of the sync). A single timestamp
 	// tracks the last consumed helper signal; after c_helper_signal_ttl of
 	// total silence every list is dropped, so the UI never shows dead hosts.
-	static constexpr auto c_helper_signal_ttl{ std::chrono::seconds(5) };
-	std::chrono::steady_clock::time_point	  _helper_last_signal{};
+	static constexpr auto						 c_helper_signal_ttl{ std::chrono::seconds(5) };
+	std::chrono::steady_clock::time_point		 _helper_last_signal{};
 	std::unordered_set<std::string>				 _helper_checking;
 	std::unordered_set<std::string>				 _helper_seen;
 	std::unordered_map<std::string, std::string> _helper_errors;
@@ -77,6 +82,12 @@ public:
 	void stopService();
 	void removeService();
 	bool activeService();
+
+	/** Fresh [HELPER] payload from the UI (in-memory userConfig, not the
+	 *  stale on-disk file). Sent as UDP CONFIG: right after the helper is
+	 *  launched and on Apply while it is running. */
+	void setHelperConfigMessage(std::string message) { _helper_config_message = std::move(message); }
+	void pushHelperConfig() const;
 
 	std::vector<std::string>						 helperCheckingHosts();
 	std::vector<std::string>						 helperSeenHosts();

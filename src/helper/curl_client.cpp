@@ -1,5 +1,6 @@
 #include "curl_client.h"
 
+#include <algorithm>
 #include <chrono>
 #include <format>
 #include <memory>
@@ -11,9 +12,9 @@ namespace
 	inline constexpr const char* c_user_agent{
 		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 	};
-	inline constexpr u32 c_check_timeout_sec{ 6 };
-	inline constexpr u32 c_connect_timeout_sec{ 5 };
-	inline constexpr u32 c_max_redirects{ 5 };
+	inline constexpr u32 c_check_timeout_default{ 6 };
+	inline constexpr u32 c_connect_timeout_default{ 5 };
+	inline constexpr u32 c_max_redirects_default{ 5 };
 
 	// Voice-gateway probe: overall budget and the ping/pong exchange shape.
 	inline constexpr u32 c_voice_timeout_sec{ 14 };
@@ -30,6 +31,21 @@ void CurlCleanup::operator()(CURL* curl) const
 {
 	if (curl)
 		curl_easy_cleanup(curl);
+}
+
+namespace
+{
+	// Runtime-tunable via CurlClient::configure() (HelperConfig / UDP CONFIG:).
+	inline u32 g_check_timeout_sec{ c_check_timeout_default };
+	inline u32 g_connect_timeout_sec{ c_connect_timeout_default };
+	inline u32 g_max_redirects{ c_max_redirects_default };
+}	 // namespace
+
+void CurlClient::configure(u32 check_timeout_sec, u32 connect_timeout_sec, u32 max_redirects)
+{
+	g_check_timeout_sec	  = std::clamp(check_timeout_sec, 1u, 60u);
+	g_connect_timeout_sec = std::clamp(connect_timeout_sec, 1u, 30u);
+	g_max_redirects		  = std::clamp(max_redirects, 0u, 10u);
 }
 
 void SlistCleanup::operator()(curl_slist* list) const
@@ -78,15 +94,15 @@ std::expected<long, int> CurlClient::_fetch(const std::string& url, bool head)
 	curl_easy_setopt(curl.get(), CURLOPT_NOSIGNAL, 1L);
 	curl_easy_setopt(curl.get(), CURLOPT_FRESH_CONNECT, 1L);
 	curl_easy_setopt(curl.get(), CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(curl.get(), CURLOPT_MAXREDIRS, static_cast<long>(c_max_redirects));
+	curl_easy_setopt(curl.get(), CURLOPT_MAXREDIRS, static_cast<long>(g_max_redirects));
 	curl_easy_setopt(curl.get(), CURLOPT_NOBODY, head ? 1L : 0L);
 	curl_easy_setopt(curl.get(), CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_DEFAULT);
 	curl_easy_setopt(curl.get(), CURLOPT_SSL_VERIFYPEER, 0L);
 	curl_easy_setopt(curl.get(), CURLOPT_USERAGENT, c_user_agent);
 	curl_easy_setopt(curl.get(), CURLOPT_ACCEPT_ENCODING, "");
 	curl_easy_setopt(curl.get(), CURLOPT_HTTPHEADER, headers.get());
-	curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT, static_cast<long>(c_check_timeout_sec));
-	curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT, static_cast<long>(c_connect_timeout_sec));
+	curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT, static_cast<long>(g_check_timeout_sec));
+	curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT, static_cast<long>(g_connect_timeout_sec));
 	curl_easy_setopt(curl.get(), CURLOPT_NOPROGRESS, 0L);
 	curl_easy_setopt(curl.get(), CURLOPT_WRITEFUNCTION, &CurlClient::_writeCallback);
 
@@ -127,7 +143,7 @@ std::expected<long, int> CurlClient::checkVoiceHost(const std::string& host)
 	curl_easy_setopt(curl.get(), CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_DEFAULT);
 	curl_easy_setopt(curl.get(), CURLOPT_SSL_VERIFYPEER, 0L);
 	curl_easy_setopt(curl.get(), CURLOPT_USERAGENT, c_user_agent);
-	curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT, static_cast<long>(c_connect_timeout_sec));
+	curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT, static_cast<long>(g_connect_timeout_sec));
 
 	CURLcode res = curl_easy_perform(curl.get());
 	if (res != CURLE_OK)

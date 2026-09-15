@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "curl_client.h"
+#include "helper_config.h"
 #include "net.h"
 
 /**
@@ -24,11 +25,7 @@ class ZapretHelper
 {
 	inline static constexpr u32	   c_receive_port{ 10'000 };
 	inline static constexpr u32	   c_ipc_port{ 9'999 };
-	inline static constexpr u32	   c_pool_size{ 20 };
 	inline static constexpr size_t c_receive_buffer_size{ 65'536 };
-	inline static constexpr auto   c_recheck_interval{ std::chrono::minutes(30) };
-	inline static constexpr auto   c_errors_progress_recheck_interval{ std::chrono::minutes(3) };
-	inline static constexpr auto   c_errors_recheck_interval{ std::chrono::seconds(30) };
 	inline static constexpr auto   c_sleep_short{ std::chrono::milliseconds(100) };
 
 	struct ErrorInfo
@@ -53,6 +50,13 @@ class ZapretHelper
 	std::atomic<bool>							 _running{ true };
 	std::chrono::steady_clock::time_point		 _last_recheck{};
 
+	// Runtime settings: file fallback at startup (cold start / PC reboot),
+	// fresh values always arrive via UDP CONFIG: pushed by Unblock.
+	u32					 _pool_size{ HelperConfig::defaults().pool_size };
+	std::chrono::minutes _recheck_interval{ HelperConfig::defaults().recheck_interval_min };
+	std::chrono::minutes _errors_progress_interval{ HelperConfig::defaults().errors_progress_min };
+	std::chrono::seconds _errors_recheck_interval{ HelperConfig::defaults().errors_recheck_sec };
+
 #ifdef HELPER_TESTS
 	friend class ZapretHelperTest;
 #endif
@@ -63,6 +67,12 @@ public:
 
 	/** Main loop: receive UDP messages and drive the check queue. */
 	int run();
+
+	/** Apply settings: curl timeouts immediately, intervals on next idle
+	 *  step, pool is resized live when workers are already running. */
+	void		 applyConfig(const HelperConfig& cfg);
+	/** Current settings snapshot (for CONFIG: merge base). */
+	HelperConfig currentConfig() const;
 
 private:
 	/** Host is valid (not empty and contains at least one letter). */
@@ -89,8 +99,14 @@ private:
 	bool					   _hasPendingHost() const;
 	/** Background worker: waits for hosts and checks them one by one. */
 	void					   _workerRoutine();
+	/** Spawn n workers (run() startup path). */
+	void					   _startWorkers(u32 count);
+	/** Join all workers, keep _running untouched (live pool resize). */
+	void					   _stopWorkers();
 	/** Stop workers and join the pool. */
 	void					   _stopPool();
+	/** Handle UDP CONFIG: payload (Unblock push). */
+	void					   _handleConfigMessage(std::string_view payload);
 
 	// Message formatters (pure, no I/O) — unit-testable.
 	static std::string _makeLog(std::string_view text);
