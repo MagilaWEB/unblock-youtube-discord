@@ -19,11 +19,16 @@ public:
 		port,
 		// Plain integer counter (pool size, redirects, ...).
 		count,
-		// Durations: HTML stays type=number, the unit only affects
-		// placeholder text and suffix parsing in getValueU32().
+		// Fixed-unit durations: strict HTML type=number, bare digits
+		// in the target unit (suffix parsing in getValueU32() stays
+		// as a tolerant fallback).
 		duration_min,
 		duration_sec,
-		duration_ms
+		duration_ms,
+		// Generic duration: HTML type=text, accepts suffixed input
+		// ("30", "30sec", "2min", "500ms", "1h", "1d", "1w").
+		// Bare number and getValueU32() result are milliseconds.
+		duration
 	};
 
 	/** Numeric constraints for create(). Bare numbers are assumed to be
@@ -53,8 +58,11 @@ public:
 	void	setValue(JSValue value);
 	JSValue getValue();
 
-	/** Parsed numeric value with suffix + clamp. Accepts "30", "30s",
-	 *  "500ms", "3m", "1h" (bare number = target unit of the type).
+	/** Parsed numeric value with suffix + clamp. Fixed-unit types
+	 *  (number/count/duration_min/sec/ms) expect a bare number in the
+	 *  target unit; the generic duration type additionally accepts
+	 *  suffixes "ms", "s/sec", "m/min", "h", "d", "w" (bare number =
+	 *  milliseconds, e.g. "30", "30sec", "2min", "500ms", "1h", "1d").
 	 *  Non-numeric or empty field falls back to default_value. */
 	u32 getValueU32(Types type, u32 default_value, u32 min_value, u32 max_value);
 

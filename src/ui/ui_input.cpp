@@ -12,17 +12,49 @@ std::pair<Input::Types, pcstr> Input::convert_types[]{
 	// Custom kinds still map to valid HTML types: the browser knows only
 	// text/number/color/time, "port"/"ip" would silently fall back to text
 	// with no numeric keyboard or spinner.
-	{			Input::Types::ip,	"text" },
+	{			Input::Types::ip,	 "text" },
 	{		  Input::Types::port, "number" },
 	{		 Input::Types::count, "number" },
+	// Fixed-unit durations are strict numbers in the target unit.
 	{ Input::Types::duration_min, "number" },
 	{ Input::Types::duration_sec, "number" },
 	{  Input::Types::duration_ms, "number" },
+	// Generic duration accepts suffixes ("30sec", "2min", "500ms",
+	// "1h", "1d"), so it needs type=text: type=number would block
+	// non-digit input in the browser.
+	{      Input::Types::duration,   "text" },
 };
 
 namespace
 {
+	// Suffix-capable free-text duration ("30sec", "2min", "500ms",
+	// "1h", "1d", "1w"). Fixed-unit durations stay strict numbers.
+	bool isDurationKind(Input::Types type)
+	{
+		return type == Input::Types::duration;
+	}
+
+	// Placeholder [min..max] + numeric parsing (suffix-tolerant for
+	// durations, see parseDurationToUnit).
 	bool isNumericKind(Input::Types type)
+	{
+		switch (type)
+		{
+		case Input::Types::number:
+		case Input::Types::port:
+		case Input::Types::count:
+		case Input::Types::duration_min:
+		case Input::Types::duration_sec:
+		case Input::Types::duration_ms:
+			return true;
+		default:
+			return isDurationKind(type);
+		}
+	}
+
+	// Strict HTML numbers: type=number with min/max/step. Only the
+	// generic duration stays type=text so suffixes can be typed.
+	bool isStrictNumberKind(Input::Types type)
 	{
 		switch (type)
 		{
@@ -45,8 +77,10 @@ namespace
 		s.erase(std::find_if(s.rbegin(), s.rend(), not_space).base(), s.end());
 	}
 
-	// Parse "30", "30s", "500ms", "3m", "1h" into the target unit of type.
-	// Bare number = already in the target unit. Returns default on garbage.
+	// Parse "30", "30s", "500ms", "3m", "1h", "1d", "1w" into the
+	// target unit of type. Bare number = already in the target unit
+	// (milliseconds for the generic duration type).
+	// Returns default on garbage.
 	u32 parseDurationToUnit(std::string text, Input::Types type, u32 default_value, u32 min_value, u32 max_value)
 	{
 		trimCopy(text);
@@ -70,23 +104,73 @@ namespace
 		std::string suffix = text.substr(num_len);
 		trimCopy(suffix);
 
-		// Suffix -> milliseconds factor.
+		// Suffix -> milliseconds factor. Lookup table instead of
+		// an if-chain: one row per spelling, easy to extend.
+		struct SuffixFactor
+		{
+			pcstr  suffix;
+			double ms;
+		};
+		static constexpr SuffixFactor kSuffixes[]{
+			{		 "ms",		  1.0 },
+			{	   "msec",		  1.0 },
+			{		"мc",		  1.0 },
+			{		"мс",		  1.0 },
+			{		  "s",	  1'000.0 },
+			{		"sec",	  1'000.0 },
+			{	   "secs",	  1'000.0 },
+			{	 "second",	  1'000.0 },
+			{	"seconds",	  1'000.0 },
+			{		  "с",	  1'000.0 },
+			{		"сек",	  1'000.0 },
+			{		  "m",	 60'000.0 },
+			{		"min",	 60'000.0 },
+			{	   "mins",	 60'000.0 },
+			{	 "minute",	 60'000.0 },
+			{	"minutes",	 60'000.0 },
+			{		"мин",	 60'000.0 },
+			{		  "h", 3'600'000.0 },
+			{	   "hour", 3'600'000.0 },
+			{	  "hours", 3'600'000.0 },
+			{		  "ч", 3'600'000.0 },
+			{		"час", 3'600'000.0 },
+			{		  "d", 86'400'000.0 },
+			{		"day", 86'400'000.0 },
+			{	   "days", 86'400'000.0 },
+			{		  "д", 86'400'000.0 },
+			{		 "дн", 86'400'000.0 },
+			{	   "день", 86'400'000.0 },
+			{		"дня", 86'400'000.0 },
+			{	   "дней", 86'400'000.0 },
+			{		  "w", 604'800'000.0 },
+			{	   "week", 604'800'000.0 },
+			{	  "weeks", 604'800'000.0 },
+			{		  "н", 604'800'000.0 },
+			{		"нед", 604'800'000.0 },
+			{	 "неделя", 604'800'000.0 },
+			{	 "недели", 604'800'000.0 },
+			{	 "недель", 604'800'000.0 },
+		};
+
 		double suffix_ms  = 0.0;
 		bool   has_suffix = true;
 		if (suffix.empty() || suffix == "count" || suffix == "times" || suffix == "x")
 			has_suffix = false;
-		else if (suffix == "ms" || suffix == "msec" || suffix == "мc" || suffix == "мс")
-			suffix_ms = 1.0;
-		else if (
-			suffix == "s" || suffix == "sec" || suffix == "secs" || suffix == "second" || suffix == "seconds" || suffix == "с" || suffix == "сек"
-		)
-			suffix_ms = 1'000.0;
-		else if (suffix == "m" || suffix == "min" || suffix == "mins" || suffix == "minute" || suffix == "minutes" || suffix == "мин")
-			suffix_ms = 60'000.0;
-		else if (suffix == "h" || suffix == "hour" || suffix == "hours" || suffix == "ч" || suffix == "час")
-			suffix_ms = 3'600'000.0;
 		else
-			return default_value;
+		{
+			bool found = false;
+			for (const auto& row : kSuffixes)
+			{
+				if (suffix == row.suffix)
+				{
+					suffix_ms = row.ms;
+					found	  = true;
+					break;
+				}
+			}
+			if (!found)
+				return default_value;
+		}
 
 		double target = number;
 		if (has_suffix)
@@ -95,6 +179,7 @@ namespace
 			switch (type)
 			{
 			case Input::Types::duration_ms:
+			case Input::Types::duration:
 				target = value_ms;
 				break;
 			case Input::Types::duration_sec:
@@ -136,6 +221,9 @@ Input::Options Input::defaultsFor(Types type)
 		return Options{ 1, 3'600, "sec" };
 	case Types::duration_ms:
 		return Options{ 50, 120'000, "ms" };
+	case Types::duration:
+		// Generic duration counts in ms: 1 sec .. 1 day.
+		return Options{ 1'000, 86'400'000, "ms" };
 	default:
 		return Options{};
 	}
@@ -281,7 +369,7 @@ void Input::_setPlaceholder(Localization::Str title, Types type, Options options
 	else
 		_input.setAttr("name", type_str).setAttr("type", type_str);
 
-	if (isNumericKind(type))
+	if (isStrictNumberKind(type))
 	{
 		_input.setAttr("min", std::to_string(options.min))
 			.setAttr("max", std::to_string(options.max))
@@ -290,6 +378,17 @@ void Input::_setPlaceholder(Localization::Str title, Types type, Options options
 
 		if (type == Types::port)
 			_input.setAttr("maxlength", "5");
+	}
+	else if (isDurationKind(type))
+	{
+		// Generic duration: free text + suffix ("30", "30sec", "2min",
+		// "500ms", "1h", "1d", "1w"). The pattern only hints the format,
+		// parseDurationToUnit() in getValueU32() is the authoritative
+		// validation (clamp, fallback to default on garbage).
+		_input.setAttr("inputmode", "text")
+			.setAttr("maxlength", "12")
+			.setAttr("pattern", "[0-9]+[.,]?[0-9]*\\s*[A-Za-zА-Яа-яёЁ]*")
+			.setAttr("title", "Number with optional suffix: ms, s/sec, m/min, h, d, w (e.g. 30, 30sec, 2min, 500ms, 1h, 1d)");
 	}
 
 	_input.id(_name).setAttr("placeholder", placeholder);
