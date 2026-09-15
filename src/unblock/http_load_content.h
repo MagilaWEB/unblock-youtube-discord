@@ -15,6 +15,6 @@ public:
 	~HttpsLoad();
 	u32						 codeResult() const;
 	std::vector<std::string> run();
-	void					 run_to_file(std::filesystem::path);
+	bool					 run_to_file(std::filesystem::path);
 	float					 progress() const;
 };

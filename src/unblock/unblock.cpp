@@ -202,6 +202,7 @@ bool Unblock::appUpdate()
 	// all temporary files live under %TEMP%\unblock — no .bat scripts are dropped into
 	// the application root.
 	const auto temp_root = Core::get().tempPath() / "unblock";
+	const auto bin_path	 = Core::get().binPath();
 
 	std::error_code ec;
 	std::filesystem::remove_all(temp_root, ec);
@@ -209,7 +210,8 @@ bool Unblock::appUpdate()
 
 	const auto archive = temp_root / "new_unblock.7z";
 
-	getLoad7z().run_to_file(archive);
+	if (!getLoad7z().run_to_file(archive))
+		return false;
 
 	const u32 code = getLoad7z().codeResult();
 	if (code != 200)
@@ -217,7 +219,10 @@ bool Unblock::appUpdate()
 
 	try
 	{
-		static bit7z::Bit7zLibrary	   lib{ "7za.dll" };
+		// Absolute path: the process working directory is not guaranteed
+		// to be bin/ (shortcuts, service starts), so a relative "7za.dll"
+		// silently fails to load on the first update attempt.
+		static bit7z::Bit7zLibrary	   lib{ (Core::get().binPath() / "7za.dll").string() };
 		static bit7z::BitFileExtractor extractor{ lib, bit7z::BitFormat::SevenZip };
 
 		extractor.extract(archive.string(), temp_root.string());
@@ -228,28 +233,43 @@ bool Unblock::appUpdate()
 		return false;
 	}
 
-	const auto bin_path	   = Core::get().binPath();
-	const auto updater	   = bin_path / "unblock_update.exe";
-	const auto new_updater = temp_root / "unblock" / "bin" / "unblock_update.exe";
-
-	// Refresh the helper itself in advance: it is not running yet, so the file can
-	// be replaced; the helper then skips itself while copying the payload.
-	if (std::filesystem::exists(new_updater))
+	// The archive must contain the wrapped payload with the new engine —
+	// otherwise the helper would wipe temp and restart the old build,
+	// looking like "the update did nothing".
+	const auto payload_dir = temp_root / "unblock";
+	if (!std::filesystem::exists(payload_dir / "bin" / "engine.exe", ec) || ec)
 	{
-		std::error_code copy_ec;
-		std::filesystem::copy_file(new_updater, updater, std::filesystem::copy_options::overwrite_existing, copy_ec);
-		if (copy_ec)
-			Debug::warning("Failed to update unblock_update.exe: {}", copy_ec.message());
+		Debug::warning("Update payload is missing unblock/bin/engine.exe");
+		return false;
 	}
 
-	std::wstring cmd_line = L"\"" + updater.wstring() + L"\" \"" + Core::get().currentPath().wstring() + L"\" "
+	// Stage the helper into %TEMP% and run it from there (same as the
+	// remove flow): a helper running from bin/ locks its own image, so the
+	// payload copy of bin/ either fails mid-way (partial update that looks
+	// like "nothing happened") or can never refresh the helper itself.
+	// From %TEMP% the helper can wipe + copy managed dirs freely.
+	const auto staged_updater = temp_root / "unblock_update.exe";
+	{
+		const auto	payload_updater = payload_dir / "bin" / "unblock_update.exe";
+		const auto& source			= std::filesystem::exists(payload_updater) ? payload_updater : bin_path / "unblock_update.exe";
+
+		std::error_code copy_ec;
+		std::filesystem::copy_file(source, staged_updater, std::filesystem::copy_options::overwrite_existing, copy_ec);
+		if (copy_ec)
+		{
+			Debug::error("Failed to stage unblock_update: {}", copy_ec.message());
+			return false;
+		}
+	}
+
+	std::wstring cmd_line = L"\"" + staged_updater.wstring() + L"\" \"" + Core::get().currentPath().wstring() + L"\" "
 						  + std::to_wstring(GetCurrentProcessId()) + L" update \"" + temp_root.wstring() + L"\"";
 
 	STARTUPINFOW		startup{};
 	PROCESS_INFORMATION process{};
 	startup.cb = sizeof(startup);
 
-	if (!CreateProcessW(nullptr, cmd_line.data(), nullptr, nullptr, FALSE, 0, nullptr, bin_path.c_str(), &startup, &process))
+	if (!CreateProcessW(nullptr, cmd_line.data(), nullptr, nullptr, FALSE, 0, nullptr, temp_root.c_str(), &startup, &process))
 	{
 		Debug::error("Failed to start unblock_update: {}", static_cast<u32>(GetLastError()));
 		return false;
