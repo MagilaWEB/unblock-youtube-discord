@@ -60,6 +60,9 @@ public:
 
 	/** Defaults (min/max/unit) for a type, used by the short create(). */
 	static Options defaultsFor(Types type);
+
+private:
+	void _setPlaceholder(Localization::Str title, Types type, Options options);
 };
 
 #define INPUT(name)  \

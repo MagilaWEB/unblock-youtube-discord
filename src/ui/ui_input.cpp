@@ -156,11 +156,6 @@ void Input::create(
 
 	ASSERT_ARGS(!_created, "This element has already been created; recreating it is a critical error! Element name {}.", _name);
 
-	pcstr type_str = "text";
-	for (const auto& [id, str] : convert_types)
-		if (id == type)
-			type_str = str;
-
 	_root = ui::dom::create("div");
 	_root.addClass("input").show();
 
@@ -177,39 +172,8 @@ void Input::create(
 	// and callers overwrote configs with empties).
 	_value = value.ToString();
 
-	std::string placeholder	 = title();
-	placeholder				+= ": ";
-	placeholder				+= _value;
-	if (!options.unit.empty())
-	{
-		placeholder += " ";
-		placeholder += options.unit;
-	}
-	if (isNumericKind(type))
-	{
-		placeholder += " [";
-		placeholder += std::to_string(options.min);
-		placeholder += "..";
-		placeholder += std::to_string(options.max);
-		placeholder += "]";
-	}
+	_setPlaceholder(title, type, options);
 
-	if (type == Types::ip)
-		_input.setAttr("name", "ip").setAttr("type", "text").setAttr("minlength", "7").setAttr("maxlength", "15").setAttr("size", "15");
-	else
-		_input.setAttr("name", type_str).setAttr("type", type_str);
-
-	if (isNumericKind(type))
-	{
-		_input.setAttr("min", std::to_string(options.min))
-			.setAttr("max", std::to_string(options.max))
-			.setAttr("step", "1")
-			.setAttr("inputmode", "numeric");
-		if (type == Types::port)
-			_input.setAttr("maxlength", "5");
-	}
-
-	_input.id(_name).setAttr("placeholder", placeholder);
 	_root.append(_input);
 
 	auto p_description = ui::dom::create("p");
@@ -220,7 +184,17 @@ void Input::create(
 
 	_input.on(
 		ui::dom::Event::Submit,
-		[](std::string element_name, js::Value value) -> bool { return eventCPP({ std::move(element_name), std::move(value) }, _event_click); },
+		[this, title, type, options](std::string element_name, js::Value value) -> bool
+		{
+			if (_created)
+				_input.value("");
+
+			_value = value.ToString();
+
+			_setPlaceholder(title, type, options);
+
+			return eventCPP({ std::move(element_name), std::move(value) }, _event_click);
+		},
 		_name
 	);
 
@@ -276,4 +250,47 @@ u32 Input::getValueU32(Types type, u32 default_value, u32 min_value, u32 max_val
 	}
 
 	return parseDurationToUnit(raw, type, std::clamp(default_value, min_value, max_value), min_value, max_value);
+}
+
+void Input::_setPlaceholder(Localization::Str title, Types type, Options options)
+{
+	pcstr type_str = "text";
+	for (const auto& [id, str] : convert_types)
+		if (id == type)
+			type_str = str;
+
+	std::string placeholder	 = title();
+	placeholder				+= ": ";
+	placeholder				+= _value;
+	if (!options.unit.empty())
+	{
+		placeholder += " ";
+		placeholder += options.unit;
+	}
+	if (isNumericKind(type))
+	{
+		placeholder += " [";
+		placeholder += std::to_string(options.min);
+		placeholder += "..";
+		placeholder += std::to_string(options.max);
+		placeholder += "]";
+	}
+
+	if (type == Types::ip)
+		_input.setAttr("name", "ip").setAttr("type", "text").setAttr("minlength", "7").setAttr("maxlength", "15").setAttr("size", "15");
+	else
+		_input.setAttr("name", type_str).setAttr("type", type_str);
+
+	if (isNumericKind(type))
+	{
+		_input.setAttr("min", std::to_string(options.min))
+			.setAttr("max", std::to_string(options.max))
+			.setAttr("step", "1")
+			.setAttr("inputmode", "numeric");
+
+		if (type == Types::port)
+			_input.setAttr("maxlength", "5");
+	}
+
+	_input.id(_name).setAttr("placeholder", placeholder);
 }
