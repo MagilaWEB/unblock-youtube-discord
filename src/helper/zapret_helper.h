@@ -27,6 +27,11 @@ class ZapretHelper
 	inline static constexpr u32	   c_ipc_port{ 9'999 };
 	inline static constexpr size_t c_receive_buffer_size{ 65'536 };
 	inline static constexpr auto   c_sleep_short{ std::chrono::milliseconds(100) };
+	// Seen-list broadcast throttle: the full host list is re-sent at most
+	// this often. Unthrottled it flooded loopback UDP (~10Hz x N hosts) and
+	// drowned one-shot CHECKING/DONE signals, so the UI under-reported busy
+	// workers.
+	inline static constexpr auto c_seen_interval{ std::chrono::milliseconds(500) };
 
 	struct ErrorInfo
 	{
@@ -49,6 +54,7 @@ class ZapretHelper
 	u32											 _target_ip{ htonl(INADDR_LOOPBACK) };
 	std::atomic<bool>							 _running{ true };
 	std::chrono::steady_clock::time_point		 _last_recheck{};
+	std::chrono::steady_clock::time_point		 _last_seen_send{};
 
 	// Runtime settings: file fallback at startup (cold start / PC reboot),
 	// fresh values always arrive via UDP CONFIG: pushed by Unblock.

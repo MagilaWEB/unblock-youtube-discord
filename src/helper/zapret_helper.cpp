@@ -129,7 +129,8 @@ void ZapretHelper::_addHost(std::string_view host)
 
 	_known_hosts.insert(std::string{ host });
 	_queue.insert(std::string{ host });
-	_cv.notify_one();
+	// No notify here: bulk LIST wakes the whole pool once, a single CHECK
+	// wakes one worker (see _handleMessage).
 }
 
 void ZapretHelper::_handleMessage(std::string_view message)
@@ -141,6 +142,10 @@ void ZapretHelper::_handleMessage(std::string_view message)
 			_addHost(std::string_view{ part });
 
 		_log(std::format("list added {} hosts", _queue.size()));
+
+		// Bulk insert: wake the whole pool at once. A single notify_one
+		// here ramps concurrency up one worker per check completion.
+		_cv.notify_all();
 	}
 	else if (message.starts_with("CHECK:"))
 	{
@@ -148,6 +153,7 @@ void ZapretHelper::_handleMessage(std::string_view message)
 		const auto		rest = message.substr(6);
 		const auto		pos	 = rest.find(':');
 		_addHost(rest.substr(0, pos));
+		_cv.notify_one();	 // single host: one worker is enough
 	}
 	else if (message.starts_with("VALID:"))
 	{
@@ -271,8 +277,7 @@ void ZapretHelper::_workerRoutine()
 		lock.lock();
 		_in_check.erase(*host);
 		_cv.notify_all();
-
-		std::this_thread::sleep_for(c_sleep_short);
+		lock.unlock();
 	}
 }
 
@@ -304,41 +309,69 @@ void ZapretHelper::_idleStep()
 {
 	const auto now = std::chrono::steady_clock::now();
 
-	if ((now - _last_recheck) > _recheck_interval)
+	bool grew = false;
+	bool send_seen = false;
+	std::vector<std::string> seen;
 	{
 		std::lock_guard lock(_mutex);
-		for (const auto& host : _known_hosts)
-			if (!_queue.contains(host) && !_in_check.contains(host))
+
+		if ((now - _last_recheck) > _recheck_interval)
+		{
+			for (const auto& host : _known_hosts)
+				if (!_queue.contains(host) && !_in_check.contains(host))
+				{
+					_queue.insert(host);
+					grew = true;
+				}
+
+			_last_recheck = now;
+		}
+
+		// Throttled broadcast: snapshot under lock, send after unlock.
+		// The receiver keeps the last list, no need to resend the full
+		// set every 100ms loop iteration.
+		if ((now - _last_seen_send) >= c_seen_interval)
+		{
+			seen.assign(_known_hosts.begin(), _known_hosts.end());
+			_last_seen_send = now;
+			send_seen = true;
+		}
+
+		for (auto& [host, info] : _error_hosts)
+		{
+			if (!_known_hosts.contains(host))
+				_known_hosts.insert(host);
+
+			// Host is currently being checked - do not re-enqueue it.
+			if (_queue.contains(host) || _in_check.contains(host))
+				continue;
+
+			if ((now - info.first) < _errors_progress_interval)
+			{
 				_queue.insert(host);
+				grew = true;
+			}
+			else if ((now - info.last) > _errors_recheck_interval)
+			{
+				info.last = now;
+				_queue.insert(host);
+				grew = true;
+			}
+		}
+	}
 
-		_last_recheck = now;
+	// UDP sends and wakeups happen outside the mutex: holding it during
+	// hundreds of sendto calls serialized completions on all workers.
+	if (send_seen)
+		for (const auto& host : seen)
+			_send(_makeSeenSignal(host), c_ipc_port);
+
+	// Wake workers only when new work actually arrived. An unconditional
+	// notify_all here was a thundering herd (20 wakeups x 10Hz for nothing),
+	// while the error branch above used to queue with no notify at all,
+	// leaving workers asleep on a full queue.
+	if (grew)
 		_cv.notify_all();
-	}
-
-	std::lock_guard lock(_mutex);
-
-	for (const auto& host : _known_hosts)
-		_send(_makeSeenSignal(host), c_ipc_port);
-
-	for (auto& [host, info] : _error_hosts)
-	{
-		if (!_known_hosts.contains(host))
-			_known_hosts.insert(host);
-
-		// Host is currently being checked - do not re-enqueue it.
-		if (_queue.contains(host) || _in_check.contains(host))
-			continue;
-
-		if ((now - info.first) < _errors_progress_interval)
-		{
-			_queue.insert(host);
-		}
-		else if ((now - info.last) > _errors_recheck_interval)
-		{
-			info.last = now;
-			_queue.insert(host);
-		}
-	}
 }
 
 int ZapretHelper::run()
