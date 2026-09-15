@@ -51,6 +51,10 @@ class ZapretHelper
 	UdpSocket									 _socket;
 	std::array<char, c_receive_buffer_size>		 _buffer{};
 	std::vector<std::thread>					 _pool;
+	// Pool generation: bumped on live resize so the old generation exits
+	// even though _running stays true (joining threads that wait on
+	// !_running would deadlock the main loop).
+	std::atomic<u32> _pool_epoch{ 0 };
 	u32											 _target_ip{ htonl(INADDR_LOOPBACK) };
 	std::atomic<bool>							 _running{ true };
 	std::chrono::steady_clock::time_point		 _last_recheck{};
@@ -103,10 +107,16 @@ private:
 	std::optional<std::string> _popHost();
 	/** True if any host is waiting and not currently being checked. */
 	bool					   _hasPendingHost() const;
-	/** Background worker: waits for hosts and checks them one by one. */
-	void					   _workerRoutine();
+	/** Background worker: waits for hosts and checks them one by one.
+	 *  Epoch is passed at creation, never re-read: a worker started late
+	 *  must belong to the generation that created it, not the current one. */
+	void _workerRoutine(u32 epoch);
 	/** Spawn n workers (run() startup path). */
-	void					   _startWorkers(u32 count);
+	void		 _startWorkers(u32 count);
+	/** Live pool resize while the helper keeps running (Apply button path).
+	 *  Unlike _stopWorkers (shutdown path, _running==false), this retires
+	 *  the current generation via _pool_epoch and starts a new one. */
+	void _restartWorkers(u32 count);
 	/** Join all workers, keep _running untouched (live pool resize). */
 	void					   _stopWorkers();
 	/** Stop workers and join the pool. */

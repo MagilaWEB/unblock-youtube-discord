@@ -8,7 +8,13 @@
 
 ZapretHelper::~ZapretHelper()
 {
-	_running = false;
+	{
+		// Flip under the mutex: a worker checking the predicate and going
+		// to sleep must not slip between the flag change and the notify
+		// (missed wakeup -> join hangs forever).
+		std::lock_guard lock(_mutex);
+		_running = false;
+	}
 	_cv.notify_all();
 	_stopWorkers();
 }
@@ -41,8 +47,7 @@ void ZapretHelper::applyConfig(const HelperConfig& cfg)
 
 	if (!_pool.empty() && _pool.size() != _pool_size)
 	{
-		_stopWorkers();
-		_startWorkers(_pool_size);
+		_restartWorkers(_pool_size);
 		_log(std::format("config applied: pool={}", _pool_size));
 	}
 }
@@ -255,14 +260,14 @@ std::optional<std::string> ZapretHelper::_popHost()
 	return std::nullopt;
 }
 
-void ZapretHelper::_workerRoutine()
+void ZapretHelper::_workerRoutine(u32 epoch)
 {
 	while (_running)
 	{
 		std::unique_lock lock(_mutex);
-		_cv.wait(lock, [this] { return !_running || !_queue.empty(); });
+		_cv.wait(lock, [this, epoch] { return !_running || epoch != _pool_epoch.load() || !_queue.empty(); });
 
-		if (!_running)
+		if (!_running || epoch != _pool_epoch.load())
 			return;
 
 		auto host = _popHost();
@@ -283,8 +288,13 @@ void ZapretHelper::_workerRoutine()
 
 void ZapretHelper::_startWorkers(u32 count)
 {
+	// Capture the epoch here, under the caller's context: threads that
+	// actually start running after a restart bump must still carry the
+	// generation they were created in, otherwise they adopt the new epoch,
+	// wait on an empty queue forever and join hangs.
+	const u32 epoch = _pool_epoch.load();
 	for (u32 i = 0; i < count; ++i)
-		_pool.emplace_back([this] { _workerRoutine(); });
+		_pool.emplace_back([this, epoch] { _workerRoutine(epoch); });
 }
 
 void ZapretHelper::_stopWorkers()
@@ -298,9 +308,36 @@ void ZapretHelper::_stopWorkers()
 	_pool.clear();
 }
 
+void ZapretHelper::_restartWorkers(u32 count)
+{
+	// Retire the current generation: waiting workers see the epoch bump
+	// and exit, workers mid-check exit at the loop top. Join waits at most
+	// one check duration (up to ~14s for a voice probe), then the new
+	// generation starts. Joining without the epoch bump deadlocked: the old
+	// workers wait on !_running, which stays true while live.
+	// The bump itself is under the mutex: bumping outside opened a
+	// check-then-block window where the notify is missed and join hangs.
+	{
+		std::lock_guard lock(_mutex);
+		_pool_epoch.fetch_add(1);
+	}
+	_cv.notify_all();
+
+	for (auto& worker : _pool)
+		if (worker.joinable())
+			worker.join();
+
+	_pool.clear();
+	_startWorkers(count);
+}
+
 void ZapretHelper::_stopPool()
 {
-	_running = false;
+	{
+		// Same missed-wakeup rule as in the destructor: flag under mutex.
+		std::lock_guard lock(_mutex);
+		_running = false;
+	}
 	_cv.notify_all();
 	_stopWorkers();
 }

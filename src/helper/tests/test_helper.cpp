@@ -61,6 +61,8 @@ public:
 
 	void applyConfig(const HelperConfig& cfg) { helper.applyConfig(cfg); }
 	u32	 poolSize() const { return helper._pool_size; }
+	void startWorkers(u32 n) { helper._startWorkers(n); }
+	size_t poolThreads() const { return helper._pool.size(); }
 
 	std::string makeLog(std::string_view text) const { return ZapretHelper::_makeLog(text); }
 	std::string makeValidSignal(std::string_view h, std::string_view s) const { return ZapretHelper::_makeValidSignal(h, s); }
@@ -743,6 +745,19 @@ TEST_CASE("CONFIG: message updates runtime without restart", "[helper][config]")
 	CHECK(t.poolSize() == 4);
 	// Pool is empty in tests (workers start in run()), so no thread churn.
 	CHECK(t.queue().empty());
+}
+
+TEST_CASE("CONFIG: live pool resize with running workers does not hang", "[helper][config]")
+{
+	ZapretHelperTest t;
+	t.startWorkers(2);
+	REQUIRE(t.poolThreads() == 2);
+	// Queue is empty so workers only wait. Resize must retire them via the
+	// pool epoch and start the new generation. Joining threads that wait on
+	// !_running deadlocked the main loop and killed the helper on Apply.
+	t.handleMessage("CONFIG:pool_size=4;check_timeout_sec=6;recheck_interval_min=30;errors_recheck_sec=30");
+	CHECK(t.poolSize() == 4);
+	CHECK(t.poolThreads() == 4);
 }
 
 TEST_CASE("CONFIG: clamps garbage, keeps running", "[helper][config]")
