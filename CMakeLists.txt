@@ -1,10 +1,25 @@
 message(STATUS "CMAKE_VERSION = ${CMAKE_VERSION}")
 cmake_minimum_required(VERSION 3.25)
 
-project(unblock_cpp LANGUAGES C CXX VERSION 0)
+# Automatic versioning: derived from git tags + commit distance ("odometer",
+# carry module 99). Nobody edits the version by hand, see
+# cmake/GetUnblockVersion.cmake. For an ad-hoc version (e.g. testing the
+# updater with a low number) pass -DUNBLOCK_VERSION_OVERRIDE=X.Y.Z.
+set(UNBLOCK_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(GetUnblockVersion)
+
+project(unblock_cpp LANGUAGES C CXX VERSION ${UNBLOCK_VERSION_TRIPLET})
 
 option(BUILD_TESTS "Build tests" ON)
 option(CUPY_LIBS_DLL_TO_BIN "CUPY_LIBS_DLL_TO_BIN" ON)
+
+# Generated version header (git-ignored, rewritten on every configure).
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/engine/version.hpp.in"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/engine/version.hpp"
+  @ONLY
+)
 
 if (BUILD_TESTS)
   enable_testing()

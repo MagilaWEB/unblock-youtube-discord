@@ -12,6 +12,14 @@
 - `test_helper` линкует `core` (общий `tap_main.cpp` тянет конструкторы `File`/`CriticalSection`)
 - Для доступа теста к приватным членам используется `friend`-класс, обёрнутый в `#ifdef HELPER_TESTS` (макрос задаётся только при BUILD_TESTS)
 
+## Version
+
+- Версия считается на configure (`cmake/GetUnblockVersion.cmake`, одометр: базовый тег vX.Y.Z + дистанция коммитов, перенос с модулем 99 patch→minor→major). Руками не править никогда!
+- `src/engine/version.hpp` — генерируется из `version.hpp.in` (git-ignored), макросы `VERSION_STR`/`VERSION_NUMBER` (+`VERSION_FULL`/`DISTANCE`/`DIRTY`/`HASH`/`BASE_TAG`)
+- Вычисленная версия: лог configure (`UNBLOCK_VERSION = ...`) и `_build_ai/unblock_version.txt`. Релизный тег ставится вручную ПОСЛЕ сборки и обязан равняться вычисленной версии
+- Тест обновлений со старой версией: `build-ai.ps1 -VersionOverride X.Y.Z`. С такой сборки тег НЕ ставить!
+- Версия обновляется при переконфигурации; после новых коммитов/тегов нужен реконфиг (или `build-ai.ps1 -Clean`)
+
 ## Architecture
 
 - `src/engine/` — точка входа `engine.exe`, копирует lua/blobs в `binaries/` при сборке

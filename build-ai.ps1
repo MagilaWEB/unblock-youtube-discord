@@ -2,7 +2,11 @@ param(
     [ValidateSet('debug', 'debug-min', 'release', 'release-min')]
     [string]$Preset = 'debug',
     [switch]$Clean,
-    [string]$Target
+    [string]$Target,
+    # Ad-hoc version stamp without touching git history, e.g. -VersionOverride 1.5.0
+    # to test the updater against a newer release. NEVER tag a release from such
+    # a build; see cmake/GetUnblockVersion.cmake.
+    [string]$VersionOverride
 )
 
 $ErrorActionPreference = 'Stop'
@@ -32,9 +36,30 @@ if (Test-Path $cachePath) {
     }
 }
 
+# An explicit version override always needs a fresh configure, otherwise the
+# cached (or odometer-computed) version would silently survive. Conversely, a
+# stale override left in the cache must be dropped when no flag is given.
+$clearOverride = $false
+if ($VersionOverride) {
+    $needConfigure = $true
+} elseif (Test-Path $cachePath) {
+    # Note: -D without an explicit :TYPE lands in the cache as UNINITIALIZED.
+    $cachedOverride = Select-String -Path $cachePath -Pattern '^UNBLOCK_VERSION_OVERRIDE:(STRING|UNINITIALIZED)=(.+)$' | Select-Object -First 1
+    if ($cachedOverride) {
+        $needConfigure = $true
+        $clearOverride = $true
+    }
+}
+
 if ($needConfigure) {
     Write-Host "Configuring (preset: $Preset)..."
-    cmake -S . -B _build_ai --preset $Preset
+    $cmakeArgs = @('-S', '.', '-B', '_build_ai', '--preset', $Preset)
+    if ($VersionOverride) {
+        $cmakeArgs += "-DUNBLOCK_VERSION_OVERRIDE=$VersionOverride"
+    } elseif ($clearOverride) {
+        $cmakeArgs += '-UUNBLOCK_VERSION_OVERRIDE'
+    }
+    & cmake @cmakeArgs
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
