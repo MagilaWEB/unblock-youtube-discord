@@ -610,6 +610,9 @@ void UiZapret2::_initHelperSettings()
 		Localization::Str{ "str_helper_pool_description" },
 		Input::Options{ 1, 64, "" }
 	);
+	// Timeouts stay strict seconds: the helper applies whole seconds
+	// (check_timeout_sec / connect_timeout_sec), sub-second input
+	// would be false precision.
 	_helper_check_timeout->create(
 		"#zapret .common",
 		Input::Types::duration_sec,

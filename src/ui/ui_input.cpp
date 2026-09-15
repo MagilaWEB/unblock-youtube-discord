@@ -385,10 +385,12 @@ void Input::_setPlaceholder(Localization::Str title, Types type, Options options
 		// "500ms", "1h", "1d", "1w"). The pattern only hints the format,
 		// parseDurationToUnit() in getValueU32() is the authoritative
 		// validation (clamp, fallback to default on garbage).
+		// NOTE: no "title" attr here — the native tooltip would overlap
+		// the custom description popup; suffix docs live in the caller
+		// description strings (see str_helper_*_description).
 		_input.setAttr("inputmode", "text")
 			.setAttr("maxlength", "12")
-			.setAttr("pattern", "[0-9]+[.,]?[0-9]*\\s*[A-Za-zА-Яа-яёЁ]*")
-			.setAttr("title", "Number with optional suffix: ms, s/sec, m/min, h, d, w (e.g. 30, 30sec, 2min, 500ms, 1h, 1d)");
+			.setAttr("pattern", "[0-9]+[.,]?[0-9]*\\s*[A-Za-zА-Яа-яёЁ]*");
 	}
 
 	_input.id(_name).setAttr("placeholder", placeholder);
