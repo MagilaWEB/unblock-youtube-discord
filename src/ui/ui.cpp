@@ -278,7 +278,7 @@ void Ui::_checkWhitelist()
 		_window_warning_no_internet->setType(SecondaryWindow::Type::OK);
 	}
 
-	Core::get().addTaskParallel(
+	Core::get().addTask(
 		[ui_self = self]
 		{
 			if (ui_self->_unblock->testUrl("https://yandex.ru") || ui_self->_unblock->testUrl("https://vk.com"))

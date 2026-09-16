@@ -10,9 +10,9 @@
 #include <unordered_set>
 
 // -----------------------------------------------------------------------
-// Scheduler — manager of deferred tasks. Replaces the
-// "Core::addTaskParallel + sleep_for" combo: one background worker,
-// a task arrives on time instead of occupying a pool thread with a sleep.
+// Scheduler — manager of deferred tasks. Callbacks run on the single
+// scheduler worker exactly on time instead of occupying a pool thread
+// with a sleep; fan blocking work out via Core::addTask.
 //
 // Units — any chrono::duration: milliseconds, seconds, minutes...
 //   Scheduler::get().after(std::chrono::milliseconds(450), [] { ... });

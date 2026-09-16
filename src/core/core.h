@@ -1,15 +1,10 @@
 #pragma once
 
+#include "thread_pool.h"
+
 class Core final
 {
-	FastLock						  _task_lock;
-	FastLock						  _task_complete_lock;
-	std::deque<std::function<void()>> _task_buffer;
-	std::deque<std::function<void()>> _task_buffer_parallel;
-	std::deque<std::function<void()>> _task_complete;
-	std::list<std::function<void()>>  _task_run;
-
-	std::atomic_bool _quit_task{ false };
+	ThreadPool _pool;
 
 	Core();
 	~Core() = default;
@@ -23,6 +18,8 @@ class Core final
 
 public:
 	Core(Core&&) = delete;
+
+	using TaskId = ThreadPool::TaskId;
 
 public:
 	static Core& get();
@@ -43,12 +40,16 @@ public:
 
 	bool isVersionNewer(std::string version1, std::string version2);
 
-	void addTask(std::function<void()>&& callback);
-	void addTaskParallel(std::function<void()>&& callback);
+	/// Enqueue a task for execution by the pool. Returns the task id.
+	TaskId addTask(std::function<void()>&& callback);
 
+	/// Run callback after the specific task finishes. If the task already
+	/// finished, the callback is enqueued immediately.
+	void taskComplete(TaskId id, std::function<void()>&& callback);
+
+	/// Run callback once the pool is idle (all tasks finished). If already
+	/// idle, the callback is enqueued immediately.
 	void taskComplete(std::function<void()>&& callback);
-
-	FastLock& getTaskLock();
 
 private:
 	std::tuple<u32, u32, u32> _parseSimpleVersion(const std::string& version);

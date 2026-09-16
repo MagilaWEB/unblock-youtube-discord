@@ -540,7 +540,7 @@ bool Unblock::localProxyTgIsRun()
 
 void Unblock::localProxyTgLinkRun()
 {
-	Core::get().addTaskParallel(
+	Core::get().addTask(
 		[this]
 		{
 			std::string tg{ "tg://proxy?server=" };

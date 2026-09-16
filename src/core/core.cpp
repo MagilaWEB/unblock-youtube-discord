@@ -47,67 +47,12 @@ void Core::initialize(const std::string& /*command_line*/)
 
 void Core::parallel_run()
 {
-	std::jthread thread(
-		[this]
-		{
-			while (!_quit_task)
-			{
-				using namespace std::chrono;
-				std::this_thread::sleep_for(20ms);
-
-				{
-					FAST_LOCK(_task_lock);
-					while (!_task_buffer_parallel.empty() && !_quit_task)
-					{
-						_task_run.emplace_back(_task_buffer_parallel.front());
-						_task_buffer_parallel.pop_front();
-					}
-				}
-
-				std::for_each(
-					std::execution::par,
-					_task_run.begin(),
-					_task_run.end(),
-					[this](std::function<void()> callback)
-					{
-						if (!_quit_task)
-							callback();
-					}
-				);
-
-				_task_run.clear();
-
-				while (!_task_buffer.empty() && !_quit_task)
-				{
-					_task_buffer.front()();
-					_task_buffer.pop_front();
-				}
-
-				_task_lock.EnterShared();
-				if (_task_buffer.empty() && _task_buffer_parallel.empty())
-				{
-					_task_lock.LeaveShared();
-					FAST_LOCK(_task_complete_lock);
-					while (!_task_complete.empty() && !_quit_task)
-					{
-						_task_complete.front()();
-						_task_complete.pop_front();
-					}
-				}
-				else
-					_task_lock.LeaveShared();
-			}
-		}
-	);
-
-	thread.detach();
+	_pool.start();
 }
 
 void Core::finish()
 {
-	_quit_task = true;
-	FAST_LOCK(_task_lock, 1);
-	FAST_LOCK(_task_complete_lock);
+	_pool.stop();
 }
 
 std::filesystem::path Core::currentPath() const
@@ -209,26 +154,17 @@ bool Core::isVersionNewer(std::string version1, std::string version2)
 	return patch1 > patch2;
 }
 
-void Core::addTask(std::function<void()>&& callback)
+Core::TaskId Core::addTask(std::function<void()>&& callback)
 {
-	FAST_LOCK(_task_lock);
-	_task_buffer.emplace_back(callback);
+	return _pool.enqueue(std::move(callback));
 }
 
-void Core::addTaskParallel(std::function<void()>&& callback)
+void Core::taskComplete(TaskId id, std::function<void()>&& callback)
 {
-	FAST_LOCK(_task_lock);
-	_task_buffer_parallel.emplace_back(callback);
+	_pool.onComplete(id, std::move(callback));
 }
 
 void Core::taskComplete(std::function<void()>&& callback)
 {
-	FAST_LOCK_SHARED(_task_lock, _get);
-	FAST_LOCK(_task_complete_lock);
-	_task_complete.emplace_back(callback);
-}
-
-FastLock& Core::getTaskLock()
-{
-	return _task_lock;
+	_pool.onDrain(std::move(callback));
 }

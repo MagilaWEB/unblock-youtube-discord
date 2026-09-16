@@ -26,7 +26,7 @@ void UiProxyTg::_enableProxyTg()
 	_proxy_tg_enable->addEventClick(
 		[this](JSArgs args)
 		{
-			Core::get().addTaskParallel(
+			Core::get().addTask(
 				[this, args]
 				{
 					const bool state = JSToCPP<bool>(args[0]);

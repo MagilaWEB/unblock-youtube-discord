@@ -550,7 +550,7 @@ void UiZapret2::_testingServiceDomains()
 {
 	_window_wait_testing->show();
 
-	Core::get().addTaskParallel(
+	const Core::TaskId testTask = Core::get().addTask(
 		[this]
 		{
 			_ui->_unblock->testingDomain(
@@ -565,6 +565,7 @@ void UiZapret2::_testingServiceDomains()
 	);
 
 	Core::get().taskComplete(
+		testTask,
 		[this]
 		{
 			_window_wait_testing->hide();

@@ -2,7 +2,10 @@
 #include "../pch.h"
 #include "../core.h"
 
+#include <atomic>
+#include <chrono>
 #include <fstream>
+#include <thread>
 
 namespace fs = std::filesystem;
 
@@ -87,4 +90,35 @@ TEST_CASE("Core::isVersionNewer same major minor no patch", "[core][version]")
 {
 	CoreFixture fx;
 	CHECK_FALSE(Core::get().isVersionNewer("1.0", "1.0"));
+}
+
+TEST_CASE("Core::addTask runs in pool and taskComplete(id) fires", "[core][tasks]")
+{
+	CoreFixture fx;
+	auto&		core = Core::get();
+	core.parallel_run();
+
+	std::atomic_bool taskDone{ false };
+	std::atomic_bool cbDone{ false };
+	std::atomic_bool drained{ false };
+
+	const auto id = core.addTask(
+		[&]
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			taskDone.store(true, std::memory_order_release);
+		}
+	);
+	CHECK(id != 0);
+
+	core.taskComplete(id, [&] { cbDone.store(true, std::memory_order_release); });
+	core.taskComplete([&] { drained.store(true, std::memory_order_release); });
+
+	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+	while ((!cbDone.load(std::memory_order_acquire) || !drained.load(std::memory_order_acquire)) && std::chrono::steady_clock::now() < deadline)
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
+	CHECK(taskDone.load());
+	CHECK(cbDone.load());
+	CHECK(drained.load());
 }
