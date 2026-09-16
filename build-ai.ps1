@@ -37,7 +37,7 @@ if (Test-Path $cachePath) {
 }
 
 # An explicit version override always needs a fresh configure, otherwise the
-# cached (or odometer-computed) version would silently survive. Conversely, a
+# cached (or auto-computed) version would silently survive. Conversely, a
 # stale override left in the cache must be dropped when no flag is given.
 $clearOverride = $false
 if ($VersionOverride) {

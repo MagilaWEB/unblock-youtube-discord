@@ -3,62 +3,110 @@
 # Automatic versioning for unblock: the version is derived from git state,
 # nobody edits it by hand.
 #
-# Scheme ("odometer", carry module 99 on every level):
-#   BASE = latest tag vX.Y.Z reachable from HEAD, N = commits since BASE
-#   patch = Z + N, then while patch > 99: patch -= 99, minor += 1
-#   then while minor > 99: minor -= 99, major += 1
-# Examples:
-#   tag 1.5.4,   N=20  -> 1.5.24
-#   tag 1.5.24,  N=80  -> 1.6.5
-#   tag 1.6.5,   N=200 -> 1.8.7
-#   tag 1.99.50, N=60  -> 2.1.11
-#   N=0 (build exactly on a tag) -> exactly the tag.
+# Scheme (Conventional Commits + significance fallback):
+#   BASE = latest tag vX.Y.Z reachable from HEAD.
+#   Scan commit subjects/bodies in BASE..HEAD:
+#     '!' after type/scope (feat!:, fix(api)!:) or a 'BREAKING CHANGE:' /
+#     'BREAKING-CHANGE:' footer -> MAJOR
+#     else any 'feat[(scope)]:'                    -> MINOR
+#     else any 'fix[(scope)]:'                     -> PATCH
+#   If no conventional bump, measure the diff size (added + deleted lines in
+#   text files under src/ and cmake/, binaries ignored): >= 20 lines -> PATCH.
+#   Otherwise there is no release: the version equals BASE.
+#   MAJOR: X+1.0.0, MINOR: X.Y+1.0, PATCH: X.Y.Z+1 (lower parts reset).
+#   N=0 (build exactly on a tag) -> exactly the tag, no release.
 #
-# Tagging a commit does not change its version: a build N commits ahead of vA
-# computes V, and tagging that same commit vV gives N=0 with base vV, which
+# Tagging a commit does not change its version: a build ahead of vA computes
+# V, and tagging that same commit vV gives an empty range with base vV, which
 # computes the same V. So the release tag may be created AFTER the build; it
-# just must equal the computed version (see unblock_version.txt in the build
-# directory). No prediction of the future needed.
+# just must equal the computed version (see the UNBLOCK_VERSION log line on
+# configure and VERSION_STR in the generated version.hpp). A tag is created
+# only when UNBLOCK_VERSION_RELEASE is 1. No prediction of the future needed.
 #
-# Override (e.g. testing the updater with an artificially low version without
-# touching git history):
-#   cmake -DUNBLOCK_VERSION_OVERRIDE=1.5.0 ...
-# or via build-ai.ps1 -VersionOverride 1.5.0
-# The override wins over the odometer. VERSION_STR is exactly the override so
-# Core::isVersionNewer() treats the build as that version. NEVER create a
-# release tag from an override build.
+# Manual controls (configure parameters, never edited in code):
+#   cmake -DUNBLOCK_VERSION_OVERRIDE=X.Y.Z ...
+#   or via build-ai.ps1 -VersionOverride X.Y.Z
+#   An explicitly requested version for testing the updater, no git math.
+#   VERSION_STR is exactly the override. NEVER create a release tag from an
+#   override build.
+#   cmake -DUNBLOCK_VERSION_BUMP_FORCE=major|minor|patch|none ...
+#   Force the bump applied to the current base instead of auto-detection
+#   (a forced release change without inventing a number). Anything else is a
+#   configure error.
 #
 # Provided variables (set in the including scope):
 #   UNBLOCK_VERSION_TRIPLET      e.g. 1.6.5            (for project(VERSION ...))
 #   UNBLOCK_VERSION_STR          e.g. 1.6.5
 #   UNBLOCK_VERSION_NUMBER       e.g. 1, 6, 5, 0       (for engine.rc FILEVERSION)
 #   UNBLOCK_VERSION_FULL         e.g. 1.6.5+80.g64975e8-dirty (logs/diagnostics)
-#   UNBLOCK_VERSION_DISTANCE     commits since base tag (0 on override/no git)
+#   UNBLOCK_VERSION_DISTANCE     commits since base tag, diagnostics only
+#                                (0 on override/no git)
+#   UNBLOCK_VERSION_BUMP         major|minor|patch|none|override
+#   UNBLOCK_VERSION_RELEASE      1 if a release tag should be created, else 0
 #   UNBLOCK_VERSION_DIRTY        0/1, working tree has modifications
+#                                (diagnostics only, never bumps the version)
 #   UNBLOCK_VERSION_HASH         short HEAD hash (empty if no git)
 #   UNBLOCK_VERSION_BASE_TAG     e.g. v1.5.4 ("none" if no usable tag)
 #   UNBLOCK_VERSION_IS_OVERRIDE  0/1
-# Also writes <binary-dir>/unblock_version.txt (triplet on the first line).
 #
 # Requirements: set UNBLOCK_SOURCE_DIR before including. Define
-# UNBLOCK_VERSION_TEST_MODE to skip git detection (unit-testing the odometer
-# function with `cmake -P`).
+# UNBLOCK_VERSION_TEST_MODE to skip git detection (unit-testing the pure
+# functions with `cmake -P`).
 
-# Pure function: odometer carry, testable without git.
-function(unblock_odometer in_major in_minor in_patch in_distance out_version_str out_version_number)
-  math(EXPR _p "${in_patch} + ${in_distance}")
-  set(_m "${in_minor}")
-  set(_M "${in_major}")
-  while(_p GREATER 99)
-    math(EXPR _p "${_p} - 99")
-    math(EXPR _m "${_m} + 1")
-  endwhile()
-  while(_m GREATER 99)
-    math(EXPR _m "${_m} - 99")
-    math(EXPR _M "${_M} + 1")
-  endwhile()
-  set(${out_version_str} "${_M}.${_m}.${_p}" PARENT_SCOPE)
-  set(${out_version_number} "${_M}, ${_m}, ${_p}, 0" PARENT_SCOPE)
+# Pure function: conventional-commit scan, testable without git.
+# Subjects and bodies are parallel lists (one body per subject, may be empty).
+function(unblock_conventional_bump in_subjects in_bodies out_bump)
+  set(_has_feat FALSE)
+  set(_has_fix FALSE)
+  set(_has_breaking FALSE)
+
+  foreach(_s IN LISTS in_subjects)
+    # Tolerate surrounding whitespace (git record terminators leak newlines
+    # into parsed subjects when the caller splits on control characters).
+    string(STRIP "${_s}" _s)
+    if(_s MATCHES "^fix(\\([^)]*\\))?(!)?:")
+      if(CMAKE_MATCH_2 STREQUAL "!")
+        set(_has_breaking TRUE)
+      else()
+        set(_has_fix TRUE)
+      endif()
+    elseif(_s MATCHES "^feat(\\([^)]*\\))?(!)?:")
+      if(CMAKE_MATCH_2 STREQUAL "!")
+        set(_has_breaking TRUE)
+      else()
+        set(_has_feat TRUE)
+      endif()
+    elseif(_s MATCHES "^[^ :]+(\\([^)]*\\))?!:")
+      set(_has_breaking TRUE)
+    endif()
+  endforeach()
+
+  foreach(_b IN LISTS in_bodies)
+    string(STRIP "${_b}" _b)
+    if(_b MATCHES "BREAKING[ -]CHANGE:")
+      set(_has_breaking TRUE)
+    endif()
+  endforeach()
+
+  if(_has_breaking)
+    set(${out_bump} "major" PARENT_SCOPE)
+  elseif(_has_feat)
+    set(${out_bump} "minor" PARENT_SCOPE)
+  elseif(_has_fix)
+    set(${out_bump} "patch" PARENT_SCOPE)
+  else()
+    set(${out_bump} "none" PARENT_SCOPE)
+  endif()
+endfunction()
+
+# Pure function: significance fallback, testable without git.
+# Total added + deleted text lines (binaries already excluded by the caller).
+function(unblock_significance_bump in_total out_bump)
+  if(in_total GREATER_EQUAL 20)
+    set(${out_bump} "patch" PARENT_SCOPE)
+  else()
+    set(${out_bump} "none" PARENT_SCOPE)
+  endif()
 endfunction()
 
 if(NOT UNBLOCK_VERSION_TEST_MODE)
@@ -71,6 +119,8 @@ if(NOT UNBLOCK_VERSION_TEST_MODE)
   set(UNBLOCK_VERSION_HASH "")
   set(UNBLOCK_VERSION_BASE_TAG "none")
   set(UNBLOCK_VERSION_DISTANCE 0)
+  set(UNBLOCK_VERSION_BUMP "none")
+  set(UNBLOCK_VERSION_RELEASE 0)
 
   # --- Manual override: an explicitly requested version, no git math. ---
   if(UNBLOCK_VERSION_OVERRIDE)
@@ -85,10 +135,12 @@ if(NOT UNBLOCK_VERSION_TEST_MODE)
     set(UNBLOCK_VERSION_STR "${UNBLOCK_VERSION_TRIPLET}")
     set(UNBLOCK_VERSION_NUMBER "${_M}, ${_m}, ${_p}, 0")
     set(UNBLOCK_VERSION_FULL "${UNBLOCK_VERSION_TRIPLET}+override")
+    set(UNBLOCK_VERSION_BUMP "override")
+    set(UNBLOCK_VERSION_RELEASE 0)
     set(UNBLOCK_VERSION_IS_OVERRIDE 1)
     message(WARNING "GetUnblockVersion: OVERRIDE active, version=${UNBLOCK_VERSION_TRIPLET}. DO NOT tag a release from this build.")
   else()
-    # --- Automatic mode: base tag + commit distance through the odometer. ---
+    # --- Automatic mode: base tag + conventional scan + significance. ---
     set(_base_major 0)
     set(_base_minor 0)
     set(_base_patch 0)
@@ -161,6 +213,70 @@ if(NOT UNBLOCK_VERSION_TEST_MODE)
         if(_st_rc EQUAL 0 AND _porcelain)
           set(UNBLOCK_VERSION_DIRTY 1)
         endif()
+
+        # Subjects and bodies of BASE..HEAD. %x1f separates subject from body,
+        # %x1e separates records (NUL bytes would truncate CMake strings, and
+        # CMake has no \x escapes, so the separators come from string(ASCII)).
+        string(ASCII 30 _RS)
+        string(ASCII 31 _US)
+        execute_process(
+          COMMAND ${GIT_EXECUTABLE} -C "${UNBLOCK_SOURCE_DIR}" log "${UNBLOCK_VERSION_BASE_TAG}..HEAD" "--format=%s%x1f%b%x1e"
+          OUTPUT_VARIABLE _log_raw
+          ERROR_QUIET
+          RESULT_VARIABLE _log_rc
+        )
+        set(_subjects "")
+        set(_bodies "")
+        if(_log_rc EQUAL 0 AND _log_raw)
+          string(REPLACE "${_RS}" ";" _records "${_log_raw}")
+          foreach(_r IN LISTS _records)
+            if(_r STREQUAL "")
+              continue()
+            endif()
+            string(REPLACE "${_US}" ";" _parts "${_r}")
+            list(GET _parts 0 _s)
+            list(LENGTH _parts _nparts)
+            if(_nparts GREATER 1)
+              list(GET _parts 1 _b)
+            else()
+              set(_b "")
+            endif()
+            # git terminates each formatted record with a newline, so every
+            # subject/body after the first starts with one; strip it or the
+            # ^feat/^fix anchors never match.
+            string(STRIP "${_s}" _s)
+            string(STRIP "${_b}" _b)
+            list(APPEND _subjects "${_s}")
+            list(APPEND _bodies "${_b}")
+          endforeach()
+        elseif(NOT _log_rc EQUAL 0)
+          message(WARNING "GetUnblockVersion: git log failed, bump assumed none")
+        endif()
+
+        unblock_conventional_bump("${_subjects}" "${_bodies}" UNBLOCK_VERSION_BUMP)
+
+        # Significance fallback: only when conventional commits say nothing.
+        # Code paths only (src/, cmake/); binary files report '-' and are skipped.
+        if(UNBLOCK_VERSION_BUMP STREQUAL "none" AND UNBLOCK_VERSION_DISTANCE GREATER 0)
+          execute_process(
+            COMMAND ${GIT_EXECUTABLE} -C "${UNBLOCK_SOURCE_DIR}" diff --numstat "${UNBLOCK_VERSION_BASE_TAG}..HEAD" -- src cmake
+            OUTPUT_VARIABLE _numstat
+            ERROR_QUIET
+            RESULT_VARIABLE _numstat_rc
+          )
+          if(_numstat_rc EQUAL 0 AND _numstat)
+            string(REGEX REPLACE "\r?\n" ";" _stat_lines "${_numstat}")
+            set(_total 0)
+            foreach(_line IN LISTS _stat_lines)
+              if(_line MATCHES "^([0-9]+)\t([0-9]+)\t")
+                math(EXPR _total "${_total} + ${CMAKE_MATCH_1} + ${CMAKE_MATCH_2}")
+              endif()
+            endforeach()
+            unblock_significance_bump(${_total} UNBLOCK_VERSION_BUMP)
+          elseif(NOT _numstat_rc EQUAL 0)
+            message(WARNING "GetUnblockVersion: git diff failed, bump assumed none")
+          endif()
+        endif()
       else()
         message(WARNING "GetUnblockVersion: no reachable vX.Y.Z tag, base assumed 0.0.0")
       endif()
@@ -168,11 +284,40 @@ if(NOT UNBLOCK_VERSION_TEST_MODE)
       message(WARNING "GetUnblockVersion: git not found, version falls back to 0.0.0+nogit")
     endif()
 
-    unblock_odometer(
-      ${_base_major} ${_base_minor} ${_base_patch} ${UNBLOCK_VERSION_DISTANCE}
-      UNBLOCK_VERSION_STR UNBLOCK_VERSION_NUMBER
-    )
+    # Manual bump force: wins over auto-detection, applies to the current base.
+    if(UNBLOCK_VERSION_BUMP_FORCE)
+      if(NOT UNBLOCK_VERSION_BUMP_FORCE MATCHES "^(major|minor|patch|none)$")
+        message(FATAL_ERROR "GetUnblockVersion: UNBLOCK_VERSION_BUMP_FORCE='${UNBLOCK_VERSION_BUMP_FORCE}' must be major|minor|patch|none")
+      endif()
+      set(UNBLOCK_VERSION_BUMP "${UNBLOCK_VERSION_BUMP_FORCE}")
+      message(WARNING "GetUnblockVersion: BUMP forced to ${UNBLOCK_VERSION_BUMP}, auto-detection ignored.")
+    endif()
+
+    if(UNBLOCK_VERSION_BUMP STREQUAL "major")
+      math(EXPR _M "${_base_major} + 1")
+      set(_m 0)
+      set(_p 0)
+    elseif(UNBLOCK_VERSION_BUMP STREQUAL "minor")
+      set(_M "${_base_major}")
+      math(EXPR _m "${_base_minor} + 1")
+      set(_p 0)
+    elseif(UNBLOCK_VERSION_BUMP STREQUAL "patch")
+      set(_M "${_base_major}")
+      set(_m "${_base_minor}")
+      math(EXPR _p "${_base_patch} + 1")
+    else()
+      set(_M "${_base_major}")
+      set(_m "${_base_minor}")
+      set(_p "${_base_patch}")
+    endif()
+
+    set(UNBLOCK_VERSION_STR "${_M}.${_m}.${_p}")
+    set(UNBLOCK_VERSION_NUMBER "${_M}, ${_m}, ${_p}, 0")
     set(UNBLOCK_VERSION_TRIPLET "${UNBLOCK_VERSION_STR}")
+
+    if(NOT UNBLOCK_VERSION_BUMP STREQUAL "none")
+      set(UNBLOCK_VERSION_RELEASE 1)
+    endif()
 
     # FILEVERSION words are 16-bit; fail loudly instead of silently truncating.
     string(REPLACE "." ";" _triplet_parts "${UNBLOCK_VERSION_TRIPLET}")
@@ -194,6 +339,5 @@ if(NOT UNBLOCK_VERSION_TEST_MODE)
     endif()
   endif()
 
-  message(STATUS "UNBLOCK_VERSION = ${UNBLOCK_VERSION_FULL} (base ${UNBLOCK_VERSION_BASE_TAG})")
-  file(WRITE "${CMAKE_BINARY_DIR}/unblock_version.txt" "${UNBLOCK_VERSION_TRIPLET}\n${UNBLOCK_VERSION_FULL}\n")
+  message(STATUS "UNBLOCK_VERSION = ${UNBLOCK_VERSION_FULL} (base ${UNBLOCK_VERSION_BASE_TAG}, bump ${UNBLOCK_VERSION_BUMP}, release ${UNBLOCK_VERSION_RELEASE})")
 endif()

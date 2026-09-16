@@ -1,10 +1,12 @@
 message(STATUS "CMAKE_VERSION = ${CMAKE_VERSION}")
 cmake_minimum_required(VERSION 3.25)
 
-# Automatic versioning: derived from git tags + commit distance ("odometer",
-# carry module 99). Nobody edits the version by hand, see
-# cmake/GetUnblockVersion.cmake. For an ad-hoc version (e.g. testing the
-# updater with a low number) pass -DUNBLOCK_VERSION_OVERRIDE=X.Y.Z.
+# Automatic versioning: derived from git tags + Conventional Commits
+# (fix -> PATCH, feat -> MINOR, !/BREAKING CHANGE -> MAJOR, otherwise a
+# significance fallback on the diff size). Nobody edits the version by hand,
+# see cmake/GetUnblockVersion.cmake. For an ad-hoc version (e.g. testing the
+# updater with a low number) pass -DUNBLOCK_VERSION_OVERRIDE=X.Y.Z, or force
+# the bump with -DUNBLOCK_VERSION_BUMP_FORCE=major|minor|patch|none.
 set(UNBLOCK_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(GetUnblockVersion)
@@ -23,6 +25,10 @@ configure_file(
 
 if (BUILD_TESTS)
   enable_testing()
+  add_test(
+    NAME version_conventions
+    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests/TestConventionalVersion.cmake"
+  )
 endif ()
 
 if (WIN32)

@@ -14,10 +14,10 @@
 
 ## Version
 
-- Версия считается на configure (`cmake/GetUnblockVersion.cmake`, одометр: базовый тег vX.Y.Z + дистанция коммитов, перенос с модулем 99 patch→minor→major). Руками не править никогда!
-- `src/engine/version.hpp` — генерируется из `version.hpp.in` (git-ignored), макросы `VERSION_STR`/`VERSION_NUMBER` (+`VERSION_FULL`/`DISTANCE`/`DIRTY`/`HASH`/`BASE_TAG`)
-- Вычисленная версия: лог configure (`UNBLOCK_VERSION = ...`) и `_build_ai/unblock_version.txt`. Релизный тег ставится вручную ПОСЛЕ сборки и обязан равняться вычисленной версии
-- Тест обновлений со старой версией: `build-ai.ps1 -VersionOverride X.Y.Z`. С такой сборки тег НЕ ставить!
+- Версия считается на configure (`cmake/GetUnblockVersion.cmake`, Conventional Commits + semantic-release: `fix:` → PATCH, `feat:` → MINOR, `!`/`BREAKING CHANGE:` → MAJOR; без них — значимость диффа ≥20 строк по `src/`+`cmake/` → PATCH, иначе релиза нет и версия равна базовому тегу). Руками не править никогда!
+- `src/engine/version.hpp` — генерируется из `version.hpp.in` (git-ignored), макросы `VERSION_STR`/`VERSION_NUMBER` (+`VERSION_FULL`/`BUMP`/`RELEASE`/`DISTANCE`/`DIRTY`/`HASH`/`BASE_TAG`)
+- Вычисленная версия: лог configure (`UNBLOCK_VERSION = ...`, там же `bump` и `release`). Релизный тег `v<триплет>` ставится вручную ПОСЛЕ сборки только при `release=1` и обязан равняться вычисленной версии (`VERSION_STR`)
+- Ручные рычаги: `build-ai.ps1 -VersionOverride X.Y.Z` (тест обновлений со старой версией, тег НЕ ставить!) и `-DUNBLOCK_VERSION_BUMP_FORCE=major|minor|patch|none` (принудительный бамп от текущей базы)
 - Версия обновляется при переконфигурации; после новых коммитов/тегов нужен реконфиг (или `build-ai.ps1 -Clean`)
 
 ## Architecture
