@@ -71,6 +71,8 @@ str_warning=⚠ Внимание
 str_error=❌ Ошибка
 
 str_warning_copy_application_running=Unblock уже запущен. Повторный запуск невозможен.
+str_error_webview2_missing=Для работы Unblock нужен компонент Microsoft Edge WebView2. Это не браузер, а системный движок, который приложения используют для отрисовки интерфейса. Установите его и запустите приложение снова. Скачать: https://developer.microsoft.com/microsoft-edge/webview2/
+str_error_window_create=Не удалось создать окно приложения. Попробуйте перезапустить Unblock.
 
 // Removing
 str_button_remove=🗑 Удалить Unblock

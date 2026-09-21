@@ -71,6 +71,8 @@ str_warning=⚠ Warning
 str_error=❌ Error
 
 str_warning_copy_application_running=Unblock is already running. Cannot start another instance.
+str_error_webview2_missing=Unblock requires the Microsoft Edge WebView2 Runtime. It is not a browser, but a system engine that applications use to render their interface. Install it and run the app again. Download: https://developer.microsoft.com/microsoft-edge/webview2/
+str_error_window_create=Failed to create the application window. Try restarting Unblock.
 
 // Removing
 str_button_remove=🗑 Uninstall Unblock

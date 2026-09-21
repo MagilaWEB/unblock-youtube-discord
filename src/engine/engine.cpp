@@ -158,7 +158,10 @@ coco::stray Engine::_start(saucer::application* app)
 	auto window = saucer::window::create(app);
 	if (!window)
 	{
-		Debug::error("Failed to create window: {}", window.error());
+		// Same anti-pattern as the webview below: Debug::error throws and
+		// would std::terminate before quit(). Report non-fatally and exit.
+		Debug::warning("Failed to create window: {}", window.error());
+		Debug::winApiWindowShow("str_error", "str_error_window_create");
 		app->quit();
 		// NOLINTNEXTLINE(readability-static-accessed-through-instance) - coroutine promise_type artifact, see _start().
 		co_return;
@@ -224,7 +227,11 @@ coco::stray Engine::_start(saucer::application* app)
 	);
 	if (!view)
 	{
-		Debug::error("Failed to create webview: {}", view.error());
+		// Missing WebView2 is a user-side problem: Debug::error throws, which
+		// would std::terminate before quit(). Log non-fatally and show a clear
+		// message asking to install the WebView2 Runtime instead.
+		Debug::warning("Failed to create webview: {}", view.error());
+		Debug::winApiWindowShow("str_error", "str_error_webview2_missing");
 		app->quit();
 		// NOLINTNEXTLINE(readability-static-accessed-through-instance) - coroutine promise_type artifact, see _start().
 		co_return;
