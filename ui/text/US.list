@@ -138,6 +138,11 @@ Solutions:
 • Choose config manually
 • Or use a VPN
 
+// Secondary Window nothing to bypass
+str_window_no_bypass_targets=❌ Nothing to bypass
+No service is selected and no custom hosts or IP addresses were added.
+Select at least one service in the list or add your own hosts/IP — otherwise there is nothing to bypass.
+
 // Secondary Window info new update unblock
 str_window_update_unblock=🔄 Unblock update available v{}
 The application will be automatically updated and restarted.

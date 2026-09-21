@@ -66,6 +66,9 @@ public:
 	void removeOptionalStrategies(std::string_view name);
 	void clearOptionalStrategies();
 
+	/** True when at least one service is enabled (something to bypass). */
+	bool hasOptionalStrategies() const { return !_section_opt_service_names.empty(); }
+
 	void setCustomLists(
 		std::vector<std::string> hosts, std::vector<std::string> ip_set, std::vector<std::string> domains_exclude, std::vector<std::string> ip_exclude
 	);

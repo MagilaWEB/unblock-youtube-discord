@@ -33,6 +33,12 @@ void UiZapret2::initialize()
 	_initHelperSeen();
 	_initHelperValid();
 	_initHelperError();
+
+	// Must run after _listEnableServices(): it restores the enabled services into
+	// DomainTesting, and without them the domain list is empty, so the test would
+	// report 0% with no hosts. The manual button works because services are set by then.
+	if (_ui->getTestingDomainsStartup()->getState())
+		_testingServiceDomains();
 }
 
 void UiZapret2::_listEnableServices()
@@ -299,6 +305,16 @@ void UiZapret2::_initMainControls()
 	_window_configuration_selection_error->create(Localization::Str{ "str_error" }, "str_window_configuration_selection_error");
 	_window_configuration_selection_error->setType(SecondaryWindow::Type::OK);
 
+	_window_no_bypass_targets->create(Localization::Str{ "str_error" }, "str_window_no_bypass_targets");
+	_window_no_bypass_targets->setType(SecondaryWindow::Type::OK);
+	_window_no_bypass_targets->addEventOk(
+		[this](JSArgs)
+		{
+			_window_no_bypass_targets->hide();
+			return false;
+		}
+	);
+
 	_stop_zapret->create("#zapret .common", "str_b_stop_zapret");
 	_stop_zapret->addEventClick(
 		[this](JSArgs)
@@ -354,8 +370,25 @@ void UiZapret2::_buttonUpdate()
 		getStartButton()->setTitle("str_b_start_zapret");
 }
 
+bool UiZapret2::_hasBypassTargets() const
+{
+	return _ui->_unblock->hasOptionalStrategies() || !_list_custom_hosts->items().empty() || !_list_custom_ip_set->items().empty();
+}
+
+bool UiZapret2::_requireBypassTargets()
+{
+	if (_hasBypassTargets())
+		return true;
+
+	_window_no_bypass_targets->show();
+	return false;
+}
+
 void UiZapret2::_clickStartService()
 {
+	if (!_requireBypassTargets())
+		return;
+
 	if (auto config = _ui->userConfig()->parameterSection<std::string>("REMEMBER_CONFIGURATION", "config"))
 	{
 		auto& strategy_list = _ui->_unblock->getStrategiesList();
@@ -374,6 +407,9 @@ void UiZapret2::_clickStartService()
 
 void UiZapret2::_autoStart()
 {
+	if (!_requireBypassTargets())
+		return;
+
 	_tcpGlobalChange(true);
 
 	Core::get().addTask(
@@ -541,9 +577,6 @@ void UiZapret2::_initTestingWindow()
 	);
 
 	_list_host_info->create("#_window_info_testing .description", "");
-
-	if (_ui->getTestingDomainsStartup()->getState())
-		_testingServiceDomains();
 }
 
 void UiZapret2::_testingServiceDomains()

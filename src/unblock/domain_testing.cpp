@@ -346,20 +346,45 @@ void DomainTesting::_genericURLS(std::string base_name)
 {
 	if (_section_opt_service_names.empty())
 	{
+		// No service enabled: the full test runs over every service list we
+		// ship. A base test still has its own base.list.
 		if (base_name.empty())
-			base_name = "all";
+		{
+			_appendAllServiceURLS();
+			return;
+		}
 
 		if (_loadFile(base_name))
 			_appendURLS();
-	}
-	else
-	{
-		if (!base_name.empty())
-			base_name += "_";
 
-		for (auto& name : _section_opt_service_names)
-			if (_loadFile(base_name + name))
-				_appendURLS();
+		return;
+	}
+
+	if (!base_name.empty())
+		base_name += "_";
+
+	for (auto& name : _section_opt_service_names)
+		if (_loadFile(base_name + name))
+			_appendURLS();
+}
+
+// Union of every <service>.list in configs/domain_test. base.list and
+// base_<service>.list are the pre-flight check, not a service, so they are
+// skipped. Used when no service is enabled.
+void DomainTesting::_appendAllServiceURLS()
+{
+	std::error_code ec;
+	for (const auto& entry : std::filesystem::directory_iterator{ Core::get().configsPath() / "domain_test", ec })
+	{
+		if (!entry.is_regular_file() || entry.path().extension() != ".list")
+			continue;
+
+		const auto name = entry.path().stem().string();
+		if (name.starts_with("base"))
+			continue;
+
+		if (_loadFile(name))
+			_appendURLS();
 	}
 }
 

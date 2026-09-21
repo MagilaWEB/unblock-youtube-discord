@@ -138,6 +138,11 @@ str_window_configuration_selection_error=❌ Автоподбор не удал�
 • Выберите конфиг вручную
 • Или воспользуйтесь VPN
 
+// Secondary Window nothing to bypass
+str_window_no_bypass_targets=❌ Нечего обходить
+Не выбран ни один сервис и не добавлены свои хосты или IP-адреса.
+Выберите хотя бы один сервис в списке или добавьте свои хосты/IP — иначе обходить нечего.
+
 // Secondary Window info new update unblock
 str_window_update_unblock=🔄 Доступно обновление Unblock v{}
 Приложение будет автоматически обновлено и перезапущено.

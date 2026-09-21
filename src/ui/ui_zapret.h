@@ -39,6 +39,7 @@ class UiZapret2
 	SECONDARY_WINDOW(_window_continue_select_strategy);
 
 	SECONDARY_WINDOW(_window_configuration_selection_error);
+	SECONDARY_WINDOW(_window_no_bypass_targets);
 
 	std::atomic_bool _automatically_strategy_cancel{ false };
 	std::atomic_bool _domain_testing_cancel{ false };
@@ -123,6 +124,11 @@ private:
 	void _buttonUpdate();
 
 	void _clickStartService();
+
+	/** Something to bypass: an enabled service or a custom host / IP. */
+	bool _hasBypassTargets() const;
+	/** Shows the "nothing to bypass" window and returns false when there is none. */
+	bool _requireBypassTargets();
 
 	void _autoStart();
 	bool _autoStartTryNext() const;

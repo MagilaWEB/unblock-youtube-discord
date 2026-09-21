@@ -41,6 +41,7 @@ public:
 private:
 	bool _loadFile(std::filesystem::path file);
 	void _genericURLS(std::string base_name = "");
+	void _appendAllServiceURLS();
 	void _appendURLS();
 	void _clearURLS();
 
