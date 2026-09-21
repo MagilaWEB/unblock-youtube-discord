@@ -13,6 +13,12 @@ include(GetUnblockVersion)
 
 project(unblock_cpp LANGUAGES C CXX VERSION ${UNBLOCK_VERSION_TRIPLET})
 
+# Static MSVC runtime (/MT): the CRT is embedded into the binaries, so there is
+# no dependency on the system msvcp140.dll / vcruntime140*.dll. An outdated
+# redist on a user's machine made the first std::mutex lock crash (issue #98);
+# the whole runtime now ships inside the exe. Debug uses /MTd.
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 option(BUILD_TESTS "Build tests" ON)
 option(CUPY_LIBS_DLL_TO_BIN "CUPY_LIBS_DLL_TO_BIN" ON)
 
@@ -94,9 +100,12 @@ FetchContent_Declare(
 )
 
 # DOWNLOAD_EXTRACT_TIMESTAMP: VS cmake cannot extract .7z with --touch
+# The _mt build ships bit7z.lib compiled with the static CRT (/MT), matching
+# CMAKE_MSVC_RUNTIME_LIBRARY above; the default package uses /MD and would fail
+# the linker's RuntimeLibrary mismatch check.
 FetchContent_Declare(
   bit7z
-  URL https://github.com/rikyoz/bit7z/releases/download/v4.0.10/bit7z-v4.0.10-msvc2015_x64.7z
+  URL https://github.com/rikyoz/bit7z/releases/download/v4.0.10/bit7z-v4.0.10-msvc2022_mt_x64.7z
   SOURCE_DIR bit7z
   DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
