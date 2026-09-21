@@ -148,7 +148,7 @@ str_window_update_unblock=🔄 Unblock update available v{}
 The application will be automatically updated and restarted.
 Do you want to install the update now?
 
-str_window_wait_update_unblock=⏳ Downloading Unblock update [{:.2f}%]...
+str_window_wait_update_unblock=⏳ Downloading Unblock update...
 Do not close the application. It will restart automatically when finished.
 
 // Secondary Window continue select strategy
@@ -175,7 +175,7 @@ What this provides:
 Safe: can be disabled in settings.
 Current services: [{}].
 
-str_window_wait_update_dns_description=🔄 Loading local DNS [{:.2f}%]... 
+str_window_wait_update_dns_description=🔄 Loading local DNS...
 Updating the system hosts file to bypass blocks.
 This may take several minutes.
 

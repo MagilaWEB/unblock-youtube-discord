@@ -15,6 +15,14 @@ class SecondaryWindow final : public BaseElement
 
 	std::vector<ui::dom::Element> _buttons;
 
+	// Optional progress bar (see enableProgress). The percentage lives in the
+	// bar itself, so the description text is set once and never rewritten.
+	ui::dom::Element _progress;
+	ui::dom::Element _progress_fill;
+	ui::dom::Element _progress_text;
+	bool			 _progress_enabled{ false };
+	int				 _progress_value{ -1 };
+
 public:
 	enum class Type : u8
 	{
@@ -33,6 +41,13 @@ public:
 	void create(Localization::Str title, Localization::Str description);
 	void setType(Type type);
 	void setDescription(Localization::Str);
+
+	/** Adds an optional progress bar under the description (hidden by default).
+	 *  Opt-in per window: without it setProgress() is a no-op. */
+	void enableProgress(bool state = true);
+	/** Updates the bar (fill + percent label). Redraws only when the integer
+	 *  percentage changed, so the DOM is not poked on every tick. */
+	void setProgress(float percent);
 
 	void show() override;
 	void hide() override;

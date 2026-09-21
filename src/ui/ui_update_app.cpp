@@ -70,6 +70,7 @@ void Ui::_updateAppWindow()
 {
 	_window_wait_update_unblock->create(Localization::Str{ "str_please_wait" }, "str_window_wait_update_unblock");
 	_window_wait_update_unblock->setType(SecondaryWindow::Type::Info);
+	_window_wait_update_unblock->enableProgress();
 
 	_window_error_update_unblock->create(Localization::Str{ "str_error" }, "str_window_error_update_unblock");
 	_window_error_update_unblock->setType(SecondaryWindow::Type::OK);
@@ -121,12 +122,10 @@ void Ui::_updateAppWindow()
 
 void Ui::_updateAppProgressWindowInfo()
 {
+	// Only the progress bar is refreshed; the description text is set once at
+	// creation and never rewritten (see SecondaryWindow::setProgress).
 	LIMIT_UPDATE(Description, .5f, {
 		if (_window_wait_update_unblock->isShow())
-		{
-			auto  disc_text = Localization::Str{ "str_window_wait_update_unblock" }();
-			float progress	= _unblock->appUpdateProgress();
-			_window_wait_update_unblock->setDescription(utils::format(disc_text, progress));
-		}
+			_window_wait_update_unblock->setProgress(_unblock->appUpdateProgress());
 	})
 }

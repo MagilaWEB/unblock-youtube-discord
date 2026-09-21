@@ -148,7 +148,7 @@ str_window_update_unblock=🔄 Доступно обновление Unblock v{}
 Приложение будет автоматически обновлено и перезапущено.
 Вы хотите установить обновление сейчас?
 
-str_window_wait_update_unblock=⏳ Выполняется загрузка обновления Unblock [{:.2f}%]...
+str_window_wait_update_unblock=⏳ Выполняется загрузка обновления Unblock...
 Не закрывайте приложение. После завершения оно перезапустится автоматически.
 
 // Secondary Window continue select strategy
@@ -175,7 +175,7 @@ str_window_to_warn_enable_dns_hosts_description=⚙ Для работы нуже
 Безопасно: можно отключить в настройках.
 Текущие сервисы: [{}].
 
-str_window_wait_update_dns_description=🔄 Загрузка локального DNS [{:.2f}%]... 
+str_window_wait_update_dns_description=🔄 Загрузка локального DNS...
 Идёт обновление системного файла hosts для обхода блокировок.
 Это может занять несколько минут.
 

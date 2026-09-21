@@ -1,6 +1,8 @@
 #include <saucer/smartview.hpp>
 #include "ui_secondary_window.h"
 
+#include <cmath>
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wglobal-constructors"
 std::vector<SecondaryWindow*> SecondaryWindow::_all_window;
@@ -39,6 +41,19 @@ void SecondaryWindow::create(Localization::Str title, Localization::Str descript
 	auto p_desc = ui::dom::create("p");
 	p_desc.addClass("description").text(description());
 	_content.append(p_desc);
+
+	// Optional progress bar, hidden until enableProgress().
+	_progress = ui::dom::create("div");
+	_progress.addClass("progress");
+	_content.append(_progress);
+
+	_progress_fill = ui::dom::create("div");
+	_progress_fill.addClass("progress_fill");
+	_progress.append(_progress_fill);
+
+	_progress_text = ui::dom::create("span");
+	_progress_text.addClass("progress_text").text("0%");
+	_progress.append(_progress_text);
 
 	_elements = ui::dom::create("div");
 	_elements.addClass("elements");
@@ -161,6 +176,36 @@ void SecondaryWindow::setDescription(Localization::Str description)
 	auto p_desc = _content.query(".description");
 	if (p_desc.valid())
 		p_desc.text(description());
+}
+
+void SecondaryWindow::enableProgress(bool state)
+{
+	_progress_enabled = state;
+
+	if (!_created || !_progress.valid())
+		return;
+
+	state ? _progress.show() : _progress.hide();
+}
+
+void SecondaryWindow::setProgress(float percent)
+{
+	if (!_created || !_progress_enabled)
+		return;
+
+	// A 0/0 from an empty task list yields NaN; clamp() on it would be UB.
+	if (!std::isfinite(percent))
+		percent = 0.F;
+
+	const int value = std::clamp(static_cast<int>(percent), 0, 100);
+	if (value == _progress_value)
+		return;
+
+	_progress_value = value;
+
+	const auto text = std::to_string(value) + "%";
+	_progress_fill.style("width", text);
+	_progress_text.text(text);
 }
 
 void SecondaryWindow::show()

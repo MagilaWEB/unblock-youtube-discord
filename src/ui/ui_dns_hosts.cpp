@@ -32,9 +32,10 @@ void UiDnsHosts::_enableDnsHosts()
 		}
 	);
 
-	_window_wait_update_dns->create(Localization::Str{ "str_please_wait" }, "");
+	_window_wait_update_dns->create(Localization::Str{ "str_please_wait" }, "str_window_wait_update_dns_description");
 
 	_window_wait_update_dns->setType(SecondaryWindow::Type::Wait);
+	_window_wait_update_dns->enableProgress();
 	_window_wait_update_dns->addEventCancel(
 		[this](JSArgs)
 		{
@@ -185,13 +186,11 @@ void UiDnsHosts::_enableDnsHosts()
 
 void UiDnsHosts::updateInfoWindow()
 {
-	static std::string disc_text{ Localization::Str{ "str_window_wait_update_dns_description" }() };
+	// Only the progress bar is refreshed; the description text is set once at
+	// creation and never rewritten (see SecondaryWindow::setProgress).
 	LIMIT_UPDATE(Description, .5f, {
 		if (_window_wait_update_dns->isShow())
-		{
-			float progress = _unblock->dnsHostsUpdateProgress();
-			_window_wait_update_dns->setDescription(utils::format(disc_text, progress));
-		}
+			_window_wait_update_dns->setProgress(_unblock->dnsHostsUpdateProgress());
 	})
 }
 

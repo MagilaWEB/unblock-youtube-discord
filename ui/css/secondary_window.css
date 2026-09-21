@@ -60,6 +60,46 @@
 	contain      : layout style;
 }
 
+/* Optional progress bar (SecondaryWindow::enableProgress). The percentage is
+   rendered inside the bar, so the description text stays untouched. */
+.secondary_window .content .progress {
+	position        : relative;
+	display         : none;
+	height          : 3vw;
+	margin          : 0 0 1.3vw;
+	overflow        : hidden;
+	border          : 1px solid rgba(255, 255, 255, 0.10);
+	border-radius   : 6px;
+	background-color: rgba(25, 28, 42, 0.82);
+	will-change     : transform, opacity;
+	transform       : translateZ(0);
+}
+
+.secondary_window .content .progress.show {
+	display: block;
+}
+
+.secondary_window .content .progress .progress_fill {
+	height          : 100%;
+	width           : 0%;
+	background-color: rgba(90, 190, 255, 0.85);
+	transition      : width 400ms ease-out;
+}
+
+.secondary_window .content .progress .progress_text {
+	position       : absolute;
+	top            : 0;
+	left           : 0;
+	right          : 0;
+	bottom         : 0;
+	display        : flex;
+	align-items    : center;
+	justify-content: center;
+	font-size      : 1.6vw;
+	color          : #f0f0f0;
+	text-shadow    : 0 0 6px rgba(0, 0, 0, 0.65);
+}
+
 .secondary_window.show .content .description .list_ul {
 	opacity         : 1;
 	filter          : blur(0);
