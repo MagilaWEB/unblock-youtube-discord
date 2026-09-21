@@ -27,7 +27,10 @@ namespace ui::dom
 	Element& Element::style(std::string_view prop, int value)
 	{
 		if (auto* v = view(); v && _h >= 0)
-			v->execute("__dom[{}].style.{} = {}", _h, prop, value);
+			// Bracket notation: execute() JSON-quotes the string args, so a dot
+			// would yield __dom[h].style."width" — a SyntaxError that kills the
+			// whole script (the property was never applied).
+			v->execute("__dom[{}].style[{}] = {}", _h, prop, value);
 
 		return *this;
 	}
@@ -35,7 +38,10 @@ namespace ui::dom
 	Element& Element::style(std::string_view prop, std::string_view value)
 	{
 		if (auto* v = view(); v && _h >= 0)
-			v->execute("__dom[{}].style.{} = {}", _h, prop, value);
+			// Bracket notation: execute() JSON-quotes the string args, so a dot
+			// would yield __dom[h].style."width" — a SyntaxError that kills the
+			// whole script (the property was never applied).
+			v->execute("__dom[{}].style[{}] = {}", _h, prop, value);
 
 		return *this;
 	}
