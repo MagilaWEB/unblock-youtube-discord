@@ -546,7 +546,7 @@ void Unblock::localProxyTg(bool run)
 			{ (Core::get().binariesPath() / "tg-ws-proxy.exe").string(),
 			  std::string{ "--secret " } + proxy_secret.data(),
 			  "--dc-ip 1:" + _tg_dc_ip[0] + " --dc-ip 2:" + _tg_dc_ip[1] + " --dc-ip 3:" + _tg_dc_ip[2] + " --dc-ip 4:" + _tg_dc_ip[3],
-			  "--cfproxy-worker-domain " + _tg_cfproxy_domain,
+	//		  "--cfproxy-worker-domain " + _tg_cfproxy_domain,
 			  "--host " + _tg_host,
 			  "--port " + _tg_port }
 		);

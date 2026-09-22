@@ -21,7 +21,7 @@ private:
 	INPUT(_proxy_tg_dc_ip_2);
 	INPUT(_proxy_tg_dc_ip_3);
 	INPUT(_proxy_tg_dc_ip_4);
-	INPUT(_proxy_tg_cfproxy_domain);
+	//INPUT(_proxy_tg_cfproxy_domain);
 	BUTTON(_proxy_tg_apply);
 
 public:
