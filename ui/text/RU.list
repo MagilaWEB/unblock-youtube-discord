@@ -139,6 +139,11 @@ str_window_auto_start_wait_name_strategy_description=🧪 Проверка ва�
 ├ Конфигурация: [{}]
 └ Версия стратегий: [{}]
 
+str_window_auto_start_wait_name_strategy_description_zapret1=🧪 Проверка варианта обхода:
+├ Конфигурация: [{}]
+├ Версия стратегий: [{}]
+└ Профиль фейков: [{}]
+
 str_window_configuration_selection_error=❌ Автоподбор не удался
 Причины:
 • Ресурсы не отвечают
@@ -165,6 +170,16 @@ str_window_continue_select_strategy_title=✅ Конфигурация подо�
 str_window_continue_select_strategy_description=Выбран:
 ├ Конфиг: [{}]
 └ Версия: [{}]
+
+❓ Всё работает как нужно?
+
+✅ Работает — нажмите «Да»: подбор завершён.
+🔍 Не работает — нажмите «Нет»: продолжим искать другой вариант.
+
+str_window_continue_select_strategy_description_zapret1=Выбран:
+├ Конфиг: [{}]
+├ Версия: [{}]
+└ Профиль фейков: [{}]
 
 ❓ Всё работает как нужно?
 

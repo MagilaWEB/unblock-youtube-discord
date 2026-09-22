@@ -64,15 +64,43 @@ std::vector<std::string> Zapret1Engine::listVersionStrategy()
 
 bool Zapret1Engine::automaticallyStrategy()
 {
-	if (_strategy_index == _strategies.getStrategySize())
+	if (_strategy_index >= _strategies.getStrategySize())
 	{
 		_strategy_index = 0;
 		return false;
 	}
 
-	_strategies.changeStrategy(_strategy_index++);
+	_strategies.changeStrategy(_strategy_index);
+
+	// Autopick walks strategy x fake combinations inside-out versus the
+	// version loop: every fake profile is tried with the current config
+	// first (strategy_1 x all fakes, then strategy_2 x all fakes, ...),
+	// and only then the loop moves to the next config.
+	if (!_advanceFakeKey())
+	{
+		// Profiles exhausted for this config (the first one is already
+		// active again): move to the next config.
+		if (++_strategy_index >= _strategies.getStrategySize())
+		{
+			_strategy_index = 0;
+			return false;
+		}
+	}
 
 	return true;
+}
+
+bool Zapret1Engine::_advanceFakeKey()
+{
+	const auto next = _strategies.nextFakeKey(_strategies.getKeyFakeBin());
+	if (!next.has_value())
+		return false;
+
+	_strategies.changeFakeKey(next.value());
+
+	// Wrapped to the first profile: every strategy x fake combination of
+	// the current version has been tried.
+	return next.value() != fakeBinKeys().front();
 }
 
 void Zapret1Engine::changeFakeKey(std::string_view key)

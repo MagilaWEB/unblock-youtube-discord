@@ -1,5 +1,7 @@
 #include "strategies_zapret1.h"
 
+#include <iterator>
+
 StrategiesZapret1::StrategiesZapret1()
 {
 	_file_fake_bin_config.open(Core::get().configsPath() / "fake_bin_zapret1", ".config", true);
@@ -85,6 +87,20 @@ void StrategiesZapret1::changeFakeKey(std::string_view key)
 	ASSERT_ARGS(it->second.init, "a key is missing for fake_bin {}", key);
 
 	_fake_bind_key = it->first;
+}
+
+std::optional<std::string> StrategiesZapret1::nextFakeKey(std::string_view current) const
+{
+	if (_fake_bin_params.size() < 2)
+		return std::nullopt;
+
+	const auto it = _fake_bin_params.find(std::string{ current });
+
+	auto next = (it == _fake_bin_params.end()) ? _fake_bin_params.begin() : std::next(it);
+	if (next == _fake_bin_params.end())
+		next = _fake_bin_params.begin();
+
+	return next->first;
 }
 
 void StrategiesZapret1::_uploadStrategies()

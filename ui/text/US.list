@@ -139,6 +139,11 @@ str_window_auto_start_wait_name_strategy_description=🧪 Testing bypass option:
 ├ Configuration: [{}]
 └ Strategies version: [{}]
 
+str_window_auto_start_wait_name_strategy_description_zapret1=🧪 Testing bypass option:
+├ Configuration: [{}]
+├ Strategies version: [{}]
+└ Fake profile: [{}]
+
 str_window_configuration_selection_error=❌ Automatic selection failed
 Possible reasons:
 • Resources not responding
@@ -165,6 +170,16 @@ str_window_continue_select_strategy_title=✅ Configuration selected
 str_window_continue_select_strategy_description=Selected:
 ├ Config: [{}]
 └ Version: [{}]
+
+❓ Does everything work as it should?
+
+✅ It works — click «Yes»: selection is finished.
+🔍 It doesn't work — click «No»: we'll keep looking for another option.
+
+str_window_continue_select_strategy_description_zapret1=Selected:
+├ Config: [{}]
+├ Version: [{}]
+└ Fake profile: [{}]
 
 ❓ Does everything work as it should?
 

@@ -21,6 +21,8 @@ public:
 	StrategiesZapret1 strategies;
 
 	void							setFakeKey(const std::string& key) { strategies._fake_bind_key = key; }
+	void							clearFakeParams() { strategies._fake_bin_params.clear(); }
+	void							addFakeParam(const std::string& key) { strategies._fake_bin_params[key] = StrategiesZapret1::FakeBinParam{ .init = true }; }
 	std::optional<std::string>		getFake(std::string_view line) { return strategies._getFake(line); }
 	void							normalize(std::string& line) const { strategies._normalizeStrategyString(line); }
 	bool							ignoring(std::string_view line) const { return strategies._ignoringLineStrategy(line); }
@@ -97,6 +99,40 @@ TEST_CASE("changeFakeKey roundtrip", "[zapret1][fake]")
 
 	t.strategies.changeFakeKey("");
 	CHECK(t.strategies.getKeyFakeBin().empty());
+}
+
+TEST_CASE("nextFakeKey cycles profiles with wraparound", "[zapret1][fake]")
+{
+	StrategiesZapret1Test t;
+
+	const auto& params = t.strategies.getFakeBinList();
+	REQUIRE(params.size() >= 2);
+
+	std::vector<std::string> keys;
+	for (const auto& [key, _] : params)
+		keys.push_back(key);
+
+	for (size_t i = 0; i < keys.size(); ++i)
+	{
+		auto next = t.strategies.nextFakeKey(keys[i]);
+		REQUIRE(next.has_value());
+		CHECK(*next == keys[(i + 1) % keys.size()]);
+	}
+
+	auto unknown = t.strategies.nextFakeKey("NO_SUCH_PROFILE");
+	REQUIRE(unknown.has_value());
+	CHECK(*unknown == keys.front());
+}
+
+TEST_CASE("nextFakeKey degrades without profiles", "[zapret1][fake]")
+{
+	StrategiesZapret1Test t;
+
+	t.clearFakeParams();
+	CHECK_FALSE(t.strategies.nextFakeKey("VK").has_value());
+
+	t.addFakeParam("SOLO");
+	CHECK_FALSE(t.strategies.nextFakeKey("SOLO").has_value());
 }
 
 TEST_CASE("getFake expands placeholders", "[zapret1][fake]")

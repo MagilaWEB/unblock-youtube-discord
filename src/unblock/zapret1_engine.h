@@ -36,6 +36,10 @@ public:
 	std::vector<std::string>		listVersionStrategy() override;
 	bool							automaticallyStrategy() override;
 
+	// Advances to the next fake profile, wrapping to the first one.
+	// Returns false when the list wrapped (all profiles tried).
+	bool _advanceFakeKey();
+
 	// Fake profile selection (classic fake-bin concept). No-op concepts on
 	// Zapret2: the base defaults cover it, the UI only calls these for Zapret1.
 	void					 changeFakeKey(std::string_view key) override;

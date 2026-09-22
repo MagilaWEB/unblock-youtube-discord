@@ -163,6 +163,12 @@ private:
 	void _autoStart();
 	bool _autoStartTryNext() const;
 
+	// Mirrors the engine's active fake profile into the selector and the
+	// saved config (Zapret1 only). The autopick loop advances profiles
+	// behind the UI's back, so without this the selector would show a
+	// profile that is no longer active (cancel / winning combination).
+	void _syncFakeProfile();
+
 	void _startServiceFromConfig();
 
 	void _tcpGlobalChange(bool state = false) const;

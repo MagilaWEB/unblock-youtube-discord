@@ -32,6 +32,11 @@ public:
 	std::string								   getKeyFakeBin() const;
 	const std::map<std::string, FakeBinParam>& getFakeBinList() const;
 
+	// Next fake profile after `current` in map order, wrapping to the first
+	// one. nullopt when there is nothing to advance to (< 2 profiles).
+	// Pure: the autopick loop drives strategy x fake combinations through it.
+	std::optional<std::string> nextFakeKey(std::string_view current) const;
+
 private:
 	void _uploadStrategies() override;
 	void _saveStrategies(std::string_view str) override;

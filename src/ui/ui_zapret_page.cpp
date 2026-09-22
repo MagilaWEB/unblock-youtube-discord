@@ -445,6 +445,20 @@ void UiZapretPage::_selectFakeBinUpdate()
 	}
 }
 
+void UiZapretPage::_syncFakeProfile()
+{
+	if (_technology != Technology::Zapret1 || !_select_fake_bin->isCreate())
+		return;
+
+	const auto active = _ui->_unblock->fakeBinKey(_technology);
+	if (active.empty())
+		return;
+
+	// setSelectedOptionValue only mirrors the state, no change events.
+	_select_fake_bin->setSelectedOptionValue(active);
+	_ui->userConfig()->writeSectionParameter(_rememberSection(), "fake_bin", active);
+}
+
 void UiZapretPage::_initMainControls()
 {
 	_status_engine->create("#zapret .common");
@@ -663,6 +677,11 @@ void UiZapretPage::_autoStart()
 
 					while (_autoStartTryNext())
 					{
+						// The engine may have switched to another fake
+						// profile (Zapret1): persist it and reflect it in
+						// the selector before testing the combination.
+						_syncFakeProfile();
+
 						if (_automatically_strategy_cancel)
 						{
 							_ui->_unblock->stopService();
@@ -674,8 +693,23 @@ void UiZapretPage::_autoStart()
 						auto strategy_name = _ui->_unblock->getNameStrategies(_technology);
 						auto version_str   = JSToCPP<std::string>(_select_version_strategy->getSelectedOptionValue());
 
-						auto text_desc =
-							utils::format(Localization::Str{ "str_window_auto_start_wait_name_strategy_description" }(), strategy_name, version_str);
+						// On Zapret1 the same config is retried with every
+						// fake profile, so the description names the active
+						// one — otherwise iterations look like a stuck loop.
+						std::string text_desc;
+						if (_technology == Technology::Zapret1)
+							text_desc = utils::format(
+								Localization::Str{ "str_window_auto_start_wait_name_strategy_description_zapret1" }(),
+								strategy_name,
+								version_str,
+								_ui->_unblock->fakeBinKey(_technology)
+							);
+						else
+							text_desc = utils::format(
+								Localization::Str{ "str_window_auto_start_wait_name_strategy_description" }(),
+								strategy_name,
+								version_str
+							);
 
 						text_desc.insert(0, "\n");
 						text_desc.insert(0, Localization::Str{ _autoStartWaitDescription() }());
@@ -688,9 +722,26 @@ void UiZapretPage::_autoStart()
 						{
 							_ui->userConfig()->writeSectionParameter(_rememberSection(), "config", strategy_name);
 
-							_window_continue_select_strategy->setDescription(
-								utils::format(Localization::Str{ "str_window_continue_select_strategy_description" }(), strategy_name, version_str)
-							);
+							// The winning combination includes the fake
+							// profile (already synced above): name it so the
+							// user knows what exactly worked.
+							if (_technology == Technology::Zapret1)
+								_window_continue_select_strategy->setDescription(
+									utils::format(
+										Localization::Str{ "str_window_continue_select_strategy_description_zapret1" }(),
+										strategy_name,
+										version_str,
+										_ui->_unblock->fakeBinKey(_technology)
+									)
+								);
+							else
+								_window_continue_select_strategy->setDescription(
+									utils::format(
+										Localization::Str{ "str_window_continue_select_strategy_description" }(),
+										strategy_name,
+										version_str
+									)
+								);
 							_window_continue_select_strategy->show();
 							break;
 						}
