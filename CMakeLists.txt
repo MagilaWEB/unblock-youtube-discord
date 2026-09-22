@@ -123,6 +123,17 @@ FetchContent_Declare(
   SOURCE_DIR zapret2
 )
 
+# Classic zapret (winws.exe) for the Zapret1 technology. The win-bundle repo
+# has no releases, so it is fetched as a shallow git checkout pinned to a
+# known commit; only zapret-winws/winws.exe is used from it.
+FetchContent_Declare(
+  Zapret1
+  GIT_REPOSITORY https://github.com/bol-van/zapret-win-bundle
+  GIT_TAG 6eb463a6758fb48cd101bc55dfd057e6e9d98af1
+  GIT_SHALLOW TRUE
+  SOURCE_DIR zapret1
+)
+
 # Build
 # zlib before curl: curl links zlibstatic via ZLIB::ZLIB
 set(ZLIB_BUILD_EXAMPLES OFF)
@@ -167,6 +178,7 @@ FetchContent_MakeAvailable(
     bit7z
     7za
     Zapret2
+    Zapret1
 )
 
 if (BUILD_TESTS)
@@ -240,6 +252,10 @@ file(GLOB WEBVIEW2_INCLUDE_DIRS
 set(ZAPRET2_DIR ${CMAKE_BINARY_DIR}/zapret2)
 set(ZAPRET2_BIN ${ZAPRET2_DIR}/binaries/windows-x86_64)
 set(ZAPRET2_LUA ${ZAPRET2_DIR}/lua)
+
+# bin Zapret1 (classic winws.exe) res
+set(ZAPRET1_DIR ${CMAKE_BINARY_DIR}/zapret1)
+set(ZAPRET1_BIN ${ZAPRET1_DIR}/zapret-winws)
 
 # Build
 message(STATUS "COMPILER = ${CMAKE_CXX_COMPILER_ID}")

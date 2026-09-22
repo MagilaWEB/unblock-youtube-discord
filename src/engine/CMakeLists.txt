@@ -14,6 +14,7 @@ if(CUPY_LIBS_DLL_TO_BIN)
     file(REMOVE_RECURSE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
     file(MAKE_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
     file(REMOVE ${CMAKE_SOURCE_DIR}/binaries/winws2.exe)
+    file(REMOVE ${CMAKE_SOURCE_DIR}/binaries/winws.exe)
     file(REMOVE ${CMAKE_SOURCE_DIR}/binaries/cygwin1.dll)
     file(REMOVE
         ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-lib.lua
@@ -66,6 +67,8 @@ if(CUPY_LIBS_DLL_TO_BIN)
 
         COMMAND ${CMAKE_COMMAND} -E copy
             ${ZAPRET2_BIN}/winws2.exe ${CMAKE_SOURCE_DIR}/binaries || ${CMAKE_COMMAND} -E echo "Warning: failed to copy winws2.exe (maybe in use)"
+        COMMAND ${CMAKE_COMMAND} -E copy
+            ${ZAPRET1_BIN}/winws.exe ${CMAKE_SOURCE_DIR}/binaries || ${CMAKE_COMMAND} -E echo "Warning: failed to copy winws.exe (maybe in use)"
         COMMAND ${CMAKE_COMMAND} -E copy
             ${ZAPRET2_BIN}/cygwin1.dll ${CMAKE_SOURCE_DIR}/binaries || ${CMAKE_COMMAND} -E echo "Warning: failed to copy cygwin1.dll (maybe in use)"
         COMMAND ${CMAKE_COMMAND} -E copy_directory 
