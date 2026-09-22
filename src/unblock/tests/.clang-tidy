@@ -1,0 +1,2 @@
+InheritParentConfig: true
+Checks: '-bugprone-throwing-static-initialization,-readability-container-contains,-bugprone-exception-escape'

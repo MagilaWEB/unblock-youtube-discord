@@ -16,7 +16,8 @@ void Ui::postConstruct()
 
 	_ui_dns_hosts		 = std::make_unique<UiDnsHosts>(self, _unblock);
 	_ui_proxy_tg		 = std::make_unique<UiProxyTg>(self, _unblock);
-	_ui_zapret2			 = std::make_unique<UiZapret2>(self);
+	_ui_zapret			 = std::make_unique<UiZapretPage>(self);
+	_ui_zapret_helper	 = std::make_unique<UiZapretHelper>(self, "#zapret");
 	_ui_unblock			 = std::make_unique<UiUnblock>(self);
 	_ui_background_tasks = std::make_unique<UiBackgroundTasks>();
 }
@@ -117,8 +118,12 @@ void Ui::_initComponents()
 	_ui_dns_hosts->initialize();
 	_ui_proxy_tg->initialize();
 
-	if (_ui_zapret2)
-		_ui_zapret2->initialize();
+	if (_ui_zapret)
+		_ui_zapret->initialize();
+	if (_ui_zapret_helper)
+		_ui_zapret_helper->initialize();
+	if (_ui_zapret && _ui_zapret_helper)
+		_ui_zapret_helper->setVisible(_ui_zapret->technology() == Technology::Zapret2);
 }
 
 void Ui::_initializeFooter()
@@ -151,10 +156,13 @@ void Ui::initialize()
 void Ui::update()
 {
 	_ui_dns_hosts->updateInfoWindow();
-	_ui_zapret2->updateHelperChecking();
-	_ui_zapret2->updateHelperSeen();
-	_ui_zapret2->updateHelperValid();
-	_ui_zapret2->updateHelperError();
+	_ui_zapret_helper->updateChecking();
+	_ui_zapret_helper->updateSeen();
+	_ui_zapret_helper->updateValid();
+	_ui_zapret_helper->updateError();
+	_ui_zapret->updateState();
+	_ui_zapret->updateServices();
+	_ui_zapret_helper->setVisible(_ui_zapret->technology() == Technology::Zapret2);
 	_updateAppProgressWindowInfo();
 	_ui_background_tasks->update();
 }

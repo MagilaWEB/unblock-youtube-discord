@@ -7,7 +7,8 @@
 #include "../unblock/unblock.h"
 #include "ui_dns_hosts.h"
 #include "ui_proxy_tg.h"
-#include "ui_zapret.h"
+#include "ui_zapret_page.h"
+#include "ui_zapret_helper.h"
 #include "ui_unblock.h"
 #include "ui_background_tasks.h"
 
@@ -18,7 +19,8 @@ class Ui final : public utils::DefaultInit,
 				 public std::enable_shared_from_this<Ui>
 {
 	friend class UiUnblock;
-	friend class UiZapret2;
+	friend class UiZapretPage;
+	friend class UiZapretHelper;
 	IEngineAPI* _engine;
 
 	std::shared_ptr<Unblock> _unblock;
@@ -35,7 +37,8 @@ class Ui final : public utils::DefaultInit,
 
 	std::unique_ptr<UiDnsHosts>		   _ui_dns_hosts;
 	std::unique_ptr<UiProxyTg>		   _ui_proxy_tg;
-	std::unique_ptr<UiZapret2>		   _ui_zapret2;
+	std::unique_ptr<UiZapretPage>	   _ui_zapret;
+	std::unique_ptr<UiZapretHelper>	   _ui_zapret_helper;
 	std::unique_ptr<UiUnblock>		   _ui_unblock;
 	std::unique_ptr<UiBackgroundTasks> _ui_background_tasks;
 

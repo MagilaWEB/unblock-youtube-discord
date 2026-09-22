@@ -23,3 +23,8 @@ target_link_libraries(${NAME} PRIVATE
 )
 
 target_compile_definitions(${NAME} PRIVATE ${ALL_MACRO_CPP})
+
+if (BUILD_TESTS)
+  target_compile_definitions(${NAME} PRIVATE UNBLOCK_TESTS)
+  add_subdirectory(tests)
+endif ()

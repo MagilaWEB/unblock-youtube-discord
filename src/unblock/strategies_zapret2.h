@@ -1,14 +1,10 @@
 #pragma once
-#include "strategies_dpi_base.h"
-#include "strategy_generator.h"
+#include "strategy_config_base.h"
 
-class StrategiesDPI final : public StrategiesDPIBase
+class StrategiesZapret2 final : public StrategyConfigBase
 {
-	File				  _file_fake_bin_config;
-	File				  _file_lua_init;
-	std::shared_ptr<File> _file_service_list;
-
-	StrategyGenerator _generator;
+	File _file_fake_bin_config;
+	File _file_lua_init;
 
 public:
 	struct FakeBinParam
@@ -19,33 +15,21 @@ public:
 
 private:
 	std::map<std::string, FakeBinParam> _fake_bin_params{};
-	std::list<std::string>				_section_opt_service_names{};
-	u32									_max_strategy_count{ 0 };
 	bool								_numbering_active{ false };
 	u32									_strategy_index{ 0 };
 
 public:
-	StrategiesDPI();
-	~StrategiesDPI() override = default;
-
-	void serviceConfigFile(const std::shared_ptr<File>& config);
-
-	void changeDirVersion(std::string_view dir_version) override;
-	void changeOptionalServices(std::list<std::string> list_service);
-	void changeCustomLists(
-		std::vector<std::string> hosts, std::vector<std::string> ip_set, std::vector<std::string> domains_exclude, std::vector<std::string> ip_exclude
-	);
-	u32 getMaxStrategyCount() const;
+	StrategiesZapret2();
+	~StrategiesZapret2() override = default;
 
 private:
 	void _uploadStrategies() override;
 	void _saveStrategies(std::string_view str) override;
 
+	std::filesystem::path _strategyRootDir() const override { return "strategy"; }
+
 	void _init_lua_to_zapret();
 	void _blob_init_to_zapret();
-	void _normalizeStrategyString(std::string& str) const;
 	void _normalizeStrategyFinal();
-	bool _ignoringLineStrategy(std::string_view str) const;
-	void _getAllPorts(std::string& str) const;
 	void _luaDesyncNumberStrategy(std::string& str);
 };

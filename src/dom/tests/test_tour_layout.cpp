@@ -7,8 +7,19 @@ using ui::dom::Rect;
 using ui::dom::Size;
 using ui::dom::tour::centerPanel;
 using ui::dom::tour::dimmerCss;
+using ui::dom::tour::hasBox;
 using ui::dom::tour::padded;
 using ui::dom::tour::placePanel;
+
+TEST_CASE("hasBox: zero box of a hidden node is not spotlightable", "[tour]")
+{
+	// display:none (or a hidden ancestor) measures as 0,0,0,0 through
+	// getBoundingClientRect — the tour centers the panel instead.
+	CHECK_FALSE(hasBox(Rect{ 0, 0, 0, 0 }));
+	CHECK(hasBox(Rect{ 10, 20, 120, 40 }));
+	CHECK(hasBox(Rect{ 10, 20, 120, 0 }));
+	CHECK(hasBox(Rect{ 10, 20, 0, 40 }));
+}
 
 TEST_CASE("padded expands the box by pad on all sides", "[tour]")
 {
@@ -48,7 +59,7 @@ TEST_CASE("placePanel: narrow corridor — panel above/below centered", "[tour]"
 {
 	const Rect target{ 540, 380, 200, 40 };
 	const Size vp{ 1'280, 800 };
-	const Size panel{ 1'100, 200 }; // fits neither left nor right
+	const Size panel{ 1'100, 200 };	   // fits neither left nor right
 	const auto pos = placePanel(target, vp, panel);
 	CHECK_THAT(pos.left, Catch::Matchers::WithinRel((vp.w - panel.w) / 2, 1e-9));
 	CHECK(pos.top >= 16.0);

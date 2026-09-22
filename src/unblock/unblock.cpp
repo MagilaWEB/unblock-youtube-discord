@@ -14,7 +14,6 @@ Unblock::Unblock()
 {
 	(void)IPCSignals::get();
 	_zapret_helper.open();
-	_zapret.open();
 	_win_divert.open();
 	_tg_ws_proxy.open();
 }
@@ -27,32 +26,48 @@ bool Unblock::testUrl(std::string_view str_url)
 	return state_url;
 }
 
-bool Unblock::automaticallyStrategy()
+ZapretEngine& Unblock::engine(Technology technology)
 {
-	if (_strategy == _strategies_dpi.getStrategySize())
-	{
-		_strategy = 0;
-		return false;
-	}
+	if (technology == Technology::Zapret1)
+		return _zapret1_engine;
 
-	_strategies_dpi.changeStrategy(_strategy++);
+	return _zapret2_engine;
+}
 
-	return true;
+bool Unblock::automaticallyStrategy(Technology technology)
+{
+	return engine(technology).automaticallyStrategy();
 }
 
 void Unblock::serviceConfigFile(const std::shared_ptr<File>& config)
 {
-	_strategies_dpi.serviceConfigFile(config);
+	_zapret1_engine.serviceConfigFile(config);
+	_zapret2_engine.serviceConfigFile(config);
 }
 
-void Unblock::changeStrategy(std::string_view name_config)
+void Unblock::changeStrategy(Technology technology, std::string_view name_config)
 {
-	_strategies_dpi.changeStrategy(name_config);
+	engine(technology).changeStrategy(name_config);
 }
 
-void Unblock::changeDirVersionStrategy(std::string_view dir_version)
+void Unblock::changeDirVersionStrategy(Technology technology, std::string_view dir_version)
 {
-	_strategies_dpi.changeDirVersion(dir_version);
+	engine(technology).changeDirVersion(dir_version);
+}
+
+void Unblock::changeFakeKey(Technology technology, std::string_view key)
+{
+	engine(technology).changeFakeKey(key);
+}
+
+std::vector<std::string> Unblock::fakeBinKeys(Technology technology)
+{
+	return engine(technology).fakeBinKeys();
+}
+
+std::string Unblock::fakeBinKey(Technology technology)
+{
+	return engine(technology).fakeBinKey();
 }
 
 void Unblock::addOptionalStrategies(std::string_view name)
@@ -63,14 +78,16 @@ void Unblock::addOptionalStrategies(std::string_view name)
 
 	_section_opt_service_names.emplace_back(name);
 
-	_strategies_dpi.changeOptionalServices(_section_opt_service_names);
+	_zapret1_engine.changeOptionalServices(_section_opt_service_names);
+	_zapret2_engine.changeOptionalServices(_section_opt_service_names);
 	_domain_testing.changeOptionalServices(_section_opt_service_names);
 }
 
 void Unblock::removeOptionalStrategies(std::string_view name)
 {
 	std::erase(_section_opt_service_names, name);
-	_strategies_dpi.changeOptionalServices(_section_opt_service_names);
+	_zapret1_engine.changeOptionalServices(_section_opt_service_names);
+	_zapret2_engine.changeOptionalServices(_section_opt_service_names);
 	_domain_testing.changeOptionalServices(_section_opt_service_names);
 }
 
@@ -78,7 +95,8 @@ void Unblock::clearOptionalStrategies()
 {
 	_section_opt_service_names.clear();
 
-	_strategies_dpi.changeOptionalServices({});
+	_zapret1_engine.changeOptionalServices({});
+	_zapret2_engine.changeOptionalServices({});
 	_domain_testing.changeOptionalServices({});
 }
 
@@ -86,7 +104,8 @@ void Unblock::setCustomLists(
 	std::vector<std::string> hosts, std::vector<std::string> ip_set, std::vector<std::string> domains_exclude, std::vector<std::string> ip_exclude
 )
 {
-	_strategies_dpi.changeCustomLists(std::move(hosts), std::move(ip_set), std::move(domains_exclude), std::move(ip_exclude));
+	_zapret1_engine.changeCustomLists(hosts, ip_set, domains_exclude, ip_exclude);
+	_zapret2_engine.changeCustomLists(std::move(hosts), std::move(ip_set), std::move(domains_exclude), std::move(ip_exclude));
 }
 
 bool Unblock::runTest()
@@ -94,19 +113,19 @@ bool Unblock::runTest()
 	return _domain_testing.isTesting();
 }
 
-std::string Unblock::getNameStrategies()
+std::string Unblock::getNameStrategies(Technology technology)
 {
-	return _strategies_dpi.getStrategyFileName();
+	return engine(technology).strategyName();
 }
 
-const std::vector<std::string>& Unblock::getStrategies()
+const std::vector<std::string>& Unblock::getStrategies(Technology technology)
 {
-	return _strategies_dpi.getStrategy();
+	return engine(technology).strategies();
 }
 
-const std::vector<std::string>& Unblock::getStrategiesList()
+const std::vector<std::string>& Unblock::getStrategiesList(Technology technology)
 {
-	return _strategies_dpi.getStrategyList();
+	return engine(technology).strategiesList();
 }
 
 std::list<Service>& Unblock::getConflictingServices()
@@ -130,10 +149,13 @@ std::list<Service>& Unblock::getConflictingServices()
 			{
 				if (config.binary_path.contains(name_prosses))
 				{
-					if (std::regex_match(name_service, std::regex{ _zapret.getName() }))
+					if (name_service == _zapret1_engine.serviceName())
 						continue;
 
-					if (std::regex_match(name_service, std::regex{ _win_divert.getName() }))
+					if (name_service == _zapret2_engine.serviceName())
+						continue;
+
+					if (name_service == _win_divert.getName())
 						continue;
 
 					conflicting_service.emplace_back(name_service);
@@ -148,7 +170,10 @@ std::list<Service>& Unblock::getConflictingServices()
 
 void Unblock::testingDomain(std::function<void(std::string_view url, bool state)>&& callback, bool base_test)
 {
-	_domain_testing.test(base_test, [callback](std::string_view url, bool state) { callback(url, state); }, _zapret.isRun());
+	// The retry/exhausted coordination over UDP 9999 (zcheck) exists only in
+	// Zapret2. With Zapret1 running the test must behave exactly like with
+	// everything stopped: a plain single-attempt curl per host.
+	_domain_testing.test(base_test, [callback](std::string_view url, bool state) { callback(url, state); }, _zapret2_engine.isRun());
 
 	_domain_testing.printTestInfo();
 }
@@ -297,7 +322,23 @@ bool Unblock::validDomain() const
 
 bool Unblock::activeService()
 {
-	return _zapret.isRun();
+	return runningTechnology().has_value();
+}
+
+bool Unblock::isRun(Technology technology)
+{
+	return engine(technology).isRun();
+}
+
+std::optional<Technology> Unblock::runningTechnology()
+{
+	if (_zapret1_engine.isRun())
+		return Technology::Zapret1;
+
+	if (_zapret2_engine.isRun())
+		return Technology::Zapret2;
+
+	return std::nullopt;
 }
 
 bool Unblock::_dropExpiredHelperStates(std::chrono::steady_clock::time_point now)
@@ -433,17 +474,9 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperValidHosts()
 	return result;
 }
 
-std::vector<std::string> Unblock::listVersionStrategy()
+std::vector<std::string> Unblock::listVersionStrategy(Technology technology)
 {
-	std::vector<std::string> strategy_dirs{};
-
-	auto patch_dir = Core::get().configsPath() / "strategy";
-	for (auto& entry : std::filesystem::directory_iterator(patch_dir))
-		strategy_dirs.push_back(entry.path().filename().string());
-
-	std::ranges::sort(strategy_dirs, [](const std::string& left, const std::string& right) { return Core::get().isVersionNewer(left, right); });
-
-	return strategy_dirs;
+	return engine(technology).listVersionStrategy();
 }
 
 void Unblock::dnsHosts(bool state)
@@ -564,7 +597,8 @@ void Unblock::removeService()
 	_helper_checking.clear();
 	_helper_errors.clear();
 	_helper_valid.clear();
-	_zapret.remove();
+	_zapret1_engine.remove();
+	_zapret2_engine.remove();
 	_zapret_helper.remove();
 	_win_divert.remove();
 }
@@ -575,7 +609,8 @@ void Unblock::stopService()
 	_helper_checking.clear();
 	_helper_errors.clear();
 	_helper_valid.clear();
-	_zapret.stop();
+	_zapret1_engine.stop();
+	_zapret2_engine.stop();
 	_zapret_helper.stop();
 }
 
@@ -615,35 +650,40 @@ void Unblock::pushHelperConfig() const
 	sendHelperUdp(_helper_config_message, 3);
 }
 
-void Unblock::startService()
+void Unblock::startService(Technology technology)
 {
 	_helper_seen.clear();
 	_helper_checking.clear();
 	_helper_errors.clear();
 	_helper_valid.clear();
-	_zapret.remove();
+
+	// Exactly one technology runs at a time.
+	if (technology == Technology::Zapret1)
+		_zapret2_engine.stop();
+	else
+		_zapret1_engine.stop();
+
 	_zapret_helper.remove();
 
-	auto& list = _strategies_dpi.getStrategy();
-	if (!list.empty())
+	auto& eng  = engine(technology);
+	auto& list = eng.strategies();
+	if (list.empty())
+		return;
+
+	// The helper only understands the zapret2 protocol (zcheck over
+	// --lua-desync); Zapret1 runs standalone like in 1.4.19.
+	if (technology == Technology::Zapret2)
 	{
 		_zapret_helper.setDescription(Localization::Str{ "str_service_zapret_description" }());
 		_zapret_helper.setArgs({ (Core::get().binPath() / "zapret_helper.exe").string() });
 		_zapret_helper.create();
 		_zapret_helper.start();
-
-		_zapret.setDescription(Localization::Str{ "str_service_zapret_description" }());
-		std::vector<std::string> args{};
-		args.reserve(list.size() + 1);
-		args.push_back((Core::get().binariesPath() / "winws2.exe").string());
-
-		for (auto& line : list)
-			args.push_back(line);
-
-		_zapret.setArgs(args);
-		_zapret.create();
-		_zapret.start();
 	}
+
+	eng.start();
+
+	if (technology != Technology::Zapret2)
+		return;
 
 	// Fresh settings first: the on-disk setting.config is stale while
 	// unblock runs (File::save on close), so the helper cannot rely on

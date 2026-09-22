@@ -1,5 +1,7 @@
 // NAV
+str_h2_zapret=Zapret
 str_h2_zapret2=Zapret2
+str_h2_zapret1=Zapret (classic)
 str_h2_unblock=Unblock
 str_h2_local_dns=Local DNS
 str_h2_tg_ws_proxy=Telegram Proxy
@@ -126,6 +128,13 @@ Factors:
 • Resource availability
 • ISP blocking level
 
+str_window_auto_start_wait_description_zapret1=🔍 Selecting configuration...
+This can take a very long time: classic Zapret iterates over bypass strategies, verifying each one with a plain request.
+Factors:
+• Internet quality
+• Resource availability
+• ISP blocking level
+
 str_window_auto_start_wait_name_strategy_description=🧪 Testing bypass option:
 ├ Configuration: [{}]
 └ Strategies version: [{}]
@@ -166,6 +175,15 @@ str_window_continue_select_strategy_description=Selected:
 str_window_warning_conflict_service=⚠ Conflicting services: [{}]
 It is recommended to remove them for Unblock to work correctly.
 Remove?
+
+// Secondary Window warning when the other technology is running
+str_window_warning_technology_busy_description=⚠ {} is currently running.
+Stop it and start {}?
+
+// Secondary Window warning when switching the engine while one runs
+str_window_warning_technology_switch_description=⚠ {} is currently running.
+Switching the engine will stop the active bypass: two engines cannot run at once.
+Continue?
 
 // Secondary Window Warning about the introduction into the system
 str_window_to_warn_enable_dns_hosts_description=⚙ Unblock needs access to the system hosts file
@@ -356,9 +374,6 @@ Enable only if you experience issues in games.
 str_unblock_enable_torproject_title=🧅 Torproject
 str_unblock_enable_torproject_description=Bypass Tor blocking.
 
-str_unblock_enable_roblox_title=👾 Roblox
-str_unblock_enable_roblox_description=Bypass blocking of the Roblox platform for games and game servers.
-
 str_unblock_enable_speedtest_title=📊 Speedtest
 str_unblock_enable_speedtest_description=Bypass blocking of the Speedtest internet speed testing service.
 
@@ -374,6 +389,18 @@ When enabled, blocking bypass is applied to all domain zones listed in configs\b
 str_select_config_title=📂 Select configuration
 str_select_config_description=Choose a strategy file for bypassing blocks.
 Settings will be saved for future launches.
+
+// Setting fake profile (classic Zapret1)
+str_select_fake_bin_title=🎭 Fake profile
+str_select_fake_bin_description=Choose the fake packet profile (ClientHello and SNI domain) for classic Zapret.
+
+// Engine selector
+str_select_engine_title=🧠 Bypass engine
+str_select_engine_description=Zapret2 is the main engine with adaptive rotation and helper. Classic Zapret uses static strategies without helper.
+
+// Engine status line
+str_status_engine_running=▶ Running: {}
+str_status_engine_stopped=⏹ Engine stopped
 
 // Setting strategy version
 str_select_version_strategy_title=📚 Strategy list version
@@ -395,19 +422,23 @@ What Unblock can do:
 • Local proxy for Telegram — creates a proxy server on your device to bypass Telegram blocking.
 
 str_tutorial_quick_start_title=🚀 Quick start
-str_tutorial_quick_start_steps=1. Open the Zapret2 tab and enable the services you need, for example YouTube.
+str_tutorial_quick_start_steps=1. Open the Zapret tab, choose the bypass engine (Zapret2 is the main one, classic Zapret uses static strategies) and enable the services you need, for example YouTube.
 2. Click «⚙️ Auto-config Zapret» — the program will find a working configuration on its own.
 3. Wait for the selection to finish. If resources are available, the «Configuration selected» window will appear — click «Yes» to finish.
 4. Everything works — enjoy the internet!
 
-str_tutorial_tab_zapret_title=🔓 Zapret2 tab
-str_tutorial_tab_zapret_description=The main tab — here you control DPI blocking bypass:
+str_tutorial_tab_zapret_title=🔓 Zapret tab
+str_tutorial_tab_zapret_description=The main tab — here you control DPI blocking bypass.
+Only one engine runs at a time: starting one stops the other.
 
+• «🧠 Bypass engine» — technology choice: Zapret2 (the main engine with adaptive strategy rotation and the zapret-helper assistant) or classic Zapret (static winws strategies, no helper).
+• Status indicator — shows which engine is currently running: green pulse means active, gray means stopped.
+• «🎭 Fake profile» (classic Zapret only) — fake packet profile selection: it controls which ClientHello and SNI go into the strategies.
 • «▶ Start Zapret» / «🔄 Restart Zapret» / «⏹ Stop Zapret» — start, restart and stop the bypass service.
 • «⚙️ Auto-config Zapret» — automatic selection of a working configuration with resource availability checks.
 • «📂 Select configuration» — manual choice of the bypass strategy file.
 • «📚 Strategy list version» — choose current or legacy strategies (current is recommended).
-• Service checkboxes — enable bypass for specific services: YouTube, Discord, Cloudflare, Instagram, Facebook, X.com, torrent trackers, online games, Tor, Roblox, Speedtest, Amazon.
+• Service checkboxes — enable bypass for specific services: YouTube, Discord, Cloudflare, Instagram, Facebook, X.com, torrent trackers, online games, Tor, Speedtest, Amazon.
 • «🌐 TLD filtering» — applies bypass to all domain zones from the list (com, net, ua and others).
 • «🧪 Test» — checks domain availability. The result is shown in a separate window.
 
@@ -445,7 +476,7 @@ str_tutorial_troubleshoot_title=🛠️ If something is not working
 str_tutorial_troubleshoot_description=Check in order:
 
 1. Do you have internet access — the Unblock tab will show a warning if there is no network.
-2. Are the required services enabled on the Zapret2 tab.
+2. Are the required services enabled on the Zapret tab.
 3. Is the bypass service running (the «▶ Start Zapret» button).
 4. Run «🧪 Test» — if domains are unavailable, run «⚙️ Auto-config Zapret» again or choose another config manually.
 5. Check for conflicting services — Unblock will warn you about them at startup.
@@ -478,8 +509,12 @@ str_tour_auto_config_title=⚙️ Auto-config Zapret
 str_tour_auto_config_description=Automatically selects a working bypass configuration.
 The program tries strategies, checks resource availability and stops on a working one.
 
-Be prepared: the process can take a very long time. Zapret in Unblock's implementation tries hundreds of bypass strategies in real time. When a potentially working strategy appears, Zapret must verify it through the zapret-helper assistant to confirm the selected strategy actually works.
+Be prepared: the process can take a very long time. Zapret in Unblock's implementation tries hundreds of bypass strategies in real time. When a potentially working strategy appears, Zapret2 must verify it through the zapret-helper assistant to confirm the selected strategy actually works. Classic Zapret verifies strategies with a plain request, no helper.
 The process continues until all strategies in the rotation are exhausted or until all tested domains are declared fully functional. This is a huge price for high accuracy.
+
+str_tour_engine_title=🧠 Bypass engine
+str_tour_engine_description=Two bypass technologies in one tab: Zapret2 with adaptive rotation and helper, and classic Zapret with static strategies.
+Only one runs at a time: starting one stops the other, and the program will honestly warn you about it.
 
 str_tour_version_strategy_title=📚 Strategy list version
 str_tour_version_strategy_description=Choose current or legacy strategies.
@@ -490,16 +525,16 @@ str_tour_config_description=Manual choice of the bypass strategy file.
 Useful if auto-config did not help or you know a suitable config.
 
 str_tour_services_title=🔓 Services list
-str_tour_services_description=Enable bypass for specific services: YouTube, Discord, Cloudflare, Instagram, Facebook, X.com, torrent trackers, online games, Tor, Roblox, Speedtest, Amazon.
+str_tour_services_description=Enable bypass for specific services: YouTube, Discord, Cloudflare, Instagram, Facebook, X.com, torrent trackers, online games, Tor, Speedtest, Amazon.
 «🌐 TLD filtering» applies bypass to all domain zones from the list.
 Enable only the services you need.
 
 str_tour_testing_title=🧪 Testing
 str_tour_testing_description=Checks domain availability.
-If Zapret is running — the test goes through the selected configuration, otherwise it runs directly, a regular test.
+If Zapret2 is running — the test goes through the selected configuration with zapret-helper coordination, otherwise (everything stopped or classic Zapret running) — directly, a regular test.
 The result is shown in a separate window.
 
-Testing can be extremely slow: when a potentially working strategy appears, Zapret verifies it through the zapret-helper assistant to make sure it really works. The check continues until all strategies in the rotation are exhausted or until all domains are declared fully functional. This is a huge price for high accuracy.
+Testing can be extremely slow: when a potentially working strategy appears, Zapret2 verifies it through the zapret-helper assistant to make sure it really works. The check continues until all strategies in the rotation are exhausted or until all domains are declared fully functional. This is a huge price for high accuracy.
 
 str_tour_show_console_title=📟 Show console
 str_tour_show_console_description=Opens a window with Unblock logs for debugging.

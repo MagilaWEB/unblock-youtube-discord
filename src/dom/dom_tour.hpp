@@ -37,6 +37,16 @@ namespace ui::dom::tour
 	/// Where to place the panel for the intro (no target — centered).
 	[[nodiscard]] PanelPos centerPanel(const Size& viewport, const Size& panel, double margin = kMargin);
 
+	/// True when the measured box is worth spotlighting. A display:none node
+	/// (or one under a hidden ancestor) measures as 0,0,0,0 through
+	/// getBoundingClientRect — there is nothing to point at, so the tour
+	/// falls back to the centered panel instead of the top-left corner.
+	/// @example if (auto r = el.rect(); r && hasBox(*r)) layoutNow(*r); else centerNow();
+	[[nodiscard]] inline bool hasBox(const Rect& box)
+	{
+		return box.width > 0 || box.height > 0;
+	}
+
 	/// cssText of the four dimmers around the box (top/bottom/left/right).
 	struct DimmerCss
 	{

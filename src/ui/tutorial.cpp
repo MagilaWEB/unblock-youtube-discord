@@ -1,7 +1,6 @@
 #include <saucer/smartview.hpp>
 #include "tutorial.h"
 
-
 // -----------------------------------------------------------------------
 // Registries / step data
 // -----------------------------------------------------------------------
@@ -177,7 +176,6 @@ void Tutorial::startTour()
 		{
 			endTour();
 			return false;
-		
 		},
 		"tutorial_tour_skip"
 	);
@@ -198,7 +196,6 @@ void Tutorial::startTour()
 			}
 
 			return false;
-		
 		},
 		"tutorial_tour_next"
 	);
@@ -245,7 +242,10 @@ void Tutorial::showStep()
 	const int  gen	= ++_gen;
 	const Step step = _steps[static_cast<std::size_t>(_index)];
 
-	updatePanel();
+	// NOTE: the panel content stays untouched here on purpose. It swaps
+	// inside layoutNow()/centerNow() — exactly when the appear animation
+	// triggers. Otherwise the fading-out panel would already show the new
+	// step's text, which reads as a glitch.
 	resetOverlayVisual(gen);
 
 	auto target = targetFor(step);
@@ -365,10 +365,12 @@ void Tutorial::scheduleLayout(int gen, Step step, ui::dom::Element target)
 					if (stale(gen))
 						return;
 
-					if (auto r = target.rect())
+					if (auto r = target.rect(); r && ui::dom::tour::hasBox(*r))
 						layoutNow(*r);
 					else
-						centerNow();	// node gone (query into null) — center like intro
+						centerNow();	// node gone, or hidden (display:none measures
+										// as a zero box) — center like intro instead of
+										// spotlighting the top-left corner
 				}
 			);
 		}
@@ -378,6 +380,8 @@ void Tutorial::scheduleLayout(int gen, Step step, ui::dom::Element target)
 void Tutorial::layoutNow(const ui::dom::Rect& target_rect)
 {
 	using namespace ui::dom::tour;
+
+	updatePanel();
 
 	const ui::dom::Size vp = ui::dom::Element::viewport();
 	const auto			ps = _panel.offsetSize();
@@ -414,6 +418,8 @@ void Tutorial::layoutNow(const ui::dom::Rect& target_rect)
 
 void Tutorial::centerNow()
 {
+	updatePanel();
+
 	const ui::dom::Size vp = ui::dom::Element::viewport();
 	const auto			ps = _panel.offsetSize();
 	if (vp.w <= 0 || vp.h <= 0 || !ps || ps->w <= 0 || ps->h <= 0)

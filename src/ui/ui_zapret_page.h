@@ -6,28 +6,54 @@
 #include "ui_list_ul.h"
 #include "ui_select_list.h"
 #include "ui_secondary_window.h"
+#include "ui_status.h"
+#include "../unblock/zapret_engine.h"
 
 class Ui;
 class Unblock;
 class File;
 
-class UiZapret2
+// Single bypass page with an engine selector (Zapret2 / classic Zapret1).
+// All control logic is shared; engine-specific blocks (helper settings and
+// lists, fake profile selector) are shown/hidden on engine switch, and the
+// version/config selectors are repopulated from the active engine.
+class UiZapretPage
 {
-	std::shared_ptr<Ui>	  _ui;
+	std::shared_ptr<Ui> _ui;
+	Technology			_technology{ Technology::Zapret2 };
+
 	std::shared_ptr<File> _file_service_list;
 
+	// Engine selector
+	SELECT_LIST(_select_engine);
+	// Running engine status indicator
+	STATUS(_status_engine);
 	// Select list for strategy version
 	SELECT_LIST(_select_version_strategy);
 	// Select list for config
 	SELECT_LIST(_select_config);
+	// Select list for the fake profile (Zapret1 only)
+	SELECT_LIST(_select_fake_bin);
 	// Map of service enable checkboxes
 	std::map<std::string, std::shared_ptr<CheckBox>> _list_enable_services{};
 
-	// Кастомные списки: хосты, ip-set и исключения
+	// Shared custom lists: hosts, ip-set and exclusions
 	EDITABLE_LIST(_list_custom_hosts);
 	EDITABLE_LIST(_list_custom_ip_set);
 	EDITABLE_LIST(_list_custom_domains_exclude);
 	EDITABLE_LIST(_list_custom_ip_exclude);
+
+	struct CustomListDef
+	{
+		std::string_view  config_key;
+		std::string_view  title;
+		std::string_view  description;
+		std::string_view  placeholder;
+		bool			  (*validate)(std::string_view);
+		Ptr<EditableList> UiZapretPage::* widget;
+	};
+
+	static std::span<const CustomListDef> customListDefs();
 
 	// Start button
 	BUTTON(_start_button);
@@ -41,6 +67,9 @@ class UiZapret2
 	SECONDARY_WINDOW(_window_configuration_selection_error);
 	SECONDARY_WINDOW(_window_no_bypass_targets);
 
+	// Warns when the other technology is running and this one is started.
+	SECONDARY_WINDOW(_window_warning_technology_busy);
+
 	std::atomic_bool _automatically_strategy_cancel{ false };
 	std::atomic_bool _domain_testing_cancel{ false };
 
@@ -51,62 +80,53 @@ class UiZapret2
 	UL_LIST(_list_host);
 	UL_LIST(_list_host_info);
 
-	// Hosts currently being checked by zapret-helper
-	UL_LIST(_list_helper_checking);
-	std::vector<std::string> _last_helper_checking;
-
-	// Hosts that have been checked by zapret-helper at least once
-	UL_LIST(_list_helper_seen);
-	std::vector<std::string> _last_helper_seen;
-
-	// Valid hosts with confirmed strategy (zapret statistics)
-	UL_LIST(_list_helper_valid);
-	std::vector<std::pair<std::string, std::string>> _last_helper_valid;
-
-	// Hosts with current errors
-	UL_LIST(_list_helper_error);
-	std::vector<std::pair<std::string, std::string>> _last_helper_error;
-
-	// Helper runtime settings ([HELPER] section). The on-disk file is stale
-	// while unblock runs, so Apply writes userConfig (memory) + pushes UDP
-	// CONFIG: to the running helper + stores the message in Unblock for the
-	// next startService() push.
-	INPUT(_helper_pool);
-	INPUT(_helper_check_timeout);
-	INPUT(_helper_connect_timeout);
-	INPUT(_helper_max_redirects);
-	INPUT(_helper_recheck_min);
-	INPUT(_helper_errors_progress_min);
-	INPUT(_helper_errors_recheck_sec);
+	// Last known states, to touch the DOM only on change (Ui::update ticks).
+	bool					  _last_running{ false };
+	std::optional<Technology> _last_active{};
 
 public:
-	UiZapret2(std::shared_ptr<Ui> ui);
+	explicit UiZapretPage(std::shared_ptr<Ui> ui);
 
-	const Ptr<SelectList>& getSelectVersionStrategy() const { return _select_version_strategy; }
-	const Ptr<SelectList>& getSelectConfig() const { return _select_config; }
-
-	const Ptr<Button>&			getStartButton() { return _start_button; }
-	const Ptr<SecondaryWindow>& getWindowAutoStartWait() { return _window_auto_start_wait; }
-	const Ptr<SecondaryWindow>& getWindowContinueSelectStrategy() { return _window_continue_select_strategy; }
-	const Ptr<SecondaryWindow>& getWindowConfigurationSelectionError() { return _window_configuration_selection_error; }
+	Technology technology() const { return _technology; }
 
 	void initialize();
 
-	/** Update the list of hosts that zapret-helper is checking (tick from Ui::update). */
-	void updateHelperChecking();
+	// Refreshes the start button and the status line on state change.
+	// Cheap: touches the DOM only on change, called from Ui::update.
+	void updateState();
 
-	/** Update the list of hosts that have ever been checked via zapret (tick from Ui::update). */
-	void updateHelperSeen();
-
-	/** Update the list of valid hosts with a confirmed strategy (tick from Ui::update). */
-	void updateHelperValid();
-
-	/** Update the list of hosts with current errors (tick from Ui::update). */
-	void updateHelperError();
+	// Pulls the service checkboxes from the shared state. Cheap: touches
+	// the DOM only on change, called from Ui::update.
+	void updateServices();
 
 private:
+	// Per-technology userConfig section for version/config/fake_bin.
+	std::string_view _rememberSection() const
+	{
+		return _technology == Technology::Zapret1 ? "REMEMBER_CONFIGURATION_ZAPRET1" : "REMEMBER_CONFIGURATION";
+	}
+	// Auto-pick wait description: Zapret1 has no helper, so it gets its own text.
+	std::string_view _autoStartWaitDescription() const
+	{
+		return _technology == Technology::Zapret1 ? "str_window_auto_start_wait_description_zapret1" : "str_window_auto_start_wait_description";
+	}
+	// Display name of a technology for messages.
+	static std::string _technologyName(Technology technology);
+
+	void _selectEngine();
+	void _applyTechnology(Technology technology);
+
+	/** Switches the page to another engine, warning first when the other
+	 *  engine is currently running (two engines cannot run at once). */
+	void _requestTechnologySwitch(Technology technology);
+
 	void _listEnableServices();
 	void _listEnableServicesUpdate();
+
+	// Resolves the wanted checkbox state (userConfig, then config defaults)
+	// and applies it with an Unblock sync. With force=false it is a no-op
+	// when the widget already shows the wanted state.
+	void _applyServiceState(const std::string& name, const std::shared_ptr<CheckBox>& check_box, bool force);
 
 	void _initCustomLists();
 	void _saveCustomLists();
@@ -117,18 +137,28 @@ private:
 	void _selectConfig();
 	void _selectConfigUpdate();
 
+	// Fake profile selector (Zapret1 only).
+	void _initFakeKey();
+	void _selectFakeBin();
+	void _selectFakeBinUpdate();
+
 	void _initMainControls();
 
 	void _testingInit();
 
 	void _buttonUpdate();
-
-	void _clickStartService();
+	void _updateStatus(std::optional<Technology> active);
 
 	/** Something to bypass: an enabled service or a custom host / IP. */
 	bool _hasBypassTargets() const;
 	/** Shows the "nothing to bypass" window and returns false when there is none. */
 	bool _requireBypassTargets();
+
+	/** Runs proceed() right away, or after the user confirms stopping the
+	 *  other technology when it is running. */
+	void _startWithTechnologyCheck(std::function<void()>&& proceed);
+
+	void _clickStartService();
 
 	void _autoStart();
 	bool _autoStartTryNext() const;
@@ -139,14 +169,4 @@ private:
 
 	void _initTestingWindow();
 	void _testingServiceDomains();
-
-	void _initHelperChecking();
-	void _initHelperSeen();
-	void _initHelperValid();
-	void _initHelperError();
-
-	void _initHelperSettings();
-	void _applyHelperSettings();
-	u32	 _helperSettingU32(std::string_view key, u32 fallback) const;
-	void _pushHelperSettings() const;
 };

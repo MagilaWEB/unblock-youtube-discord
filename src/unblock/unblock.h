@@ -1,5 +1,6 @@
 #pragma once
-#include "strategies_dpi.h"
+#include "zapret1_engine.h"
+#include "zapret2_engine.h"
 #include "domain_testing.h"
 #include "dns_host.h"
 #include "ipc_signals.h"
@@ -10,19 +11,17 @@
 
 class Unblock final : public std::enable_shared_from_this<Unblock>
 {
-	Service _zapret{ "zapret2", "SvcHost.exe" };
+	Zapret1Engine _zapret1_engine;
+	Zapret2Engine _zapret2_engine;
+
 	Service _zapret_helper{ "zapret2_helper", "SvcHost.exe" };
 	Service _tg_ws_proxy{ "TgWsProxy", "SvcHost.exe" };
 	Service _win_divert{ "WinDivert" };
 
 	DomainTesting _domain_testing;
-	StrategiesDPI _strategies_dpi;
 	DNSHost		  _dns_hosts;
 
 	std::list<std::string> _section_opt_service_names{};
-	u32					   _strategy{};
-	std::atomic_bool	   _zapret_dbg_run_end;
-	std::atomic_bool	   _zapret_dbg_run;
 
 	std::string				   _tg_host{ "127.0.0.1" };
 	std::string				   _tg_port{ "9101" };
@@ -55,12 +54,18 @@ public:
 
 	bool testUrl(std::string_view str_url);
 
-	bool automaticallyStrategy();
+	ZapretEngine& engine(Technology technology);
+
+	bool automaticallyStrategy(Technology technology);
 
 	void serviceConfigFile(const std::shared_ptr<File>& config);
 
-	void changeStrategy(std::string_view name_config);
-	void changeDirVersionStrategy(std::string_view dir_version);
+	void changeStrategy(Technology technology, std::string_view name_config);
+	void changeDirVersionStrategy(Technology technology, std::string_view dir_version);
+
+	void					 changeFakeKey(Technology technology, std::string_view key);
+	std::vector<std::string> fakeBinKeys(Technology technology);
+	std::string				 fakeBinKey(Technology technology);
 
 	void addOptionalStrategies(std::string_view name);
 	void removeOptionalStrategies(std::string_view name);
@@ -75,16 +80,18 @@ public:
 
 	bool runTest();
 
-	std::string						getNameStrategies();
-	const std::vector<std::string>& getStrategies();
+	std::string						getNameStrategies(Technology technology);
+	const std::vector<std::string>& getStrategies(Technology technology);
 
-	const std::vector<std::string>& getStrategiesList();
+	const std::vector<std::string>& getStrategiesList(Technology technology);
 	std::list<Service>&				getConflictingServices();
 
-	void startService();
-	void stopService();
-	void removeService();
-	bool activeService();
+	void					  startService(Technology technology);
+	void					  stopService();
+	void					  removeService();
+	bool					  activeService();
+	bool					  isRun(Technology technology);
+	std::optional<Technology> runningTechnology();
 
 	/** Fresh [HELPER] payload from the UI (in-memory userConfig, not the
 	 *  stale on-disk file). Sent as UDP CONFIG: right after the helper is
@@ -97,7 +104,7 @@ public:
 	std::vector<std::pair<std::string, std::string>> helperErrorHosts();
 	std::vector<std::pair<std::string, std::string>> helperValidHosts();
 
-	std::vector<std::string> listVersionStrategy();
+	std::vector<std::string> listVersionStrategy(Technology technology);
 
 	void						  dnsHosts(bool state);
 	void						  dnsHostsUpdate();
