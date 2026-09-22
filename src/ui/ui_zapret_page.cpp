@@ -76,7 +76,11 @@ void UiZapretPage::_applyTechnology(Technology technology)
 
 	_selectStrategyVersionUpdate();
 	_selectFakeBin();
-	updateState();
+	// NOTE: no updateState() here on purpose. During initialize() this runs
+	// before the widgets exist, and the change-detection cache would swallow
+	// the live state — the status would then stay frozen at its initial text
+	// even with an engine running. The refresh comes from the updateState()
+	// at the end of initialize() and from the Ui::update() ticks.
 }
 
 void UiZapretPage::_requestTechnologySwitch(Technology technology)
@@ -792,7 +796,7 @@ void UiZapretPage::_initTestingWindow()
 	_window_wait_testing->create(Localization::Str{ "str_please_wait" }, "str_secondary_window_description_wait_domain");
 	_window_wait_testing->setType(SecondaryWindow::Type::Wait);
 
-	_list_host->create("#zapret_window_wait_testing .description", "str_h2_verified_domains");
+	_list_host->create("#" + std::string{ _window_wait_testing->name() } + " .description", "str_h2_verified_domains");
 
 	_window_wait_testing->addEventCancel(
 		[this](JSArgs)
@@ -815,7 +819,7 @@ void UiZapretPage::_initTestingWindow()
 		}
 	);
 
-	_list_host_info->create("#zapret_window_info_testing .description", "");
+	_list_host_info->create("#" + std::string{ _window_info_testing->name() } + " .description", "");
 }
 
 void UiZapretPage::_testingServiceDomains()

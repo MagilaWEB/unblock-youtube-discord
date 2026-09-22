@@ -155,6 +155,15 @@ void Ui::initialize()
 
 void Ui::update()
 {
+	// Ticks start with the message loop, before initialize() finishes building
+	// the widgets (strategy builds take a while). Letting them through would
+	// consume the one-shot state caches (updateState/updateButton) while there
+	// is nothing to update yet, freezing the initial visuals even though the
+	// live state differs. The explicit updateState() at the end of each page's
+	// initialize() performs the first real sync.
+	if (!_init)
+		return;
+
 	_ui_dns_hosts->updateInfoWindow();
 	_ui_zapret_helper->updateChecking();
 	_ui_zapret_helper->updateSeen();
