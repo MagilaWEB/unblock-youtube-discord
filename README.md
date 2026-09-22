@@ -5,7 +5,7 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
 ![Windows Version](https://img.shields.io/badge/Windows-10%2F11-0078D6?style=for-the-badge&logo=windows&logoColor=white)
 
-**Unblock** — программа для Windows, которая обходит DPI-блокировки и региональные ограничения. Разблокирует YouTube, Discord, Instagram, X и другие сервисы, заблокированные провайдером или РКН. Работает на базе движка **zapret2** с собственными модифицированными алгоритмами обхода: адаптивным перебором стратегий, фоновым помощником `zapret-helper` и специальной поддержкой голосовых каналов Discord.
+**Unblock** — программа для Windows, которая обходит DPI-блокировки и региональные ограничения. Разблокирует YouTube, Discord, Instagram, X и другие сервисы, заблокированные провайдером или РКН. Работает на двух технологиях обхода: движке **zapret2** с собственными модифицированными алгоритмами (адаптивный перебор стратегий, фоновый помощник `zapret-helper`, специальная поддержка голосовых каналов Discord) и **классическом Zapret** (winws) со статичными стратегиями и профилями фейковых пакетов.
 
 ## 📋 Содержание
 - [✨ Возможности](#-возможности)
@@ -27,6 +27,7 @@
 
 ### 🎯 Ключевые особенности
 - **Умный UI**: Нативный интерфейс на базе WebView2 ([saucer](https://github.com/saucer/saucer)) с интуитивным управлением
+- **Два движка обхода**: Zapret2 и классический Zapret переключаются селектором на одной вкладке, одновременно работает только один
 - **Автоподбор конфигураций**: Автоматический выбор оптимальных настроек
 - **Готовые профили**: Предустановленные конфигурации для быстрого запуска
 - **Фильтрация по доменам**: Поддержка .com, .net, .org и других TLD
@@ -53,6 +54,12 @@
 - **Проверка доступности**: каждый хост проверяется через curl (HEAD с fallback на GET), результат `OK`/`FAIL` уходит обратно
 - **Голосовые серверы Discord**: `*.discord.media` проверяются через WebSocket-upgrade — вердикт отражает живой путь до голосового сервера
 - **Интеграция с auto_strategy**: профиль `zcheck` в winws перехватывает ответы и передаёт их в адаптивный перебор стратегий
+
+### 🔀 Две технологии обхода
+- **Zapret2** (основной): `winws2.exe` + `--lua-desync` + `auto_strategy` + `zapret-helper`. Стратегии — в `configs/strategy/` (актуальный набор `1.6.2`: `strategy_super_c`, `strategy_super_d`), фейк-блобы — в `configs/fake_bin.config`
+- **Классический Zapret**: `winws.exe` + статичные `--dpi-desync`-стратегии без помощника. Стратегии — в `configs/strategy_zapret1/` (наборы `1.4.10`, `1.4.16`, `1.6.2` — последний адаптирован из [Flowseal/zapret-discord-youtube](https://github.com/Flowseal/zapret-discord-youtube))
+- **Селектор движка**: на вкладке «Zapret» выбирается технология, индикатор показывает реально запущенную. Одновременно работает только одна: запуск второй останавливает первую (программа предупредит), тест доменов под классикой идёт обычным запросом, как при выключенном обходе
+- **Профили фейков** (только классика): `configs/fake_bin_zapret1.config` — наборы ClientHello/QUIC/SNI-доменов (`VK`, `GOOGLE`, `4PDA`, `SOCHI` и другие), подставляются в стратегии через `%FAKE_*%`-плейсхолдеры
 
 ## 📥 Установка
 
@@ -177,7 +184,7 @@ WinDivert может вызывать ложные срабатывания ан
 4. ✅ Правильно выбран режим работы
 
 **Если проблема осталась:**
-1. Возьмите одну из конфигураций в папке `configs/strategy/1.6.0` (доступны также поколения стратегий 1.4.16 и 1.5.0)
+1. Возьмите одну из конфигураций Zapret2 в папке `configs/strategy/1.6.2` (доступны также поколения 1.4.16, 1.5.0 и 1.6.0) или классики в `configs/strategy_zapret1/1.6.2` (есть также 1.4.10 и 1.4.16)
 2. Создайте свой профиль на его основе
 3. Если что-то не понятно обратитесь в [обсуждения](https://github.com/MagilaWEB/unblock-youtube-discord/discussions)
 
@@ -186,13 +193,14 @@ WinDivert может вызывать ложные срабатывания ан
 
 Zapret: https://github.com/bol-van/zapret2/blob/master/docs/readme.md
 
-Создайте файл в папке `configs/strategy/1.6.0` и поделитесь рабочим профилем в обсуждениях.
+Создайте файл в папке `configs/strategy/1.6.2` (или `configs/strategy_zapret1/1.6.2` для классики) и поделитесь рабочим профилем в обсуждениях.
 
 ## 🔒 Безопасность
 
 ### Проверка файлов
 Все исполняемые файлы взяты из проверенных источников:
-- [zapret2](https://github.com/bol-van/zapret2) (v1.0.5.1)
+- [zapret2](https://github.com/bol-van/zapret2) (v1.0.5.2)
+- [zapret-win-bundle](https://github.com/bol-van/zapret-win-bundle) (`winws.exe` классического Zapret)
 - [TgWsProxy](https://github.com/Flowseal/tg-ws-proxy) Собран в режим работы через консоль, в оригинальном репозитории такого .exe нет.
 
 Вы можете проверить контрольные суммы для подтверждения подлинности.
@@ -202,7 +210,7 @@ Zapret: https://github.com/bol-van/zapret2/blob/master/docs/readme.md
 - Основной движок: [zapret2](https://github.com/bol-van/zapret2)
 - Прокси телеграмм: [TgWsProxy](https://github.com/Flowseal/tg-ws-proxy)
 
-Unblock использует движок **zapret2**, но с **модифицированными алгоритмами обхода** от unblock: собственные Lua-скрипты (`auto_strategy`, `zcheck`), адаптивный перебор стратегий, фоновый помощник `zapret-helper`. Если бы не автор zapret2 — [bol-van](https://github.com/bol-van), этого проекта, возможно, не существовало бы.
+Unblock использует движок **zapret2**, но с **модифицированными алгоритмами обхода** от unblock: собственные Lua-скрипты (`auto_strategy`, `zcheck`), адаптивный перебор стратегий, фоновый помощник `zapret-helper`. Если бы не автор zapret2 — [bol-van](https://github.com/bol-van), этого проекта, возможно, не существовало бы. Классические стратегии набора `1.6.2` адаптированы из пресетов [Flowseal/zapret-discord-youtube](https://github.com/Flowseal/zapret-discord-youtube).
 
 ### Предупреждение
 > [!CAUTION]
@@ -217,7 +225,7 @@ Unblock использует движок **zapret2**, но с **модифиц�
 
 Проект стал возможным благодаря:
 - **[bol-van](https://github.com/bol-van)** – разработка zapret/zapret2. Если бы не его работа, этого проекта, возможно, не существовало бы.
-- **[Flowseal](https://github.com/Flowseal)** – разработка TgWsProxy
+- **[Flowseal](https://github.com/Flowseal)** – разработка TgWsProxy и набор стратегий zapret-discord-youtube
 - **[GeoHide DNS](https://dns.geohide.ru:8443)** – списки доменов для подмены геолокации через local DNS
 
 ## 📄 Лицензия
@@ -248,7 +256,7 @@ Unblock использует движок **zapret2**, но с **модифиц�
 ## Сторонние компоненты
 
 ### Проект zapret
-Данный репозиторий содержит бинарные файлы из проекта [zapret2](https://github.com/bol-van/zapret2) от [bol-van](https://github.com/bol-van), распространяемые под лицензией MIT.
+Данный репозиторий содержит бинарные файлы из проектов [zapret2](https://github.com/bol-van/zapret2) и [zapret-win-bundle](https://github.com/bol-van/zapret-win-bundle) (файл `winws.exe`) от [bol-van](https://github.com/bol-van), распространяемые под лицензией MIT.
 
 ### WinDivert
 Проект включает и зависит от [WinDivert](https://github.com/basil00/WinDivert), который распространяется на условиях выбора одной из следующих лицензий:
