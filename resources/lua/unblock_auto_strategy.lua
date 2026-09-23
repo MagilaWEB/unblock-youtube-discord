@@ -27,6 +27,13 @@
 --      потоки (голос Discord, WireGuard) перебирают стратегии без
 --      переподключения.
 --   8. Все стратегии перебраны (exhausted) → прямой трафик
+--   9. Throttling-after-handshake: даунстрим тоньше throttle_min_bps за окно
+--      throttle_window → evidence в общий счётчик fails (THROTTLE), плюс
+--      взводится одноразовый watchdog-таймер: если пакеты встанут вообще
+--      (ни капель для вердикта, нечего ретранслировать — пакетный путь глух
+--      по построению), срабатывает таймер (THROTTLE-SILENCE). Здоровое окно
+--      снимает watchdog. Таймеры — единственный источник выполнения без
+--      пакетов: timer_set/timer_del, колбэк по имени.
 --
 -- Перебор: 1, 2, 3, 4, ..., N (последовательно)
 -- Параметры (через --lua-desync=auto_strategy:fails=4:...):
@@ -35,6 +42,8 @@
 --   time=N         — время через которое произойдет сброс ошибок (по умолч. 300 сек)
 --   helper_time=N  — окно сброса счётчика helper (по умолч. = time)
 --   maxseq=N       — макс. seq для проверок (по умолч. 32768)
+--   throttle_window=N — окно замера скорости даунстрима в сек (по умолч. 8)
+--   throttle_min_bps=N — ниже этой скорости за окно — throttling (по умолч. 500)
 --   udp_out=N      — исходящих UDP пакетов для вердикта FAIL (по умолч. 4)
 --   udp_in=N       — входящих UDP пакетов: больше N — успех, иначе фейл (по умолч. 1)
 --   reset          — отправлять RST при ошибке
@@ -326,6 +335,92 @@ function auto_strategy_plan(desync, rec, verdict)
     return verdict
 end
 
+-- Per-connection downstream throughput (throttling-after-handshake).
+-- Retransmitted duplicates inflate the byte count, which only errs toward
+-- fewer false verdicts. os.time() has 1s resolution: fine for windows of
+-- several seconds catching order-of-magnitude stalls (~100 B/s vs live).
+function auto_throttle_account(crec, desync, now)
+    if not crec.t_window_start then
+        crec.t_window_start = now
+        crec.t_down_bytes = 0
+    end
+    crec.t_last_activity = now
+    if not desync.outgoing then
+        -- reassembled data when the dissector holds it, raw segment otherwise
+        local payload = desync.reasm_data or desync.dis.payload
+        local plen = payload and #payload or 0
+        if plen > 0 then
+            crec.t_down_bytes = (crec.t_down_bytes or 0) + plen
+        end
+    end
+end
+
+-- Downstream B/s over the last window when complete, nil otherwise. The
+-- activity gate spans the whole window on purpose: real starvation arrives
+-- as sparse drips (a segment every few seconds), not a steady thin stream.
+-- Fully silent windows (idle) and byte-less windows (uploads, keepalives)
+-- rearm without verdict; dead flows are owned by retransmission logic.
+function auto_throttle_rate(crec, arg, now)
+    local window = tonumber(arg.throttle_window) or 8
+    local start = crec.t_window_start or now
+    if now - start < window then
+        return nil
+    end
+    local bytes = crec.t_down_bytes or 0
+    crec.t_window_start = now
+    crec.t_down_bytes = 0
+    if bytes == 0 then
+        return nil
+    end
+    if not crec.t_last_activity or now - crec.t_last_activity > window then
+        return nil
+    end
+    return bytes / (now - start)
+end
+
+-- Watchdog timer name: deterministic per profile+host+port, so re-arming
+-- replaces the previous timer instead of stacking them.
+function auto_throttle_watch_name(askey, host, dport)
+    local function clean(s)
+        return tostring(s or "?"):gsub("[^%w_.-]", "_")
+    end
+    return "as_thr_" .. clean(askey) .. "_" .. clean(host) .. "_" .. clean(dport)
+end
+
+-- Silence watchdog: fires only when no packet refreshed the host since
+-- arming. That is the full-freeze case — no drips for the packet verdict,
+-- nothing outstanding to retransmit, so the packet path is deaf by design
+-- (timers are the only execution source left). hrec.t_last_progress vetoes
+-- stale fires after recovery; the cooldown vetoes switch bursts.
+function auto_throttle_watchdog(name, data)
+    local hrec = data and data.hrec
+    if not hrec then
+        return
+    end
+    local window = tonumber(data.window) or 8
+    local now = os.time()
+    if hrec.t_last_progress and now - hrec.t_last_progress < window then
+        return
+    end
+    if hrec.t_watch_fired and now - hrec.t_watch_fired < 2 * window then
+        return
+    end
+    hrec.t_watch_fired = now
+
+    local strat_name = (hrec.nstrategy == 0) and "direct" or ("strategy_" .. tostring(hrec.nstrategy or "?"))
+    ULOG("WARNING", "zapret:auto_strategy: THROTTLE-SILENCE " .. strat_name .. "->" .. tostring(data.peer) .. ":" .. tostring(data.dport))
+    auto_fail_helper_strategy(strat_name, data.host_name)
+
+    if auto_check_fails(hrec, data.arg or {}) then
+        auto_do_switch(hrec, auto_strategy_success_list(false), "THROTTLE-SILENCE", tostring(data.peer), tostring(data.dport), true)
+        -- Same-episode guard, see THROTTLE.
+        hrec.helper_fails = nil
+        if data.host_name and _G.helper_check then
+            _G.helper_check[data.host_name] = true
+        end
+    end
+end
+
 function auto_strategy(ctx, desync)
     orchestrate(ctx, desync)
     if not desync.track then
@@ -419,8 +514,72 @@ function auto_strategy(ctx, desync)
                 _G.helper_check = {}
             end
 
-            -- Helper says the host works: pass with the current strategy,
-            -- never inspect is_retransmission for this packet.
+            -- Throttling-after-handshake: thin but alive downstream while the
+            -- connection stands. Runs before the helper-OK fast path so it
+            -- can dethrone a locked strategy (e.g. direct) whose body is
+            -- starved. Debounced by the shared fails counter like every
+            -- other local evidence.
+            local now = os.time()
+            auto_throttle_account(crec, desync, now)
+            -- Any packet proves the host alive: vetoes stale watchdog fires.
+            hrec.t_last_progress = now
+            local rate = auto_throttle_rate(crec, arg, now)
+            local window = tonumber(arg.throttle_window) or 8
+            local watch = auto_throttle_watch_name(askey, host_name or host_or_ip, dport)
+            if rate then
+                if rate < (tonumber(arg.throttle_min_bps) or 500) then
+                    -- Thin flow: if packets stop entirely from here, only the
+                    -- timer below can still react. Re-arming replaces the
+                    -- previous timer. pcall: a timer failure must never break
+                    -- the packet path.
+                    pcall(
+                        timer_set, watch, "auto_throttle_watchdog", 2 * window * 1000, true,
+                        { hrec = hrec, host_name = host_name, peer = host_or_ip, dport = dport, window = window, arg = arg }
+                    )
+                    auto_reset_connection(desync, arg, name, host_or_ip, dport)
+                    auto_fail_helper_strategy(name, host_name)
+
+                    if auto_check_fails(hrec, arg) then
+                        auto_do_switch(hrec, auto_strategy_success_list(false), "THROTTLE", host_or_ip, dport, true)
+                        -- Same-episode guard: our ERR above (re)triggers a
+                        -- helper verdict for this exact stall; counting it
+                        -- again would rotate twice. Later fresh FAILs count.
+                        hrec.helper_fails = nil
+                        if host_name and _G.helper_check then
+                            _G.helper_check[host_name] = true
+                        end
+                    end
+
+                    return auto_strategy_plan(desync, hrec, verdict)
+                else
+                    -- Healthy window: flow recovered, drop the watchdog.
+                    pcall(timer_del, watch)
+                end
+            end
+
+            -- Retransmissions count even when the helper locked this strategy:
+            -- a frozen flow keeps retransmitting unacked data while the
+            -- helper keeps saying OK (headers fly, body dead). Silent count
+            -- here: no RST on a helper-blessed strategy, the shared fails
+            -- counter plus the helper recheck (via ERR) decide.
+            if host_name and desync.outgoing and is_retransmission(desync) and _G.zapret_ipc[host_name] == true then
+                auto_fail_helper_strategy(name, host_name)
+
+                if auto_check_fails(hrec, arg) then
+                    auto_do_switch(hrec, auto_strategy_success_list(false), "RETRANSMIT", host_or_ip, dport, true)
+                    -- Same-episode guard, see THROTTLE above.
+                    hrec.helper_fails = nil
+                    if host_name and _G.helper_check then
+                        _G.helper_check[host_name] = true
+                    end
+                end
+
+                return auto_strategy_plan(desync, hrec, verdict)
+            end
+
+            -- Helper says the host works: pass with the current strategy.
+            -- Retransmissions are handled above, so they are never ignored
+            -- on a locked strategy; anything else passes straight through.
             if host_name and _G.zapret_ipc[host_name] == true then
                 verdict = auto_strategy_plan(desync, hrec, verdict)
 
@@ -432,7 +591,11 @@ function auto_strategy(ctx, desync)
                     table.insert(auto_strategy_success_list(false), hrec.nstrategy)
                 end
 
-                hrec.fails = 0;
+                -- NOTE: hrec.fails is intentionally NOT reset here. A fresh
+                -- helper OK clears helper_fails (its own counter), but local
+                -- packet evidence must survive across interleaved healthy
+                -- packets or retrans counts could never reach the threshold.
+                -- Staleness is bounded by the time window in auto_check_fails.
                 hrec.helper_fails = nil;
 
                 return verdict
@@ -508,6 +671,10 @@ function auto_strategy(ctx, desync)
 
                         if auto_check_helper_fails(hrec, arg) then
                             auto_do_switch(hrec, auto_strategy_success_list(false), "HELPER FAIL", host_or_ip, dport, true)
+                            -- Symmetric: a helper-driven switch consumes the
+                            -- local evidence of the abandoned episode; fresh
+                            -- retransmissions re-accumulate from zero.
+                            hrec.fails = nil
                         end
                     end
 
@@ -593,6 +760,8 @@ function args_defaults(arg)
         maxseq = tonumber(arg.maxseq) or 32768,
         udp_in = tonumber(arg.udp_in) or 1,
         udp_out = tonumber(arg.udp_out) or 4,
+        throttle_window = tonumber(arg.throttle_window) or 8,
+        throttle_min_bps = tonumber(arg.throttle_min_bps) or 500,
         reset = arg.reset ~= nil or false,
         time = arg.time or 300,
         helper_time = arg.helper_time or arg.time or 300

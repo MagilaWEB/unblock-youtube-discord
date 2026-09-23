@@ -16,6 +16,14 @@ namespace
 	inline constexpr u32 c_connect_timeout_default{ 5 };
 	inline constexpr u32 c_max_redirects_default{ 5 };
 
+	// Bulk-flow proof (throttling-after-handshake precaution): headers may
+	// fly while the body is starved to ~100 B/s. A ranged GET of the first
+	// kilobyte must arrive faster than the floor below, otherwise the host
+	// counts as broken. Small fast pages are unaffected.
+	inline constexpr long c_bulk_probe_range_end{ 1'023 };
+	inline constexpr long c_low_speed_limit_bps{ 500 };
+	inline constexpr long c_low_speed_time_sec{ 6 };
+
 	// Voice-gateway probe: overall budget and the ping/pong exchange shape.
 	inline constexpr u32 c_voice_timeout_sec{ 14 };
 	inline constexpr u32 c_voice_ping_count{ 4 };
@@ -103,8 +111,20 @@ std::expected<long, int> CurlClient::_fetch(const std::string& url, bool head)
 	curl_easy_setopt(curl.get(), CURLOPT_HTTPHEADER, headers.get());
 	curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT, static_cast<long>(g_check_timeout_sec));
 	curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT, static_cast<long>(g_connect_timeout_sec));
+	curl_easy_setopt(curl.get(), CURLOPT_LOW_SPEED_LIMIT, c_low_speed_limit_bps);
+	curl_easy_setopt(curl.get(), CURLOPT_LOW_SPEED_TIME, c_low_speed_time_sec);
 	curl_easy_setopt(curl.get(), CURLOPT_NOPROGRESS, 0L);
 	curl_easy_setopt(curl.get(), CURLOPT_WRITEFUNCTION, &CurlClient::_writeCallback);
+
+	if (!head)
+	{
+		// Body-flow proof: first kilobyte only, the write callback drops
+		// everything. Servers ignoring Range send 200 + full body (roots
+		// are small); 206/200/416 all prove the path, the speed guard
+		// judges starvation.
+		const std::string range = std::format("0-{}", c_bulk_probe_range_end);
+		curl_easy_setopt(curl.get(), CURLOPT_RANGE, range.c_str());
+	}
 
 	CURLcode res = curl_easy_perform(curl.get());
 	if (res != CURLE_OK)
@@ -126,7 +146,10 @@ std::expected<long, int> CurlClient::checkHost(const std::string& host)
 	if (!result)
 		return _fetch(url, false);
 
-	return result;
+	// Headers fly but the body may be starved (throttling-after-handshake):
+	// a HEAD-only OK locked "direct works" while file downloads crawled.
+	// The ranged GET proof decides.
+	return _fetch(url, false);
 }
 
 std::expected<long, int> CurlClient::checkVoiceHost(const std::string& host)

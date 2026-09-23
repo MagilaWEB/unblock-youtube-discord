@@ -39,7 +39,10 @@ public:
 	static void configure(u32 check_timeout_sec, u32 connect_timeout_sec, u32 max_redirects);
 
 	/**
-	 * Check host availability. HEAD first, falls back to GET on 403/405 or error.
+	 * Check host availability. HEAD first (cheap alive test), then a ranged
+	 * GET of the first kilobyte with a low-speed guard: OK requires the
+	 * body to actually flow, so throttling-after-handshake counts as FAIL.
+	 * Falls back to plain GET when HEAD itself fails.
 	 * @return HTTP response code, or curl error code on failure.
 	 */
 	static std::expected<long, int> checkHost(const std::string& host);
