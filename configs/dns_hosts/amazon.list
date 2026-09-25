@@ -1,13 +1,1 @@
-cloudflare-ech.com
-cloudflare.com
-cloudflareportal.com
-cloudflareok.com
-cloudflareclient.com
-cloudflarecp.com
-cloudfront.net
-cloudflareinsights.com
-amazon.com
-amazonaws.com
-awsstatic.com
-epicgames.com
-awsglobalaccelerator.com
+# domain->IP pins, one per line (example: example.com->1.2.3.4). Plain domains without an IP are ignored.

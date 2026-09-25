@@ -1,6 +1,1 @@
-speedtest.net
-ooklaserver.net
-ziffstatic.com
-cdnst.net
-appleid.cdn-apple.com
-eyeota.net
+# domain->IP pins, one per line (example: example.com->1.2.3.4). Plain domains without an IP are ignored.

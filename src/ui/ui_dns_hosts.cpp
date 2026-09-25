@@ -44,11 +44,8 @@ void UiDnsHosts::_enableDnsHosts()
 		}
 	);
 
-	_enable_dns_hosts->create(
-		"#local_dns section .common",
-		"str_checkbox_enable_dns_hosts_title",
-		Localization::Str{ "str_checkbox_enable_dns_hosts_description" }
-	);
+	_enable_dns_hosts
+		->create("#dns section .common", "str_checkbox_enable_dns_hosts_title", Localization::Str{ "str_checkbox_enable_dns_hosts_description" });
 	_enable_dns_hosts->addTutorialStep("str_tour_dns_hosts_title", "str_tour_dns_hosts_description", 10);
 	_enable_dns_hosts->addEventClick(
 		[this](JSArgs args)
@@ -65,7 +62,7 @@ void UiDnsHosts::_enableDnsHosts()
 		}
 	);
 
-	_start_update_dns_hosts->create("#local_dns section .common", "str_button_start_dns_hosts_update_title");
+	_start_update_dns_hosts->create("#dns section .common", "str_button_start_dns_hosts_update_title");
 	_start_update_dns_hosts->addTutorialStep("str_tour_update_dns_title", "str_tour_update_dns_description", 11);
 
 	_start_update_dns_hosts->addEventClick(
@@ -77,7 +74,7 @@ void UiDnsHosts::_enableDnsHosts()
 	);
 
 	_select_region
-		->create("#local_dns section .common", "str_select_dns_hosts_region_title", Localization::Str{ "str_select_dns_hosts_region_description" });
+		->create("#dns section .common", "str_select_dns_hosts_region_title", Localization::Str{ "str_select_dns_hosts_region_description" });
 	_select_region->addTutorialStep("str_tour_dns_active_region_title", "str_tour_dns_active_region_description", 12);
 	_select_region->addEventChange(
 		[this](JSArgs args)
@@ -108,7 +105,7 @@ void UiDnsHosts::_enableDnsHosts()
 	);
 
 	_region_list->create(
-		"#local_dns section .common",
+		"#dns section .common",
 		Localization::Str{ "str_dns_hosts_regions_title" },
 		Localization::Str{ "str_dns_hosts_regions_description" }(),
 		Localization::Str{ "str_input_dns_hosts_region_placeholder" }()
@@ -141,7 +138,7 @@ void UiDnsHosts::_enableDnsHosts()
 
 	// The base geohide host is editable in case the service moves.
 	_dns_hosts_url->create(
-		"#local_dns section .common",
+		"#dns section .common",
 		Input::Types::text,
 		JSValue{ "geohide.ru" },
 		Localization::Str{ "str_input_dns_hosts_url_title" },
@@ -186,11 +183,11 @@ void UiDnsHosts::_enableDnsHosts()
 
 void UiDnsHosts::updateInfoWindow()
 {
-	// Only the progress bar is refreshed; the description text is set once at
-	// creation and never rewritten (see SecondaryWindow::setProgress).
+	// The bar follows the live GeoHide download; the description text is set
+	// once at creation and never rewritten (see SecondaryWindow::setProgress).
 	LIMIT_UPDATE(Description, .5f, {
 		if (_window_wait_update_dns->isShow())
-			_window_wait_update_dns->setProgress(_unblock->dnsHostsUpdateProgress());
+			_window_wait_update_dns->setProgress(_unblock->dnsHostsDownloadProgress());
 	})
 }
 

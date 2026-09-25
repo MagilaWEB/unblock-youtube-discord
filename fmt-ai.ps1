@@ -26,6 +26,9 @@ if (-not $files) {
 }
 
 foreach ($f in $files) {
+    # git status also lists deletions; there is nothing to format there.
+    if (-not (Test-Path -LiteralPath $f)) { continue }
+
     if ($Check) {
         clang-format --dry-run -Werror $f
     } else {

@@ -1,9 +1,1 @@
-cloudflare-ech.com
-encryptedsni.com
-cloudflareaccess.com
-cloudflareinsights.com
-cloudflareok.com
-cloudflareportal.com
-cloudflarepreview.com
-cloudflarestatus.com
-cloudflarestream.com
+# domain->IP pins, one per line (example: example.com->1.2.3.4). Plain domains without an IP are ignored.

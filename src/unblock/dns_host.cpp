@@ -1,9 +1,10 @@
 #include "dns_host.h"
-#include <concurrent_vector.h>
-#include <curl/curl.h>
 
 #include <algorithm>
+#include <map>
 #include <regex>
+#include <set>
+#include <sstream>
 
 const std::regex& reg_ipv4_pattern()
 {
@@ -21,6 +22,36 @@ const std::vector<unsigned char>& data_vec()
 	static const std::vector<unsigned char> d{ 0x0d, 0x33, 0x34, 0x3e, 0x35, 0x2d, 0x29, 0x75, 0x09, 0x23, 0x29, 0x2e, 0x3f, 0x37,
 											   0x69, 0x68, 0x75, 0x3e, 0x28, 0x33, 0x2c, 0x3f, 0x28, 0x29, 0x75, 0x3f, 0x2e, 0x39 };
 	return d;
+}
+
+static std::string trimSpaces(std::string_view s)
+{
+	const size_t begin = s.find_first_not_of(" \t\r\n");
+	if (begin == std::string_view::npos)
+		return {};
+
+	const size_t end = s.find_last_not_of(" \t\r\n");
+	return std::string{ s.substr(begin, end - begin + 1) };
+}
+
+std::optional<std::pair<std::string, std::string>> parseDnsPin(const std::string& line)
+{
+	static const std::string arrow{ "->" };
+
+	const size_t pos = line.find(arrow);
+	if (pos == std::string::npos)
+		return std::nullopt;
+
+	const std::string left	= trimSpaces(std::string_view{ line }.substr(0, pos));
+	const std::string right = trimSpaces(std::string_view{ line }.substr(pos + arrow.size()));
+
+	if (!std::regex_match(left, reg_domain_regex()))
+		return std::nullopt;
+
+	if (!std::regex_match(right, reg_ipv4_pattern()))
+		return std::nullopt;
+
+	return std::make_pair(left, right);
 }
 
 DNSHost::DNSHost()
@@ -50,6 +81,8 @@ DNSHost::DNSHost()
 				_file_hosts_backup.writeText(line);
 
 	_dir_dns_hosts = Core::get().configsPath() / "dns_hosts";
+	_geohide_cache = Core::get().configsPath() / "hosts_geohide.cache";
+	_manual_hosts  = Core::get().configsPath() / "hosts";
 
 	_file_hosts.close();
 	_file_hosts_backup.close();
@@ -105,129 +138,181 @@ void DNSHost::disable()
 void DNSHost::update()
 {
 	_cancel_update.store(false);
-	_map_list.clear();
+	_last_progress.store(0.F);
 
-	_list_hosts.clear();
-
-	for (auto& entry : std::filesystem::directory_iterator(_dir_dns_hosts))
+	// Layer 1: explicit domain->IP pins from configs/dns_hosts/*.list.
+	// One domain may carry several IPs (first occurrence order kept).
+	std::map<std::string, std::vector<std::string>> domain_to_ips;
+	std::error_code									ec;
+	for (auto& entry : std::filesystem::directory_iterator(_dir_dns_hosts, ec))
 	{
+		if (_cancel_update.load(std::memory_order_relaxed))
+			return;
+
+		if (!entry.is_regular_file())
+			continue;
+
 		File file{};
 		file.open(entry.path(), "", true);
 
 		for (auto& line : file)
-			if (!line.empty())
-				if (std::ranges::find(_list_hosts, line) == _list_hosts.end())
-					_list_hosts.push_back(line);
+		{
+			const std::string trimmed = trimSpaces(line);
+			if (trimmed.empty() || trimmed.starts_with('#'))
+				continue;
+
+			if (auto pin = parseDnsPin(trimmed))
+			{
+				auto& ips = domain_to_ips[pin->first];
+				if (std::ranges::find(ips, pin->second) == ips.end())
+					ips.push_back(pin->second);
+			}
+			else
+				Debug::warning("Skipping invalid dns_hosts line [{}] in [{}]", trimmed, entry.path().string());
+		}
+
+		file.close();
 	}
 
 	if (_cancel_update.load(std::memory_order_relaxed))
 		return;
 
-	for (auto& domain : _list_hosts)
-		_map_list[domain].reserve(0);
-
-	std::for_each(
-		std::execution::par,
-		_list_hosts.begin(),
-		_list_hosts.end(),
-		[this](const std::string& domain)
-		{
-			if (_cancel_update.load(std::memory_order_relaxed))
-				return;
-
-			static const std::regex reg_equally{ R"(->)" };
-			std::smatch				para;
-			if (std::regex_search(domain, para, reg_equally))
-			{
-				const std::string value = para.suffix().str();
-				if (!value.empty())
-				{
-					const std::string key = para.prefix().str();
-					{
-						FAST_LOCK(_map_list_lock);
-						_map_list[key] = value;
-					}
-
-					_size_iter++;
-				}
-
-				return;
-			}
-
-			_map_list_lock.EnterShared();
-			if (!_map_list[domain].empty())
-			{
-				_map_list_lock.LeaveShared();
-				return;
-			}
-			_map_list_lock.LeaveShared();
-
-			_writeDomain(domain);
-
-			_size_iter++;
-		}
-	);
-
-	if (!_cancel_update.load(std::memory_order_relaxed))
+	// Layer 2+3 source: fresh GeoHide bulk, cache fallback when offline.
+	auto load = std::make_shared<HttpsLoad>(_regionUrl());
 	{
-		_file_hosts_user.open();
-
-		if (isHostsUser())
-			_file_hosts_user.clear();
-
-		// The ready geohide.ru hosts file for the selected region is the base;
-		// local unblock domains below take priority.
-		HttpsLoad geohide{ _regionUrl() };
-		auto	  geohide_lines = geohide.run();
-		if (geohide.codeResult() == 200 && !geohide_lines.empty())
-			for (auto& line : geohide_lines)
-				_file_hosts_user.writeText(line);
-
-		_loadInfo();
-
-		File local_hosts{ false };
-		local_hosts.open(Core::get().configsPath() / "hosts", "");
-		for (auto& line : local_hosts)
-		{
-			static const std::regex ip_domain_regex{ R"(^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+([^\s]+))" };
-			std::smatch				para;
-			if (std::regex_search(line, para, ip_domain_regex))
-			{
-				const std::string domain = para[2].str();
-				if ((!domain.empty()) && (!_map_list[domain].empty()))
-					continue;
-
-				_file_hosts_user.writeText(line);
-			}
-		}
-
-		std::unordered_map<std::string, std::vector<std::string>> ip_to_domains;
-		ip_to_domains.reserve(_map_list.size());
-
-		for (const auto& [domain, ip] : _map_list)
-			if (!ip.empty())
-				ip_to_domains[ip].push_back(domain);
-
-		for (const auto& [ip, domains] : ip_to_domains)
-		{
-			std::string line;
-			line.reserve(ip.size() + 1 + domains.size() * 20);
-			line += ip;
-
-			for (const auto& d : domains)
-			{
-				line += ' ';
-				line += d;
-			}
-
-			_file_hosts_user.writeText(line);
-		}
-
-		_user_host_complete.store(true);
-		_file_hosts_user.close();
+		std::lock_guard lock{ _load_mutex };
+		_active_load = load;
 	}
 
-	_size_iter.store(0);
+	auto	  lines = load->run();
+	const u32 code	= load->codeResult();
+
+	_last_progress.store(load->progress());
+	{
+		std::lock_guard lock{ _load_mutex };
+		_active_load.reset();
+	}
+
+	if (_cancel_update.load(std::memory_order_relaxed))
+		return;
+
+	std::vector<std::string> geohide;
+	if (code == 200 && !lines.empty())
+	{
+		geohide = std::move(lines);
+
+		File cache{};
+		cache.open(_geohide_cache, "", true);
+		cache.clear();
+		for (auto& line : geohide)
+			cache.writeText(line);
+		cache.close();
+	}
+	else
+	{
+		Debug::warning("GeoHide download failed (code {}), using cache.", code);
+
+		File cache{};
+		cache.open(_geohide_cache, "", true);
+		for (auto& line : cache)
+			geohide.push_back(line);
+		cache.close();
+	}
+
+	// Domains covered by upper layers are dropped from lower ones.
+	std::set<std::string> covered;
+	for (auto& [domain, ips] : domain_to_ips)
+		covered.insert(domain);
+
+	_file_hosts_user.open();
+
+	if (isHostsUser())
+		_file_hosts_user.clear();
+
+	// Layer 1: pins, one line per pin.
+	for (auto& [domain, ips] : domain_to_ips)
+		for (auto& ip : ips)
+			_file_hosts_user.writeText(ip + " " + domain);
+
+	// Layer 2: manual hosts lines. Comments, blanks and non-IPv4 lines
+	// (e.g. IPv6) pass through untouched.
+	for (auto& line :
+		 [&]() -> std::vector<std::string>
+		 {
+			 File manual{ false };
+			 manual.open(_manual_hosts, "");
+
+			 std::vector<std::string> out;
+			 for (auto& l : manual)
+				 out.push_back(l);
+			 return out;
+		 }())
+	{
+		const std::string trimmed = trimSpaces(line);
+		if (trimmed.empty() || trimmed.starts_with('#'))
+		{
+			_file_hosts_user.writeText(line);
+			continue;
+		}
+
+		std::stringstream ss{ trimmed };
+		std::string		  first;
+		ss >> first;
+
+		if (!std::regex_match(first, reg_ipv4_pattern()))
+		{
+			_file_hosts_user.writeText(line);
+			continue;
+		}
+
+		std::string kept, token;
+		while (ss >> token)
+			if (!covered.contains(token))
+			{
+				kept += (kept.empty() ? "" : " ");
+				kept += token;
+				covered.insert(token);
+			}
+
+		if (!kept.empty())
+			_file_hosts_user.writeText(first + " " + kept);
+	}
+
+	// Layer 3: GeoHide bulk, same filtering as the manual layer.
+	for (auto& line : geohide)
+	{
+		const std::string trimmed = trimSpaces(line);
+		if (trimmed.empty() || trimmed.starts_with('#'))
+		{
+			_file_hosts_user.writeText(line);
+			continue;
+		}
+
+		std::stringstream ss{ trimmed };
+		std::string		  first;
+		ss >> first;
+
+		if (!std::regex_match(first, reg_ipv4_pattern()))
+		{
+			_file_hosts_user.writeText(line);
+			continue;
+		}
+
+		std::string kept, token;
+		while (ss >> token)
+			if (!covered.contains(token))
+			{
+				kept += (kept.empty() ? "" : " ");
+				kept += token;
+				covered.insert(token);
+			}
+
+		if (!kept.empty())
+			_file_hosts_user.writeText(first + " " + kept);
+	}
+
+	_user_host_complete.store(true);
+	_file_hosts_user.close();
 }
 
 bool DNSHost::isHostsUser() const
@@ -240,9 +325,12 @@ void DNSHost::cancel()
 	_cancel_update.store(true);
 }
 
-float DNSHost::percentageCompletion() const
+float DNSHost::downloadProgress() const
 {
-	return (static_cast<float>(_size_iter.load()) / static_cast<float>(_list_hosts.size())) * 100.F;
+	std::lock_guard lock{ _load_mutex };
+	if (_active_load)
+		return _active_load->progress();
+	return _last_progress.load();
 }
 
 void DNSHost::setRegion(std::string_view region)
@@ -302,122 +390,38 @@ std::string DNSHost::_pathHostDir()
 
 void DNSHost::_loadInfo()
 {
-	static bool load{ false };
-	if (!load)
-	{
-		load = true;
+	// Rebuilt on every call: the cache is written by update() and the
+	// service-name list must reflect it without an app restart.
+	_list_dns_hosts_file_name.clear();
 
-		for (auto& entry : std::filesystem::directory_iterator(_dir_dns_hosts))
+	// No downloads here: service names come from the last cached GeoHide
+	// bulk (empty on the very first run) and the dns_hosts file stems.
+	std::error_code ec;
+	for (auto& entry : std::filesystem::directory_iterator(_dir_dns_hosts, ec))
+		if (entry.is_regular_file())
 			_list_dns_hosts_file_name.push_back(entry.path().stem().string());
 
-		File local_hosts{ false };
-		local_hosts.open(Core::get().configsPath() / "hosts", "");
+	// Service sections are "# <name>" comments. The file header and the
+	// fallback blocks (the Cyrillic "Сервисные IP", "Резервные", ...) are
+	// rejected by the ASCII check, so only real service names qualify.
+	static const std::regex ipv4_regex{ R"(^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$)" };
 
-		HttpsLoad hosts{ _regionUrl() };
-		auto	  lines = hosts.run();
-		if (hosts.codeResult() != 200 || lines.empty())
-		{
-			for (auto& line : local_hosts)
-				lines.push_back(line);
-		}
-		else
-		{
-			local_hosts.clear();
-			for (auto& line : lines)
-				local_hosts.writeText(line);
-		}
-
-		// Service sections are "# <name>" comments. The file header and the
-		// fallback blocks (the Cyrillic "Сервисные IP", "Резервные", ...) are
-		// rejected by the ASCII check, so only real service names qualify.
-		static const std::regex ipv4_regex{ R"(^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$)" };
-
-		for (auto& line : lines)
-		{
-			if (!line.starts_with("# "))
-				continue;
-
-			const std::string name = line.substr(2);
-			if (name.empty() || std::regex_match(name, ipv4_regex))
-				continue;
-
-			const bool has_non_ascii = std::ranges::any_of(name, [](unsigned char ch) { return ch >= 0x80; });
-			if (has_non_ascii)
-				continue;
-
-			_list_dns_hosts_file_name.push_back(name);
-		}
-	}
-}
-
-std::optional<DNSHost::Google::MapDomainIP> DNSHost::_getIPGoogle(std::string domain)
-{
-	if (_cancel_update.load())
-		return {};
-
-	Google dns_google{ domain };
-	dns_google.run();
-
-	auto& content = dns_google.content();
-	if (content.empty())
-		return {};
-
-	return content;
-}
-
-void DNSHost::_writeDomain(std::string domain)
-{
-	auto map_result = _getIPGoogle(domain);
-	if (!map_result)
-		return;
-
-	auto& map_domain = map_result.value();
-	for (auto& [original_domain, ip_list] : map_domain)
+	File cache{};
+	cache.open(_geohide_cache, "", true);
+	for (auto& line : cache)
 	{
-		for (auto& ip_or_domain : ip_list)
-		{
-			_map_list_lock.EnterShared();
-			if (_map_list.contains(original_domain))
-			{
-				_map_list_lock.LeaveShared();
+		if (!line.starts_with("# "))
+			continue;
 
-				if (std::regex_match(ip_or_domain, reg_ipv4_pattern()))
-				{
-					{
-						FAST_LOCK(_map_list_lock);
-						_map_list[original_domain] = ip_or_domain;
-					}
+		const std::string name = line.substr(2);
+		if (name.empty() || std::regex_match(name, ipv4_regex))
+			continue;
 
-					continue;
-				}
-			}
+		const bool has_non_ascii = std::ranges::any_of(name, [](unsigned char ch) { return ch >= 0x80; });
+		if (has_non_ascii)
+			continue;
 
-			_map_list_lock.EnterShared();
-
-			if (_map_list.contains(ip_or_domain) && !_map_list[ip_or_domain].empty())
-			{
-				const std::string resolved_ip = _map_list[ip_or_domain];
-				_map_list_lock.LeaveShared();
-				{
-					FAST_LOCK(_map_list_lock);
-					_map_list[original_domain] = resolved_ip;
-				}
-				continue;
-			}
-
-			_map_list_lock.LeaveShared();
-
-			{
-				FAST_LOCK(_map_list_lock);
-				_map_list[ip_or_domain].reserve(0);
-			}
-
-			_writeDomain(ip_or_domain);
-
-			{
-				FAST_LOCK(_map_list_lock);
-				_map_list[original_domain] = _map_list[ip_or_domain];
-			}
-		}
+		_list_dns_hosts_file_name.push_back(name);
 	}
+	cache.close();
 }

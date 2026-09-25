@@ -1,13 +1,16 @@
 add_executable(test_unblock
     test_strategies_zapret1.cpp
     test_auto_round.cpp
+    test_dns_pins.cpp
     ${CMAKE_SOURCE_DIR}/src/core/tests/tap_main.cpp
     ../strategies_zapret1.cpp
     ../strategies_zapret2.cpp
     ../strategy_config_base.cpp
     ../strategy_generator.cpp
+    ../dns_host.cpp
+    ../http_load_content.cpp
 )
-target_link_libraries(test_unblock PRIVATE Catch2::Catch2 core)
+target_link_libraries(test_unblock PRIVATE Catch2::Catch2 core CURL::libcurl ws2_32)
 target_include_directories(test_unblock PRIVATE ..)
 target_precompile_headers(test_unblock PRIVATE ../pch.h)
 target_compile_definitions(test_unblock PRIVATE WIN32_LEAN_AND_MEAN CONSOLE UNBLOCK_TESTS)

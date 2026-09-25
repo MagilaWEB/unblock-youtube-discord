@@ -1,13 +1,16 @@
 #pragma once
+
+#include <atomic>
+
 typedef void CURL;
 
 class HttpsLoad
 {
-	CURL*		_curl{ nullptr };
-	std::string _url{};
-	std::string _stringBuffer;
-	u32			_code_result{ 0 };
-	float		_progress{ 0.f };
+	CURL*			   _curl{ nullptr };
+	std::string		   _url{};
+	std::string		   _stringBuffer;
+	u32				   _code_result{ 0 };
+	std::atomic<float> _progress{ 0.F };
 
 public:
 	HttpsLoad() = delete;

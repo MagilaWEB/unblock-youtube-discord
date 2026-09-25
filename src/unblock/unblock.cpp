@@ -575,9 +575,9 @@ void Unblock::dnsHostsCancelUpdate()
 	_dns_hosts.cancel();
 }
 
-float Unblock::dnsHostsUpdateProgress() const
+float Unblock::dnsHostsDownloadProgress() const
 {
-	return _dns_hosts.percentageCompletion();
+	return _dns_hosts.downloadProgress();
 }
 
 bool Unblock::dnsHostsCheck() const

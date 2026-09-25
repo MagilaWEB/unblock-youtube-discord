@@ -189,7 +189,7 @@ public:
 	void						  dnsHosts(bool state);
 	void						  dnsHostsUpdate();
 	void						  dnsHostsCancelUpdate();
-	float						  dnsHostsUpdateProgress() const;
+	float						  dnsHostsDownloadProgress() const;
 	bool						  dnsHostsCheck() const;
 	const std::list<std::string>& dnsHostsListName();
 	void						  setDnsHostsRegion(std::string_view region);

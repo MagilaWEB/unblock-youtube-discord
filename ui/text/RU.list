@@ -3,7 +3,7 @@ str_h2_zapret=Zapret
 str_h2_zapret2=Zapret2
 str_h2_zapret1=Zapret (классический)
 str_h2_unblock=Unblock
-str_h2_local_dns=Локальный DNS
+str_h2_dns=DNS
 str_h2_tg_ws_proxy=Telegram прокси
 
 // Footer BUTTON
@@ -210,9 +210,9 @@ str_window_to_warn_enable_dns_hosts_description=⚙ Для работы нуже
 Безопасно: можно отключить в настройках.
 Текущие сервисы: [{}].
 
-str_window_wait_update_dns_description=🔄 Загрузка локального DNS...
-Идёт обновление системного файла hosts для обхода блокировок.
-Это может занять несколько минут.
+str_window_wait_update_dns_description=🔄 Загрузка GeoHide DNS...
+Скачивается hosts-файл GeoHide для выбранного региона.
+Затем применяются сопоставления Unblock и обновляется системный файл hosts.
 
 str_window_wait_test_whitelist_description=🔍 Проверка белых списков провайдера...
 Unblock не предоставляет средств обхода таких списков. Тест определит, есть ли ограничения.
@@ -226,7 +226,7 @@ str_window_warning_no_internet_description=⚠ Отсутствует подкл
 Проверьте сетевое соединение, кабели или Wi-Fi.
 Unblock не сможет работать без доступа в сеть.
 
-str_button_start_dns_hosts_update_title=🔄 Обновить локальный DNS
+str_button_start_dns_hosts_update_title=🔄 Обновить DNS
 
 // Zapret titles blocks
 str_zapret_service_title=🔓 Сервисы
@@ -313,7 +313,7 @@ str_checkbox_testing_startup_description=🧪 Автоматическое те�
 Это поможет быстро убедиться в работоспособности выбранной конфигурации и при необходимости запустить автоподбор заново.
 
 // Setting common enable dns hosts
-str_checkbox_enable_dns_hosts_title=📁 Локальный DNS (hosts)
+str_checkbox_enable_dns_hosts_title=📁 DNS (hosts)
 str_checkbox_enable_dns_hosts_description=📁 Использование системного файла hosts для обхода DNS-блокировок и подмены геолокации.
 При включении Unblock добавляет в файл hosts (C:\Windows\System32\drivers\etc\hosts) соответствия доменов и реальных IP-адресов из списков GeoHide DNS, минуя DNS-серверы провайдера.
 Это позволяет обойти блокировки на уровне DNS и региональные ограничения без дополнительного ПО.
@@ -329,6 +329,26 @@ str_input_dns_hosts_region_placeholder=Добавить регион (напри
 str_input_dns_hosts_url_title=🔗 Хост geohide
 str_input_dns_hosts_url_description=🔗 Хост, с которого скачивается hosts-файл (без https://, например geohide.ru). Измените, если автор перенесёт сервис.
 str_window_check_region_description=🔍 Проверка доступности региона...
+
+// DNS proxy (AdGuard DnsLibs, unblock_dns service)
+str_checkbox_enable_dns_proxy_title=🔒 DNS-прокси
+str_checkbox_enable_dns_proxy_description=🔒 Системный DNS через шифрованные серверы (DoH): весь резолв идёт мимо провайдера.
+При включении Unblock поднимает службу unblock_dns и переключает DNS адаптеров на 127.0.0.1.
+При выключении настройки DNS возвращаются как были.
+str_dns_proxy_cf_title=Cloudflare
+str_dns_proxy_google_title=Google
+str_dns_proxy_quad9_title=Quad9
+str_dns_proxy_servers_title=🌐 Свои серверы
+str_dns_proxy_servers_description=🌐 Строки вида «адрес|bootstrap» (bootstrap через запятую, может быть пустым).
+Примеры: https://cloudflare-dns.com/dns-query|1.1.1.1,1.0.0.1 или tls://dns.adguard.com|94.140.14.14
+str_input_dns_proxy_custom_placeholder=Добавить сервер (например, tls://dns.adguard.com|94.140.14.14) и нажать Enter
+str_input_test_upstream_title=🧪 Проверка сервера
+str_input_test_upstream_description=🧪 Строка сервера для проверки кнопкой ниже.
+Проверка выполняется через unblock_dns — рядом с ним должен лежать AdguardDns64.dll, иначе увидите ошибку загрузки.
+str_button_test_upstream_title=🧪 Проверить сервер
+str_button_dns_proxy_status_title=📊 Статус
+str_window_test_upstream_title=🧪 Проверка сервера
+str_task_dns_proxy_title=🔒 Применение DNS-прокси
 
 // Setting common enable local proxy telegram
 str_checkbox_enable_proxy_tg_title=📱 Прокси для Telegram
@@ -437,7 +457,7 @@ str_tutorial_intro_description=Unblock — это интерактивный м�
 
 Что умеет Unblock:
 • Обход DPI-фильтрации (Zapret) — возвращает доступ к YouTube, Discord, Instagram и другим сервисам, заблокированным на уровне провайдера.
-• Обход DNS-блокировок (Локальный DNS) — использует системный файл hosts, чтобы подменять адреса до обращения к DNS-серверам провайдера.
+• Обход DNS-блокировок (DNS) — использует системный файл hosts, чтобы подменять адреса до обращения к DNS-серверам провайдера.
 • Локальный прокси для Telegram — создаёт прокси-сервер на вашем устройстве для обхода блокировки Telegram.
 
 str_tutorial_quick_start_title=🚀 Быстрый старт
@@ -470,16 +490,16 @@ str_tutorial_tab_unblock_description=Вкладка с общими настро
 
 • «📟 Показывать консоль» — открывает окно с логами работы Unblock для отладки.
 • «🧪 Тестировать при запуске» — автоматически проверяет доступность сайтов сразу после запуска приложения.
-• «⏹ Остановить все службы» — останавливает сразу все активные службы: Zapret, Локальный DNS и прокси для Telegram.
+• «⏹ Остановить все службы» — останавливает сразу все активные службы: Zapret, DNS и прокси для Telegram.
 
-str_tutorial_tab_dns_title=📁 Вкладка «Локальный DNS»
+str_tutorial_tab_dns_title=📁 Вкладка «DNS»
 str_tutorial_tab_dns_description=Обход блокировок на уровне DNS и подмена геолокации с помощью системного файла hosts.
 
 При включении Unblock добавляет в файл hosts (C:\Windows\System32\drivers\etc\hosts) соответствия доменов и реальных IP-адресов из списков GeoHide DNS, минуя DNS-серверы провайдера.
 Файл hosts проверяется первым при любом сетевом запросе, поэтому подмена срабатывает до обращения к внешним DNS.
 Это позволяет обойти как DNS-блокировки, так и региональные ограничения без дополнительного ПО.
 
-Кнопка «🔄 Обновить локальный DNS» обновляет список соответствий вручную.
+Кнопка «🔄 Обновить DNS» обновляет список соответствий вручную.
 «🌍 Активный регион» — регион, для которого geohide.ru формирует hosts-файл (выбирается из списка ниже).
 «📋 Список регионов» — добавление своих регионов: если у сервиса нет такого региона или он недоступен — добавление будет отменено.
 Настройка безопасна: при отключении Unblock восстанавливает оригинальное содержимое hosts.
@@ -565,15 +585,15 @@ str_tour_testing_startup_description=Автоматически проверяе
 str_tour_stop_all_title=⏹ Остановить все службы
 str_tour_stop_all_description=Останавливает все активные службы сразу: Zapret, Локальный DNS и прокси для Telegram.
 
-str_tour_dns_hosts_title=📁 Локальный DNS
+str_tour_dns_hosts_title=📁 DNS
 str_tour_dns_hosts_description=Использует системный файл hosts для обхода DNS-блокировок и подмены геолокации.
 При включении Unblock добавляет соответствия доменов и IP-адресов из списков GeoHide DNS, минуя DNS-серверы провайдера.
 Это обходит как DNS-блокировки, так и региональные ограничения.
 Безопасно: при отключении содержимое hosts восстанавливается.
 
-str_tour_update_dns_title=🔄 Обновить локальный DNS
+str_tour_update_dns_title=🔄 Обновить DNS
 str_tour_update_dns_description=Обновляет список соответствий в файле hosts вручную.
-Кнопка доступна при включённом Локальном DNS.
+Кнопка доступна при включённом DNS.
 
 str_tour_dns_active_region_title=🌍 Активный регион
 str_tour_dns_active_region_description=Регион, для которого geohide.ru формирует hosts-файл (выбирается из списка регионов ниже).

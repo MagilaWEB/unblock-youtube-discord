@@ -3,7 +3,7 @@ str_h2_zapret=Zapret
 str_h2_zapret2=Zapret2
 str_h2_zapret1=Zapret (classic)
 str_h2_unblock=Unblock
-str_h2_local_dns=Local DNS
+str_h2_dns=DNS
 str_h2_tg_ws_proxy=Telegram Proxy
 
 // Footer BUTTON
@@ -210,9 +210,9 @@ What this provides:
 Safe: can be disabled in settings.
 Current services: [{}].
 
-str_window_wait_update_dns_description=🔄 Loading local DNS...
-Updating the system hosts file to bypass blocks.
-This may take several minutes.
+str_window_wait_update_dns_description=🔄 Loading GeoHide DNS...
+Downloading the GeoHide hosts file for the selected region.
+Unblock mappings are applied afterwards.
 
 str_window_wait_test_whitelist_description=🔍 Checking provider whitelists...
 Unblock does not provide tools to bypass whitelists. The test will determine if restrictions exist.
@@ -226,7 +226,7 @@ str_window_warning_no_internet_description=⚠ No internet connection detected
 Please check your network connection, cables, or Wi-Fi.
 Unblock cannot function without network access.
 
-str_button_start_dns_hosts_update_title=🔄 Update local DNS
+str_button_start_dns_hosts_update_title=🔄 Update DNS
 
 // Zapret titles blocks
 str_zapret_service_title=🔓 Service
@@ -313,7 +313,7 @@ Test results will be shown on the main screen as a list of accessible domains.
 This helps quickly verify that the selected configuration is working and, if needed, rerun automatic configuration selection.
 
 // Setting common enable dns hosts
-str_checkbox_enable_dns_hosts_title=📁 Local DNS (hosts)
+str_checkbox_enable_dns_hosts_title=📁 DNS (hosts)
 str_checkbox_enable_dns_hosts_description=📁 Use system hosts file to bypass DNS blocks and spoof geolocation.
 When enabled, Unblock adds domain-to-IP mappings from GeoHide DNS lists to the hosts file (C:\Windows\System32\drivers\etc\hosts), bypassing your ISP's DNS servers.
 This allows blocking circumvention at the DNS level and regional restrictions without additional software.
@@ -329,6 +329,26 @@ str_input_dns_hosts_region_placeholder=Add a region (e.g. ua) and press Enter
 str_input_dns_hosts_url_title=🔗 geohide host
 str_input_dns_hosts_url_description=🔗 Host the hosts file is downloaded from (without https://, e.g. geohide.ru). Change it if the service moves.
 str_window_check_region_description=🔍 Checking region availability...
+
+// DNS proxy (AdGuard DnsLibs, unblock_dns service)
+str_checkbox_enable_dns_proxy_title=🔒 DNS proxy
+str_checkbox_enable_dns_proxy_description=🔒 System DNS over encrypted servers (DoH): all resolution bypasses the ISP.
+When enabled, Unblock starts the unblock_dns service and points adapter DNS at 127.0.0.1.
+When disabled, DNS settings are restored.
+str_dns_proxy_cf_title=Cloudflare
+str_dns_proxy_google_title=Google
+str_dns_proxy_quad9_title=Quad9
+str_dns_proxy_servers_title=🌐 Custom servers
+str_dns_proxy_servers_description=🌐 Lines shaped as «address|bootstrap» (comma-separated bootstrap, may be empty).
+Examples: https://cloudflare-dns.com/dns-query|1.1.1.1,1.0.0.1 or tls://dns.adguard.com|94.140.14.14
+str_input_dns_proxy_custom_placeholder=Add a server (e.g. tls://dns.adguard.com|94.140.14.14) and press Enter
+str_input_test_upstream_title=🧪 Server check
+str_input_test_upstream_description=🧪 Server line to check with the button below.
+The check runs through unblock_dns — AdguardDns64.dll must sit next to it or you will see a load error.
+str_button_test_upstream_title=🧪 Check server
+str_button_dns_proxy_status_title=📊 Status
+str_window_test_upstream_title=🧪 Server check
+str_task_dns_proxy_title=🔒 Applying DNS proxy
 
 // Setting common enable local proxy telegram
 str_checkbox_enable_proxy_tg_title=📱 Proxy for Telegram
@@ -437,7 +457,7 @@ All enabled services run in the background: Unblock manages them, and the app it
 
 What Unblock can do:
 • DPI blocking bypass (Zapret) — restores access to YouTube, Discord, Instagram and other services blocked at the ISP level.
-• DNS blocking bypass (Local DNS) — uses the system hosts file to substitute addresses before the request reaches your ISP's DNS servers.
+• DNS blocking bypass (DNS) — uses the system hosts file to substitute addresses before the request reaches your ISP's DNS servers.
 • Local proxy for Telegram — creates a proxy server on your device to bypass Telegram blocking.
 
 str_tutorial_quick_start_title=🚀 Quick start
@@ -470,16 +490,16 @@ str_tutorial_tab_unblock_description=The tab with general application settings:
 
 • «📟 Show console» — opens a window with Unblock logs for debugging.
 • «🧪 Test at startup» — automatically checks site availability right after the application starts.
-• «⏹ Stop all services» — stops all active services at once: Zapret, Local DNS and the Telegram proxy.
+• «⏹ Stop all services» — stops all active services at once: Zapret, DNS and the Telegram proxy.
 
-str_tutorial_tab_dns_title=📁 Local DNS tab
+str_tutorial_tab_dns_title=📁 DNS tab
 str_tutorial_tab_dns_description=Bypass of DNS-level blocking and geolocation spoofing using the system hosts file.
 
 When enabled, Unblock adds domain-to-IP mappings from GeoHide DNS lists to the hosts file (C:\Windows\System32\drivers\etc\hosts), bypassing your ISP's DNS servers.
 The hosts file is checked first on any network request, so the substitution happens before any external DNS lookup.
 This bypasses both DNS blocks and regional restrictions without additional software.
 
-The «🔄 Update local DNS» button refreshes the mapping list manually.
+The «🔄 Update DNS» button refreshes the mapping list manually.
 «🌍 Active region» — the region geohide.ru builds the hosts file for (picked from the region list below).
 «📋 Region list» — adding your own regions: if the service has no such region or it is unavailable — adding will be cancelled.
 Safe: when disabled, Unblock restores the original hosts file content.
@@ -563,17 +583,17 @@ str_tour_testing_startup_description=Automatically checks site availability righ
 Results are shown as a list on the main tab.
 
 str_tour_stop_all_title=⏹ Stop all services
-str_tour_stop_all_description=Stops all active services at once: Zapret, Local DNS and the Telegram proxy.
+str_tour_stop_all_description=Stops all active services at once: Zapret, DNS and the Telegram proxy.
 
-str_tour_dns_hosts_title=📁 Local DNS
+str_tour_dns_hosts_title=📁 DNS
 str_tour_dns_hosts_description=Uses the system hosts file to bypass DNS blocking and spoof geolocation.
 When enabled, Unblock adds domain-to-IP mappings from GeoHide DNS lists, bypassing your ISP's DNS servers.
 This bypasses both DNS blocks and regional restrictions.
 Safe: when disabled, the hosts content is restored.
 
-str_tour_update_dns_title=🔄 Update local DNS
+str_tour_update_dns_title=🔄 Update DNS
 str_tour_update_dns_description=Refreshes the mappings in the hosts file manually.
-The button is available when Local DNS is enabled.
+The button is available when DNS is enabled.
 
 str_tour_dns_active_region_title=🌍 Active region
 str_tour_dns_active_region_description=The region geohide.ru builds the hosts file for (picked from the region list below).
