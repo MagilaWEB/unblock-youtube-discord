@@ -42,14 +42,14 @@ namespace
 
 	struct Logger
 	{
-		std::mutex	   mutex;
-		std::ofstream  file;
+		std::mutex	  mutex;
+		std::ofstream file;
 
 		void open(const std::filesystem::path& path)
 		{
 			// Cap the log: start fresh past 1MB.
 			std::error_code ec;
-			if (std::filesystem::file_size(path, ec) > 1024 * 1024)
+			if (std::filesystem::file_size(path, ec) > 1'024 * 1'024)
 				std::filesystem::resize_file(path, 0, ec);
 
 			file.open(path, std::ios::app);
@@ -88,11 +88,21 @@ namespace
 		const char* prefix = "?";
 		switch (level)
 		{
-		case AGLL_ERR: prefix = "E"; break;
-		case AGLL_WARN: prefix = "W"; break;
-		case AGLL_INFO: prefix = "I"; break;
-		case AGLL_DEBUG: prefix = "D"; break;
-		case AGLL_TRACE: prefix = "T"; break;
+		case AGLL_ERR:
+			prefix = "E";
+			break;
+		case AGLL_WARN:
+			prefix = "W";
+			break;
+		case AGLL_INFO:
+			prefix = "I";
+			break;
+		case AGLL_DEBUG:
+			prefix = "D";
+			break;
+		case AGLL_TRACE:
+			prefix = "T";
+			break;
 		}
 
 		logLine(std::string{ "[ag:" } + prefix + "] " + text);
@@ -163,7 +173,7 @@ namespace
 	struct AdapterDns
 	{
 		std::string guid;
-		std::string nameserver; // empty = automatic
+		std::string nameserver;	   // empty = automatic
 	};
 
 	// Interfaces that currently hold an IPv4 default route (0.0.0.0/0).
@@ -207,8 +217,8 @@ namespace
 		ULONG size = 0;
 		GetAdaptersAddresses(AF_INET, GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST, nullptr, nullptr, &size);
 
-		std::vector<uint8_t>		 buffer(size);
-		IP_ADAPTER_ADDRESSES*		 adapters = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buffer.data());
+		std::vector<uint8_t>  buffer(size);
+		IP_ADAPTER_ADDRESSES* adapters = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buffer.data());
 		if (GetAdaptersAddresses(AF_INET, GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST, nullptr, adapters, &size) != NO_ERROR)
 			return out;
 
@@ -256,8 +266,8 @@ namespace
 
 	void writeBackup(const std::filesystem::path& path, const std::vector<AdapterDns>& adapters, const std::string& listen)
 	{
-		std::string content = "# listen=" + listen + "\n";
-		content += "# guid|nameserver (empty = automatic), written by unblock_dns\n";
+		std::string content	 = "# listen=" + listen + "\n";
+		content				+= "# guid|nameserver (empty = automatic), written by unblock_dns\n";
 		for (auto& a : adapters)
 			content += a.guid + "|" + a.nameserver + "\n";
 
@@ -301,7 +311,7 @@ namespace
 	{
 		// DnsFlushResolverCache has no header declaration in current SDKs
 		// (the dnsapi.dll export itself is alive), so bind it at runtime.
-		using FlushFn = BOOL(WINAPI*)();
+		using FlushFn		 = BOOL(WINAPI*)();
 		static FlushFn flush = nullptr;
 		static bool	   tried = false;
 
@@ -328,7 +338,7 @@ namespace
 		auto adapters = listUpAdapters();
 
 		std::vector<AdapterDns> stale = readBackup(backup_path);
-		std::string				note = stale.empty() ? "" : " (stale backup found, recovering originals)";
+		std::string				note  = stale.empty() ? "" : " (stale backup found, recovering originals)";
 
 		logLine("Switching " + std::to_string(adapters.size()) + " adapter(s) to " + config.listen + note);
 
@@ -405,33 +415,47 @@ namespace
 
 	struct ProxySettingsBacking
 	{
-		ag_dnsproxy_settings				 settings{};
-		std::vector<ag_upstream_options>	 upstreams;
-		std::vector<std::string>			 upstream_strings;
+		ag_dnsproxy_settings				  settings{};
+		std::vector<ag_upstream_options>	  upstreams;
+		std::vector<std::string>			  upstream_strings;
 		std::vector<std::vector<std::string>> bootstrap_strings;
 		std::vector<std::vector<const char*>> bootstrap_ptrs;
-		std::vector<ag_listener_settings>	 listeners;
-		std::string							 listen_string;
+		std::vector<ag_listener_settings>	  listeners;
+		std::string							  listen_string;
 	};
 
 	const char* initResultText(ag_dnsproxy_init_result result)
 	{
 		switch (result)
 		{
-		case AGDPIR_PROXY_NOT_SET: return "proxy not set";
-		case AGDPIR_EVENT_LOOP_NOT_SET: return "event loop not set";
-		case AGDPIR_INVALID_ADDRESS: return "invalid address";
-		case AGDPIR_EMPTY_PROXY: return "empty proxy";
-		case AGDPIR_PROTOCOL_ERROR: return "protocol error";
-		case AGDPIR_LISTENER_INIT_ERROR: return "listener init error (port busy?)";
-		case AGDPIR_INVALID_IPV4: return "invalid IPv4";
-		case AGDPIR_INVALID_IPV6: return "invalid IPv6";
-		case AGDPIR_UPSTREAM_INIT_ERROR: return "upstream init error";
-		case AGDPIR_FALLBACK_FILTER_INIT_ERROR: return "fallback filter init error";
-		case AGDPIR_FILTER_LOAD_ERROR: return "filter load error";
-		case AGDPIR_MEM_LIMIT_REACHED: return "memory limit reached";
-		case AGDPIR_NON_UNIQUE_FILTER_ID: return "non-unique filter id";
-		case AGDPIR_OK: return "ok";
+		case AGDPIR_PROXY_NOT_SET:
+			return "proxy not set";
+		case AGDPIR_EVENT_LOOP_NOT_SET:
+			return "event loop not set";
+		case AGDPIR_INVALID_ADDRESS:
+			return "invalid address";
+		case AGDPIR_EMPTY_PROXY:
+			return "empty proxy";
+		case AGDPIR_PROTOCOL_ERROR:
+			return "protocol error";
+		case AGDPIR_LISTENER_INIT_ERROR:
+			return "listener init error (port busy?)";
+		case AGDPIR_INVALID_IPV4:
+			return "invalid IPv4";
+		case AGDPIR_INVALID_IPV6:
+			return "invalid IPv6";
+		case AGDPIR_UPSTREAM_INIT_ERROR:
+			return "upstream init error";
+		case AGDPIR_FALLBACK_FILTER_INIT_ERROR:
+			return "fallback filter init error";
+		case AGDPIR_FILTER_LOAD_ERROR:
+			return "filter load error";
+		case AGDPIR_MEM_LIMIT_REACHED:
+			return "memory limit reached";
+		case AGDPIR_NON_UNIQUE_FILTER_ID:
+			return "non-unique filter id";
+		case AGDPIR_OK:
+			return "ok";
 		}
 		return "unknown";
 	}
@@ -446,11 +470,11 @@ namespace
 		if (!defaults)
 			return nullptr;
 
-		backing.settings.blocked_response_ttl_secs		= defaults->blocked_response_ttl_secs;
-		backing.settings.adblock_rules_blocking_mode	= defaults->adblock_rules_blocking_mode;
-		backing.settings.hosts_rules_blocking_mode		= defaults->hosts_rules_blocking_mode;
-		backing.settings.dns_cache_size					= defaults->dns_cache_size;
-		backing.settings.upstream_timeout_ms			= defaults->upstream_timeout_ms;
+		backing.settings.blocked_response_ttl_secs	 = defaults->blocked_response_ttl_secs;
+		backing.settings.adblock_rules_blocking_mode = defaults->adblock_rules_blocking_mode;
+		backing.settings.hosts_rules_blocking_mode	 = defaults->hosts_rules_blocking_mode;
+		backing.settings.dns_cache_size				 = defaults->dns_cache_size;
+		backing.settings.upstream_timeout_ms		 = defaults->upstream_timeout_ms;
 		ag.settings_free(defaults);
 
 		backing.listen_string = config.listen;
@@ -470,11 +494,11 @@ namespace
 				backing.bootstrap_ptrs.back().push_back(b.c_str());
 
 			ag_upstream_options opt{};
-			opt.address					  = backing.upstream_strings.back().c_str();
-			opt.bootstrap.data			  = backing.bootstrap_ptrs.back().empty() ? nullptr : backing.bootstrap_ptrs.back().data();
-			opt.bootstrap.size			  = static_cast<uint32_t>(backing.bootstrap_ptrs.back().size());
-			opt.id						  = ++id;
-			opt.outbound_interface_index  = 0;
+			opt.address					 = backing.upstream_strings.back().c_str();
+			opt.bootstrap.data			 = backing.bootstrap_ptrs.back().empty() ? nullptr : backing.bootstrap_ptrs.back().data();
+			opt.bootstrap.size			 = static_cast<uint32_t>(backing.bootstrap_ptrs.back().size());
+			opt.id						 = ++id;
+			opt.outbound_interface_index = 0;
 
 			backing.upstreams.push_back(opt);
 		}
@@ -484,23 +508,23 @@ namespace
 
 		backing.listeners.resize(2);
 		backing.listeners[0] = ag_listener_settings{ backing.listen_string.c_str(), config.port, AGLP_UDP, false, 0, {} };
-		backing.listeners[1] = ag_listener_settings{ backing.listen_string.c_str(), config.port, AGLP_TCP, true, 30000, {} };
+		backing.listeners[1] = ag_listener_settings{ backing.listen_string.c_str(), config.port, AGLP_TCP, true, 30'000, {} };
 
 		backing.settings.listeners.data = backing.listeners.data();
 		backing.settings.listeners.size = static_cast<uint32_t>(backing.listeners.size());
 
-		backing.settings.block_ipv6							= false;
-		backing.settings.ipv6_available						= false;
-		backing.settings.enable_dnssec_ok					= false;
-		backing.settings.enable_retransmission_handling		= true;
-		backing.settings.block_ech							= false;
-		backing.settings.block_h3_alpn						= false;
-		backing.settings.enable_parallel_upstream_queries	= true;
+		backing.settings.block_ipv6							  = false;
+		backing.settings.ipv6_available						  = false;
+		backing.settings.enable_dnssec_ok					  = false;
+		backing.settings.enable_retransmission_handling		  = true;
+		backing.settings.block_ech							  = false;
+		backing.settings.block_h3_alpn						  = false;
+		backing.settings.enable_parallel_upstream_queries	  = true;
 		backing.settings.enable_fallback_on_upstreams_failure = true;
 		backing.settings.enable_servfail_on_upstreams_failure = true;
-		backing.settings.enable_http3						= false;
-		backing.settings.enable_post_quantum_cryptography	= false;
-		backing.settings.optimistic_cache					= true;
+		backing.settings.enable_http3						  = false;
+		backing.settings.enable_post_quantum_cryptography	  = false;
+		backing.settings.optimistic_cache					  = true;
 
 		return &backing.settings;
 	}
@@ -533,7 +557,7 @@ namespace
 		opt.bootstrap.data = boots.empty() ? nullptr : boots.data();
 		opt.bootstrap.size = static_cast<uint32_t>(boots.size());
 
-		const char* error = ag.test_upstream(&opt, 10000, false, nullptr, false);
+		const char* error = ag.test_upstream(&opt, 10'000, false, nullptr, false);
 		if (!error)
 			return { 0, "OK" };
 
@@ -541,7 +565,7 @@ namespace
 		ag.str_free(error);
 		return { 1, std::move(text) };
 	}
-} // namespace
+}	 // namespace
 
 int main(int argc, char** argv)
 {
@@ -550,7 +574,8 @@ int main(int argc, char** argv)
 	std::string test_file;
 	std::string result_file;
 	std::string backup_path;
-	bool		repair = false;
+	bool		repair		 = false;
+	bool		no_os_switch = false;
 
 	for (int i = 1; i < argc; ++i)
 	{
@@ -567,10 +592,12 @@ int main(int argc, char** argv)
 			backup_path = argv[++i];
 		else if (arg == "--repair")
 			repair = true;
+		else if (arg == "--no-os-switch")
+			no_os_switch = true;
 		else
 		{
 			std::cerr << "Usage:\n"
-					  << "  unblock_dns --config <path>\n"
+					  << "  unblock_dns --config <path> [--no-os-switch]\n"
 					  << "  unblock_dns --test-upstream <addr>[|<boot,csv>] [--result <path>]\n"
 					  << "  unblock_dns --test-upstream-file <in> --result <out>\n"
 					  << "  unblock_dns --repair --backup <path>\n";
@@ -586,7 +613,7 @@ int main(int argc, char** argv)
 
 	const auto dll_path = exeDir() / "AdguardDns64.dll";
 
-	AgBind ag;
+	AgBind		ag;
 	std::string bind_error;
 	if (!ag.load(dll_path.wstring(), bind_error))
 	{
@@ -662,7 +689,7 @@ int main(int argc, char** argv)
 	g_log.open(config.log_path);
 	logLine("Starting with " + std::to_string(config.upstreams.size()) + " upstream(s)");
 
-	ProxySettingsBacking backing;
+	ProxySettingsBacking  backing;
 	ag_dnsproxy_settings* settings = buildSettings(ag, config, backing);
 	if (!settings)
 	{
@@ -672,7 +699,7 @@ int main(int argc, char** argv)
 
 	// Init the proxy BEFORE touching OS DNS: a failed init must leave
 	// the system resolvers alone.
-	ag_dnsproxy_init_result result  = AGDPIR_OK;
+	ag_dnsproxy_init_result result	= AGDPIR_OK;
 	const char*				message = nullptr;
 	ag_dnsproxy_events		events{ requestProcessedCallback, nullptr };
 
@@ -686,7 +713,9 @@ int main(int argc, char** argv)
 
 	logLine("Proxy listening on " + config.listen + ":" + std::to_string(config.port));
 
-	if (!switchOsDns(ag, config, config.backup_path))
+	if (no_os_switch)
+		logLine("--no-os-switch: adapters left untouched (proxy-only run)");
+	else if (!switchOsDns(ag, config, config.backup_path))
 		logLine("Warning: no adapters switched, serving proxy only");
 
 	SetConsoleCtrlHandler(ctrlHandler, TRUE);
@@ -708,7 +737,8 @@ int main(int argc, char** argv)
 	logLine("Stopping");
 	writeStatus(config.status_path, "stopping", config.upstreams.size());
 
-	restoreOsDns(ag, config.backup_path);
+	if (!no_os_switch)
+		restoreOsDns(ag, config.backup_path);
 	ag.deinit(proxy);
 
 	writeStatus(config.status_path, "stopped", config.upstreams.size());
