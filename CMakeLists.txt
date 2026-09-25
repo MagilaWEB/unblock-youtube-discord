@@ -140,11 +140,13 @@ FetchContent_Declare(
 # For local development set UNBLOCK_DNS_DLL to a prebuilt file, or turn on
 # UNBLOCK_DNS_FETCH to download the release asset.
 set(UNBLOCK_DNS_DLL "" CACHE FILEPATH "Path to a prebuilt AdguardDns64.dll (dev override)")
-set(UNBLOCK_DNS_FETCH "OFF" CACHE BOOL "Download the AdguardDns64.dll release asset")
+set(UNBLOCK_DNS_FETCH "ON" CACHE BOOL "Download the AdguardDns64.dll release asset")
 set(UNBLOCK_DNS_DLL_URL
   "https://github.com/MagilaWEB/unblock-youtube-discord/releases/download/dnslibs-v2.10.2/AdguardDns64-v2.10.2.zip"
   CACHE STRING "URL of the AdguardDns64 DLL zip")
-set(UNBLOCK_DNS_DLL_SHA256 "" CACHE STRING "SHA256 of the DLL zip (empty = no verification)")
+set(UNBLOCK_DNS_DLL_SHA256
+  "4a0aa69c4c3bf52c7ec205888d282289df232e0a7b16e1a117ff3e97dc0e197d"
+  CACHE STRING "SHA256 of the DLL zip (empty = no verification)")
 
 if(UNBLOCK_DNS_DLL AND EXISTS "${UNBLOCK_DNS_DLL}")
   set(UNBLOCK_DNS_DLL_PATH "${UNBLOCK_DNS_DLL}")
