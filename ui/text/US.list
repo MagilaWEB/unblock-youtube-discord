@@ -350,6 +350,7 @@ str_status_dns_running=🌐 DNS proxy running · queries: {} · cached: {}
 str_status_dns_stopped=🌐 DNS proxy stopped
 str_window_test_upstream_title=🧪 Server check
 str_task_dns_proxy_title=🔒 Applying DNS proxy
+str_task_dns_proxy_test_title=🧪 Checking DNS server
 
 // Setting common enable local proxy telegram
 str_checkbox_enable_proxy_tg_title=📱 Proxy for Telegram

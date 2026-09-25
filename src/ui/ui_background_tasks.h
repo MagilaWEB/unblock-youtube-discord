@@ -13,8 +13,9 @@
 // UiBackgroundTasks — minimalist indicator of silent background jobs.
 //
 // Only quiet tasks are registered here (e.g. update check at startup).
-// Visible long operations (DNS update, auto-config, testing) keep their
-// own modal windows and are NOT duplicated in the indicator.
+// Visible long operations keep their own modal windows and are NOT
+// duplicated in the indicator — except the DNS server check, which has
+// no modal until it finishes and needs the "in progress" feedback.
 //
 // The task list lives in a custom expandable block in the bottom-right
 // corner (NOT a modal SecondaryWindow): its size follows the number of

@@ -101,8 +101,13 @@ void UiDnsProxy::initialize()
 					if (value.empty() || !parseUpstreamValue(trimConfigLine(value)))
 						return;
 
+					_ui->backgroundTasks()->start("dns_proxy_test", "str_task_dns_proxy_test_title");
+
 					std::string output;
 					_unblock->dnsProxyTestUpstream(value, output);
+
+					_ui->backgroundTasks()->finish("dns_proxy_test");
+
 					_window_test_result->setDescription(Localization::Str{ output.empty() ? std::string{ "—" } : output });
 					_window_test_result->show();
 				}

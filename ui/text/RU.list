@@ -350,6 +350,7 @@ str_status_dns_running=🌐 DNS-прокси работает · запросо�
 str_status_dns_stopped=🌐 DNS-прокси остановлен
 str_window_test_upstream_title=🧪 Проверка сервера
 str_task_dns_proxy_title=🔒 Применение DNS-прокси
+str_task_dns_proxy_test_title=🧪 Проверка DNS-сервера
 
 // Setting common enable local proxy telegram
 str_checkbox_enable_proxy_tg_title=📱 Прокси для Telegram
