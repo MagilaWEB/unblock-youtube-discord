@@ -22,11 +22,19 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 option(BUILD_TESTS "Build tests" ON)
 option(CUPY_LIBS_DLL_TO_BIN "CUPY_LIBS_DLL_TO_BIN" ON)
 
-# Generated version header (git-ignored, rewritten on every configure).
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/engine/version.hpp.in"
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/engine/version.hpp"
-  @ONLY
+# Version header (git-ignored). Regenerated on every build, not only on
+# configure: the helper fetches tags (best effort, so a release tagged
+# elsewhere is seen) and rewrites the file only when the computed version
+# actually changed. See cmake/WriteVersionHeader.cmake.
+add_custom_target(unblock_version ALL
+  COMMAND ${CMAKE_COMMAND}
+    -DUNBLOCK_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+    -DUNBLOCK_VERSION_OVERRIDE=${UNBLOCK_VERSION_OVERRIDE}
+    -DUNBLOCK_VERSION_BUMP_FORCE=${UNBLOCK_VERSION_BUMP_FORCE}
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/WriteVersionHeader.cmake"
+  BYPRODUCTS "${CMAKE_CURRENT_SOURCE_DIR}/src/engine/version.hpp"
+  COMMENT "Refreshing version.hpp from git state"
+  VERBATIM
 )
 
 if (BUILD_TESTS)
@@ -320,3 +328,8 @@ add_subdirectory(src/unblock)
 add_subdirectory(src/helper)
 add_subdirectory(src/unblock_dns)
 add_subdirectory(src/unblock_update)
+
+# Targets that embed VERSION_* from version.hpp must wait for the generator.
+add_dependencies(engine unblock_version)
+add_dependencies(ui unblock_version)
+add_dependencies(unblock unblock_version)
