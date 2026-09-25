@@ -48,6 +48,15 @@ public:
 	static std::expected<long, int> checkHost(const std::string& host);
 
 	/**
+	 * Terminal (strategy-independent) failure: the check died before the
+	 * first packet (DNS resolution). Desync operates on packets, so no
+	 * strategy can fix it — the host counts as fully-tried immediately.
+	 * Anything later (refused/timeout/TLS) saw packets and stays with the
+	 * normal hunt.
+	 */
+	static bool isTerminalError(int curl_code);
+
+	/**
 	 * Voice-gateway check: TLS connect, then a raw WebSocket upgrade and a
 	 * sustained ping/pong exchange. Plain curl only proves the TLS
 	 * handshake, which survives on almost every strategy; the upgrade

@@ -25,6 +25,11 @@ IPCSignals::IPCSignals()
 		return;
 	}
 
+	// Same loopback storms as the helper: grow the kernel buffer so bursts
+	// of verdict datagrams survive until the listener drains them.
+	int ipc_buf = 1 << 20;
+	setsockopt(sock->fd, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&ipc_buf), sizeof(ipc_buf));
+
 	u_long mode = 1;
 	ioctlsocket(sock->fd, FIONBIO, &mode);
 	_sock	  = std::move(sock);

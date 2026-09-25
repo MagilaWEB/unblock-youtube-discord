@@ -25,6 +25,10 @@ class UiZapretHelper
 	UL_LIST(_list_helper_error);
 	std::vector<std::pair<std::string, std::string>> _last_helper_error;
 
+	// Hosts fully tried on every strategy (dead, nothing left to attempt)
+	UL_LIST(_list_helper_exhausted);
+	std::vector<std::pair<std::string, std::string>> _last_helper_exhausted;
+
 	// Helper runtime settings ([HELPER] section). The on-disk file is stale
 	// while unblock runs, so Apply writes userConfig (memory) + pushes UDP
 	// CONFIG: to the running helper + stores the message in Unblock for the
@@ -67,6 +71,7 @@ public:
 	void updateSeen();
 	void updateValid();
 	void updateError();
+	void updateExhausted();
 
 private:
 	std::string _sel(std::string_view tail) const { return _root + std::string{ tail }; }
@@ -75,6 +80,7 @@ private:
 	void _initHelperSeen();
 	void _initHelperValid();
 	void _initHelperError();
+	void _initHelperExhausted();
 
 	void _initHelperSettings();
 	void _applyHelperSettings();

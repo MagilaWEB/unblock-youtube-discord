@@ -349,6 +349,8 @@ bool Unblock::_dropExpiredHelperStates(std::chrono::steady_clock::time_point now
 		_helper_seen.clear();
 		_helper_errors.clear();
 		_helper_valid.clear();
+		_helper_exhausted.clear();
+		_helper_stats = {};
 		return true;
 	}
 	return false;
@@ -366,6 +368,7 @@ std::vector<std::string> Unblock::helperCheckingHosts()
 		// Sync: one host lives in a single list (seen stays out of the sync).
 		_helper_errors.erase(name);
 		_helper_valid.erase(name);
+		_helper_exhausted.erase(name);
 		_helper_checking.insert(std::move(name));
 	}
 
@@ -419,6 +422,7 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperErrorHosts()
 				// Sync: evict from the sibling lists (seen stays out of the sync).
 				_helper_checking.erase(host);
 				_helper_valid.erase(host);
+				_helper_exhausted.erase(host);
 				_helper_errors[host] = entry->substr(pos + 1);
 			}
 			_helper_last_signal = now;
@@ -457,6 +461,7 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperValidHosts()
 				// Sync: evict from the sibling lists (seen stays out of the sync).
 				_helper_checking.erase(host);
 				_helper_errors.erase(host);
+				_helper_exhausted.erase(host);
 				_helper_valid[host] = entry->substr(pos + 1);
 			}
 			_helper_last_signal = now;
@@ -472,6 +477,82 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperValidHosts()
 		result.emplace_back(host, strategy);
 
 	return result;
+}
+
+std::vector<std::pair<std::string, std::string>> Unblock::helperExhaustedHosts()
+{
+	auto&	   ipc = IPCSignals::get();
+	const auto now = std::chrono::steady_clock::now();
+
+	auto entry = ipc.getString("helper_exhausted");
+
+	if (entry)
+	{
+		_helper_last_signal = now;
+		_helper_exhausted.clear();
+
+		do
+		{
+			const auto pos = entry->rfind(':');
+			if (pos != std::string::npos)
+			{
+				const auto host = entry->substr(0, pos);
+				// Sync: evict from the sibling lists (seen stays out of the sync).
+				_helper_checking.erase(host);
+				_helper_errors.erase(host);
+				_helper_valid.erase(host);
+				_helper_exhausted[host] = entry->substr(pos + 1);
+			}
+			_helper_last_signal = now;
+		} while ((entry = ipc.getString("helper_exhausted")));
+	}
+
+	if (_dropExpiredHelperStates(now))
+		return {};
+
+	std::vector<std::pair<std::string, std::string>> result;
+	result.reserve(_helper_exhausted.size());
+	for (const auto& [host, strategy] : _helper_exhausted)
+		result.emplace_back(host, strategy);
+
+	return result;
+}
+
+HelperStats Unblock::helperStats()
+{
+	auto&	   ipc = IPCSignals::get();
+	const auto now = std::chrono::steady_clock::now();
+
+	if (auto entry = ipc.getString("helper_stats"))
+	{
+		_helper_last_signal = now;
+		do
+		{
+			if (auto parsed = parseHelperStats(*entry))
+				_helper_stats = *parsed;
+		} while ((entry = ipc.getString("helper_stats")));
+	}
+
+	if (_dropExpiredHelperStates(now))
+		return {};
+
+	return _helper_stats;
+}
+
+std::vector<std::string> Unblock::testHostNames()
+{
+	std::vector<std::string> hosts;
+	for (auto& line : _domain_testing.listHost())
+	{
+		std::smatch m;
+		if (!(std::regex_search(line, m, std::regex{ R"(://([^/?#]+))" }) && m.size() > 1))
+			continue;
+
+		std::string host = m[1].str();
+		if (isHelperHostName(host))
+			hosts.emplace_back(std::move(host));
+	}
+	return hosts;
 }
 
 std::vector<std::string> Unblock::listVersionStrategy(Technology technology)
@@ -597,6 +678,7 @@ void Unblock::removeService()
 	_helper_checking.clear();
 	_helper_errors.clear();
 	_helper_valid.clear();
+	_helper_exhausted.clear();
 	_zapret1_engine.remove();
 	_zapret2_engine.remove();
 	_zapret_helper.remove();
@@ -609,6 +691,7 @@ void Unblock::stopService()
 	_helper_checking.clear();
 	_helper_errors.clear();
 	_helper_valid.clear();
+	_helper_exhausted.clear();
 	_zapret1_engine.stop();
 	_zapret2_engine.stop();
 	_zapret_helper.stop();
@@ -656,6 +739,7 @@ void Unblock::startService(Technology technology)
 	_helper_checking.clear();
 	_helper_errors.clear();
 	_helper_valid.clear();
+	_helper_exhausted.clear();
 
 	// Exactly one technology runs at a time.
 	if (technology == Technology::Zapret1)
@@ -693,19 +777,12 @@ void Unblock::startService(Technology technology)
 
 	// send domain list to zapret-helper
 	{
-		auto		list_host = _domain_testing.listHost();
-		std::string list	  = "LIST:";
-
-		if (!list_host.empty())
+		auto hosts = testHostNames();
+		if (!hosts.empty())
 		{
-			for (auto& line : list_host)
+			std::string list = "LIST:";
+			for (auto& host : hosts)
 			{
-				auto host = [&]() -> std::string
-				{
-					std::smatch m;
-					return std::regex_search(line, m, std::regex{ R"(://([^/?#]+))" }) && m.size() > 1 ? m[1].str() : "";
-				}();
-
 				list += host;
 				list += ':';
 			}

@@ -102,6 +102,11 @@ std::string ZapretHelper::_makeErrorSignal(std::string_view host, std::string_vi
 	return std::format("STRING:helper_error:{}:{}", host, strategy);
 }
 
+std::string ZapretHelper::_makeExhaustedSignal(std::string_view host, std::string_view strategy)
+{
+	return std::format("STRING:helper_exhausted:{}:{}", host, strategy);
+}
+
 std::string ZapretHelper::_makeDoneSignal(std::string_view host)
 {
 	return std::format("STRING:helper_done:{}", host);
@@ -115,6 +120,11 @@ std::string ZapretHelper::_makeCheckingSignal(std::string_view host)
 std::string ZapretHelper::_makeSeenSignal(std::string_view host)
 {
 	return std::format("STRING:helper_seen:{}", host);
+}
+
+std::string ZapretHelper::_makeStatsSignal(size_t queued, size_t in_check, size_t known)
+{
+	return std::format("STRING:helper_stats:{}:{}:{}", queued, in_check, known);
 }
 
 std::string ZapretHelper::_makeOk(std::string_view host)
@@ -171,12 +181,16 @@ void ZapretHelper::_handleMessage(std::string_view message)
 		{
 			_valid_hosts[host] = std::string{ strat };
 			_error_hosts.erase(host);
+			// Packet-level recovery: lua confirms a working strategy, so a
+			// stale fully-tried mark must go.
+			_exhausted_hosts.erase(host);
 
 			if (!_known_hosts.contains(host))
 				_known_hosts.insert(host);
 
-			for (auto& [host, strat] : _valid_hosts)
-				_send(_makeValidSignal(host, strat), c_ipc_port);
+			_valid_dirty	   = true;
+			_error_dirty	   = true;
+			_exhausted_dirty = true;
 		}
 	}
 	else if (message.starts_with("ERR:"))
@@ -207,10 +221,44 @@ void ZapretHelper::_handleMessage(std::string_view message)
 				_valid_hosts.erase(host);
 				_cv.notify_all();
 			}
-		}
 
-		for (auto& [host, info] : _error_hosts)
-			_send(_makeErrorSignal(host, info.strategy), c_ipc_port);
+			_error_dirty = true;
+			_valid_dirty = true;
+		}
+	}
+	else if (message.starts_with("EXHAUSTED:"))
+	{
+		std::lock_guard lock(_mutex);
+		const auto		rest  = message.substr(10);
+		const auto		pos	  = rest.find(':');
+		const auto		host  = std::string{ rest.substr(0, pos) };
+		const auto		strat = (pos != std::string_view::npos) ? rest.substr(pos + 1) : std::string_view{};
+		if (_isValidHost(host) && !strat.empty())
+		{
+			// First report owns the timestamps (packet spam must not
+			// postpone anything); duplicates refresh the strategy name.
+			// A fully-tried host invalidates any earlier valid mark.
+			if (const auto it = _exhausted_hosts.find(host); it != _exhausted_hosts.end())
+			{
+				it->second.strategy = std::string{ strat };
+			}
+			else
+			{
+				const auto now = std::chrono::steady_clock::now();
+				ErrorInfo  info;
+				info.first	  = now;
+				info.last	  = now;
+				info.strategy = std::string{ strat };
+				_exhausted_hosts.emplace(host, std::move(info));
+				_valid_hosts.erase(host);
+			}
+
+			if (!_known_hosts.contains(host))
+				_known_hosts.insert(host);
+
+			_exhausted_dirty = true;
+			_valid_dirty	 = true;
+		}
 	}
 	else if (message.starts_with("CONFIG:"))
 	{
@@ -236,12 +284,51 @@ void ZapretHelper::_checkHost(std::string_view host)
 
 	if (result)
 	{
+		// Slow-recheck recovery: the body flows again, the fully-tried
+		// mark must go (unblock side expires it by TTL as well).
+		{
+			std::lock_guard lock(_mutex);
+			_exhausted_hosts.erase(std::string{ host });
+		}
 		_log(std::format("ok {} http={}", host, result.value()));
 		_send(_makeOk(host), c_receive_port);
 	}
 	else
 	{
-		_log(std::format("fail {} curl={}", host, result.error()));
+		// Resolver died before the first packet (pulled cable, dead DNS):
+		// no strategy can fix it and lua will never see the host (no
+		// traffic exists to strategize), so mark it fully-tried right
+		// away instead of waiting for a lua wrap that never comes.
+		if (CurlClient::isTerminalError(result.error()) && _isValidHost(host))
+		{
+			std::lock_guard lock(_mutex);
+			const auto now = std::chrono::steady_clock::now();
+			if (const auto it = _exhausted_hosts.find(std::string{ host }); it != _exhausted_hosts.end())
+			{
+				it->second.last = now;
+			}
+			else
+			{
+				ErrorInfo info;
+				info.first	  = now;
+				info.last	  = now;
+				info.strategy = "dns";
+				_exhausted_hosts.emplace(std::string{ host }, std::move(info));
+				_valid_hosts.erase(std::string{ host });
+			}
+
+			if (!_known_hosts.contains(std::string{ host }))
+				_known_hosts.emplace(host);
+
+			for (auto& [known, info] : _exhausted_hosts)
+				_send(_makeExhaustedSignal(known, info.strategy), c_ipc_port);
+
+			_log(std::format("dns-dead {} (terminal)", host));
+		}
+		else
+		{
+			_log(std::format("fail {} curl={}", host, result.error()));
+		}
 		_send(_makeFail(host), c_receive_port);
 	}
 }
@@ -254,6 +341,10 @@ std::optional<std::string> ZapretHelper::_popHost()
 		std::string host = *it;
 		_queue.erase(it);
 		_in_check.insert(host);
+
+		for (auto& h : _in_check)
+			_send(_makeCheckingSignal(h), c_ipc_port);
+		
 		return host;
 	}
 
@@ -276,7 +367,6 @@ void ZapretHelper::_workerRoutine(u32 epoch)
 
 		lock.unlock();
 
-		_send(_makeCheckingSignal(*host), c_ipc_port);
 		_checkHost(*host);
 
 		lock.lock();
@@ -349,6 +439,8 @@ void ZapretHelper::_idleStep()
 	bool grew = false;
 	bool send_seen = false;
 	std::vector<std::string> seen;
+	std::vector<std::pair<std::string, std::string>> snap_valid, snap_error, snap_exhausted;
+	size_t stat_queued = 0, stat_in_check = 0, stat_known = 0;
 	{
 		std::lock_guard lock(_mutex);
 
@@ -370,8 +462,31 @@ void ZapretHelper::_idleStep()
 		if ((now - _last_seen_send) >= c_seen_interval)
 		{
 			seen.assign(_known_hosts.begin(), _known_hosts.end());
+			stat_queued	  = _queue.size();
+			stat_in_check = _in_check.size();
+			stat_known	  = _known_hosts.size();
+			// Verdict snapshots piggyback the same tick (at most 2Hz even
+			// under lua packet spam): unblock clear+refills its lists from
+			// these, so per-message rebroadcasts are unnecessary.
+			if (_valid_dirty)
+			{
+				snap_valid.assign(_valid_hosts.begin(), _valid_hosts.end());
+				_valid_dirty = false;
+			}
+			if (_error_dirty)
+			{
+				for (const auto& [host, info] : _error_hosts)
+					snap_error.emplace_back(host, info.strategy);
+				_error_dirty = false;
+			}
+			if (_exhausted_dirty)
+			{
+				for (const auto& [host, info] : _exhausted_hosts)
+					snap_exhausted.emplace_back(host, info.strategy);
+				_exhausted_dirty = false;
+			}
 			_last_seen_send = now;
-			send_seen = true;
+			send_seen		= true;
 		}
 
 		for (auto& [host, info] : _error_hosts)
@@ -400,8 +515,20 @@ void ZapretHelper::_idleStep()
 	// UDP sends and wakeups happen outside the mutex: holding it during
 	// hundreds of sendto calls serialized completions on all workers.
 	if (send_seen)
+	{
 		for (const auto& host : seen)
 			_send(_makeSeenSignal(host), c_ipc_port);
+		// Pool load snapshot (self-healing state, not edges): the checking
+		// set is an instant sample and reads ~0 under millisecond checks,
+		// while workers are actually buried in queue.
+		_send(_makeStatsSignal(stat_queued, stat_in_check, stat_known), c_ipc_port);
+		for (const auto& [host, strat] : snap_valid)
+			_send(_makeValidSignal(host, strat), c_ipc_port);
+		for (const auto& [host, strat] : snap_error)
+			_send(_makeErrorSignal(host, strat), c_ipc_port);
+		for (const auto& [host, strat] : snap_exhausted)
+			_send(_makeExhaustedSignal(host, strat), c_ipc_port);
+	}
 
 	// Wake workers only when new work actually arrived. An unconditional
 	// notify_all here was a thundering herd (20 wakeups x 10Hz for nothing),
@@ -421,6 +548,10 @@ int ZapretHelper::run()
 
 	if (!_socket.create() || !_socket.bind(c_receive_port) || !_socket.nonBlocking())
 		return 1;
+
+	// Loopback storms of tiny datagrams (ERR spam, rebroadcasts) overflowed
+	// the default kernel buffers and verdicts never reached unblock.
+	_socket.setBufferSize(1 << 20);
 
 	_startWorkers(_pool_size);
 

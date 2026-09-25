@@ -248,7 +248,9 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 			{
 				auto host = get_host();
 
-				if (!host.empty() && ipc.has("exhausted", host))
+				// Fully-tried verdict, relayed by the helper (lua reports
+				// EXHAUSTED to the helper only, never directly to unblock).
+				if (!host.empty() && ipc.has("helper_exhausted", host))
 				{
 #ifdef DEBUG
 					Debug::info("ZAPRET2: exhausted for url[{}]", domain.url);

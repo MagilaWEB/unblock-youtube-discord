@@ -14,6 +14,7 @@ void UiZapretHelper::initialize()
 	_initHelperSeen();
 	_initHelperValid();
 	_initHelperError();
+	_initHelperExhausted();
 }
 
 void UiZapretHelper::setVisible(bool visible)
@@ -36,6 +37,7 @@ void UiZapretHelper::setVisible(bool visible)
 	toggle(_list_helper_seen);
 	toggle(_list_helper_valid);
 	toggle(_list_helper_error);
+	toggle(_list_helper_exhausted);
 	toggle(_helper_pool);
 	toggle(_helper_check_timeout);
 	toggle(_helper_connect_timeout);
@@ -47,7 +49,7 @@ void UiZapretHelper::setVisible(bool visible)
 
 void UiZapretHelper::_initHelperChecking()
 {
-	_list_helper_checking->create(_sel(" section"), utils::format(Localization::Str{ "str_zapret_helper_checking_title" }(), 0));
+	_list_helper_checking->create(_sel(" section"), utils::format(Localization::Str{ "str_zapret_helper_checking_title" }(), 0, 0));
 }
 
 std::span<const UiZapretHelper::HelperSettingDef> UiZapretHelper::helperSettingDefs()
@@ -58,43 +60,43 @@ std::span<const UiZapretHelper::HelperSettingDef> UiZapretHelper::helperSettingD
 	// (check_timeout_sec / connect_timeout_sec), sub-second input
 	// would be false precision.
 	static const HelperSettingDef defs[]{
-		{			 "pool_size",Input::Types::count,20, 1,64,	  "","str_helper_pool_title",				   "str_helper_pool_description",&UiZapretHelper::_helper_pool						 },
-		{	 "check_timeout_sec",
-		 Input::Types::duration_sec,
-		 6, 1,
-		 60, "sec",
-		 "str_helper_check_timeout_title",	   "str_helper_check_timeout_description",
-		 &UiZapretHelper::_helper_check_timeout		 },
+		{			"pool_size",Input::Types::count,20, 1,64,	   "","str_helper_pool_title",				"str_helper_pool_description",&UiZapretHelper::_helper_pool						 },
+		{	  "check_timeout_sec",
+		  Input::Types::duration_sec,
+		  6, 1,
+		  60, "sec",
+		  "str_helper_check_timeout_title",		  "str_helper_check_timeout_description",
+		  &UiZapretHelper::_helper_check_timeout		 },
 		{  "connect_timeout_sec",
-		 Input::Types::duration_sec,
-		 5, 1,
-		 30, "sec",
-		 "str_helper_connect_timeout_title",	 "str_helper_connect_timeout_description",
-		 &UiZapretHelper::_helper_connect_timeout	 },
-		{		 "max_redirects",
-		 Input::Types::count,
-		 5, 0,
-		 10,	"",
-		 "str_helper_max_redirects_title",	   "str_helper_max_redirects_description",
-		 &UiZapretHelper::_helper_max_redirects		 },
+		  Input::Types::duration_sec,
+		  5, 1,
+		  30, "sec",
+		  "str_helper_connect_timeout_title",	  "str_helper_connect_timeout_description",
+		  &UiZapretHelper::_helper_connect_timeout	   },
+		{		  "max_redirects",
+		  Input::Types::count,
+		  5, 0,
+		  10,	  "",
+		  "str_helper_max_redirects_title",		  "str_helper_max_redirects_description",
+		  &UiZapretHelper::_helper_max_redirects		 },
 		{ "recheck_interval_min",
-		 Input::Types::duration_min,
-		 30, 5,
-		 180, "min",
-		 "str_helper_recheck_min_title",		 "str_helper_recheck_min_description",
-		 &UiZapretHelper::_helper_recheck_min		 },
+		  Input::Types::duration_min,
+		  30, 5,
+		  180, "min",
+		  "str_helper_recheck_min_title",		  "str_helper_recheck_min_description",
+		  &UiZapretHelper::_helper_recheck_min		   },
 		{  "errors_progress_min",
-		 Input::Types::duration_min,
-		 3, 1,
-		 30, "min",
-		 "str_helper_errors_progress_min_title", "str_helper_errors_progress_min_description",
-		 &UiZapretHelper::_helper_errors_progress_min },
-		{	"errors_recheck_sec",
-		 Input::Types::duration_sec,
-		 30, 5,
-		 300, "sec",
-		 "str_helper_errors_recheck_sec_title",  "str_helper_errors_recheck_sec_description",
-		 &UiZapretHelper::_helper_errors_recheck_sec },
+		  Input::Types::duration_min,
+		  3, 1,
+		  30, "min",
+		  "str_helper_errors_progress_min_title", "str_helper_errors_progress_min_description",
+		  &UiZapretHelper::_helper_errors_progress_min },
+		{	  "errors_recheck_sec",
+		  Input::Types::duration_sec,
+		  30, 5,
+		  300, "sec",
+		  "str_helper_errors_recheck_sec_title",  "str_helper_errors_recheck_sec_description",
+		  &UiZapretHelper::_helper_errors_recheck_sec },
 	};
 
 	return defs;
@@ -133,14 +135,25 @@ void UiZapretHelper::updateChecking()
 	auto hosts = _ui->_unblock->helperCheckingHosts();
 	std::ranges::sort(hosts);
 
+	// Pool load snapshot from the helper (authoritative counts): per-host
+	// edges below stay truthful now that verdict snapshots no longer spam
+	// O(N) datagrams per lua packet and drown them on loopback.
+	const auto stats	= _ui->_unblock->helperStats();
+	const bool snapshot = stats.in_check != 0 || stats.queued != 0 || stats.known != 0 || hosts.empty();
+	const auto title	= utils::format(
+		Localization::Str{ "str_zapret_helper_checking_title" }(),
+		snapshot ? stats.in_check : hosts.size(),
+		snapshot ? stats.queued : 0
+	);
+
 	if (hosts == _last_helper_checking)
 		return;
 
 	_last_helper_checking = hosts;
 
-	_list_helper_checking->setTitle(utils::format(Localization::Str{ "str_zapret_helper_checking_title" }(), hosts.size()));
+	_list_helper_checking->setTitle(title);
 	_list_helper_checking->clear();
-	for (auto& host : hosts)
+	for (auto& host : _last_helper_checking)
 		_list_helper_checking->createLi(Localization::Str{ host });
 }
 
@@ -214,6 +227,30 @@ void UiZapretHelper::updateError()
 	_list_helper_error->clear();
 	for (auto& [host, strategy] : entries)
 		_list_helper_error->createLiSuccess(utils::format(Localization::Str{ "str_zapret_helper_error_item" }(), host, strategy));
+}
+
+void UiZapretHelper::_initHelperExhausted()
+{
+	_list_helper_exhausted->create(_sel(" section"), utils::format(Localization::Str{ "str_zapret_helper_exhausted_title" }(), 0));
+}
+
+void UiZapretHelper::updateExhausted()
+{
+	if (!_list_helper_exhausted->isCreate())
+		return;
+
+	auto entries = _ui->_unblock->helperExhaustedHosts();
+	std::ranges::sort(entries);
+
+	if (entries == _last_helper_exhausted)
+		return;
+
+	_last_helper_exhausted = entries;
+
+	_list_helper_exhausted->setTitle(utils::format(Localization::Str{ "str_zapret_helper_exhausted_title" }(), entries.size()));
+	_list_helper_exhausted->clear();
+	for (auto& [host, strategy] : entries)
+		_list_helper_exhausted->createLiSuccess(utils::format(Localization::Str{ "str_zapret_helper_exhausted_item" }(), host, strategy));
 }
 
 u32 UiZapretHelper::_helperSettingU32(std::string_view key, u32 fallback) const

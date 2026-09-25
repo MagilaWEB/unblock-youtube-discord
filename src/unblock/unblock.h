@@ -5,9 +5,72 @@
 #include "dns_host.h"
 #include "ipc_signals.h"
 
+#include <cctype>
+#include <charconv>
+#include <optional>
+#include <ranges>
+#include <string_view>
 #include <unordered_set>
 
 #include "../core/service.h"
+
+/** Passive autopick round (Zapret2): pure rules over helper verdict sets.
+ *  No curl here — verdicts arrive from live traffic (helper probes every
+ *  LIST host through the running desync, lua marks fully-tried hosts
+ *  exhausted). Header-inline so unit tests link without the engine. */
+inline bool autoRoundSettled(
+	const std::unordered_set<std::string>& expected, const std::unordered_set<std::string>& valid, const std::unordered_set<std::string>& exhausted
+)
+{
+	if (expected.empty())
+		return false;
+	for (const auto& h : expected)
+		if (!valid.contains(h) && !exhausted.contains(h))
+			return false;
+	return true;
+}
+
+/** Win when at most ~10% of expected hosts are dead. Empty set never wins. */
+inline bool judgeAutoRound(size_t dead, size_t total)
+{
+	return total > 0 && dead * 10 <= total;
+}
+
+/** Hostnames the helper can verdict (mirrors helper _isValidHost). */
+inline bool isHelperHostName(std::string_view host)
+{
+	return std::ranges::any_of(host, [](char ch) { return std::isalpha(static_cast<unsigned char>(ch)); });
+}
+
+/** Helper pool load snapshot ("queued:in_check:known"). Header-inline so
+ *  unit tests link without the engine. */
+struct HelperStats
+{
+	size_t queued{ 0 };
+	size_t in_check{ 0 };
+	size_t known{ 0 };
+};
+
+inline std::optional<HelperStats> parseHelperStats(std::string_view text)
+{
+	HelperStats out{};
+	size_t		pos = 0;
+	size_t*		fields[3]{ &out.queued, &out.in_check, &out.known };
+	for (int i = 0; i < 3; ++i)
+	{
+		const size_t end = (i < 2) ? text.find(':', pos) : std::string_view::npos;
+		if (i < 2 && end == std::string_view::npos)
+			return std::nullopt;
+		unsigned long long num{};
+		const auto		   part = text.substr(pos, (i < 2) ? end - pos : std::string_view::npos);
+		const auto [ptr, ec] = std::from_chars(part.data(), part.data() + part.size(), num);
+		if (ec != std::errc{} || ptr != part.data() + part.size())
+			return std::nullopt;
+		*fields[i] = static_cast<size_t>(num);
+		pos		   = end + 1;
+	}
+	return out;
+}
 
 class Unblock final : public std::enable_shared_from_this<Unblock>
 {
@@ -34,16 +97,24 @@ class Unblock final : public std::enable_shared_from_this<Unblock>
 	std::string _helper_config_message{};
 
 	// Accessed only from the JS thread (via Ui::update)
-	// The checking/error/valid lists are mutually exclusive: one host lives
-	// in exactly one of them (seen stays out of the sync). A single timestamp
-	// tracks the last consumed helper signal; after c_helper_signal_ttl of
-	// total silence every list is dropped, so the UI never shows dead hosts.
+	// The checking/error/valid/exhausted lists are mutually exclusive: one
+	// host lives in exactly one of them (seen stays out of the sync). A
+	// single timestamp tracks the last consumed helper signal; after
+	// c_helper_signal_ttl of total silence every list is dropped, so the
+	// UI never shows dead hosts.
 	static constexpr auto						 c_helper_signal_ttl{ std::chrono::seconds(5) };
 	std::chrono::steady_clock::time_point		 _helper_last_signal{};
 	std::unordered_set<std::string>				 _helper_checking;
 	std::unordered_set<std::string>				 _helper_seen;
 	std::unordered_map<std::string, std::string> _helper_errors;
 	std::unordered_map<std::string, std::string> _helper_valid;
+	// Fully-tried hosts relayed by the helper (lua wrapped a whole plan).
+	// Terminal verdict like valid, but means "nothing works": autopick
+	// fast-fails these without burning curl timeouts.
+	std::unordered_map<std::string, std::string> _helper_exhausted;
+	// Last pool load snapshot (queued/in-flight/known). Refreshed by the
+	// helper_stats broadcast, zeroed with everything else on TTL expiry.
+	HelperStats _helper_stats{};
 
 	// Drops every helper list if the helper stayed silent past the TTL.
 	// Returns true when expired (all lists are empty afterwards).
@@ -103,6 +174,15 @@ public:
 	std::vector<std::string>						 helperSeenHosts();
 	std::vector<std::pair<std::string, std::string>> helperErrorHosts();
 	std::vector<std::pair<std::string, std::string>> helperValidHosts();
+	/** Fully-tried hosts: every strategy failed, nothing left to attempt. */
+	std::vector<std::pair<std::string, std::string>> helperExhaustedHosts();
+
+	/** Last helper pool load snapshot (zeros when the helper is silent). */
+	HelperStats helperStats();
+
+	/** Bare hostnames of the current domain_test lists (what LIST: carries).
+	 *  Filtered to helper-verdictable names. */
+	std::vector<std::string> testHostNames();
 
 	std::vector<std::string> listVersionStrategy(Technology technology);
 

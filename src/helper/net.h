@@ -37,6 +37,9 @@ public:
 	bool bind(u32 port) const;
 	/** Switch the socket to non-blocking mode. */
 	bool nonBlocking() const;
+	/** Grow kernel send/receive buffers (loopback storms of tiny helper
+	 *  datagrams overflowed the defaults and the UI undercounted). */
+	bool setBufferSize(int bytes) const;
 	/** Bound local port (htons order), 0 if not bound. */
 	u32	 localPort() const;
 	/** Send a datagram to the given address. */

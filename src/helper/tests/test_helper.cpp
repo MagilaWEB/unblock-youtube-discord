@@ -29,6 +29,12 @@ public:
 	const std::unordered_set<std::string>&							inCheck() const { return helper._in_check; }
 	const std::unordered_map<std::string, ZapretHelper::ErrorInfo>& errorHosts() const { return helper._error_hosts; }
 	const std::unordered_map<std::string, std::string>&				valid() const { return helper._valid_hosts; }
+	const std::unordered_map<std::string, ZapretHelper::ErrorInfo>& exhaustedHosts() const { return helper._exhausted_hosts; }
+	std::string exhaustedStrategy(const std::string& host) const
+	{
+		auto it = helper._exhausted_hosts.find(host);
+		return it == helper._exhausted_hosts.end() ? std::string{} : it->second.strategy;
+	}
 
 	// helpers for ErrorInfo
 	std::string errorStrategy(const std::string& host) const
@@ -72,6 +78,8 @@ public:
 	std::string makeSeenSignal(std::string_view h) const { return ZapretHelper::_makeSeenSignal(h); }
 	std::string makeOk(std::string_view h) const { return ZapretHelper::_makeOk(h); }
 	std::string makeFail(std::string_view h) const { return ZapretHelper::_makeFail(h); }
+	std::string makeExhaustedSignal(std::string_view h, std::string_view s) const { return ZapretHelper::_makeExhaustedSignal(h, s); }
+	std::string makeStatsSignal(size_t q, size_t c, size_t k) const { return ZapretHelper::_makeStatsSignal(q, c, k); }
 };
 
 TEST_CASE("isValidHost empty", "[helper][valid]")
@@ -765,4 +773,82 @@ TEST_CASE("CONFIG: clamps garbage, keeps running", "[helper][config]")
 	ZapretHelperTest t;
 	t.handleMessage("CONFIG:pool_size=9999;check_timeout_sec=abc");
 	CHECK(t.poolSize() == 64);
+}
+
+TEST_CASE("EXHAUSTED records strategy", "[helper][exhausted]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("EXHAUSTED:google.com:strategy_29");
+	CHECK(t.exhaustedHosts().contains("google.com"));
+	CHECK(t.exhaustedStrategy("google.com") == "strategy_29");
+}
+
+TEST_CASE("EXHAUSTED with empty strategy ignored", "[helper][exhausted]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("EXHAUSTED:google.com:");
+	CHECK(t.exhaustedHosts().empty());
+}
+
+TEST_CASE("EXHAUSTED with invalid host ignored", "[helper][exhausted]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("EXHAUSTED:1.2.3.4:strategy_3");
+	CHECK(t.exhaustedHosts().empty());
+}
+
+TEST_CASE("EXHAUSTED duplicate refreshes strategy", "[helper][exhausted]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("EXHAUSTED:google.com:strategy_3");
+	t.handleMessage("EXHAUSTED:google.com:direct");
+	CHECK(t.exhaustedStrategy("google.com") == "direct");
+}
+
+TEST_CASE("EXHAUSTED clears valid mark", "[helper][exhausted]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("VALID:google.com:7");
+	REQUIRE(t.valid().contains("google.com"));
+
+	t.handleMessage("EXHAUSTED:google.com:strategy_29");
+	CHECK_FALSE(t.valid().contains("google.com"));
+	CHECK(t.exhaustedHosts().contains("google.com"));
+}
+
+TEST_CASE("VALID clears exhausted mark (packet-level recovery)", "[helper][exhausted]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("EXHAUSTED:google.com:strategy_29");
+	REQUIRE(t.exhaustedHosts().contains("google.com"));
+
+	t.handleMessage("VALID:google.com:7");
+	CHECK(t.exhaustedHosts().empty());
+	CHECK(t.valid().at("google.com") == "7");
+}
+
+TEST_CASE("makeExhaustedSignal format", "[helper][exhausted]")
+{
+	ZapretHelperTest t;
+	CHECK(t.makeExhaustedSignal("a.com", "strategy_1") == "STRING:helper_exhausted:a.com:strategy_1");
+}
+
+TEST_CASE("makeStatsSignal format", "[helper][stats]")
+{
+	ZapretHelperTest t;
+	CHECK(t.makeStatsSignal(47, 20, 200) == "STRING:helper_stats:47:20:200");
+	CHECK(t.makeStatsSignal(0, 0, 0) == "STRING:helper_stats:0:0:0");
+}
+
+TEST_CASE("isTerminalError resolve-fail is terminal", "[helper][terminal]")
+{
+	CHECK(CurlClient::isTerminalError(CURLE_COULDNT_RESOLVE_HOST));
+}
+
+TEST_CASE("isTerminalError later failures keep hunting", "[helper][terminal]")
+{
+	CHECK_FALSE(CurlClient::isTerminalError(CURLE_OK));
+	CHECK_FALSE(CurlClient::isTerminalError(CURLE_COULDNT_CONNECT));
+	CHECK_FALSE(CurlClient::isTerminalError(CURLE_OPERATION_TIMEDOUT));
+	CHECK_FALSE(CurlClient::isTerminalError(CURLE_SSL_CONNECT_ERROR));
 }

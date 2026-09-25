@@ -48,6 +48,18 @@ class ZapretHelper
 	std::unordered_set<std::string>				 _in_check;
 	std::unordered_map<std::string, ErrorInfo>	 _error_hosts;
 	std::unordered_map<std::string, std::string> _valid_hosts;
+	// Fully-tried hosts (lua wrapped a whole plan and went for the second
+	// lap through direct). Owned here, relayed to unblock; slow rechecks
+	// continue so a recovered host leaves the set on the next OK.
+	std::unordered_map<std::string, ErrorInfo> _exhausted_hosts;
+	// Verdict snapshots to unblock (port 9999) go out at most every
+	// c_seen_interval when dirty — never per message. Per-message full-list
+	// rebroadcasts used to spam O(N) datagrams per lua packet and drowned
+	// the CHECKING/DONE edges on the loopback buffer. The lua channel
+	// (OK:/FAIL: to port 10000) stays instant.
+	bool _valid_dirty{ false };
+	bool _error_dirty{ false };
+	bool _exhausted_dirty{ false };
 	UdpSocket									 _socket;
 	std::array<char, c_receive_buffer_size>		 _buffer{};
 	std::vector<std::thread>					 _pool;
@@ -128,9 +140,11 @@ private:
 	static std::string _makeLog(std::string_view text);
 	static std::string _makeValidSignal(std::string_view host, std::string_view strategy);
 	static std::string _makeErrorSignal(std::string_view host, std::string_view strategy);
+	static std::string _makeExhaustedSignal(std::string_view host, std::string_view strategy);
 	static std::string _makeDoneSignal(std::string_view host);
 	static std::string _makeCheckingSignal(std::string_view host);
 	static std::string _makeSeenSignal(std::string_view host);
+	static std::string _makeStatsSignal(size_t queued, size_t in_check, size_t known);
 	static std::string _makeOk(std::string_view host);
 	static std::string _makeFail(std::string_view host);
 

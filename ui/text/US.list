@@ -144,6 +144,8 @@ str_window_auto_start_wait_name_strategy_description_zapret1=🧪 Testing bypass
 ├ Strategies version: [{}]
 └ Fake profile: [{}]
 
+str_window_auto_start_wait_live=✅ Alive: {} | 🔍 Checking: {} | ❌ Errors: {} | 🪦 Dead: {}
+
 str_window_configuration_selection_error=❌ Automatic selection failed
 Possible reasons:
 • Resources not responding
@@ -228,17 +230,19 @@ str_button_start_dns_hosts_update_title=🔄 Update local DNS
 
 // Zapret titles blocks
 str_zapret_service_title=🔓 Service
-str_zapret_helper_checking_title=🔍 Hosts being checked ({}):
+str_zapret_helper_checking_title=🔍 Hosts being checked ({}, queue {}):
 str_zapret_helper_seen_title=🔍 Hosts processed through Zapret ({}):
 str_zapret_helper_valid_title=🔍 Working hosts ({}):
 str_zapret_helper_error_title=🔍 Hosts with errors ({}):
 str_zapret_helper_error_item={} - {}
 str_zapret_helper_valid_item={} - {}
+str_zapret_helper_exhausted_title=🪦 Hosts with no working strategy ({}):
+str_zapret_helper_exhausted_item={} - {}
 
 // Helper runtime settings ([HELPER])
 str_helper_pool_title=🧵 Helper thread pool
 str_helper_pool_description=How many hosts zapret-helper checks in parallel (1..64, default 20).
-Each worker does a HEAD request with a GET fallback. The pool resizes live, no service restart.
+Each worker does a HEAD request plus a ranged-GET proof of the first kilobyte: a host counts as working only if the body actually flows. The pool resizes live, no service restart.
 Few threads (1..5) — the queue drains slowly, verdicts lag and auto_strategy rotates longer.
 Many (40+) — spikes network and CPU load; on a weak link checks start hitting timeouts.
 10..30 is enough for most. Stored in [HELPER], survives reboots.

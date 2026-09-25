@@ -37,6 +37,13 @@ bool UdpSocket::nonBlocking() const
 	return ioctlsocket(_fd, FIONBIO, &mode) != SOCKET_ERROR;
 }
 
+bool UdpSocket::setBufferSize(int bytes) const
+{
+	const bool recv_ok = setsockopt(_fd, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&bytes), sizeof(bytes)) == 0;
+	const bool send_ok = setsockopt(_fd, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<const char*>(&bytes), sizeof(bytes)) == 0;
+	return recv_ok && send_ok;
+}
+
 u32 UdpSocket::localPort() const
 {
 	if (_fd == INVALID_SOCKET)

@@ -135,6 +135,11 @@ std::expected<long, int> CurlClient::_fetch(const std::string& url, bool head)
 	return code;
 }
 
+bool CurlClient::isTerminalError(int curl_code)
+{
+	return curl_code == CURLE_COULDNT_RESOLVE_HOST;
+}
+
 std::expected<long, int> CurlClient::checkHost(const std::string& host)
 {
 	const std::string_view suffix{ ".googlevideo.com" };

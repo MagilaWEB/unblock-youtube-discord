@@ -1,5 +1,6 @@
 add_executable(test_unblock
     test_strategies_zapret1.cpp
+    test_auto_round.cpp
     ${CMAKE_SOURCE_DIR}/src/core/tests/tap_main.cpp
     ../strategies_zapret1.cpp
     ../strategies_zapret2.cpp

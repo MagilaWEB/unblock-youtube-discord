@@ -27,7 +27,7 @@
  *
  * Usage:
  *   auto& ipc = IPCSignals::get();
- *   if (ipc.has("exhausted", "discord.com")) { ... }
+  *   if (ipc.has("helper_exhausted", "discord.com")) { ... }
  *   if (auto s = ipc.getString("my_text"))   { ... }
  *   if (auto n = ipc.getU32("my_num"))       { ... }
  *   if (auto f = ipc.getFloat("my_float"))   { ... }

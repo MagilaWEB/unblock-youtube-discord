@@ -26,7 +26,8 @@
 --      (водяной знак udp_judged_client в lua_state соединения). Долгоживущие
 --      потоки (голос Discord, WireGuard) перебирают стратегии без
 --      переподключения.
---   8. Все стратегии перебраны (exhausted) → прямой трафик
+--   8. Все стратегии перебраны (exhausted) → прямой трафик + сигнал EXHAUSTED
+--      хелперу (он владеет мёртвыми хостами и докладывает в unblock сам)
 --   9. Throttling-after-handshake: даунстрим тоньше throttle_min_bps за окно
 --      throttle_window → evidence в общий счётчик fails (THROTTLE), плюс
 --      взводится одноразовый watchdog-таймер: если пакеты встанут вообще
@@ -190,8 +191,10 @@ function auto_check_valid_strategy(rec, success_list)
 end
 
 -- Rotate to the next strategy for the record of the current protocol.
--- send_exhausted: TCP sends the "exhausted" IPC string to unblock (domain
--- testing there is TCP/curl based). UDP never sends it: UDP exhaustion says
+-- send_exhausted: TCP reports a fully-tried host to the HELPER only
+-- (EXHAUSTED to port 10000 — the spam channel). The helper owns the
+-- dead-host state and relays it to unblock; there is deliberately no
+-- direct signal to unblock. UDP never sends it: UDP exhaustion says
 -- nothing about TCP reachability of the host.
 function auto_do_switch(rec, success_list, reason, peer, dport, send_exhausted)
     ULOG("WARNING", "zapret:auto_strategy: FAIL " .. auto_strategy_name(rec) .. " " .. reason .. "->" .. peer ..
@@ -208,7 +211,7 @@ function auto_do_switch(rec, success_list, reason, peer, dport, send_exhausted)
             end
         else
             if send_exhausted then
-                send_signal("STRING", "exhausted", peer)
+                send_signal("EXHAUSTED", peer, auto_strategy_name(rec), 10000)
             end
             rec.nstrategy = 0
             rec.sstrategy = 1
