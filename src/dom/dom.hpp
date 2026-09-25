@@ -13,7 +13,9 @@
 //   setters — fire-and-forget (execute), callable from the UI thread;
 //   getters rect()/offsetSize()/viewport()/getAttr()/hasAttr()/
 //   valueStr()/isChecked()/hasClass() — blocking (evaluate +
-//   coco::await), background tasks ONLY.
+//   coco::await), background tasks ONLY. A call from the UI thread is
+//   detected (dom::onUiThread), logged and returns the default instead
+//   of deadlocking on the message loop.
 //
 // Umbrella: pulls the whole bridge with a single include. Widgets include
 // only this file.

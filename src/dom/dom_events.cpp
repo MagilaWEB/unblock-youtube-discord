@@ -11,7 +11,7 @@ namespace ui::dom
 		// against WebView2 script replay, see ab59fbd). Reply protocol:
 		// exposed[tag](tag, detail), detail depends on kind
 		// (click/focus/blur/mouseenter/mouseleave — "", change — "true"/"false",
-		// enter — field value). All details cross the bridge as strings
+		// enter/input — field value). All details cross the bridge as strings
 		// (see the shim: String(...), never bare toString()). Non-persist listeners self-remove when
 		// C++ returns true; persist ones hang forever. Re-exposing the same
 		// cppName replaces the C++ lambda (saucer keeps first only, so
@@ -82,6 +82,9 @@ namespace ui::dom
 		case Event::Submit:
 			ui::dom::listenKind(_h, "enter", func, tag, true);
 			break;
+		case Event::Input:
+			ui::dom::listenKind(_h, "input", func, tag, true);
+			break;
 		case Event::Focus:
 			ui::dom::listenKind(_h, "focus", func, tag, true);
 			break;
@@ -112,6 +115,9 @@ namespace ui::dom
 			break;
 		case Event::Submit:
 			ui::dom::listenKindRemove(_h, "enter", tag);
+			break;
+		case Event::Input:
+			ui::dom::listenKindRemove(_h, "input", tag);
 			break;
 		case Event::Focus:
 			ui::dom::listenKindRemove(_h, "focus", tag);

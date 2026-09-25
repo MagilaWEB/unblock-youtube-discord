@@ -68,7 +68,7 @@ namespace ui::dom
 	std::optional<Rect> Element::rect() const
 	{
 		auto* v = view();
-		if (!v || _h < 0)
+		if (!v || _h < 0 || blockedOnUiThread("rect"))
 			return std::nullopt;
 
 		const auto		  r = coco::await(v->evaluate<std::string>("__dom_rect({})", _h));
@@ -86,7 +86,7 @@ namespace ui::dom
 	std::optional<Size> Element::offsetSize() const
 	{
 		auto* v = view();
-		if (!v || _h < 0)
+		if (!v || _h < 0 || blockedOnUiThread("offsetSize"))
 			return std::nullopt;
 
 		const auto		  r = coco::await(v->evaluate<std::string>("__dom_size({})", _h));
@@ -104,7 +104,7 @@ namespace ui::dom
 	Size Element::viewport()
 	{
 		auto* v = view();
-		if (!v)
+		if (!v || blockedOnUiThread("viewport"))
 			return {};
 
 		const auto		  r = coco::await(v->evaluate<std::string>("__dom_viewport()"));

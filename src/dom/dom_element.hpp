@@ -22,7 +22,9 @@
 //   - getters rect()/offsetSize()/viewport()/getAttr()/hasAttr()/
 //     valueStr()/isChecked()/hasClass() — blocking via
 //     evaluate + coco::await, background tasks ONLY
-//     (reference: Input::getValue). Never call from the UI thread.
+//     (reference: Input::getValue). Never call from the UI thread:
+//     the guard (dom::onUiThread) detects it, logs and returns the
+//     default instead of deadlocking on the message loop.
 //
 // WebView2 spike (commit ab59fbd, Release replays a slice of scripts):
 //   - create keep-first: if (!__dom[H]), or twins hijack handles;
@@ -55,6 +57,8 @@ namespace ui::dom
 		Click,
 		Change,
 		Submit,
+		// Fires on every keystroke/paste with the field value (text inputs).
+		Input,
 		Focus,
 		Blur,
 		MouseEnter,

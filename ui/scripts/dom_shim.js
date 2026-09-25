@@ -126,6 +126,7 @@ window.__dom_listen_kind = function (h, cppName, tag, kind, persist) {
 		click: "click",
 		change: "change",
 		enter: "keyup",
+		input: "input",
 		focus: "focus",
 		blur: "blur",
 		mouseenter: "mouseenter",
@@ -173,6 +174,15 @@ window.__dom_listen_kind = function (h, cppName, tag, kind, persist) {
 				}
 			}
 		};
+	} else if (kind === "input") {
+		handler = async () => {
+			if (await window.saucer.exposed[cppName](tag, String(el.value))) {
+				if (!persist) {
+					el.removeEventListener(eventName, handler);
+					delete el[handlerKey];
+				}
+			}
+		};
 	} else { // focus, blur, mouseenter, mouseleave – all pass empty string
 		handler = async () => {
 			if (await window.saucer.exposed[cppName](tag, "")) {
@@ -200,6 +210,7 @@ window.__dom_listen_kind_remove = function (h, kind) {
 		click: "click",
 		change: "change",
 		enter: "keyup",
+		input: "input",
 		focus: "focus",
 		blur: "blur",
 		mouseenter: "mouseenter",

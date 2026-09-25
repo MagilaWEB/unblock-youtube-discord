@@ -729,6 +729,10 @@ void Unblock::dnsProxy(bool state)
 
 	_dnsProxyWriteConfig(upstreams);
 
+	// Drop the stale status so queries/cache_hits don't leak from a past run.
+	std::error_code ec;
+	std::filesystem::remove(_dnsProxyStatusPath(), ec);
+
 	_dns_proxy.remove();
 	_dns_proxy.setDescription("Unblock DNS proxy (AdGuard DnsLibs).");
 	_dns_proxy.setArgs({ (Core::get().binPath() / "unblock_dns.exe").string(), "--config", "\"" + _dnsProxyConfigPath().string() + "\"" });

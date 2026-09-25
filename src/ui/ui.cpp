@@ -116,8 +116,8 @@ void Ui::_initializeAppState()
 void Ui::_initComponents()
 {
 	_ui_unblock->initialize();
-	_ui_dns_hosts->initialize();
 	_ui_dns_proxy->initialize();
+	_ui_dns_hosts->initialize();
 	_ui_proxy_tg->initialize();
 
 	if (_ui_zapret)

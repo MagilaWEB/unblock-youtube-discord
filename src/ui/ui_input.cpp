@@ -298,6 +298,34 @@ void Input::addEventSubmit(std::function<bool(JSArgs)>&& callback)
 	_event_click[_name].push_back(std::move(callback));
 }
 
+void Input::setValidator(std::function<bool(const std::string&)> validator)
+{
+	_validator = std::move(validator);
+
+	if (!_created)
+		return;
+
+	// Live inline validation: the field flags itself red while a non-empty
+	// value fails the validator, and clears as soon as it passes again.
+	_input.on(
+		ui::dom::Event::Input,
+		[this](std::string, js::Value value) -> bool
+		{
+			if (!_validator)
+				return false;
+
+			const std::string text = value.ToString();
+			if (text.empty() || _validator(text))
+				_input.removeClass("input_error_validator");
+			else
+				_input.addClass("input_error_validator");
+
+			return false;
+		},
+		_name
+	);
+}
+
 JSValue Input::getValue()
 {
 	// Live field value from the DOM via the universal bridge (blocking

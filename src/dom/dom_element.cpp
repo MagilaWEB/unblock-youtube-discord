@@ -50,7 +50,7 @@ namespace ui::dom
 	bool Element::hasClass(std::string_view cls) const
 	{
 		auto* v = view();
-		if (!v || _h < 0)
+		if (!v || _h < 0 || blockedOnUiThread("hasClass"))
 			return false;
 
 		const auto r = coco::await(v->evaluate<std::string>("__dom[{}] ? (__dom[{}].classList.contains({}) ? '1' : '0') : '0'", _h, _h, cls));

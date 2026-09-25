@@ -80,7 +80,7 @@ namespace ui::dom
 	std::string Element::getAttr(std::string_view attr) const
 	{
 		auto* v = view();
-		if (!v || _h < 0)
+		if (!v || _h < 0 || blockedOnUiThread("getAttr"))
 			return {};
 
 		const auto r = coco::await(v->evaluate<std::string>("__dom_getAttr({}, {})", _h, attr));
@@ -90,7 +90,7 @@ namespace ui::dom
 	bool Element::hasAttr(std::string_view attr) const
 	{
 		auto* v = view();
-		if (!v || _h < 0)
+		if (!v || _h < 0 || blockedOnUiThread("hasAttr"))
 			return false;
 
 		const auto r = coco::await(v->evaluate<std::string>("__dom[{}] ? (__dom[{}].hasAttribute({}) ? '1' : '0') : '0'", _h, _h, attr));
@@ -118,7 +118,7 @@ namespace ui::dom
 	std::string Element::valueStr() const
 	{
 		auto* v = view();
-		if (!v || _h < 0)
+		if (!v || _h < 0 || blockedOnUiThread("valueStr"))
 			return {};
 
 		const auto r = coco::await(v->evaluate<std::string>("(__dom[{}] && __dom[{}].value) || ''", _h, _h));
@@ -136,7 +136,7 @@ namespace ui::dom
 	bool Element::isChecked() const
 	{
 		auto* v = view();
-		if (!v || _h < 0)
+		if (!v || _h < 0 || blockedOnUiThread("isChecked"))
 			return false;
 
 		const auto r = coco::await(v->evaluate<std::string>("__dom[{}] ? (__dom[{}].checked ? '1' : '0') : '0'", _h, _h));

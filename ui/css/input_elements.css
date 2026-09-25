@@ -54,6 +54,11 @@
     transition      : background-color 0.2s ease, border-color 0.2s ease;
 }
 
+.input input.input_error_validator {
+    background-color: rgba(135, 27, 0, 0.7);
+    border-color    : rgba(222, 9, 9, 0.693) !important;
+}
+
 .select_list {
     background-color: rgba(40, 44, 58, 0.82);
     border          : 1px solid rgba(255, 255, 255, 0.10);

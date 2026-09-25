@@ -346,7 +346,8 @@ str_input_test_upstream_title=🧪 Server check
 str_input_test_upstream_description=🧪 Server line to check with the button below.
 The check runs through unblock_dns — AdguardDns64.dll must sit next to it or you will see a load error.
 str_button_test_upstream_title=🧪 Check server
-str_button_dns_proxy_status_title=📊 Status
+str_status_dns_running=🌐 DNS proxy running · queries: {} · cached: {}
+str_status_dns_stopped=🌐 DNS proxy stopped
 str_window_test_upstream_title=🧪 Server check
 str_task_dns_proxy_title=🔒 Applying DNS proxy
 

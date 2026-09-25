@@ -43,6 +43,9 @@ void UiDnsProxy::initialize()
 		}
 	);
 
+	_status_dns->create("#dns section .common");
+	_status_dns->setInactive(Localization::Str{ "str_status_dns_stopped" }());
+
 	const auto presets = Unblock::defaultDnsProxyUpstreams();
 
 	_upstream_cf->create("#dns section .common", "str_dns_proxy_cf_title", Localization::Str{ std::string{ presets[0].address } });
@@ -82,30 +85,28 @@ void UiDnsProxy::initialize()
 		Localization::Str{ "str_input_test_upstream_title" },
 		Localization::Str{ "str_input_test_upstream_description" }
 	);
+	// Inline red flag while the typed server line does not parse.
+	_test_input->setValidator([](const std::string& value) { return parseUpstreamValue(trimConfigLine(value)).has_value(); });
 
 	_test_button->create("#dns section .common", "str_button_test_upstream_title");
 	_test_button->addEventClick(
 		[this](JSArgs)
 		{
-			const auto value = JSToCPP<std::string>(_test_input->getValue());
 			Core::get().addTask(
-				[this, value]
+				[this]
 				{
+					// Blocking DOM getter: background task only, never the UI thread.
+					const auto value = JSToCPP<std::string>(_test_input->getValue());
+					// Empty or invalid — the field already says so, no window.
+					if (value.empty() || !parseUpstreamValue(trimConfigLine(value)))
+						return;
+
 					std::string output;
 					_unblock->dnsProxyTestUpstream(value, output);
 					_window_test_result->setDescription(Localization::Str{ output.empty() ? std::string{ "—" } : output });
 					_window_test_result->show();
 				}
 			);
-			return false;
-		}
-	);
-
-	_status_button->create("#dns section .common", "str_button_dns_proxy_status_title");
-	_status_button->addEventClick(
-		[this](JSArgs)
-		{
-			_refreshStatus();
 			return false;
 		}
 	);
@@ -167,17 +168,16 @@ void UiDnsProxy::initialize()
 	_enable_dns_proxy->setState(enabled);
 	_refreshStatus();
 
-	if (enabled)
-	{
-		_ui->backgroundTasks()->start("dns_proxy_apply", "str_task_dns_proxy_title");
-		Core::get().addTask(
-			[this]
-			{
-				_unblock->dnsProxy(true);
-				_ui->backgroundTasks()->finish("dns_proxy_apply");
-			}
-		);
-	}
+	// Reconcile the service with the persisted setting: start it when enabled,
+	// and kill a leftover service from a previous run when disabled.
+	_ui->backgroundTasks()->start("dns_proxy_apply", "str_task_dns_proxy_title");
+	Core::get().addTask(
+		[this, enabled]
+		{
+			_unblock->dnsProxy(enabled);
+			_ui->backgroundTasks()->finish("dns_proxy_apply");
+		}
+	);
 }
 
 void UiDnsProxy::updateInfoWindow()
@@ -229,7 +229,9 @@ void UiDnsProxy::_applyUpstreams()
 
 void UiDnsProxy::_refreshStatus()
 {
-	std::string state	= "stopped";
+	if (!_status_dns->isCreate())
+		return;
+
 	std::string queries = "0";
 	std::string cached	= "0";
 
@@ -237,18 +239,19 @@ void UiDnsProxy::_refreshStatus()
 	for (auto row : status | std::views::split('\n'))
 	{
 		const std::string line{ row.begin(), row.end() };
-		if (line.starts_with("state="))
-			state = line.substr(6);
-		else if (line.starts_with("queries="))
+		if (line.starts_with("queries="))
 			queries = line.substr(8);
 		else if (line.starts_with("cache_hits="))
 			cached = line.substr(11);
 	}
 
-	const std::string title = "📊 " + state + " · ⏱ " + queries + " · ⚡ " + cached;
-	if (title == _last_status)
+	const bool		  running = _unblock->dnsProxyIsRun();
+	const std::string text =
+		running ? utils::format(Localization::Str{ "str_status_dns_running" }(), queries, cached) : Localization::Str{ "str_status_dns_stopped" }();
+
+	if (text == _last_status)
 		return;
 
-	_last_status = title;
-	_status_button->setTitle(Localization::Str{ title });
+	_last_status = text;
+	running ? _status_dns->setActive(text) : _status_dns->setInactive(text);
 }

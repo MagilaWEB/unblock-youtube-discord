@@ -3,6 +3,7 @@
 #include <saucer/smartview.hpp>
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 // -----------------------------------------------------------------------
@@ -34,6 +35,17 @@ namespace ui::dom
 	/// Current view, or nullptr when unbound / window closed.
 	/// All Element methods silently no-op on nullptr — normal, not an error.
 	[[nodiscard]] saucer::smartview* view();
+
+	/// True when the caller runs on the UI (message-loop) thread. Blocking
+	/// getters must never await evaluate() from that thread — the loop that
+	/// would deliver the result is the caller itself, so it deadlocks the
+	/// whole app. They check this and refuse instead.
+	[[nodiscard]] bool onUiThread();
+
+	/// Guard for every blocking getter: true when it was called on the UI
+	/// thread, in which case evaluate() must not run. Logs the offending
+	/// getter name; the caller returns its default.
+	[[nodiscard]] bool blockedOnUiThread(std::string_view getter);
 
 	namespace detail
 	{

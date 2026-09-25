@@ -8,6 +8,10 @@ class Input : public BaseElement
 	// when the user left the field empty.
 	std::string		 _value;
 
+	// Optional content validator. When set, the field marks itself invalid
+	// inline (input_error_validator class) while the typed value fails it.
+	std::function<bool(const std::string&)> _validator;
+
 public:
 	enum class Types : u8
 	{
@@ -54,6 +58,10 @@ public:
 		bool first = false
 	);
 	void addEventSubmit(std::function<bool(JSArgs)>&& callback);
+
+	/** Inline content check. The field is marked with input_error_validator
+	 *  as long as a non-empty value fails it; empty is left to the caller. */
+	void setValidator(std::function<bool(const std::string&)> validator);
 
 	void	setValue(JSValue value);
 	JSValue getValue();

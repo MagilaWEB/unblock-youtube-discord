@@ -346,7 +346,8 @@ str_input_test_upstream_title=🧪 Проверка сервера
 str_input_test_upstream_description=🧪 Строка сервера для проверки кнопкой ниже.
 Проверка выполняется через unblock_dns — рядом с ним должен лежать AdguardDns64.dll, иначе увидите ошибку загрузки.
 str_button_test_upstream_title=🧪 Проверить сервер
-str_button_dns_proxy_status_title=📊 Статус
+str_status_dns_running=🌐 DNS-прокси работает · запросов: {} · из кэша: {}
+str_status_dns_stopped=🌐 DNS-прокси остановлен
 str_window_test_upstream_title=🧪 Проверка сервера
 str_task_dns_proxy_title=🔒 Применение DNS-прокси
 
