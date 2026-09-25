@@ -65,5 +65,5 @@
   "watcher": {
     "ignore": ["_build_ai/**", "_build/**", "**/_deps/**", "bin/**", ".git/**"]
   },
-  "plugin": ["opencode-morph-fast-apply", "opencode-shell-strategy", "opencode-dynamic-context-pruning"]
+  "plugin": ["opencode-morph-fast-apply", "opencode-shell-strategy"]
 }
