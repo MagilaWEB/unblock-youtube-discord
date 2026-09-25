@@ -54,20 +54,24 @@ jobs:
         run: python scripts/bootstrap_conan_deps.py
 
       - name: Configure
-        working-directory: dnslibs
+        working-directory: dnslibs/platform/windows/capi
         run: |
           New-Item -ItemType Directory -Path build -Force | Out-Null
           Set-Location build
-          cmake -DCMAKE_BUILD_TYPE=Release -G Ninja ..
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_USE_OPENSSL=ON `
+            -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -G Ninja ..
 
       - name: Build AdguardDns64
-        working-directory: dnslibs/build
+        working-directory: dnslibs/platform/windows/capi/build
         run: ninja AdguardDns64
 
       - name: Package
         run: |
           $dll = Get-ChildItem -Path dnslibs -Recurse -Filter AdguardDns64.dll | Select-Object -First 1
-          if (-not $dll) { throw "AdguardDns64.dll not found in the build tree" }
+          if (-not $dll) {
+            $dll = Get-ChildItem -Path dnslibs -Recurse -Filter AdguardDns.dll | Select-Object -First 1
+          }
+          if (-not $dll) { throw "AdguardDns DLL not found in the build tree" }
           Write-Host "DLL: $($dll.FullName)"
 
           $stage = "stage"
