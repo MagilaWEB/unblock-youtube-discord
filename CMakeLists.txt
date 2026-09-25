@@ -134,6 +134,47 @@ FetchContent_Declare(
   SOURCE_DIR zapret1
 )
 
+# AdguardDns64.dll (AdGuard DnsLibs C API) for the unblock_dns service.
+# The DLL is NOT built here: it needs conan + NASM + MSVC and is produced by
+# .github/workflows/build_dnslibs.yml, then attached to a release in this repo.
+# For local development set UNBLOCK_DNS_DLL to a prebuilt file, or turn on
+# UNBLOCK_DNS_FETCH to download the release asset.
+set(UNBLOCK_DNS_DLL "" CACHE FILEPATH "Path to a prebuilt AdguardDns64.dll (dev override)")
+set(UNBLOCK_DNS_FETCH "OFF" CACHE BOOL "Download the AdguardDns64.dll release asset")
+set(UNBLOCK_DNS_DLL_URL
+  "https://github.com/MagilaWEB/unblock-youtube-discord/releases/download/dnslibs-v2.10.2/AdguardDns64-v2.10.2.zip"
+  CACHE STRING "URL of the AdguardDns64 DLL zip")
+set(UNBLOCK_DNS_DLL_SHA256 "" CACHE STRING "SHA256 of the DLL zip (empty = no verification)")
+
+if(UNBLOCK_DNS_DLL AND EXISTS "${UNBLOCK_DNS_DLL}")
+  set(UNBLOCK_DNS_DLL_PATH "${UNBLOCK_DNS_DLL}")
+elseif(UNBLOCK_DNS_FETCH)
+  if(UNBLOCK_DNS_DLL_SHA256)
+    set(_unblock_dns_hash URL_HASH "SHA256=${UNBLOCK_DNS_DLL_SHA256}")
+  else()
+    message(WARNING "unblock_dns: UNBLOCK_DNS_DLL_SHA256 is empty, downloading the DLL without verification")
+  endif()
+  FetchContent_Declare(
+    adguard_dns
+    URL ${UNBLOCK_DNS_DLL_URL}
+    ${_unblock_dns_hash}
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  )
+  FetchContent_MakeAvailable(adguard_dns)
+  file(GLOB_RECURSE _unblock_dns_found "${adguard_dns_SOURCE_DIR}/*AdguardDns64.dll")
+  if(_unblock_dns_found)
+    list(GET _unblock_dns_found 0 UNBLOCK_DNS_DLL_PATH)
+  endif()
+endif()
+
+if(UNBLOCK_DNS_DLL_PATH)
+  message(STATUS "unblock_dns: AdguardDns64.dll = ${UNBLOCK_DNS_DLL_PATH}")
+else()
+  message(WARNING
+    "unblock_dns: AdguardDns64.dll not provided, the DNS proxy will fail at runtime. "
+    "Set UNBLOCK_DNS_DLL to a local file or UNBLOCK_DNS_FETCH=ON.")
+endif()
+
 # Build
 # zlib before curl: curl links zlibstatic via ZLIB::ZLIB
 set(ZLIB_BUILD_EXAMPLES OFF)
@@ -275,4 +316,5 @@ add_subdirectory(src/dom)
 add_subdirectory(src/ui)
 add_subdirectory(src/unblock)
 add_subdirectory(src/helper)
+add_subdirectory(src/unblock_dns)
 add_subdirectory(src/unblock_update)

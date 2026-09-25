@@ -1,0 +1,93 @@
+name: Build AdguardDns64 DLL
+
+# Builds AdGuard DnsLibs' Windows C API DLL (AdguardDns64.dll) from the pinned
+# upstream tag and publishes it as a release asset in this repository. The main
+# build never compiles DnsLibs itself (that would drag conan + NASM into every
+# developer machine); it downloads this asset via UNBLOCK_DNS_FETCH.
+#
+# Run manually (Actions -> Build AdguardDns64 DLL -> Run workflow). The SHA256
+# printed in the job summary must be pasted into UNBLOCK_DNS_DLL_SHA256 in
+# CMakeLists.txt after the first run.
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "dnslibs-*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    env:
+      DNSLIBS_TAG: v2.10.2
+      RELEASE_TAG: dnslibs-v2.10.2
+
+    steps:
+      - name: Install NASM
+        run: choco install nasm -y --no-progress
+
+      - name: Add NASM to PATH
+        run: echo "C:\Program Files\NASM" >> $env:GITHUB_PATH
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Conan
+        run: pip install "conan>=2.0.5"
+
+      - name: Clone DnsLibs
+        run: git clone --branch $env:DNSLIBS_TAG --depth 1 https://github.com/AdguardTeam/DnsLibs.git dnslibs
+
+      - name: Export AdGuard Conan recipes
+        working-directory: dnslibs
+        run: python scripts/bootstrap_conan_deps.py
+
+      - name: Configure
+        working-directory: dnslibs
+        run: |
+          New-Item -ItemType Directory -Path build -Force | Out-Null
+          Set-Location build
+          cmake -DCMAKE_BUILD_TYPE=Release -G Ninja ..
+
+      - name: Build AdguardDns64
+        working-directory: dnslibs/build
+        run: ninja AdguardDns64
+
+      - name: Package
+        run: |
+          $dll = Get-ChildItem -Path dnslibs -Recurse -Filter AdguardDns64.dll | Select-Object -First 1
+          if (-not $dll) { throw "AdguardDns64.dll not found in the build tree" }
+          Write-Host "DLL: $($dll.FullName)"
+
+          $stage = "stage"
+          New-Item -ItemType Directory -Path $stage -Force | Out-Null
+          Copy-Item $dll.FullName "$stage/AdguardDns64.dll"
+          Copy-Item "dnslibs/platform/windows/capi/include/ag_dns.h" "$stage/ag_dns.h"
+
+          $zip = "AdguardDns64-v2.10.2.zip"
+          Compress-Archive -Path "$stage/*" -DestinationPath $zip -Force
+
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          Write-Host "SHA256: $hash"
+          "SHA256=$hash" >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Publish release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_TAG }}
+          body: "AdguardDns64.dll built from AdguardTeam/DnsLibs ${{ env.DNSLIBS_TAG }} (Windows x64, C API)."
+          files: AdguardDns64-v2.10.2.zip
+          draft: false
+          prerelease: false

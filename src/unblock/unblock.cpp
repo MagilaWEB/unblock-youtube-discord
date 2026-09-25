@@ -16,6 +16,8 @@ Unblock::Unblock()
 	_zapret_helper.open();
 	_win_divert.open();
 	_tg_ws_proxy.open();
+	_dns_proxy.open();
+	dnsProxyRepairBoot();
 }
 
 bool Unblock::testUrl(std::string_view str_url)
@@ -615,6 +617,202 @@ bool Unblock::dnsHostsRegionAvailable(std::string_view region) const
 	return _dns_hosts.regionAvailable(region);
 }
 
+std::vector<Unblock::DnsProxyUpstream> Unblock::defaultDnsProxyUpstreams()
+{
+	return {
+		{ true, "Cloudflare", "https://cloudflare-dns.com/dns-query", "1.1.1.1,1.0.0.1" },
+		{ true,		"Google",		  "https://dns.google/dns-query", "8.8.8.8,8.8.4.4" },
+		{ true,		 "Quad9", "https://dns.quad9.net:5053/dns-query",		  "9.9.9.9" },
+	};
+}
+
+std::filesystem::path Unblock::_dnsProxyConfigPath() const
+{
+	return Core::get().userPath() / "dns_proxy.conf";
+}
+
+std::filesystem::path Unblock::_dnsProxyStatusPath() const
+{
+	return Core::get().userPath() / "dns_proxy.status";
+}
+
+std::filesystem::path Unblock::_dnsProxyBackupPath() const
+{
+	return Core::get().userPath() / "dns_proxy.adapters";
+}
+
+std::filesystem::path Unblock::_dnsProxyLogPath() const
+{
+	return Core::get().userPath() / "dns_proxy.log";
+}
+
+void Unblock::_dnsProxyWriteConfig(const std::vector<DnsProxyUpstream>& upstreams)
+{
+	File conf{ false };
+	conf.open(_dnsProxyConfigPath(), "", true);
+	conf.clear();
+
+	conf.writeText("listen=127.0.0.1");
+	conf.writeText("port=53");
+	// Explicit paths: the wrapper reads these verbatim, so engine and wrapper
+	// can never disagree on where status/backup/log live.
+	conf.writeText("status=" + _dnsProxyStatusPath().string());
+	conf.writeText("backup=" + _dnsProxyBackupPath().string());
+	conf.writeText("log=" + _dnsProxyLogPath().string());
+
+	for (auto& u : upstreams)
+		if (u.enabled && !u.address.empty())
+			conf.writeText("upstream=" + u.address + "|" + u.bootstrap);
+
+	conf.close();
+}
+
+bool Unblock::_dnsProxyRunHelper(const std::vector<std::string>& args, uint32_t timeout_ms)
+{
+	if (args.empty())
+		return false;
+
+	auto quote = [](const std::string& value)
+	{
+		std::string out{ "\"" };
+		for (char ch : value)
+		{
+			if (ch == '"')
+				out += '\\';
+			out += ch;
+		}
+		out += '"';
+		return out;
+	};
+
+	std::string cmdline;
+	for (auto& arg : args)
+	{
+		if (!cmdline.empty())
+			cmdline += ' ';
+		cmdline += quote(arg);
+	}
+
+	auto wide_cmd = utils::UTF8_to_UTF16(cmdline);
+	if (wide_cmd.empty())
+		return false;
+
+	STARTUPINFOW		si{};
+	PROCESS_INFORMATION pi{};
+	si.cb = sizeof(si);
+
+	if (!CreateProcessW(nullptr, wide_cmd.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi))
+		return false;
+
+	const DWORD wait = WaitForSingleObject(pi.hProcess, timeout_ms);
+	if (wait == WAIT_TIMEOUT)
+		TerminateProcess(pi.hProcess, 1);
+
+	DWORD code = 1;
+	GetExitCodeProcess(pi.hProcess, &code);
+
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);
+
+	return code == 0;
+}
+
+void Unblock::dnsProxy(bool state)
+{
+	if (!state)
+	{
+		_dns_proxy.remove();
+		return;
+	}
+
+	const auto& upstreams = _dns_proxy_upstreams.empty() ? defaultDnsProxyUpstreams() : _dns_proxy_upstreams;
+
+	_dnsProxyWriteConfig(upstreams);
+
+	_dns_proxy.remove();
+	_dns_proxy.setDescription("Unblock DNS proxy (AdGuard DnsLibs).");
+	_dns_proxy.setArgs({ (Core::get().binPath() / "unblock_dns.exe").string(), "--config", "\"" + _dnsProxyConfigPath().string() + "\"" });
+	_dns_proxy.create();
+	_dns_proxy.start();
+}
+
+bool Unblock::dnsProxyIsRun()
+{
+	return _dns_proxy.isRun();
+}
+
+void Unblock::setDnsProxyUpstreams(std::vector<DnsProxyUpstream> upstreams)
+{
+	_dns_proxy_upstreams = std::move(upstreams);
+}
+
+const std::vector<Unblock::DnsProxyUpstream>& Unblock::dnsProxyUpstreams() const
+{
+	return _dns_proxy_upstreams;
+}
+
+std::string Unblock::dnsProxyStatus() const
+{
+	std::ifstream in{ _dnsProxyStatusPath(), std::ios::binary };
+	if (!in)
+		return {};
+
+	std::ostringstream ss;
+	ss << in.rdbuf();
+	return ss.str();
+}
+
+bool Unblock::dnsProxyTestUpstream(const std::string& value, std::string& output)
+{
+	const auto in_path	= Core::get().tempPath() / "unblock_dns_test.in";
+	const auto out_path = Core::get().tempPath() / "unblock_dns_test.out";
+
+	{
+		File in{ false };
+		in.open(in_path, "", true);
+		in.clear();
+		in.writeText(value);
+		in.close();
+	}
+
+	std::error_code ec;
+	std::filesystem::remove(out_path, ec);
+
+	const bool ok = _dnsProxyRunHelper(
+		{ (Core::get().binPath() / "unblock_dns.exe").string(), "--test-upstream-file", in_path.string(), "--result", out_path.string() },
+		15'000
+	);
+
+	std::ifstream result{ out_path, std::ios::binary };
+	if (result)
+	{
+		std::ostringstream ss;
+		ss << result.rdbuf();
+		output = ss.str();
+	}
+	else
+	{
+		output = ok ? "OK" : "FAIL: unblock_dns produced no result";
+	}
+
+	return output.starts_with("OK");
+}
+
+void Unblock::dnsProxyRepairBoot()
+{
+	if (_dns_proxy.isRun())
+		return;
+
+	const auto backup_path = _dnsProxyBackupPath();
+	if (!std::filesystem::exists(backup_path))
+		return;
+
+	// All adapter work lives in the wrapper (DLL API), the engine never
+	// touches the registry itself.
+	if (_dnsProxyRunHelper({ (Core::get().binPath() / "unblock_dns.exe").string(), "--repair", "--backup", backup_path.string() }, 15'000))
+		Debug::warning("DNS proxy was killed without restore, adapters repaired.");
+}
+
 constexpr static std::string_view proxy_secret{ "dd92bc05d4dc4f4bef9cb4b7bf5628c5" };
 
 void Unblock::localProxyTg(bool run)
@@ -627,7 +825,7 @@ void Unblock::localProxyTg(bool run)
 			{ (Core::get().binariesPath() / "tg-ws-proxy.exe").string(),
 			  std::string{ "--secret " } + proxy_secret.data(),
 			  "--dc-ip 1:" + _tg_dc_ip[0] + " --dc-ip 2:" + _tg_dc_ip[1] + " --dc-ip 3:" + _tg_dc_ip[2] + " --dc-ip 4:" + _tg_dc_ip[3],
-	//		  "--cfproxy-worker-domain " + _tg_cfproxy_domain,
+			  //		  "--cfproxy-worker-domain " + _tg_cfproxy_domain,
 			  "--host " + _tg_host,
 			  "--port " + _tg_port }
 		);

@@ -6,6 +6,7 @@
 #include "ui_check_box.h"
 #include "../unblock/unblock.h"
 #include "ui_dns_hosts.h"
+#include "ui_dns_proxy.h"
 #include "ui_proxy_tg.h"
 #include "ui_zapret_page.h"
 #include "ui_zapret_helper.h"
@@ -36,6 +37,7 @@ class Ui final : public utils::DefaultInit,
 	SECONDARY_WINDOW(_window_remove_app);
 
 	std::unique_ptr<UiDnsHosts>		   _ui_dns_hosts;
+	std::unique_ptr<UiDnsProxy>		   _ui_dns_proxy;
 	std::unique_ptr<UiProxyTg>		   _ui_proxy_tg;
 	std::unique_ptr<UiZapretPage>	   _ui_zapret;
 	std::unique_ptr<UiZapretHelper>	   _ui_zapret_helper;

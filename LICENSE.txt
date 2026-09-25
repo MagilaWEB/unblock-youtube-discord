@@ -27,6 +27,9 @@
 
 Бинарные дистрибутивы WinDivert включены в данный проект без изменений. Исходный код и условия лицензирования WinDivert доступны на [официальном репозитории](https://github.com/basil00/WinDivert).
 
+### AdGuard DnsLibs
+Проект использует библиотеку [AdGuard DnsLibs](https://github.com/AdguardTeam/DnsLibs) от [AdGuard](https://adguard.com/), распространяемую под лицензией Apache License 2.0. В поставку включён собранный из этой библиотеки бинарный файл `AdguardDns64.dll` (Windows x64, C API), исходный код и текст лицензии доступны в [официальном репозитории](https://github.com/AdguardTeam/DnsLibs) и в файле `LICENSE-APACHE-2.0.txt`.
+
 ---
 
 ## Соответствие лицензиям
