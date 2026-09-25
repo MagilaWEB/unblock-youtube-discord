@@ -59,7 +59,9 @@ jobs:
           New-Item -ItemType Directory -Path build -Force | Out-Null
           Set-Location build
           cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_USE_OPENSSL=ON `
-            -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -G Ninja ..
+            -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe `
+            -DCMAKE_CXX_STANDARD=20 -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded `
+            -G Ninja ..
 
       - name: Build AdguardDns64
         working-directory: dnslibs/platform/windows/capi/build
