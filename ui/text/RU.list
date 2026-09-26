@@ -336,7 +336,7 @@ str_checkbox_enable_dns_proxy_description=🔒 Системный DNS через
 При включении Unblock поднимает службу unblock_dns и переключает DNS адаптеров на 127.0.0.1.
 При выключении настройки DNS возвращаются как были.
 str_dns_proxy_servers_title=🌐 DNS-серверы
-str_dns_proxy_servers_description=🌐 Строки вида «адрес|bootstrap» (bootstrap через запятую, может быть пустым). По умолчанию: Cloudflare, Google, Quad9, GeoHide.
+str_dns_proxy_servers_description=🌐 Строки вида «адрес|bootstrap» (bootstrap через запятую, может быть пустым). Первый сервер — основной, остальные — запасные. По умолчанию: GeoHide основной; Xbox DNS и Cloudflare запасные.
 Примеры: https://cloudflare-dns.com/dns-query|1.1.1.1,1.0.0.1 или tls://dns.adguard.com|94.140.14.14
 str_input_dns_proxy_custom_placeholder=Добавить сервер (например, tls://dns.adguard.com|94.140.14.14) и нажать Enter
 str_input_test_upstream_title=🧪 Проверка сервера

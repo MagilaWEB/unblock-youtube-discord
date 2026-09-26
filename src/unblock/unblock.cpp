@@ -619,12 +619,16 @@ bool Unblock::dnsHostsRegionAvailable(std::string_view region) const
 
 std::vector<Unblock::DnsProxyUpstream> Unblock::defaultDnsProxyUpstreams()
 {
+	// The first entry is the primary resolver, the rest are fallbacks (see
+	// unblock_dns buildSettings). GeoHide leads because queries must reach it to
+	// get the region-specific answers. Xbox DNS (free Smart DNS, no sign-up) is
+	// the backup, with Cloudflare as an extra fallback behind it.
 	return {
-		{ true, "Cloudflare", "https://cloudflare-dns.com/dns-query", "1.1.1.1,1.0.0.1" },
-		{ true,		"Google",		  "https://dns.google/dns-query", "8.8.8.8,8.8.4.4" },
-		{ true,		 "Quad9", "https://dns.quad9.net/dns-query",		  "9.9.9.9" },
 		{ true,	   "GeoHide",		  "https://dns.geohide.ru:8443/dns-query",
 		 "37.230.192.51,45.155.204.190,46.8.158.6,193.233.112.67,193.233.112.68,193.233.112.88" },
+		{ true, "Xbox DNS", "111.88.96.54", "" },
+		{ true, "Xbox DNS", "111.88.96.55", "" },
+		{ true, "Cloudflare", "https://cloudflare-dns.com/dns-query", "1.1.1.1,1.0.0.1" },
 	};
 }
 

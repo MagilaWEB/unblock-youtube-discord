@@ -336,7 +336,7 @@ str_checkbox_enable_dns_proxy_description=🔒 System DNS over encrypted servers
 When enabled, Unblock starts the unblock_dns service and points adapter DNS at 127.0.0.1.
 When disabled, DNS settings are restored.
 str_dns_proxy_servers_title=🌐 DNS servers
-str_dns_proxy_servers_description=🌐 Lines shaped as «address|bootstrap» (comma-separated bootstrap, may be empty). Defaults: Cloudflare, Google, Quad9, GeoHide.
+str_dns_proxy_servers_description=🌐 Lines shaped as «address|bootstrap» (comma-separated bootstrap, may be empty). The first server is primary, the rest are fallbacks. Defaults: GeoHide primary; Xbox DNS and Cloudflare fallbacks.
 Examples: https://cloudflare-dns.com/dns-query|1.1.1.1,1.0.0.1 or tls://dns.adguard.com|94.140.14.14
 str_input_dns_proxy_custom_placeholder=Add a server (e.g. tls://dns.adguard.com|94.140.14.14) and press Enter
 str_input_test_upstream_title=🧪 Server check

@@ -16,6 +16,7 @@
 #include <wincrypt.h>
 #include <iphlpapi.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstdio>
@@ -443,6 +444,7 @@ namespace
 	{
 		ag_dnsproxy_settings				  settings{};
 		std::vector<ag_upstream_options>	  upstreams;
+		std::vector<ag_upstream_options>	  fallbacks;
 		std::vector<std::string>			  upstream_strings;
 		std::vector<std::vector<std::string>> bootstrap_strings;
 		std::vector<std::vector<const char*>> bootstrap_ptrs;
@@ -500,7 +502,10 @@ namespace
 		backing.settings.adblock_rules_blocking_mode = defaults->adblock_rules_blocking_mode;
 		backing.settings.hosts_rules_blocking_mode	 = defaults->hosts_rules_blocking_mode;
 		backing.settings.dns_cache_size				 = defaults->dns_cache_size;
-		backing.settings.upstream_timeout_ms		 = defaults->upstream_timeout_ms;
+		// The first DoH/DoT handshake to a remote upstream can exceed the
+		// library default, which showed up as random SERVFAILs on the first
+		// query. Keep a sane floor.
+		backing.settings.upstream_timeout_ms		 = std::max(defaults->upstream_timeout_ms, 5'000u);
 		ag.settings_free(defaults);
 
 		backing.listen_string = config.listen;
@@ -511,8 +516,10 @@ namespace
 		backing.bootstrap_ptrs.reserve(config.upstreams.size());
 
 		int32_t id = 0;
-		for (auto& u : config.upstreams)
+		for (size_t i = 0; i < config.upstreams.size(); ++i)
 		{
+			const auto& u = config.upstreams[i];
+
 			backing.upstream_strings.push_back(u.address);
 			backing.bootstrap_strings.emplace_back(u.bootstrap);
 			backing.bootstrap_ptrs.emplace_back();
@@ -526,11 +533,17 @@ namespace
 			opt.id						 = ++id;
 			opt.outbound_interface_index = 0;
 
-			backing.upstreams.push_back(opt);
+			// The first upstream is the primary resolver and answers every query.
+			// The rest are only fallbacks. Ordering is the priority here, so the
+			// first entry (GeoHide by default, for region spoofing) is actually
+			// used instead of losing a parallel race to Cloudflare/Google.
+			(i == 0 ? backing.upstreams : backing.fallbacks).push_back(opt);
 		}
 
 		backing.settings.upstreams.data = backing.upstreams.data();
 		backing.settings.upstreams.size = static_cast<uint32_t>(backing.upstreams.size());
+		backing.settings.fallbacks.data = backing.fallbacks.empty() ? nullptr : backing.fallbacks.data();
+		backing.settings.fallbacks.size = static_cast<uint32_t>(backing.fallbacks.size());
 
 		backing.listeners.resize(2);
 		backing.listeners[0] = ag_listener_settings{ backing.listen_string.c_str(), config.port, AGLP_UDP, false, 0, {} };

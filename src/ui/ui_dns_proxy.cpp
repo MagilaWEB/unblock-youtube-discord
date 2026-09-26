@@ -66,8 +66,8 @@ void UiDnsProxy::initialize()
 	_status_dns->setInactive(Localization::Str{ "str_status_dns_stopped" }());
 
 	// Every upstream lives in one editable list as "address|bootstrap"; the
-	// built-in presets (Cloudflare, Google, Quad9, GeoHide) are only the default
-	// entries, so they can be edited or removed like any other.
+	// built-in presets are only the default entries. The first one is the
+	// primary resolver, the rest are fallbacks.
 	_upstreams->create(
 		"#dns section .common",
 		Localization::Str{ "str_dns_proxy_servers_title" },
