@@ -279,12 +279,14 @@ void File::writeSectionParameter(std::string_view section, std::string parameter
 			{
 				auto key = para.prefix().str();
 				utils::trim(key);
-				auto value = para.suffix().str();
-				utils::trim(value);
 
 				if (key == parameter)
 				{
-					str	   = std::regex_replace(str, std::regex{ value }, value_argument.data());
+					// Literal replacement: rebuilding the line as key + new value.
+					// The old value must NOT be used as a regex — values like
+					// "a|b" or "1.2.3" are metacharacters and would corrupt the
+					// line (and grow it on every write).
+					str	   = para.prefix().str() + "=" + value_argument;
 					stoped = true;
 					return true;
 				}
