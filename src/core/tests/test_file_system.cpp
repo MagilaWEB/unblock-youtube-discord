@@ -417,6 +417,23 @@ TEST_CASE("writeSectionParameter updates existing parameter", "[file][write]")
 	CHECK(content.find("foo=old") == std::string::npos);
 }
 
+TEST_CASE("writeSectionParameter replaces values that are regex metacharacters", "[file][write]")
+{
+	// Regression: the old value used to be compiled as a regex, so "|" and "."
+	// in a value (e.g. the DNS upstream list) corrupted and grew the line.
+	auto path = createFile("write_regex_value.ini", "[DNS]\nupstreams=1|Cloudflare|https://cloudflare-dns.com/dns-query|1.1.1.1,1.0.0.1\n");
+	File f;
+	f.open(path, "", true);
+
+	f.writeSectionParameterVector("DNS", "upstreams", { "https://cloudflare-dns.com/dns-query|1.1.1.1,1.0.0.1" });
+	f.save();
+
+	auto res = f.parameterSectionVector("DNS", "upstreams");
+	REQUIRE(res.has_value());
+	REQUIRE(res->size() == 1);
+	CHECK((*res)[0] == "https://cloudflare-dns.com/dns-query|1.1.1.1,1.0.0.1");
+}
+
 TEST_CASE("parameterSectionVector splits by ';'", "[file][parameter]")
 {
 	auto path = createFile("param_vec.ini", "[List]\nitems=ru;eu;us\n");
