@@ -13,6 +13,7 @@
 
 #include <winsock2.h>
 #include <windows.h>
+#include <wincrypt.h>
 #include <iphlpapi.h>
 
 #include <atomic>
@@ -372,11 +373,23 @@ namespace
 		auto backup = readBackup(backup_path);
 		logLine("Restoring DNS on " + std::to_string(backup.size()) + " adapter(s)");
 
+		bool failed = false;
 		for (auto& a : backup)
 			if (uint32_t err = setAdapterDns(ag, a.guid, a.nameserver))
+			{
 				logLine("Couldn't restore DNS on [" + a.guid + "], error " + std::to_string(err));
+				failed = true;
+			}
 
 		flushResolverCache();
+
+		// The backup is only meaningful while adapters point at us. Drop it once
+		// they are back, otherwise a later boot would "repair" a clean system.
+		if (!failed)
+		{
+			std::error_code ec;
+			std::filesystem::remove(backup_path, ec);
+		}
 	}
 
 	// Boot recovery: a hard-killed run left adapters on our listen address.
@@ -394,13 +407,17 @@ namespace
 		logLine("Repairing " + std::to_string(backup.size()) + " adapter(s) (listen " + listen + ")");
 
 		bool restored = false;
+		bool failed	  = false;
 		for (auto& a : backup)
 		{
 			if (!listen.empty() && currentAdapterDns(ag, a.guid) != listen)
 				continue;
 
 			if (uint32_t err = setAdapterDns(ag, a.guid, a.nameserver))
+			{
 				logLine("Couldn't restore DNS on [" + a.guid + "], error " + std::to_string(err));
+				failed = true;
+			}
 			else
 				restored = true;
 		}
@@ -408,7 +425,16 @@ namespace
 		if (restored)
 			flushResolverCache();
 
-		return 0;
+		// Consumed: adapters either point at us no more (restored now, or the
+		// user changed DNS manually). Keep it only when a restore failed, so a
+		// later run can retry.
+		if (!failed)
+		{
+			std::error_code ec;
+			std::filesystem::remove(backup_path, ec);
+		}
+
+		return failed ? 1 : 0;
 	}
 
 	// --- Proxy settings -----------------------------------------------------
@@ -542,6 +568,80 @@ namespace
 		writeFileAtomic(path, ss.str());
 	}
 
+	// AdGuard DnsLibs does not carry platform roots: on Windows the host must
+	// verify each TLS chain against the system certificate stores (that is how
+	// Chromium, which this library is derived from, works). Without a callback
+	// the DLL rejects every upstream certificate, so even a reachable DoH/DoT
+	// server fails the handshake.
+	ag_certificate_verification_result verifyCertificate(const ag_certificate_verification_event* event)
+	{
+		if (!event || !event->certificate.data || event->certificate.size == 0)
+			return AGCVR_ERROR_CREATE_CERT;
+
+		constexpr DWORD encoding = X509_ASN_ENCODING | PKCS_7_ASN_ENCODING;
+
+		PCCERT_CONTEXT leaf = CertCreateCertificateContext(encoding, event->certificate.data, static_cast<DWORD>(event->certificate.size));
+		if (!leaf)
+			return AGCVR_ERROR_CREATE_CERT;
+
+		HCERTSTORE store = CertOpenStore(CERT_STORE_PROV_MEMORY, 0, 0, 0, nullptr);
+		if (!store)
+		{
+			CertFreeCertificateContext(leaf);
+			return AGCVR_ERROR_ACCESS_TO_STORE;
+		}
+
+		bool ok = true;
+		for (uint32_t i = 0; i < event->chain.size && ok; ++i)
+		{
+			const ag_buffer& item = event->chain.data[i];
+			if (!item.data || item.size == 0)
+				continue;
+
+			PCCERT_CONTEXT cert = CertCreateCertificateContext(encoding, item.data, static_cast<DWORD>(item.size));
+			if (!cert)
+			{
+				ok = false;
+				break;
+			}
+
+			if (!CertAddCertificateContextToStore(store, cert, CERT_STORE_ADD_ALWAYS, nullptr))
+				ok = false;
+
+			CertFreeCertificateContext(cert);
+		}
+
+		ag_certificate_verification_result result = AGCVR_ERROR_CERT_VERIFICATION;
+
+		if (ok)
+		{
+			CERT_CHAIN_PARA para{};
+			para.cbSize = sizeof(para);
+
+			LPSTR			 server_auth = const_cast<LPSTR>(szOID_PKIX_KP_SERVER_AUTH);
+			CERT_ENHKEY_USAGE usage{};
+			usage.cUsageIdentifier		= 1;
+			usage.rgpszUsageIdentifier	= &server_auth;
+			para.RequestedUsage.dwType	= USAGE_MATCH_TYPE_AND;
+			para.RequestedUsage.Usage	= usage;
+
+			// No revocation flags: an online CRL/OCSP check would add latency
+			// and fail under filtering; chain trust against the system roots is
+			// what matters here.
+			PCCERT_CHAIN_CONTEXT chain = nullptr;
+			if (CertGetCertificateChain(nullptr, leaf, nullptr, store, &para, 0, nullptr, &chain))
+			{
+				if (chain->TrustStatus.dwErrorStatus == CERT_TRUST_NO_ERROR)
+					result = AGCVR_OK;
+				CertFreeCertificateChain(chain);
+			}
+		}
+
+		CertCloseStore(store, 0);
+		CertFreeCertificateContext(leaf);
+		return result;
+	}
+
 	std::pair<int, std::string> runTestUpstream(AgBind& ag, const std::string& value)
 	{
 		auto parsed = parseUpstreamValue(value);
@@ -557,7 +657,7 @@ namespace
 		opt.bootstrap.data = boots.empty() ? nullptr : boots.data();
 		opt.bootstrap.size = static_cast<uint32_t>(boots.size());
 
-		const char* error = ag.test_upstream(&opt, 10'000, false, nullptr, false);
+		const char* error = ag.test_upstream(&opt, 10'000, false, verifyCertificate, false);
 		if (!error)
 			return { 0, "OK" };
 
@@ -631,6 +731,7 @@ int main(int argc, char** argv)
 			std::cerr << "--repair needs --backup\n";
 			return 2;
 		}
+		g_log.open(exeDir() / "unblock_dns_repair.log");
 		return repairAdapters(ag, backup_path);
 	}
 
@@ -701,7 +802,7 @@ int main(int argc, char** argv)
 	// the system resolvers alone.
 	ag_dnsproxy_init_result result	= AGDPIR_OK;
 	const char*				message = nullptr;
-	ag_dnsproxy_events		events{ requestProcessedCallback, nullptr };
+	ag_dnsproxy_events		events{ requestProcessedCallback, verifyCertificate };
 
 	ag_dnsproxy* proxy = ag.init(settings, &events, &result, &message);
 	if (!proxy || result != AGDPIR_OK)

@@ -6,7 +6,7 @@ add_executable(${NAME}
     ag_dns.h
     dns_config.h
 )
-target_link_libraries(${NAME} PRIVATE ws2_32 iphlpapi)
+target_link_libraries(${NAME} PRIVATE ws2_32 iphlpapi crypt32)
 target_compile_definitions(${NAME} PRIVATE CONSOLE WIN32_LEAN_AND_MEAN)
 target_compile_options(${NAME} PRIVATE ${PROJECT_WARNING_FLAGS})
 

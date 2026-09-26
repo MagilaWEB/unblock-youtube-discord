@@ -622,7 +622,9 @@ std::vector<Unblock::DnsProxyUpstream> Unblock::defaultDnsProxyUpstreams()
 	return {
 		{ true, "Cloudflare", "https://cloudflare-dns.com/dns-query", "1.1.1.1,1.0.0.1" },
 		{ true,		"Google",		  "https://dns.google/dns-query", "8.8.8.8,8.8.4.4" },
-		{ true,		 "Quad9", "https://dns.quad9.net:5053/dns-query",		  "9.9.9.9" },
+		{ true,		 "Quad9", "https://dns.quad9.net/dns-query",		  "9.9.9.9" },
+		{ true,	   "GeoHide",		  "https://dns.geohide.ru:8443/dns-query",
+		 "37.230.192.51,45.155.204.190,46.8.158.6,193.233.112.67,193.233.112.68,193.233.112.88" },
 	};
 }
 
@@ -722,6 +724,10 @@ void Unblock::dnsProxy(bool state)
 	if (!state)
 	{
 		_dns_proxy.remove();
+		// SvcHost stops its child with TerminateProcess (see MagilaWEB/svc_host),
+		// so the wrapper never gets to run its own OS-DNS restore on stop. Undo
+		// the adapter switch from here, using the backup written when it happened.
+		dnsProxyRepairBoot();
 		return;
 	}
 
@@ -815,6 +821,8 @@ void Unblock::dnsProxyRepairBoot()
 	// touches the registry itself.
 	if (_dnsProxyRunHelper({ (Core::get().binPath() / "unblock_dns.exe").string(), "--repair", "--backup", backup_path.string() }, 15'000))
 		Debug::warning("DNS proxy was killed without restore, adapters repaired.");
+	else
+		Debug::warning("DNS proxy adapter restore failed, adapters may still point at the local proxy.");
 }
 
 constexpr static std::string_view proxy_secret{ "dd92bc05d4dc4f4bef9cb4b7bf5628c5" };
