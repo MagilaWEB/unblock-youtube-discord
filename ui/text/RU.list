@@ -335,18 +335,15 @@ str_checkbox_enable_dns_proxy_title=🔒 DNS-прокси
 str_checkbox_enable_dns_proxy_description=🔒 Системный DNS через шифрованные серверы (DoH): весь резолв идёт мимо провайдера.
 При включении Unblock поднимает службу unblock_dns и переключает DNS адаптеров на 127.0.0.1.
 При выключении настройки DNS возвращаются как были.
-str_dns_proxy_cf_title=Cloudflare
-str_dns_proxy_google_title=Google
-str_dns_proxy_quad9_title=Quad9
-str_dns_proxy_servers_title=🌐 Свои серверы
-str_dns_proxy_servers_description=🌐 Строки вида «адрес|bootstrap» (bootstrap через запятую, может быть пустым).
+str_dns_proxy_servers_title=🌐 DNS-серверы
+str_dns_proxy_servers_description=🌐 Строки вида «адрес|bootstrap» (bootstrap через запятую, может быть пустым). По умолчанию: Cloudflare, Google, Quad9, GeoHide.
 Примеры: https://cloudflare-dns.com/dns-query|1.1.1.1,1.0.0.1 или tls://dns.adguard.com|94.140.14.14
 str_input_dns_proxy_custom_placeholder=Добавить сервер (например, tls://dns.adguard.com|94.140.14.14) и нажать Enter
 str_input_test_upstream_title=🧪 Проверка сервера
 str_input_test_upstream_description=🧪 Строка сервера для проверки кнопкой ниже.
 Проверка выполняется через unblock_dns — рядом с ним должен лежать AdguardDns64.dll, иначе увидите ошибку загрузки.
 str_button_test_upstream_title=🧪 Проверить сервер
-str_status_dns_running=🌐 DNS-прокси работает · запросов: {} · из кэша: {}
+str_status_dns_running=🌐 DNS-прокси работает · запросов: {} · из кэша: {} · ошибок: {}
 str_status_dns_stopped=🌐 DNS-прокси остановлен
 str_window_test_upstream_title=🧪 Проверка сервера
 str_task_dns_proxy_title=🔒 Применение DNS-прокси

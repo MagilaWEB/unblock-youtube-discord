@@ -335,18 +335,15 @@ str_checkbox_enable_dns_proxy_title=🔒 DNS proxy
 str_checkbox_enable_dns_proxy_description=🔒 System DNS over encrypted servers (DoH): all resolution bypasses the ISP.
 When enabled, Unblock starts the unblock_dns service and points adapter DNS at 127.0.0.1.
 When disabled, DNS settings are restored.
-str_dns_proxy_cf_title=Cloudflare
-str_dns_proxy_google_title=Google
-str_dns_proxy_quad9_title=Quad9
-str_dns_proxy_servers_title=🌐 Custom servers
-str_dns_proxy_servers_description=🌐 Lines shaped as «address|bootstrap» (comma-separated bootstrap, may be empty).
+str_dns_proxy_servers_title=🌐 DNS servers
+str_dns_proxy_servers_description=🌐 Lines shaped as «address|bootstrap» (comma-separated bootstrap, may be empty). Defaults: Cloudflare, Google, Quad9, GeoHide.
 Examples: https://cloudflare-dns.com/dns-query|1.1.1.1,1.0.0.1 or tls://dns.adguard.com|94.140.14.14
 str_input_dns_proxy_custom_placeholder=Add a server (e.g. tls://dns.adguard.com|94.140.14.14) and press Enter
 str_input_test_upstream_title=🧪 Server check
 str_input_test_upstream_description=🧪 Server line to check with the button below.
 The check runs through unblock_dns — AdguardDns64.dll must sit next to it or you will see a load error.
 str_button_test_upstream_title=🧪 Check server
-str_status_dns_running=🌐 DNS proxy running · queries: {} · cached: {}
+str_status_dns_running=🌐 DNS proxy running · queries: {} · cached: {} · errors: {}
 str_status_dns_stopped=🌐 DNS proxy stopped
 str_window_test_upstream_title=🧪 Server check
 str_task_dns_proxy_title=🔒 Applying DNS proxy

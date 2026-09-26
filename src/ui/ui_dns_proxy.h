@@ -17,10 +17,7 @@ private:
 
 	CHECK_BOX(_enable_dns_proxy);
 	STATUS(_status_dns);
-	CHECK_BOX(_upstream_cf);
-	CHECK_BOX(_upstream_google);
-	CHECK_BOX(_upstream_quad9);
-	EDITABLE_LIST(_custom_upstreams);
+	EDITABLE_LIST(_upstreams);
 	INPUT(_test_input);
 	BUTTON(_test_button);
 

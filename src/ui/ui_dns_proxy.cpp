@@ -6,6 +6,25 @@
 
 #include <algorithm>
 #include <ranges>
+#include <unordered_set>
+
+namespace
+{
+	std::vector<std::string> _splitPipe(const std::string& line)
+	{
+		std::vector<std::string> parts;
+		size_t					 pos = 0;
+		while (pos <= line.size())
+		{
+			size_t end = line.find('|', pos);
+			if (end == std::string::npos)
+				end = line.size();
+			parts.push_back(line.substr(pos, end - pos));
+			pos = end + 1;
+		}
+		return parts;
+	}
+}
 
 UiDnsProxy::UiDnsProxy(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock) : _ui(std::move(ui)), _unblock(std::move(unblock))
 {
@@ -46,30 +65,17 @@ void UiDnsProxy::initialize()
 	_status_dns->create("#dns section .common");
 	_status_dns->setInactive(Localization::Str{ "str_status_dns_stopped" }());
 
-	const auto presets = Unblock::defaultDnsProxyUpstreams();
-
-	_upstream_cf->create("#dns section .common", "str_dns_proxy_cf_title", Localization::Str{ std::string{ presets[0].address } });
-	_upstream_google->create("#dns section .common", "str_dns_proxy_google_title", Localization::Str{ std::string{ presets[1].address } });
-	_upstream_quad9->create("#dns section .common", "str_dns_proxy_quad9_title", Localization::Str{ std::string{ presets[2].address } });
-
-	auto on_preset = [this](JSArgs)
-	{
-		_collectUpstreams();
-		_applyUpstreams();
-		return false;
-	};
-	_upstream_cf->addEventClick(on_preset);
-	_upstream_google->addEventClick(on_preset);
-	_upstream_quad9->addEventClick(on_preset);
-
-	_custom_upstreams->create(
+	// Every upstream lives in one editable list as "address|bootstrap"; the
+	// built-in presets (Cloudflare, Google, Quad9, GeoHide) are only the default
+	// entries, so they can be edited or removed like any other.
+	_upstreams->create(
 		"#dns section .common",
 		Localization::Str{ "str_dns_proxy_servers_title" },
 		Localization::Str{ "str_dns_proxy_servers_description" }(),
 		Localization::Str{ "str_input_dns_proxy_custom_placeholder" }()
 	);
-	_custom_upstreams->setValidator([](const std::string& value) { return parseUpstreamValue(trimConfigLine(value)).has_value(); });
-	_custom_upstreams->addEventChange(
+	_upstreams->setValidator([](const std::string& value) { return parseUpstreamValue(trimConfigLine(value)).has_value(); });
+	_upstreams->addEventChange(
 		[this](JSArgs)
 		{
 			_collectUpstreams();
@@ -116,58 +122,28 @@ void UiDnsProxy::initialize()
 		}
 	);
 
-	// Restore persisted servers (if any), otherwise the three presets.
-	std::vector<Unblock::DnsProxyUpstream> upstreams = Unblock::defaultDnsProxyUpstreams();
+	// Restore persisted servers, otherwise the built-in presets. Accept both
+	// the old "enabled|name|address|bootstrap" lines and the current
+	// "address|bootstrap" items.
+	std::vector<std::string>	   items;
+	std::unordered_set<std::string> seen;
 	if (auto cfg = _ui->userConfig()->parameterSectionVector("DNS", "upstreams"))
-		if (!cfg.value().empty())
+		for (auto& line : cfg.value())
 		{
-			upstreams.clear();
-			for (auto& line : cfg.value())
-			{
-				// enabled|name|address|bootstrap
-				std::vector<std::string> parts;
-				size_t					 pos = 0;
-				while (pos <= line.size())
-				{
-					size_t end = line.find('|', pos);
-					if (end == std::string::npos)
-						end = line.size();
-					parts.push_back(line.substr(pos, end - pos));
-					pos = end + 1;
-				}
-
-				if (parts.size() != 4 || !parseUpstreamValue(parts[2] + "|" + parts[3]))
-					continue;
-
-				upstreams.push_back({ parts[0] == "1", std::move(parts[1]), std::move(parts[2]), std::move(parts[3]) });
-			}
-
-			if (upstreams.empty())
-				upstreams = Unblock::defaultDnsProxyUpstreams();
+			const auto		  parts = _splitPipe(line);
+			const std::string item	= parts.size() == 4 ? parts[2] + "|" + parts[3] : line;
+			if (parseUpstreamValue(trimConfigLine(item)) && seen.insert(item).second)
+				items.push_back(item);
 		}
 
-	auto find_preset = [&upstreams](std::string_view address) -> const Unblock::DnsProxyUpstream*
-	{
-		for (auto& u : upstreams)
-			if (u.address == address)
-				return &u;
-		return nullptr;
-	};
+	if (items.empty())
+		for (auto& u : Unblock::defaultDnsProxyUpstreams())
+			items.push_back(u.address + "|" + u.bootstrap);
 
-	if (auto* cf = find_preset(presets[0].address))
-		_upstream_cf->setState(cf->enabled);
-	if (auto* google = find_preset(presets[1].address))
-		_upstream_google->setState(google->enabled);
-	if (auto* quad9 = find_preset(presets[2].address))
-		_upstream_quad9->setState(quad9->enabled);
+	_upstreams->setItems(std::move(items));
 
-	std::vector<std::string> customs;
-	for (auto& u : upstreams)
-		if (!find_preset(u.address))
-			customs.push_back(u.address + "|" + u.bootstrap);
-	_custom_upstreams->setItems(std::move(customs));
-
-	_unblock->setDnsProxyUpstreams(upstreams);
+	// Seed Unblock and persist the (possibly migrated) list.
+	_collectUpstreams();
 
 	const bool enabled = _ui->userConfig()->parameterSection<bool>("DNS", "enable").value_or(false);
 	_enable_dns_proxy->setState(enabled);
@@ -192,15 +168,9 @@ void UiDnsProxy::updateInfoWindow()
 
 void UiDnsProxy::_collectUpstreams()
 {
-	const auto presets = Unblock::defaultDnsProxyUpstreams();
+	std::vector<Unblock::DnsProxyUpstream> upstreams;
 
-	std::vector<Unblock::DnsProxyUpstream> upstreams{
-		{	  _upstream_cf->getState(), presets[0].name, presets[0].address, presets[0].bootstrap },
-		{ _upstream_google->getState(), presets[1].name, presets[1].address, presets[1].bootstrap },
-		{  _upstream_quad9->getState(), presets[2].name, presets[2].address, presets[2].bootstrap },
-	};
-
-	for (auto& item : _custom_upstreams->items())
+	for (auto& item : _upstreams->items())
 		if (auto parsed = parseUpstreamValue(item))
 		{
 			std::string bootstrap;
@@ -210,11 +180,7 @@ void UiDnsProxy::_collectUpstreams()
 		}
 
 	_unblock->setDnsProxyUpstreams(upstreams);
-
-	std::vector<std::string> stored;
-	for (auto& u : upstreams)
-		stored.push_back(std::string{ u.enabled ? "1" : "0" } + "|" + u.name + "|" + u.address + "|" + u.bootstrap);
-	_ui->userConfig()->writeSectionParameterVector("DNS", "upstreams", stored);
+	_ui->userConfig()->writeSectionParameterVector("DNS", "upstreams", _upstreams->items());
 }
 
 void UiDnsProxy::_applyUpstreams()
@@ -239,6 +205,7 @@ void UiDnsProxy::_refreshStatus()
 
 	std::string queries = "0";
 	std::string cached	= "0";
+	std::string errors	= "0";
 
 	const std::string status = _unblock->dnsProxyStatus();
 	for (auto row : status | std::views::split('\n'))
@@ -248,11 +215,13 @@ void UiDnsProxy::_refreshStatus()
 			queries = line.substr(8);
 		else if (line.starts_with("cache_hits="))
 			cached = line.substr(11);
+		else if (line.starts_with("errors="))
+			errors = line.substr(7);
 	}
 
 	const bool		  running = _unblock->dnsProxyIsRun();
 	const std::string text =
-		running ? utils::format(Localization::Str{ "str_status_dns_running" }(), queries, cached) : Localization::Str{ "str_status_dns_stopped" }();
+		running ? utils::format(Localization::Str{ "str_status_dns_running" }(), queries, cached, errors) : Localization::Str{ "str_status_dns_stopped" }();
 
 	if (text == _last_status)
 		return;
