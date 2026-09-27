@@ -3,6 +3,7 @@
 // Header-only proxy config: plain key=value lines, written by the engine.
 //   listen=127.0.0.1
 //   port=53
+//   timeout=15000
 //   bootstrap=1.1.1.1,8.8.8.8,9.9.9.9
 //   upstream=https://cloudflare-dns.com/dns-query
 //   upstream=1.1.1.1
@@ -24,6 +25,9 @@ struct DnsProxyConfig
 {
 	std::string listen{ "127.0.0.1" };
 	uint16_t	port{ 53 };
+	// Upstream exchange timeout. Private resolvers (GeoHide) are slow from
+	// time to time, so the default is deliberately generous and editable.
+	uint32_t	timeout_ms{ 15'000 };
 
 	std::string log_path;
 	std::string backup_path;
@@ -254,6 +258,20 @@ inline std::pair<DnsProxyConfig, std::string> parseProxyConfig(const std::string
 			catch (...)
 			{
 				return { config, "Bad port: " + value };
+			}
+		}
+		else if (key == "timeout")
+		{
+			try
+			{
+				const int timeout = std::stoi(value);
+				if (timeout < 1'000 || timeout > 120'000)
+					return { config, "Bad timeout: " + value };
+				config.timeout_ms = static_cast<uint32_t>(timeout);
+			}
+			catch (...)
+			{
+				return { config, "Bad timeout: " + value };
 			}
 		}
 		else if (key == "bootstrap")

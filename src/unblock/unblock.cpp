@@ -605,11 +605,21 @@ std::vector<std::string> Unblock::defaultDnsProxyUpstreams()
 {
 	// Order is the priority: the first entry is the primary resolver, the
 	// rest are only fallbacks (see unblock_dns buildSettings). GeoHide leads
-	// because queries must reach it to get the region-specific answers. Xbox
-	// DNS (free Smart DNS, no sign-up) and Cloudflare are backups, with plain
-	// 1.1.1.1 as the last resort for when encrypted endpoints are blocked.
+	// (queries must reach it for region-specific answers) across its DoH/DoT
+	// endpoints and ports, then Xbox DNS (free Smart DNS), then plain DNS as
+	// the last resort.
 	return {
-		"https://dns.geohide.ru:8443/dns-query", "111.88.96.54", "111.88.96.55", "https://cloudflare-dns.com/dns-query", "1.1.1.1",
+		"https://dns.geohide.ru:8443/dns-query",
+		"https://dns.geohide.ru:853/dns-query",
+		"https://dns.geohide.ru:443/dns-query",
+		"tls://dns.geohide.ru:8443",
+		"tls://dns.geohide.ru:853",
+		"tls://dns.geohide.ru:443",
+		"111.88.96.54",
+		"111.88.96.55",
+		"1.1.1.1",
+		"1.0.0.1",
+		"8.8.8.8",
 	};
 }
 
@@ -619,6 +629,13 @@ std::vector<std::string> Unblock::defaultDnsProxyBootstrap()
 	// if the ISP poisons these, the user can point them at a reachable
 	// resolver (e.g. GeoHide's own IPs).
 	return { "1.1.1.1", "8.8.8.8", "9.9.9.9" };
+}
+
+uint32_t Unblock::defaultDnsProxyTimeout()
+{
+	// A private resolver (GeoHide) stalls from time to time; a generous
+	// default avoids spurious SERVFAILs. Editable in the UI.
+	return 15'000;
 }
 
 std::filesystem::path Unblock::_dnsProxyConfigPath() const
@@ -636,7 +653,7 @@ std::filesystem::path Unblock::_dnsProxyLogPath() const
 	return Core::get().userPath() / "dns_proxy.log";
 }
 
-void Unblock::_dnsProxyWriteConfig(const std::vector<std::string>& upstreams, const std::vector<std::string>& bootstrap)
+void Unblock::_dnsProxyWriteConfig(const std::vector<std::string>& upstreams, const std::vector<std::string>& bootstrap, uint32_t timeout_ms)
 {
 	File conf{ false };
 	conf.open(_dnsProxyConfigPath(), "", true);
@@ -644,6 +661,7 @@ void Unblock::_dnsProxyWriteConfig(const std::vector<std::string>& upstreams, co
 
 	conf.writeText("listen=127.0.0.1");
 	conf.writeText("port=53");
+	conf.writeText("timeout=" + std::to_string(timeout_ms));
 	// Explicit paths: the wrapper reads these verbatim, so engine and wrapper
 	// can never disagree on where backup/log live. Status is pushed over IPC
 	// (UDP 9999), not written to disk.
@@ -729,8 +747,9 @@ void Unblock::dnsProxy(bool state)
 
 	const auto& upstreams = _dns_proxy_upstreams.empty() ? defaultDnsProxyUpstreams() : _dns_proxy_upstreams;
 	const auto& bootstrap = _dns_proxy_bootstrap.empty() ? defaultDnsProxyBootstrap() : _dns_proxy_bootstrap;
+	const auto	timeout	  = _dns_proxy_timeout_ms != 0 ? _dns_proxy_timeout_ms : defaultDnsProxyTimeout();
 
-	_dnsProxyWriteConfig(upstreams, bootstrap);
+	_dnsProxyWriteConfig(upstreams, bootstrap, timeout);
 
 	// Reset the IPC counters so a stale run's numbers don't show on start.
 	IPCSignals::get().clear("dns.queries");
@@ -767,6 +786,16 @@ void Unblock::setDnsProxyBootstrap(std::vector<std::string> bootstrap)
 const std::vector<std::string>& Unblock::dnsProxyBootstrap() const
 {
 	return _dns_proxy_bootstrap;
+}
+
+void Unblock::setDnsProxyTimeout(uint32_t timeout_ms)
+{
+	_dns_proxy_timeout_ms = timeout_ms;
+}
+
+uint32_t Unblock::dnsProxyTimeout() const
+{
+	return _dns_proxy_timeout_ms;
 }
 
 std::string Unblock::dnsProxyStatus() const

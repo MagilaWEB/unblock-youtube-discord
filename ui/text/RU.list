@@ -340,6 +340,8 @@ str_dns_proxy_servers_description=🌐 Каждая строка — адрес 
 Примеры: https://dns.geohide.ru:8443/dns-query или tls://dns.adguard.com
 str_dns_proxy_bootstrap_title=🧩 Bootstrap
 str_dns_proxy_bootstrap_description=🧩 Обычные DNS-серверы через запятую; ими резолвится адрес DoH/DoT-серверов (только получение IP по хостнейму). По умолчанию: 1.1.1.1,8.8.8.8,9.9.9.9. Нажмите Enter, чтобы применить.
+str_dns_proxy_timeout_title=⏱️ Таймаут запроса
+str_dns_proxy_timeout_description=⏱️ Сколько секунд ждать ответа от DNS-сервера (1–120). Частные резолверы вроде GeoHide иногда тупят — если видите ошибки, поднимите. Нажмите Enter, чтобы применить.
 str_input_dns_proxy_custom_placeholder=Добавить сервер (например, https://cloudflare-dns.com/dns-query) и нажать Enter
 str_input_test_upstream_title=🧪 Проверка сервера
 str_input_test_upstream_description=🧪 Строка сервера для проверки кнопкой ниже.

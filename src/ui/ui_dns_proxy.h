@@ -19,6 +19,7 @@ private:
 	STATUS(_status_dns);
 	EDITABLE_LIST(_upstreams);
 	INPUT(_bootstrap);
+	INPUT(_timeout);
 	INPUT(_test_input);
 	BUTTON(_test_button);
 

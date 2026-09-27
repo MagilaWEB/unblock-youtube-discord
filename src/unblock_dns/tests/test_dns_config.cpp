@@ -73,6 +73,7 @@ TEST_CASE("parseProxyConfig reads full config", "[dns][config]")
 	const std::string content = "# sample\n"
 								"listen=127.0.0.1\n"
 								"port=53\n"
+								"timeout=12000\n"
 								"bootstrap=1.1.1.1,8.8.8.8,9.9.9.9\n"
 								"upstream=https://cloudflare-dns.com/dns-query\n"
 								"upstream=1.1.1.1\n"
@@ -83,6 +84,7 @@ TEST_CASE("parseProxyConfig reads full config", "[dns][config]")
 	CHECK(error.empty());
 	CHECK(config.listen == "127.0.0.1");
 	CHECK(config.port == 53);
+	CHECK(config.timeout_ms == 12'000);
 	REQUIRE(config.bootstrap.size() == 3);
 	CHECK(config.bootstrap[0] == "1.1.1.1");
 	REQUIRE(config.upstreams.size() == 2);
@@ -108,6 +110,12 @@ TEST_CASE("parseProxyConfig rejects bad input", "[dns][config]")
 
 	const auto [c5, e5] = parseProxyConfig("bootstrap=nope\nupstream=1.1.1.1\n");
 	CHECK(e5 == "Bad bootstrap: nope");
+
+	const auto [c8, e8] = parseProxyConfig("timeout=abc\nupstream=1.1.1.1\n");
+	CHECK(e8 == "Bad timeout: abc");
+
+	const auto [c9, e9] = parseProxyConfig("timeout=100\nupstream=1.1.1.1\n");
+	CHECK(e9 == "Bad timeout: 100");
 
 	// A hostname upstream without any bootstrap cannot init in the DLL.
 	const auto [c6, e6] = parseProxyConfig("upstream=https://dns.google/dns-query\n");

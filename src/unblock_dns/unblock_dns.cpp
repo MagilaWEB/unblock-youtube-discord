@@ -139,11 +139,12 @@ namespace
 			// rejected one would otherwise flood the log. One line per second
 			// is enough to see what is failing.
 			static std::atomic_int64_t last_error_log_ms{ 0 };
-			const auto				   now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-			int64_t					   previous = last_error_log_ms.load();
+			const auto now_ms	= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+			int64_t	   previous = last_error_log_ms.load();
 			if (now_ms - previous >= 1'000 && last_error_log_ms.compare_exchange_strong(previous, now_ms))
 				logLine(
-					std::string{ "query error [" } + (event->domain ? event->domain : "?") + " " + (event->type ? event->type : "?") + "]: " + event->error
+					std::string{ "query error [" } + (event->domain ? event->domain : "?") + " " + (event->type ? event->type : "?")
+					+ "]: " + event->error
 				);
 		}
 		if (event->upstream_id)
@@ -591,10 +592,7 @@ namespace
 		backing.settings.adblock_rules_blocking_mode = defaults->adblock_rules_blocking_mode;
 		backing.settings.hosts_rules_blocking_mode	 = defaults->hosts_rules_blocking_mode;
 		backing.settings.dns_cache_size				 = defaults->dns_cache_size;
-		// The first DoH/DoT handshake to a remote upstream can exceed the
-		// library default, which showed up as random SERVFAILs on the first
-		// query. Keep a sane floor.
-		backing.settings.upstream_timeout_ms		 = std::max(defaults->upstream_timeout_ms, 5'000u);
+		backing.settings.upstream_timeout_ms		 = config.timeout_ms;
 		ag.settings_free(defaults);
 
 		backing.listen_string = config.listen;

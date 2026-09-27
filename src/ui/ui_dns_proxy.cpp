@@ -4,6 +4,7 @@
 #include "../unblock/unblock.h"
 #include "../unblock_dns/dns_config.h"
 
+#include <algorithm>
 #include <ranges>
 
 UiDnsProxy::UiDnsProxy(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock) : _ui(std::move(ui)), _unblock(std::move(unblock))
@@ -93,6 +94,47 @@ void UiDnsProxy::initialize()
 				_unblock->setDnsProxyBootstrap(std::move(*parsed));
 				_collectUpstreams();
 				_applyUpstreams();
+			}
+			return false;
+		}
+	);
+
+	// Upstream exchange timeout (seconds). Private resolvers stall now and
+	// then, so it is tunable without rebuilding.
+	uint32_t timeout_sec = Unblock::defaultDnsProxyTimeout() / 1'000;
+	if (auto cfg = _ui->userConfig()->parameterSection<std::string>("DNS", "timeout"))
+		try
+		{
+			const int parsed = std::stoi(trimConfigLine(cfg.value()));
+			if (parsed >= 1 && parsed <= 120)
+				timeout_sec = static_cast<uint32_t>(parsed);
+		}
+		catch (...)
+		{
+		}
+	_unblock->setDnsProxyTimeout(timeout_sec * 1'000);
+
+	_timeout->create(
+		"#dns section .common",
+		Input::Types::duration_sec,
+		JSValue{ static_cast<int>(timeout_sec) },
+		Localization::Str{ "str_dns_proxy_timeout_title" },
+		Localization::Str{ "str_dns_proxy_timeout_description" },
+		Input::Options{ 1, 120, "sec" }
+	);
+	_timeout->addEventSubmit(
+		[this](JSArgs args)
+		{
+			try
+			{
+				int seconds = std::stoi(trimConfigLine(JSToCPP<std::string>(args[0])));
+				seconds		= std::clamp(seconds, 1, 120);
+				_unblock->setDnsProxyTimeout(static_cast<uint32_t>(seconds) * 1'000);
+				_collectUpstreams();
+				_applyUpstreams();
+			}
+			catch (...)
+			{
 			}
 			return false;
 		}
@@ -194,6 +236,8 @@ void UiDnsProxy::_collectUpstreams()
 	for (const auto& b : _unblock->dnsProxyBootstrap())
 		bootstrap_csv += (bootstrap_csv.empty() ? "" : ",") + b;
 	_ui->userConfig()->writeSectionParameter("DNS", "bootstrap", bootstrap_csv);
+
+	_ui->userConfig()->writeSectionParameter("DNS", "timeout", std::to_string(_unblock->dnsProxyTimeout() / 1'000));
 }
 
 void UiDnsProxy::_applyUpstreams()

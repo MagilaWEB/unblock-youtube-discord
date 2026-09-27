@@ -77,6 +77,7 @@ class Unblock final : public std::enable_shared_from_this<Unblock>
 public:
 	static std::vector<std::string> defaultDnsProxyUpstreams();
 	static std::vector<std::string> defaultDnsProxyBootstrap();
+	static uint32_t					defaultDnsProxyTimeout();
 
 private:
 	Zapret1Engine _zapret1_engine;
@@ -89,6 +90,7 @@ private:
 
 	std::vector<std::string> _dns_proxy_upstreams;
 	std::vector<std::string> _dns_proxy_bootstrap;
+	uint32_t				 _dns_proxy_timeout_ms{ 0 };
 
 	DomainTesting _domain_testing;
 	DNSHost		  _dns_hosts;
@@ -130,10 +132,10 @@ private:
 	std::filesystem::path _dnsProxyConfigPath() const;
 	std::filesystem::path _dnsProxyBackupPath() const;
 	std::filesystem::path _dnsProxyLogPath() const;
-	void				  _dnsProxyWriteConfig(const std::vector<std::string>& upstreams, const std::vector<std::string>& bootstrap);
+	void _dnsProxyWriteConfig(const std::vector<std::string>& upstreams, const std::vector<std::string>& bootstrap, uint32_t timeout_ms);
 	/** Spawns unblock_dns.exe without a shell and waits up to timeout_ms.
 	 *  The upstream value is passed via a file, never on the command line. */
-	bool				  _dnsProxyRunHelper(const std::vector<std::string>& args, uint32_t timeout_ms);
+	bool _dnsProxyRunHelper(const std::vector<std::string>& args, uint32_t timeout_ms);
 
 public:
 	Unblock();
@@ -219,6 +221,8 @@ public:
 	const std::vector<std::string>& dnsProxyUpstreams() const;
 	void							setDnsProxyBootstrap(std::vector<std::string> bootstrap);
 	const std::vector<std::string>& dnsProxyBootstrap() const;
+	void							setDnsProxyTimeout(uint32_t timeout_ms);
+	uint32_t						dnsProxyTimeout() const;
 	/** Status counters pushed by the proxy over IPC (zeros when unknown). */
 	std::string						dnsProxyStatus() const;
 	/** Runs unblock_dns --test-upstream, output holds OK/FAIL text. */
