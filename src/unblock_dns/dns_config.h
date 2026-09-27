@@ -3,23 +3,22 @@
 // Header-only proxy config: plain key=value lines, written by the engine.
 //   listen=127.0.0.1
 //   port=53
-//   upstream=https://cloudflare-dns.com/dns-query|1.1.1.1,1.0.0.1
-//   upstream=https://dns.google/dns-query|8.8.8.8,8.8.4.4
-// The bootstrap part after '|' may be empty. Lines starting with '#'
-// and blank lines are ignored. Pure logic, covered by unit tests.
+//   bootstrap=1.1.1.1,8.8.8.8,9.9.9.9
+//   upstream=https://cloudflare-dns.com/dns-query
+//   upstream=1.1.1.1
+// The bootstrap list is shared by every upstream that has to resolve a
+// hostname (DoH/DoT/QUIC and plain hostnames); plain-IP upstreams ignore it.
+// A hostname upstream with an empty bootstrap is rejected here, because the
+// DLL refuses to init it (AE_EMPTY_BOOTSTRAP) at runtime. Lines starting with
+// '#' and blank lines are ignored. Pure logic, covered by unit tests.
 
 #include <algorithm>
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
-
-struct DnsUpstreamConfig
-{
-	std::string				 address;
-	std::vector<std::string> bootstrap;
-};
 
 struct DnsProxyConfig
 {
@@ -27,16 +26,18 @@ struct DnsProxyConfig
 	uint16_t	port{ 53 };
 
 	std::string log_path;
-	std::string status_path;
 	std::string backup_path;
 
-	std::vector<DnsUpstreamConfig> upstreams;
+	// Plain DNS servers used to resolve hostnames of the upstreams below.
+	std::vector<std::string> bootstrap;
+	// Upstream addresses only (no per-upstream bootstrap).
+	std::vector<std::string> upstreams;
 };
 
 inline bool isIpv4Address(std::string_view s)
 {
-	size_t dots = 0;
-	size_t part = 0;
+	size_t dots	  = 0;
+	size_t part	  = 0;
 	size_t digits = 0;
 	for (char ch : s)
 	{
@@ -92,10 +93,10 @@ inline bool isHostname(std::string_view s)
 }
 
 // Strict enough to catch typos, loose enough to leave protocol details
-// to the DLL (it validates at init and reports precisely). When the plain
-// address is a hostname (not IPv4), a bootstrap list is mandatory — the
-// DLL refuses to init such an upstream otherwise (AE_EMPTY_BOOTSTRAP).
-inline bool isValidUpstreamAddress(const std::string& address, bool has_bootstrap = true)
+// to the DLL (it validates at init and reports precisely). Hostname
+// upstreams are allowed here regardless of bootstrap: the whole config is
+// checked for a usable bootstrap separately in parseProxyConfig().
+inline bool isValidUpstreamAddress(const std::string& address)
 {
 	if (address.empty() || address.find(' ') != std::string::npos)
 		return false;
@@ -126,7 +127,52 @@ inline bool isValidUpstreamAddress(const std::string& address, bool has_bootstra
 	if (std::ranges::all_of(host, [](unsigned char c) { return (c >= '0' && c <= '9') || c == '.'; }))
 		return false;
 
-	return isHostname(host) && has_bootstrap;
+	return isHostname(host);
+}
+
+// True when the upstream has to resolve a hostname through the bootstrap
+// list (DoH/DoT/QUIC/crypto, or a plain hostname). DNS stamps carry their
+// own address and plain IPv4 entries resolve nothing.
+inline bool upstreamNeedsBootstrap(const std::string& address)
+{
+	if (address.starts_with("sdns://"))
+		return false;
+
+	std::string_view host{ address };
+	const size_t	 scheme = host.find("://");
+	if (scheme != std::string_view::npos)
+		host.remove_prefix(scheme + 3);
+
+	const size_t slash = host.find('/');
+	if (slash != std::string_view::npos)
+		host = host.substr(0, slash);
+
+	const size_t at = host.rfind('@');
+	if (at != std::string_view::npos)
+		host.remove_prefix(at + 1);
+
+	const size_t colon = host.rfind(':');
+	if (colon != std::string_view::npos)
+		host = host.substr(0, colon);
+
+	return !isIpv4Address(host);
+}
+
+// A bootstrap entry is a plain DNS server address: IPv4 with an optional port.
+inline bool isValidBootstrapAddress(std::string_view value)
+{
+	if (value.empty())
+		return false;
+
+	const size_t colon = value.rfind(':');
+	if (colon != std::string_view::npos)
+	{
+		const std::string_view port{ value.data() + colon + 1, value.size() - colon - 1 };
+		if (port.empty() || !std::ranges::all_of(port, [](unsigned char c) { return c >= '0' && c <= '9'; }))
+			return false;
+		value = value.substr(0, colon);
+	}
+	return isIpv4Address(value);
 }
 
 inline std::string trimConfigLine(std::string_view line)
@@ -139,38 +185,37 @@ inline std::string trimConfigLine(std::string_view line)
 	return std::string{ line.substr(begin, end - begin + 1) };
 }
 
-// Parses one "upstream=<addr>[|<boot,csv>]" value. Returns nullopt when the
-// address part is invalid; a missing bootstrap list is fine (empty).
-inline std::optional<DnsUpstreamConfig> parseUpstreamValue(const std::string& value)
+// Parses a comma-separated bootstrap list. Returns nullopt when any entry is
+// not a plain IPv4[:port] address. Empty entries are skipped, duplicates
+// dropped. An empty list is valid (returns an empty vector).
+inline std::optional<std::vector<std::string>> parseBootstrapList(std::string_view value)
 {
-	const size_t	  sep  = value.find('|');
-	const std::string addr = trimConfigLine(value.substr(0, sep));
+	std::vector<std::string> out;
 
-	DnsUpstreamConfig out{ addr, {} };
-	if (sep != std::string::npos)
+	size_t pos = 0;
+	while (pos <= value.size())
 	{
-		std::string_view rest{ value.data() + sep + 1, value.size() - sep - 1 };
-		while (!rest.empty())
-		{
-			const size_t comma = rest.find(',');
-			std::string	 part = trimConfigLine(rest.substr(0, comma));
-			if (!part.empty())
-				out.bootstrap.push_back(std::move(part));
+		size_t end = value.find(',', pos);
+		if (end == std::string_view::npos)
+			end = value.size();
 
-			if (comma == std::string_view::npos)
-				break;
-			rest.remove_prefix(comma + 1);
-		}
+		std::string part = trimConfigLine(value.substr(pos, end - pos));
+		pos				 = end + 1;
+
+		if (part.empty())
+			continue;
+		if (!isValidBootstrapAddress(part))
+			return std::nullopt;
+		if (std::ranges::find(out, part) == out.end())
+			out.push_back(std::move(part));
 	}
-
-	if (!isValidUpstreamAddress(addr, !out.bootstrap.empty()))
-		return std::nullopt;
 
 	return out;
 }
 
 // Parses whole config content. Returns {config, error}; error is empty on
-// success. A config without upstreams is an error (nothing to serve).
+// success. A config without upstreams, or with hostname upstreams but no
+// bootstrap, is an error (the DLL could not init them).
 inline std::pair<DnsProxyConfig, std::string> parseProxyConfig(const std::string& content)
 {
 	DnsProxyConfig config;
@@ -183,7 +228,7 @@ inline std::pair<DnsProxyConfig, std::string> parseProxyConfig(const std::string
 			end = content.size();
 
 		const std::string line = trimConfigLine(std::string_view{ content.data() + pos, end - pos });
-		pos					 = end + 1;
+		pos					   = end + 1;
 
 		if (line.empty() || line.starts_with('#'))
 			continue;
@@ -202,7 +247,7 @@ inline std::pair<DnsProxyConfig, std::string> parseProxyConfig(const std::string
 			try
 			{
 				const int port = std::stoi(value);
-				if (port <= 0 || port > 65535)
+				if (port <= 0 || port > 65'535)
 					return { config, "Bad port: " + value };
 				config.port = static_cast<uint16_t>(port);
 			}
@@ -211,17 +256,21 @@ inline std::pair<DnsProxyConfig, std::string> parseProxyConfig(const std::string
 				return { config, "Bad port: " + value };
 			}
 		}
+		else if (key == "bootstrap")
+		{
+			auto list = parseBootstrapList(value);
+			if (!list)
+				return { config, "Bad bootstrap: " + value };
+			config.bootstrap = std::move(*list);
+		}
 		else if (key == "upstream")
 		{
-			auto upstream = parseUpstreamValue(value);
-			if (!upstream)
+			if (!isValidUpstreamAddress(value))
 				return { config, "Bad upstream: " + value };
-			config.upstreams.push_back(std::move(*upstream));
+			config.upstreams.push_back(value);
 		}
 		else if (key == "log")
 			config.log_path = value;
-		else if (key == "status")
-			config.status_path = value;
 		else if (key == "backup")
 			config.backup_path = value;
 		else
@@ -230,6 +279,11 @@ inline std::pair<DnsProxyConfig, std::string> parseProxyConfig(const std::string
 
 	if (config.upstreams.empty())
 		return { config, "No upstreams configured" };
+
+	if (config.bootstrap.empty())
+		for (const auto& upstream : config.upstreams)
+			if (upstreamNeedsBootstrap(upstream))
+				return { config, "Bootstrap required for hostname upstream: " + upstream };
 
 	return { config, {} };
 }

@@ -30,7 +30,7 @@ public:
 	const std::unordered_map<std::string, ZapretHelper::ErrorInfo>& errorHosts() const { return helper._error_hosts; }
 	const std::unordered_map<std::string, std::string>&				valid() const { return helper._valid_hosts; }
 	const std::unordered_map<std::string, ZapretHelper::ErrorInfo>& exhaustedHosts() const { return helper._exhausted_hosts; }
-	std::string exhaustedStrategy(const std::string& host) const
+	std::string														exhaustedStrategy(const std::string& host) const
 	{
 		auto it = helper._exhausted_hosts.find(host);
 		return it == helper._exhausted_hosts.end() ? std::string{} : it->second.strategy;
@@ -65,20 +65,20 @@ public:
 	void setLastRecheckNow() { helper._last_recheck = std::chrono::steady_clock::now(); }
 	void setLastRecheckInPast() { helper._last_recheck -= helper._recheck_interval + std::chrono::seconds(1); }
 
-	void applyConfig(const HelperConfig& cfg) { helper.applyConfig(cfg); }
-	u32	 poolSize() const { return helper._pool_size; }
-	void startWorkers(u32 n) { helper._startWorkers(n); }
+	void   applyConfig(const HelperConfig& cfg) { helper.applyConfig(cfg); }
+	u32	   poolSize() const { return helper._pool_size; }
+	void   startWorkers(u32 n) { helper._startWorkers(n); }
 	size_t poolThreads() const { return helper._pool.size(); }
 
 	std::string makeLog(std::string_view text) const { return ZapretHelper::_makeLog(text); }
-	std::string makeValidSignal(std::string_view h, std::string_view s) const { return ZapretHelper::_makeValidSignal(h, s); }
-	std::string makeErrorSignal(std::string_view h, std::string_view s) const { return ZapretHelper::_makeErrorSignal(h, s); }
 	std::string makeDoneSignal(std::string_view h) const { return ZapretHelper::_makeDoneSignal(h); }
 	std::string makeCheckingSignal(std::string_view h) const { return ZapretHelper::_makeCheckingSignal(h); }
-	std::string makeSeenSignal(std::string_view h) const { return ZapretHelper::_makeSeenSignal(h); }
+	std::string makeSnapshotChunk(std::string_view k, uint64_t seq, size_t i, size_t n, std::string_view d) const
+	{
+		return ZapretHelper::_makeSnapshotChunk(k, seq, i, n, d);
+	}
 	std::string makeOk(std::string_view h) const { return ZapretHelper::_makeOk(h); }
 	std::string makeFail(std::string_view h) const { return ZapretHelper::_makeFail(h); }
-	std::string makeExhaustedSignal(std::string_view h, std::string_view s) const { return ZapretHelper::_makeExhaustedSignal(h, s); }
 	std::string makeStatsSignal(size_t q, size_t c, size_t k) const { return ZapretHelper::_makeStatsSignal(q, c, k); }
 };
 
@@ -480,16 +480,11 @@ TEST_CASE("makeLog format", "[helper][format]")
 	CHECK(t.makeLog("check a.com") == "LOG:INFO:helper:check a.com");
 }
 
-TEST_CASE("makeValidSignal format", "[helper][format]")
+TEST_CASE("makeSnapshotChunk format", "[helper][format]")
 {
 	ZapretHelperTest t;
-	CHECK(t.makeValidSignal("a.com", "5") == "STRING:helper_valid:a.com:5");
-}
-
-TEST_CASE("makeErrorSignal format", "[helper][format]")
-{
-	ZapretHelperTest t;
-	CHECK(t.makeErrorSignal("a.com", "3") == "STRING:helper_error:a.com:3");
+	CHECK(t.makeSnapshotChunk("helper_seen", 7, 0, 1, "a.com\nb.com") == "SNAP:helper_seen:7|0|1|a.com\nb.com");
+	CHECK(t.makeSnapshotChunk("helper_valid", 8, 1, 3, "c.com=5") == "SNAP:helper_valid:8|1|3|c.com=5");
 }
 
 TEST_CASE("makeDoneSignal format", "[helper][format]")
@@ -502,12 +497,6 @@ TEST_CASE("makeCheckingSignal format", "[helper][format]")
 {
 	ZapretHelperTest t;
 	CHECK(t.makeCheckingSignal("a.com") == "STRING:helper_checking:a.com");
-}
-
-TEST_CASE("makeSeenSignal format", "[helper][format]")
-{
-	ZapretHelperTest t;
-	CHECK(t.makeSeenSignal("a.com") == "STRING:helper_seen:a.com");
 }
 
 TEST_CASE("makeOk format", "[helper][format]")
@@ -827,17 +816,11 @@ TEST_CASE("VALID clears exhausted mark (packet-level recovery)", "[helper][exhau
 	CHECK(t.valid().at("google.com") == "7");
 }
 
-TEST_CASE("makeExhaustedSignal format", "[helper][exhausted]")
-{
-	ZapretHelperTest t;
-	CHECK(t.makeExhaustedSignal("a.com", "strategy_1") == "STRING:helper_exhausted:a.com:strategy_1");
-}
-
 TEST_CASE("makeStatsSignal format", "[helper][stats]")
 {
 	ZapretHelperTest t;
-	CHECK(t.makeStatsSignal(47, 20, 200) == "STRING:helper_stats:47:20:200");
-	CHECK(t.makeStatsSignal(0, 0, 0) == "STRING:helper_stats:0:0:0");
+	CHECK(t.makeStatsSignal(47, 20, 200) == "LATEST:helper_stats:47|20|200");
+	CHECK(t.makeStatsSignal(0, 0, 0) == "LATEST:helper_stats:0|0|0");
 }
 
 TEST_CASE("isTerminalError resolve-fail is terminal", "[helper][terminal]")

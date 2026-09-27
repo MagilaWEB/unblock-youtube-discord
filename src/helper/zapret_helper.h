@@ -31,7 +31,10 @@ class ZapretHelper
 	// this often. Unthrottled it flooded loopback UDP (~10Hz x N hosts) and
 	// drowned one-shot CHECKING/DONE signals, so the UI under-reported busy
 	// workers.
-	inline static constexpr auto c_seen_interval{ std::chrono::milliseconds(500) };
+	inline static constexpr auto   c_seen_interval{ std::chrono::milliseconds(500) };
+	// Snapshot payload chunk size. Must stay well below the receiver's
+	// datagram buffer (IPCSignals reads up to 64KB).
+	inline static constexpr size_t c_snapshot_chunk{ 8 * 1'024 };
 
 	struct ErrorInfo
 	{
@@ -51,22 +54,24 @@ class ZapretHelper
 	// Fully-tried hosts (lua wrapped a whole plan and went for the second
 	// lap through direct). Owned here, relayed to unblock; slow rechecks
 	// continue so a recovered host leaves the set on the next OK.
-	std::unordered_map<std::string, ErrorInfo> _exhausted_hosts;
-	// Verdict snapshots to unblock (port 9999) go out at most every
-	// c_seen_interval when dirty — never per message. Per-message full-list
-	// rebroadcasts used to spam O(N) datagrams per lua packet and drowned
-	// the CHECKING/DONE edges on the loopback buffer. The lua channel
-	// (OK:/FAIL: to port 10000) stays instant.
-	bool _valid_dirty{ false };
-	bool _error_dirty{ false };
-	bool _exhausted_dirty{ false };
+	std::unordered_map<std::string, ErrorInfo>	 _exhausted_hosts;
+	// Snapshots to unblock (port 9999) go out at most every c_seen_interval,
+	// chunked into a handful of datagrams (never O(N) per host) and stored
+	// latest-only on the receiver, so an incomplete/lost snapshot self-heals
+	// on the next tick. The lua channel (OK:/FAIL: to port 10000) stays
+	// instant.
+	// Snapshot sequence numbers are wall-clock seeded so they keep growing
+	// across helper restarts; a per-process counter starting at 0 would look
+	// stale to the receiver (which still holds a building snapshot from the
+	// previous run) and be ignored forever.
+	mutable std::atomic<uint64_t>				 _snap_seq{ static_cast<uint64_t>(std::chrono::system_clock::now().time_since_epoch().count()) };
 	UdpSocket									 _socket;
 	std::array<char, c_receive_buffer_size>		 _buffer{};
 	std::vector<std::thread>					 _pool;
 	// Pool generation: bumped on live resize so the old generation exits
 	// even though _running stays true (joining threads that wait on
 	// !_running would deadlock the main loop).
-	std::atomic<u32> _pool_epoch{ 0 };
+	std::atomic<u32>							 _pool_epoch{ 0 };
 	u32											 _target_ip{ htonl(INADDR_LOOPBACK) };
 	std::atomic<bool>							 _running{ true };
 	std::chrono::steady_clock::time_point		 _last_recheck{};
@@ -122,13 +127,13 @@ private:
 	/** Background worker: waits for hosts and checks them one by one.
 	 *  Epoch is passed at creation, never re-read: a worker started late
 	 *  must belong to the generation that created it, not the current one. */
-	void _workerRoutine(u32 epoch);
+	void					   _workerRoutine(u32 epoch);
 	/** Spawn n workers (run() startup path). */
-	void		 _startWorkers(u32 count);
+	void					   _startWorkers(u32 count);
 	/** Live pool resize while the helper keeps running (Apply button path).
 	 *  Unlike _stopWorkers (shutdown path, _running==false), this retires
 	 *  the current generation via _pool_epoch and starts a new one. */
-	void _restartWorkers(u32 count);
+	void					   _restartWorkers(u32 count);
 	/** Join all workers, keep _running untouched (live pool resize). */
 	void					   _stopWorkers();
 	/** Stop workers and join the pool. */
@@ -138,15 +143,18 @@ private:
 
 	// Message formatters (pure, no I/O) — unit-testable.
 	static std::string _makeLog(std::string_view text);
-	static std::string _makeValidSignal(std::string_view host, std::string_view strategy);
-	static std::string _makeErrorSignal(std::string_view host, std::string_view strategy);
-	static std::string _makeExhaustedSignal(std::string_view host, std::string_view strategy);
 	static std::string _makeDoneSignal(std::string_view host);
 	static std::string _makeCheckingSignal(std::string_view host);
-	static std::string _makeSeenSignal(std::string_view host);
+	/** One chunk of a chunked snapshot: "SNAP:key:seq|idx|total|data". */
+	static std::string _makeSnapshotChunk(std::string_view key, uint64_t seq, size_t idx, size_t total, std::string_view data);
 	static std::string _makeStatsSignal(size_t queued, size_t in_check, size_t known);
 	static std::string _makeOk(std::string_view host);
 	static std::string _makeFail(std::string_view host);
+
+	/** Split payload into <=c_snapshot_chunk chunks and send "key" snapshot
+	 *  with a fresh sequence number. Latest-only on the receiver: a newer
+	 *  seq discards an incomplete older one, so a lost chunk self-heals. */
+	void _sendSnapshot(std::string_view key, std::string_view payload) const;
 
 	/** Re-check due (interval passed) or report seen hosts. Called when queue is empty. */
 	void _idleStep();

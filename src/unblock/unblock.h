@@ -42,7 +42,7 @@ inline bool isHelperHostName(std::string_view host)
 	return std::ranges::any_of(host, [](char ch) { return std::isalpha(static_cast<unsigned char>(ch)); });
 }
 
-/** Helper pool load snapshot ("queued:in_check:known"). Header-inline so
+/** Helper pool load snapshot ("queued|in_check|known"). Header-inline so
  *  unit tests link without the engine. */
 struct HelperStats
 {
@@ -58,7 +58,7 @@ inline std::optional<HelperStats> parseHelperStats(std::string_view text)
 	size_t*		fields[3]{ &out.queued, &out.in_check, &out.known };
 	for (int i = 0; i < 3; ++i)
 	{
-		const size_t end = (i < 2) ? text.find(':', pos) : std::string_view::npos;
+		const size_t end = (i < 2) ? text.find('|', pos) : std::string_view::npos;
 		if (i < 2 && end == std::string_view::npos)
 			return std::nullopt;
 		unsigned long long num{};
@@ -75,15 +75,8 @@ inline std::optional<HelperStats> parseHelperStats(std::string_view text)
 class Unblock final : public std::enable_shared_from_this<Unblock>
 {
 public:
-	struct DnsProxyUpstream
-	{
-		bool		enabled{ true };
-		std::string name;
-		std::string address;
-		std::string bootstrap;
-	};
-
-	static std::vector<DnsProxyUpstream> defaultDnsProxyUpstreams();
+	static std::vector<std::string> defaultDnsProxyUpstreams();
+	static std::vector<std::string> defaultDnsProxyBootstrap();
 
 private:
 	Zapret1Engine _zapret1_engine;
@@ -94,7 +87,8 @@ private:
 	Service _dns_proxy{ "unblock_dns", "SvcHost.exe" };
 	Service _win_divert{ "WinDivert" };
 
-	std::vector<DnsProxyUpstream> _dns_proxy_upstreams;
+	std::vector<std::string> _dns_proxy_upstreams;
+	std::vector<std::string> _dns_proxy_bootstrap;
 
 	DomainTesting _domain_testing;
 	DNSHost		  _dns_hosts;
@@ -113,12 +107,10 @@ private:
 
 	// Accessed only from the JS thread (via Ui::update)
 	// The checking/error/valid/exhausted lists are mutually exclusive: one
-	// host lives in exactly one of them (seen stays out of the sync). A
-	// single timestamp tracks the last consumed helper signal; after
-	// c_helper_signal_ttl of total silence every list is dropped, so the
-	// UI never shows dead hosts.
+	// host lives in exactly one of them (seen stays out of the sync). The
+	// helper_seen snapshot age drives the TTL: after c_helper_signal_ttl of
+	// total silence every list is dropped, so the UI never shows dead hosts.
 	static constexpr auto						 c_helper_signal_ttl{ std::chrono::seconds(5) };
-	std::chrono::steady_clock::time_point		 _helper_last_signal{};
 	std::unordered_set<std::string>				 _helper_checking;
 	std::unordered_set<std::string>				 _helper_seen;
 	std::unordered_map<std::string, std::string> _helper_errors;
@@ -131,18 +123,16 @@ private:
 	// helper_stats broadcast, zeroed with everything else on TTL expiry.
 	HelperStats									 _helper_stats{};
 
-	// Drops every helper list if the helper stayed silent past the TTL.
-	// Returns true when expired (all lists are empty afterwards).
-	bool _dropExpiredHelperStates(std::chrono::steady_clock::time_point now);
+	// Drops every helper list when the newest helper_seen snapshot is older
+	// than the TTL. Returns true when expired (all lists are empty after).
+	bool _dropExpiredHelperStates();
 
 	std::filesystem::path _dnsProxyConfigPath() const;
-	std::filesystem::path _dnsProxyStatusPath() const;
 	std::filesystem::path _dnsProxyBackupPath() const;
 	std::filesystem::path _dnsProxyLogPath() const;
-	void				  _dnsProxyWriteConfig(const std::vector<DnsProxyUpstream>& upstreams);
+	void				  _dnsProxyWriteConfig(const std::vector<std::string>& upstreams, const std::vector<std::string>& bootstrap);
 	/** Spawns unblock_dns.exe without a shell and waits up to timeout_ms.
-	 *  The upstream value is passed via a file, never on the command line,
-	 *  so '|' and quoting can't be mangled by cmd. */
+	 *  The upstream value is passed via a file, never on the command line. */
 	bool				  _dnsProxyRunHelper(const std::vector<std::string>& args, uint32_t timeout_ms);
 
 public:
@@ -223,16 +213,18 @@ public:
 	const std::string&			  dnsHostsBaseUrl() const;
 	bool						  dnsHostsRegionAvailable(std::string_view region) const;
 
-	void								 dnsProxy(bool state);
-	bool								 dnsProxyIsRun();
-	void								 setDnsProxyUpstreams(std::vector<DnsProxyUpstream> upstreams);
-	const std::vector<DnsProxyUpstream>& dnsProxyUpstreams() const;
-	/** Raw status file content (empty when the proxy never ran). */
-	std::string							 dnsProxyStatus() const;
+	void							dnsProxy(bool state);
+	bool							dnsProxyIsRun();
+	void							setDnsProxyUpstreams(std::vector<std::string> upstreams);
+	const std::vector<std::string>& dnsProxyUpstreams() const;
+	void							setDnsProxyBootstrap(std::vector<std::string> bootstrap);
+	const std::vector<std::string>& dnsProxyBootstrap() const;
+	/** Status counters pushed by the proxy over IPC (zeros when unknown). */
+	std::string						dnsProxyStatus() const;
 	/** Runs unblock_dns --test-upstream, output holds OK/FAIL text. */
-	bool								 dnsProxyTestUpstream(const std::string& value, std::string& output);
+	bool							dnsProxyTestUpstream(const std::string& value, std::string& output);
 	/** Restores adapters left on 127.0.0.1 by a killed proxy run. */
-	void								 dnsProxyRepairBoot();
+	void							dnsProxyRepairBoot();
 
 	void localProxyTg(bool run = true);
 	bool localProxyTgIsRun();

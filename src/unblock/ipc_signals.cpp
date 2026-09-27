@@ -56,7 +56,7 @@ IPCSignals::~IPCSignals()
 
 bool IPCSignals::_isValidType(std::string_view t)
 {
-	static constexpr std::string_view valid[] = { "LOG", "BOOL", "STRING", "U32", "FLOAT" };
+	static constexpr std::string_view valid[] = { "LOG", "BOOL", "STRING", "U32", "FLOAT", "LATEST", "SNAP" };
 	return !t.empty() && t.size() <= 32 && std::ranges::find(valid, t) != std::end(valid);
 }
 
@@ -107,6 +107,12 @@ void IPCSignals::_cleanExpired()
 			it = _data.erase(it);
 		else
 			++it;
+
+	for (auto it = _latest.begin(); it != _latest.end();)
+		if (now - it->second.created > _ttl)
+			it = _latest.erase(it);
+		else
+			++it;
 }
 
 std::optional<std::string> IPCSignals::_take(std::string_view name)
@@ -147,7 +153,9 @@ bool IPCSignals::has(std::string_view name, std::string_view value)
 
 void IPCSignals::_listen()
 {
-	auto		buf = std::array<char, 1'024>{};
+	// Snapshot chunks can be large; the kernel buffer above is 1MB, this
+	// user buffer must hold a whole datagram (up to 64KB).
+	auto		buf = std::array<char, 65'536>{};
 	sockaddr_in from{};
 	int			fromlen	   = sizeof(from);
 	auto		last_clean = std::chrono::steady_clock::now();
@@ -233,12 +241,88 @@ void IPCSignals::_listen()
 			continue;
 		}
 
+		if (type == "SNAP")
+		{
+			_handleSnap(key, val);
+			continue;
+		}
+
 		{
 			std::lock_guard lock(_mutex);
-			_data[std::string(key)].values.emplace_back(val);
-			_data[std::string(key)].created = std::chrono::steady_clock::now();
+			if (type == "LATEST")
+			{
+				_latest[std::string(key)] = LatestEntry{ val, std::chrono::steady_clock::now() };
+			}
+			else
+			{
+				auto& entry = _data[std::string(key)];
+				entry.values.emplace_back(val);
+				entry.created = std::chrono::steady_clock::now();
+				// Bound event history: a reader that stalls must not let the
+				// FIFO grow without limit (TTL never fires while pushes keep
+				// refreshing created).
+				constexpr size_t c_max_queue{ 4'096 };
+				if (entry.values.size() > c_max_queue)
+					entry.values.erase(entry.values.begin());
+			}
 		}
 	}
+}
+
+void IPCSignals::_handleSnap(std::string_view key, std::string_view val)
+{
+	// Envelope: "<seq>|<idx>|<total>|<data>".
+	const size_t p1 = val.find('|');
+	const size_t p2 = p1 == std::string_view::npos ? std::string_view::npos : val.find('|', p1 + 1);
+	const size_t p3 = p2 == std::string_view::npos ? std::string_view::npos : val.find('|', p2 + 1);
+	if (p3 == std::string_view::npos)
+	{
+		Debug::warning("IPC: bad SNAP envelope for [{}]", key);
+		return;
+	}
+
+	uint64_t seq{};
+	uint32_t idx{};
+	uint32_t total{};
+	{
+		auto [e1, ec1] = std::from_chars(val.data(), val.data() + p1, seq);
+		auto [e2, ec2] = std::from_chars(val.data() + p1 + 1, val.data() + p2, idx);
+		auto [e3, ec3] = std::from_chars(val.data() + p2 + 1, val.data() + p3, total);
+		if (ec1 != std::errc{} || e1 != val.data() + p1 || ec2 != std::errc{} || e2 != val.data() + p2 || ec3 != std::errc{} || e3 != val.data() + p3
+			|| total == 0 || idx >= total)
+		{
+			Debug::warning("IPC: bad SNAP header for [{}]", key);
+			return;
+		}
+	}
+
+	const std::string data{ val.data() + p3 + 1, val.size() - p3 - 1 };
+	const std::string name{ key };
+
+	std::lock_guard lock(_mutex);
+	auto&			building = _snap_building[name];
+
+	if (building.total == 0 || building.seq < seq)
+		building = SnapBuilding{ seq, total, {} };
+	else if (building.seq > seq)
+		return;	   // stale chunk of an older snapshot
+
+	building.chunks[idx] = data;
+
+	if (building.chunks.size() != building.total)
+		return;
+
+	std::string payload;
+	for (uint32_t i = 0; i < building.total; ++i)
+	{
+		auto it = building.chunks.find(i);
+		if (it == building.chunks.end())
+			return;	   // out-of-order/incomplete: wait for the rest
+		payload += it->second;
+	}
+
+	_latest[name] = LatestEntry{ std::move(payload), std::chrono::steady_clock::now() };
+	_snap_building.erase(name);
 }
 
 std::optional<std::string> IPCSignals::getString(std::string_view name)
@@ -289,14 +373,77 @@ std::optional<uint32_t> IPCSignals::getU32(std::string_view name)
 	return static_cast<uint32_t>(val);
 }
 
+std::optional<std::string> IPCSignals::getLatest(std::string_view name)
+{
+	std::lock_guard lock(_mutex);
+	auto			it = _latest.find(std::string(name));
+	if (it == _latest.end())
+		return std::nullopt;
+	return it->second.value;
+}
+
+std::optional<uint32_t> IPCSignals::getLatestU32(std::string_view name)
+{
+	auto raw = getLatest(name);
+	if (!raw)
+		return std::nullopt;
+
+	unsigned long long val{};
+	auto [ptr, ec] = std::from_chars(raw->data(), raw->data() + raw->size(), val);
+	if (ec != std::errc{} || ptr != raw->data() + raw->size())
+		return std::nullopt;
+
+	if (val > UINT32_MAX)
+		return UINT32_MAX;
+	return static_cast<uint32_t>(val);
+}
+
+std::optional<std::chrono::steady_clock::duration> IPCSignals::latestAge(std::string_view name)
+{
+	std::lock_guard lock(_mutex);
+	auto			it = _latest.find(std::string(name));
+	if (it == _latest.end())
+		return std::nullopt;
+	return std::chrono::steady_clock::now() - it->second.created;
+}
+
+bool IPCSignals::snapshotContains(std::string_view name, std::string_view token)
+{
+	auto payload = getLatest(name);
+	if (!payload)
+		return false;
+
+	std::string_view text{ *payload };
+	size_t			 pos = 0;
+	while (pos <= text.size())
+	{
+		size_t end = text.find('\n', pos);
+		if (end == std::string_view::npos)
+			end = text.size();
+
+		const std::string_view line = text.substr(pos, end - pos);
+		pos							= end + 1;
+
+		if (line == token)
+			return true;
+		if (line.size() > token.size() && line.compare(0, token.size(), token) == 0 && line[token.size()] == '=')
+			return true;
+	}
+	return false;
+}
+
 void IPCSignals::clear(std::string_view name)
 {
 	std::lock_guard lock(_mutex);
 	_data.erase(std::string(name));
+	_latest.erase(std::string(name));
+	_snap_building.erase(std::string(name));
 }
 
 void IPCSignals::clearAll()
 {
 	std::lock_guard lock(_mutex);
 	_data.clear();
+	_latest.clear();
+	_snap_building.clear();
 }

@@ -4,27 +4,7 @@
 #include "../unblock/unblock.h"
 #include "../unblock_dns/dns_config.h"
 
-#include <algorithm>
 #include <ranges>
-#include <unordered_set>
-
-namespace
-{
-	std::vector<std::string> _splitPipe(const std::string& line)
-	{
-		std::vector<std::string> parts;
-		size_t					 pos = 0;
-		while (pos <= line.size())
-		{
-			size_t end = line.find('|', pos);
-			if (end == std::string::npos)
-				end = line.size();
-			parts.push_back(line.substr(pos, end - pos));
-			pos = end + 1;
-		}
-		return parts;
-	}
-}
 
 UiDnsProxy::UiDnsProxy(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock) : _ui(std::move(ui)), _unblock(std::move(unblock))
 {
@@ -65,21 +45,55 @@ void UiDnsProxy::initialize()
 	_status_dns->create("#dns section .common");
 	_status_dns->setInactive(Localization::Str{ "str_status_dns_stopped" }());
 
-	// Every upstream lives in one editable list as "address|bootstrap"; the
+	// Every upstream lives in one editable list as a clean address; the
 	// built-in presets are only the default entries. The first one is the
-	// primary resolver, the rest are fallbacks.
+	// primary resolver, the rest are fallbacks. The bootstrap list right
+	// below is shared and applied automatically to hostname upstreams.
 	_upstreams->create(
 		"#dns section .common",
 		Localization::Str{ "str_dns_proxy_servers_title" },
 		Localization::Str{ "str_dns_proxy_servers_description" }(),
 		Localization::Str{ "str_input_dns_proxy_custom_placeholder" }()
 	);
-	_upstreams->setValidator([](const std::string& value) { return parseUpstreamValue(trimConfigLine(value)).has_value(); });
+	_upstreams->setValidator([](const std::string& value) { return isValidUpstreamAddress(trimConfigLine(value)); });
 	_upstreams->addEventChange(
 		[this](JSArgs)
 		{
 			_collectUpstreams();
 			_applyUpstreams();
+			return false;
+		}
+	);
+
+	// Shared bootstrap: plain DNS used only to resolve the hostname of
+	// DoH/DoT upstreams. Editable in case the ISP blocks the defaults.
+	std::string				 bootstrap_csv;
+	std::vector<std::string> bootstrap = Unblock::defaultDnsProxyBootstrap();
+	if (auto cfg = _ui->userConfig()->parameterSection<std::string>("DNS", "bootstrap"))
+		if (auto parsed = parseBootstrapList(trimConfigLine(cfg.value())))
+			if (!parsed->empty())
+				bootstrap = std::move(*parsed);
+	for (const auto& b : bootstrap)
+		bootstrap_csv += (bootstrap_csv.empty() ? "" : ",") + b;
+	_unblock->setDnsProxyBootstrap(bootstrap);
+
+	_bootstrap->create(
+		"#dns section .common",
+		Input::Types::text,
+		JSValue{ bootstrap_csv },
+		Localization::Str{ "str_dns_proxy_bootstrap_title" },
+		Localization::Str{ "str_dns_proxy_bootstrap_description" }
+	);
+	_bootstrap->setValidator([](const std::string& value) { return parseBootstrapList(trimConfigLine(value)).has_value(); });
+	_bootstrap->addEventSubmit(
+		[this](JSArgs args)
+		{
+			if (auto parsed = parseBootstrapList(trimConfigLine(JSToCPP<std::string>(args[0]))))
+			{
+				_unblock->setDnsProxyBootstrap(std::move(*parsed));
+				_collectUpstreams();
+				_applyUpstreams();
+			}
 			return false;
 		}
 	);
@@ -92,7 +106,7 @@ void UiDnsProxy::initialize()
 		Localization::Str{ "str_input_test_upstream_description" }
 	);
 	// Inline red flag while the typed server line does not parse.
-	_test_input->setValidator([](const std::string& value) { return parseUpstreamValue(trimConfigLine(value)).has_value(); });
+	_test_input->setValidator([](const std::string& value) { return isValidUpstreamAddress(trimConfigLine(value)); });
 
 	_test_button->create("#dns section .common", "str_button_test_upstream_title");
 	_test_button->addEventClick(
@@ -104,7 +118,7 @@ void UiDnsProxy::initialize()
 					// Blocking DOM getter: background task only, never the UI thread.
 					const auto value = JSToCPP<std::string>(_test_input->getValue());
 					// Empty or invalid — the field already says so, no window.
-					if (value.empty() || !parseUpstreamValue(trimConfigLine(value)))
+					if (value.empty() || !isValidUpstreamAddress(trimConfigLine(value)))
 						return;
 
 					_ui->backgroundTasks()->start("dns_proxy_test", "str_task_dns_proxy_test_title");
@@ -122,27 +136,22 @@ void UiDnsProxy::initialize()
 		}
 	);
 
-	// Restore persisted servers, otherwise the built-in presets. Accept both
-	// the old "enabled|name|address|bootstrap" lines and the current
-	// "address|bootstrap" items.
-	std::vector<std::string>	   items;
-	std::unordered_set<std::string> seen;
+	// Restore persisted servers, otherwise the built-in presets.
+	std::vector<std::string> items;
 	if (auto cfg = _ui->userConfig()->parameterSectionVector("DNS", "upstreams"))
 		for (auto& line : cfg.value())
 		{
-			const auto		  parts = _splitPipe(line);
-			const std::string item	= parts.size() == 4 ? parts[2] + "|" + parts[3] : line;
-			if (parseUpstreamValue(trimConfigLine(item)) && seen.insert(item).second)
+			const std::string item = trimConfigLine(line);
+			if (isValidUpstreamAddress(item))
 				items.push_back(item);
 		}
 
 	if (items.empty())
-		for (auto& u : Unblock::defaultDnsProxyUpstreams())
-			items.push_back(u.address + "|" + u.bootstrap);
+		items = Unblock::defaultDnsProxyUpstreams();
 
 	_upstreams->setItems(std::move(items));
 
-	// Seed Unblock and persist the (possibly migrated) list.
+	// Seed Unblock and persist the list.
 	_collectUpstreams();
 
 	const bool enabled = _ui->userConfig()->parameterSection<bool>("DNS", "enable").value_or(false);
@@ -168,19 +177,23 @@ void UiDnsProxy::updateInfoWindow()
 
 void UiDnsProxy::_collectUpstreams()
 {
-	std::vector<Unblock::DnsProxyUpstream> upstreams;
+	std::vector<std::string> upstreams;
 
 	for (auto& item : _upstreams->items())
-		if (auto parsed = parseUpstreamValue(item))
-		{
-			std::string bootstrap;
-			for (size_t i = 0; i < parsed->bootstrap.size(); ++i)
-				bootstrap += (i ? "," : "") + parsed->bootstrap[i];
-			upstreams.push_back({ true, parsed->address, parsed->address, std::move(bootstrap) });
-		}
+	{
+		const std::string address = trimConfigLine(item);
+		if (isValidUpstreamAddress(address))
+			upstreams.push_back(address);
+	}
 
 	_unblock->setDnsProxyUpstreams(upstreams);
-	_ui->userConfig()->writeSectionParameterVector("DNS", "upstreams", _upstreams->items());
+	_ui->userConfig()->writeSectionParameterVector("DNS", "upstreams", upstreams);
+
+	// Persist the shared bootstrap alongside the servers.
+	std::string bootstrap_csv;
+	for (const auto& b : _unblock->dnsProxyBootstrap())
+		bootstrap_csv += (bootstrap_csv.empty() ? "" : ",") + b;
+	_ui->userConfig()->writeSectionParameter("DNS", "bootstrap", bootstrap_csv);
 }
 
 void UiDnsProxy::_applyUpstreams()
@@ -220,8 +233,8 @@ void UiDnsProxy::_refreshStatus()
 	}
 
 	const bool		  running = _unblock->dnsProxyIsRun();
-	const std::string text =
-		running ? utils::format(Localization::Str{ "str_status_dns_running" }(), queries, cached, errors) : Localization::Str{ "str_status_dns_stopped" }();
+	const std::string text	  = running ? utils::format(Localization::Str{ "str_status_dns_running" }(), queries, cached, errors)
+										: Localization::Str{ "str_status_dns_stopped" }();
 
 	if (text == _last_status)
 		return;

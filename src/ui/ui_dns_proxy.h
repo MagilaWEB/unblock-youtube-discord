@@ -18,6 +18,7 @@ private:
 	CHECK_BOX(_enable_dns_proxy);
 	STATUS(_status_dns);
 	EDITABLE_LIST(_upstreams);
+	INPUT(_bootstrap);
 	INPUT(_test_input);
 	BUTTON(_test_button);
 

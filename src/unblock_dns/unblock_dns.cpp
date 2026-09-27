@@ -2,7 +2,7 @@
 // the project SvcHost (it delivers CTRL_C_EVENT on stop with 15s to exit).
 //
 //   unblock_dns.exe --config <path>          serve DNS per config, switch OS DNS
-//   unblock_dns.exe --test-upstream <addr>[|<boot,csv>]
+//   unblock_dns.exe --test-upstream <addr> [--bootstrap <csv>]
 //                                              check one upstream, print OK/error
 //
 // Exit codes: 0 ok, 2 bad args/config, 3 DLL missing, 4 export missing,
@@ -12,6 +12,7 @@
 #include "dns_config.h"
 
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #include <windows.h>
 #include <wincrypt.h>
 #include <iphlpapi.h>
@@ -31,6 +32,9 @@
 namespace
 {
 	std::atomic_bool g_stop{ false };
+	// Set once at startup: add an IPv6 listener and switch adapter IPv6 DNS
+	// only when the IPv6 loopback is usable (IPv4-only hosts skip it).
+	bool			 g_ipv6{ false };
 
 	BOOL WINAPI ctrlHandler(DWORD type)
 	{
@@ -129,7 +133,19 @@ namespace
 		if (event->cache_hit)
 			g_stats.cache_hits.fetch_add(1);
 		if (event->error)
+		{
 			g_stats.errors.fetch_add(1);
+			// Throttled: a browser sprays HTTPS(65)/AAAA queries and each
+			// rejected one would otherwise flood the log. One line per second
+			// is enough to see what is failing.
+			static std::atomic_int64_t last_error_log_ms{ 0 };
+			const auto				   now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+			int64_t					   previous = last_error_log_ms.load();
+			if (now_ms - previous >= 1'000 && last_error_log_ms.compare_exchange_strong(previous, now_ms))
+				logLine(
+					std::string{ "query error [" } + (event->domain ? event->domain : "?") + " " + (event->type ? event->type : "?") + "]: " + event->error
+				);
+		}
 		if (event->upstream_id)
 			g_stats.last_upstream.store(*event->upstream_id);
 	}
@@ -172,11 +188,35 @@ namespace
 
 	// --- OS DNS switch ------------------------------------------------------
 
+	// IPv6 loopback the proxy also listens on. Windows prefers IPv6 DNS
+	// (router RDNSS/advertised) over IPv4, so switching only 127.0.0.1 left
+	// the real resolver pointing at the ISP and swept every query past us.
+	inline constexpr const char* c_listen_ipv6{ "::1" };
+
 	struct AdapterDns
 	{
 		std::string guid;
-		std::string nameserver;	   // empty = automatic
+		std::string nameserver;		// empty = automatic
+		std::string nameserver6;	// IPv6, empty = automatic
 	};
+
+	// True when the IPv6 loopback is usable (socket() can bind ::1). Guards
+	// both the extra listener and the IPv6 DNS switch on IPv4-only hosts.
+	bool ipv6LoopbackAvailable()
+	{
+		SOCKET s = socket(AF_INET6, SOCK_DGRAM, 0);
+		if (s == INVALID_SOCKET)
+			return false;
+
+		sockaddr_in6 addr{};
+		addr.sin6_family = AF_INET6;
+		addr.sin6_addr	 = in6addr_loopback;
+		addr.sin6_port	 = 0;
+
+		const bool ok = bind(s, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != SOCKET_ERROR;
+		closesocket(s);
+		return ok;
+	}
 
 	// Interfaces that currently hold an IPv4 default route (0.0.0.0/0).
 	// Only those get their DNS switched: touching a VPN/tunnel or a
@@ -233,7 +273,7 @@ namespace
 			if (!wanted.contains(a->IfIndex))
 				continue;
 
-			out.push_back({ a->AdapterName ? a->AdapterName : "", {} });
+			out.push_back({ a->AdapterName ? a->AdapterName : "", {}, {} });
 		}
 
 		return out;
@@ -256,11 +296,17 @@ namespace
 			if (line.empty() || line.starts_with('#'))
 				continue;
 
-			const size_t sep = line.find('|');
-			if (sep == std::string::npos)
+			// guid|ipv4|ipv6
+			const size_t p1 = line.find('|');
+			if (p1 == std::string::npos)
 				continue;
+			const size_t p2 = line.find('|', p1 + 1);
 
-			out.push_back({ trimConfigLine(line.substr(0, sep)), trimConfigLine(line.substr(sep + 1)) });
+			AdapterDns entry;
+			entry.guid		  = trimConfigLine(line.substr(0, p1));
+			entry.nameserver  = trimConfigLine(line.substr(p1 + 1, p2 == std::string::npos ? std::string::npos : p2 - p1 - 1));
+			entry.nameserver6 = (p2 == std::string::npos) ? std::string{} : trimConfigLine(line.substr(p2 + 1));
+			out.push_back(std::move(entry));
 		}
 
 		return out;
@@ -269,9 +315,9 @@ namespace
 	void writeBackup(const std::filesystem::path& path, const std::vector<AdapterDns>& adapters, const std::string& listen)
 	{
 		std::string content	 = "# listen=" + listen + "\n";
-		content				+= "# guid|nameserver (empty = automatic), written by unblock_dns\n";
+		content				+= "# guid|ipv4|ipv6 (empty = automatic), written by unblock_dns\n";
 		for (auto& a : adapters)
-			content += a.guid + "|" + a.nameserver + "\n";
+			content += a.guid + "|" + a.nameserver + "|" + a.nameserver6 + "\n";
 
 		writeFileAtomic(path, content);
 	}
@@ -293,14 +339,14 @@ namespace
 		return {};
 	}
 
-	uint32_t setAdapterDns(AgBind& ag, const std::string& guid, const std::string& nameserver)
+	uint32_t setAdapterDns(AgBind& ag, const std::string& guid, const std::string& nameserver, bool ipv6)
 	{
-		return ag.set_if_nameserver(nameserver.c_str(), guid.c_str(), false);
+		return ag.set_if_nameserver(nameserver.c_str(), guid.c_str(), ipv6);
 	}
 
-	std::string currentAdapterDns(AgBind& ag, const std::string& guid)
+	std::string currentAdapterDns(AgBind& ag, const std::string& guid, bool ipv6)
 	{
-		char* raw = ag.get_if_nameserver(guid.c_str(), false);
+		char* raw = ag.get_if_nameserver(guid.c_str(), ipv6);
 		if (!raw)
 			return {};
 
@@ -342,11 +388,14 @@ namespace
 		std::vector<AdapterDns> stale = readBackup(backup_path);
 		std::string				note  = stale.empty() ? "" : " (stale backup found, recovering originals)";
 
-		logLine("Switching " + std::to_string(adapters.size()) + " adapter(s) to " + config.listen + note);
+		logLine(
+			"Switching " + std::to_string(adapters.size()) + " adapter(s) to " + config.listen
+			+ (g_ipv6 ? " and " + std::string{ c_listen_ipv6 } : std::string{}) + note
+		);
 
 		for (auto& a : adapters)
 		{
-			std::string current = currentAdapterDns(ag, a.guid);
+			std::string current = currentAdapterDns(ag, a.guid, false);
 
 			if (current == config.listen && !stale.empty())
 			{
@@ -357,11 +406,40 @@ namespace
 						break;
 					}
 			}
+			// Adapter already points at us but no backup survived (hard kill
+			// after a manual stop): fall back to automatic instead of
+			// restoring our own address as if it were the original.
+			if (current == config.listen)
+				current.clear();
 
 			a.nameserver = current;
 
-			if (uint32_t err = setAdapterDns(ag, a.guid, config.listen))
-				logLine("Couldn't set DNS on [" + a.guid + "], error " + std::to_string(err));
+			if (uint32_t err = setAdapterDns(ag, a.guid, config.listen, false))
+				logLine("Couldn't set IPv4 DNS on [" + a.guid + "], error " + std::to_string(err));
+
+			// IPv6 too: Windows prefers router-advertised IPv6 DNS over our
+			// IPv4 127.0.0.1 and would sweep every query past the proxy.
+			if (g_ipv6)
+			{
+				std::string current6 = currentAdapterDns(ag, a.guid, true);
+
+				if (current6 == c_listen_ipv6 && !stale.empty())
+				{
+					for (auto& s : stale)
+						if (s.guid == a.guid)
+						{
+							current6 = s.nameserver6;
+							break;
+						}
+				}
+				if (current6 == c_listen_ipv6)
+					current6.clear();
+
+				a.nameserver6 = current6;
+
+				if (uint32_t err = setAdapterDns(ag, a.guid, c_listen_ipv6, true))
+					logLine("Couldn't set IPv6 DNS on [" + a.guid + "], error " + std::to_string(err));
+			}
 		}
 
 		writeBackup(backup_path, adapters, config.listen);
@@ -376,11 +454,18 @@ namespace
 
 		bool failed = false;
 		for (auto& a : backup)
-			if (uint32_t err = setAdapterDns(ag, a.guid, a.nameserver))
+		{
+			if (uint32_t err = setAdapterDns(ag, a.guid, a.nameserver, false))
 			{
-				logLine("Couldn't restore DNS on [" + a.guid + "], error " + std::to_string(err));
+				logLine("Couldn't restore IPv4 DNS on [" + a.guid + "], error " + std::to_string(err));
 				failed = true;
 			}
+			if (uint32_t err = setAdapterDns(ag, a.guid, a.nameserver6, true))
+			{
+				logLine("Couldn't restore IPv6 DNS on [" + a.guid + "], error " + std::to_string(err));
+				failed = true;
+			}
+		}
 
 		flushResolverCache();
 
@@ -411,16 +496,20 @@ namespace
 		bool failed	  = false;
 		for (auto& a : backup)
 		{
-			if (!listen.empty() && currentAdapterDns(ag, a.guid) != listen)
+			if (!listen.empty() && currentAdapterDns(ag, a.guid, false) != listen)
 				continue;
 
-			if (uint32_t err = setAdapterDns(ag, a.guid, a.nameserver))
+			if (uint32_t err = setAdapterDns(ag, a.guid, a.nameserver, false))
 			{
-				logLine("Couldn't restore DNS on [" + a.guid + "], error " + std::to_string(err));
+				logLine("Couldn't restore IPv4 DNS on [" + a.guid + "], error " + std::to_string(err));
 				failed = true;
 			}
 			else
 				restored = true;
+
+			// IPv6 was switched alongside IPv4 (empty = back to automatic).
+			if (g_ipv6)
+				setAdapterDns(ag, a.guid, a.nameserver6, true);
 		}
 
 		if (restored)
@@ -442,14 +531,14 @@ namespace
 
 	struct ProxySettingsBacking
 	{
-		ag_dnsproxy_settings				  settings{};
-		std::vector<ag_upstream_options>	  upstreams;
-		std::vector<ag_upstream_options>	  fallbacks;
-		std::vector<std::string>			  upstream_strings;
-		std::vector<std::vector<std::string>> bootstrap_strings;
-		std::vector<std::vector<const char*>> bootstrap_ptrs;
-		std::vector<ag_listener_settings>	  listeners;
-		std::string							  listen_string;
+		ag_dnsproxy_settings			  settings{};
+		std::vector<ag_upstream_options>  upstreams;
+		std::vector<ag_upstream_options>  fallbacks;
+		std::vector<std::string>		  upstream_strings;
+		std::vector<const char*>		  bootstrap_ptrs;
+		std::vector<ag_listener_settings> listeners;
+		std::string						  listen_string;
+		std::string						  listen_string6;
 	};
 
 	const char* initResultText(ag_dnsproxy_init_result result)
@@ -510,26 +599,24 @@ namespace
 
 		backing.listen_string = config.listen;
 
+		// One bootstrap list shared by every upstream. The DLL only consults
+		// it when an upstream address is a hostname; plain-IP upstreams
+		// ignore it.
 		backing.upstreams.reserve(config.upstreams.size());
 		backing.upstream_strings.reserve(config.upstreams.size());
-		backing.bootstrap_strings.reserve(config.upstreams.size());
-		backing.bootstrap_ptrs.reserve(config.upstreams.size());
+		backing.bootstrap_ptrs.reserve(config.bootstrap.size());
+		for (const auto& b : config.bootstrap)
+			backing.bootstrap_ptrs.push_back(b.c_str());
 
 		int32_t id = 0;
 		for (size_t i = 0; i < config.upstreams.size(); ++i)
 		{
-			const auto& u = config.upstreams[i];
-
-			backing.upstream_strings.push_back(u.address);
-			backing.bootstrap_strings.emplace_back(u.bootstrap);
-			backing.bootstrap_ptrs.emplace_back();
-			for (auto& b : backing.bootstrap_strings.back())
-				backing.bootstrap_ptrs.back().push_back(b.c_str());
+			backing.upstream_strings.push_back(config.upstreams[i]);
 
 			ag_upstream_options opt{};
 			opt.address					 = backing.upstream_strings.back().c_str();
-			opt.bootstrap.data			 = backing.bootstrap_ptrs.back().empty() ? nullptr : backing.bootstrap_ptrs.back().data();
-			opt.bootstrap.size			 = static_cast<uint32_t>(backing.bootstrap_ptrs.back().size());
+			opt.bootstrap.data			 = backing.bootstrap_ptrs.empty() ? nullptr : backing.bootstrap_ptrs.data();
+			opt.bootstrap.size			 = static_cast<uint32_t>(backing.bootstrap_ptrs.size());
 			opt.id						 = ++id;
 			opt.outbound_interface_index = 0;
 
@@ -545,14 +632,25 @@ namespace
 		backing.settings.fallbacks.data = backing.fallbacks.empty() ? nullptr : backing.fallbacks.data();
 		backing.settings.fallbacks.size = static_cast<uint32_t>(backing.fallbacks.size());
 
-		backing.listeners.resize(2);
-		backing.listeners[0] = ag_listener_settings{ backing.listen_string.c_str(), config.port, AGLP_UDP, false, 0, {} };
-		backing.listeners[1] = ag_listener_settings{ backing.listen_string.c_str(), config.port, AGLP_TCP, true, 30'000, {} };
+		backing.listeners.clear();
+		backing.listeners.push_back(ag_listener_settings{ backing.listen_string.c_str(), config.port, AGLP_UDP, false, 0, {} });
+		backing.listeners.push_back(ag_listener_settings{ backing.listen_string.c_str(), config.port, AGLP_TCP, true, 30'000, {} });
+		// IPv6 loopback too, so router-advertised IPv6 DNS (which Windows
+		// prefers) is answered by us instead of bypassing the proxy.
+		if (g_ipv6)
+		{
+			backing.listen_string6 = c_listen_ipv6;
+			backing.listeners.push_back(ag_listener_settings{ backing.listen_string6.c_str(), config.port, AGLP_UDP, false, 0, {} });
+			backing.listeners.push_back(ag_listener_settings{ backing.listen_string6.c_str(), config.port, AGLP_TCP, true, 30'000, {} });
+		}
 
 		backing.settings.listeners.data = backing.listeners.data();
 		backing.settings.listeners.size = static_cast<uint32_t>(backing.listeners.size());
 
 		backing.settings.block_ipv6							  = false;
+		// Keep the bootstrapper IPv4-only: the upstream (GeoHide) is reached
+		// over IPv4, and an AAAA answer on a broken-IPv6 host would stall it.
+		// Client-facing IPv6 is handled by the ::1 listener above.
 		backing.settings.ipv6_available						  = false;
 		backing.settings.enable_dnssec_ok					  = false;
 		backing.settings.enable_retransmission_handling		  = true;
@@ -568,17 +666,29 @@ namespace
 		return &backing.settings;
 	}
 
-	void writeStatus(const std::filesystem::path& path, const std::string& state, size_t upstreams)
+	// Telemetry to the engine over UDP 9999 (IPCSignals). LATEST keys are
+	// latest-only: the engine peeks them without consuming, so pushing every
+	// few seconds never grows a queue (unlike the STRING event FIFO).
+	void sendIpc(std::string_view message)
 	{
-		std::ostringstream ss;
-		ss << "state=" << state << "\n";
-		ss << "upstreams=" << upstreams << "\n";
-		ss << "queries=" << g_stats.queries.load() << "\n";
-		ss << "cache_hits=" << g_stats.cache_hits.load() << "\n";
-		ss << "errors=" << g_stats.errors.load() << "\n";
-		ss << "last_upstream=" << g_stats.last_upstream.load() << "\n";
+		static SOCKET sock = INVALID_SOCKET;
+		if (sock == INVALID_SOCKET)
+			sock = socket(AF_INET, SOCK_DGRAM, 0);
+		if (sock == INVALID_SOCKET)
+			return;
 
-		writeFileAtomic(path, ss.str());
+		sockaddr_in to{};
+		to.sin_family	   = AF_INET;
+		to.sin_port		   = htons(9'999);
+		to.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+		sendto(sock, message.data(), static_cast<int>(message.size()), 0, reinterpret_cast<sockaddr*>(&to), sizeof(to));
+	}
+
+	void pushStatus()
+	{
+		sendIpc("LATEST:dns.queries:" + std::to_string(g_stats.queries.load()));
+		sendIpc("LATEST:dns.cache_hits:" + std::to_string(g_stats.cache_hits.load()));
+		sendIpc("LATEST:dns.errors:" + std::to_string(g_stats.errors.load()));
 	}
 
 	// AdGuard DnsLibs does not carry platform roots: on Windows the host must
@@ -631,12 +741,12 @@ namespace
 			CERT_CHAIN_PARA para{};
 			para.cbSize = sizeof(para);
 
-			LPSTR			 server_auth = const_cast<LPSTR>(szOID_PKIX_KP_SERVER_AUTH);
+			LPSTR			  server_auth = const_cast<LPSTR>(szOID_PKIX_KP_SERVER_AUTH);
 			CERT_ENHKEY_USAGE usage{};
-			usage.cUsageIdentifier		= 1;
-			usage.rgpszUsageIdentifier	= &server_auth;
-			para.RequestedUsage.dwType	= USAGE_MATCH_TYPE_AND;
-			para.RequestedUsage.Usage	= usage;
+			usage.cUsageIdentifier	   = 1;
+			usage.rgpszUsageIdentifier = &server_auth;
+			para.RequestedUsage.dwType = USAGE_MATCH_TYPE_AND;
+			para.RequestedUsage.Usage  = usage;
 
 			// No revocation flags: an online CRL/OCSP check would add latency
 			// and fail under filtering; chain trust against the system roots is
@@ -655,17 +765,19 @@ namespace
 		return result;
 	}
 
-	std::pair<int, std::string> runTestUpstream(AgBind& ag, const std::string& value)
+	std::pair<int, std::string> runTestUpstream(AgBind& ag, const std::string& value, const std::vector<std::string>& bootstrap)
 	{
-		auto parsed = parseUpstreamValue(value);
-		if (!parsed)
+		if (!isValidUpstreamAddress(value))
 			return { 2, "FAIL: bad upstream format" };
 
+		if (bootstrap.empty() && upstreamNeedsBootstrap(value))
+			return { 2, "FAIL: bootstrap required for hostname upstream" };
+
 		ag_upstream_options opt{};
-		opt.address = parsed->address.c_str();
+		opt.address = value.c_str();
 
 		std::vector<const char*> boots;
-		for (auto& b : parsed->bootstrap)
+		for (const auto& b : bootstrap)
 			boots.push_back(b.c_str());
 		opt.bootstrap.data = boots.empty() ? nullptr : boots.data();
 		opt.bootstrap.size = static_cast<uint32_t>(boots.size());
@@ -682,11 +794,16 @@ namespace
 
 int main(int argc, char** argv)
 {
+	WSADATA wsa{};
+	WSAStartup(MAKEWORD(2, 2), &wsa);
+	g_ipv6 = ipv6LoopbackAvailable();
+
 	std::string config_path;
 	std::string test_upstream;
 	std::string test_file;
 	std::string result_file;
 	std::string backup_path;
+	std::string bootstrap_value;
 	bool		repair		 = false;
 	bool		no_os_switch = false;
 
@@ -699,6 +816,8 @@ int main(int argc, char** argv)
 			test_upstream = argv[++i];
 		else if (arg == "--test-upstream-file" && i + 1 < argc)
 			test_file = argv[++i];
+		else if (arg == "--bootstrap" && i + 1 < argc)
+			bootstrap_value = argv[++i];
 		else if (arg == "--result" && i + 1 < argc)
 			result_file = argv[++i];
 		else if (arg == "--backup" && i + 1 < argc)
@@ -711,11 +830,23 @@ int main(int argc, char** argv)
 		{
 			std::cerr << "Usage:\n"
 					  << "  unblock_dns --config <path> [--no-os-switch]\n"
-					  << "  unblock_dns --test-upstream <addr>[|<boot,csv>] [--result <path>]\n"
-					  << "  unblock_dns --test-upstream-file <in> --result <out>\n"
+					  << "  unblock_dns --test-upstream <addr> [--bootstrap <csv>] [--result <path>]\n"
+					  << "  unblock_dns --test-upstream-file <in> [--bootstrap <csv>] --result <out>\n"
 					  << "  unblock_dns --repair --backup <path>\n";
 			return 2;
 		}
+	}
+
+	std::vector<std::string> test_bootstrap;
+	if (!bootstrap_value.empty())
+	{
+		auto parsed = parseBootstrapList(bootstrap_value);
+		if (!parsed)
+		{
+			std::cerr << "Bad --bootstrap: " << bootstrap_value << "\n";
+			return 2;
+		}
+		test_bootstrap = std::move(*parsed);
 	}
 
 	if (config_path.empty() && test_upstream.empty() && test_file.empty() && !repair)
@@ -766,7 +897,7 @@ int main(int argc, char** argv)
 			}
 		}
 
-		auto [code, text] = runTestUpstream(ag, value);
+		auto [code, text] = runTestUpstream(ag, value, test_bootstrap);
 		std::cout << text << "\n";
 
 		if (!result_file.empty())
@@ -795,8 +926,6 @@ int main(int argc, char** argv)
 	const std::filesystem::path cfg_dir = std::filesystem::path{ config_path }.parent_path();
 	if (config.log_path.empty())
 		config.log_path = (cfg_dir / "unblock_dns.log").string();
-	if (config.status_path.empty())
-		config.status_path = (cfg_dir / "unblock_dns.status").string();
 	if (config.backup_path.empty())
 		config.backup_path = (cfg_dir / "unblock_dns.adapters").string();
 
@@ -821,7 +950,6 @@ int main(int argc, char** argv)
 	if (!proxy || result != AGDPIR_OK)
 	{
 		logLine(std::string{ "Proxy init failed: " } + initResultText(result) + (message ? std::string{ " (" } + message + ")" : ""));
-		writeStatus(config.status_path, "init_failed", config.upstreams.size());
 		return 5;
 	}
 
@@ -834,28 +962,26 @@ int main(int argc, char** argv)
 
 	SetConsoleCtrlHandler(ctrlHandler, TRUE);
 
-	writeStatus(config.status_path, "running", config.upstreams.size());
+	pushStatus();
 
 	auto last_tick = std::chrono::steady_clock::now();
 	while (!g_stop.load())
 	{
 		Sleep(500);
 
-		if (std::chrono::steady_clock::now() - last_tick > std::chrono::seconds{ 5 })
+		if (std::chrono::steady_clock::now() - last_tick > std::chrono::seconds{ 2 })
 		{
 			last_tick = std::chrono::steady_clock::now();
-			writeStatus(config.status_path, "running", config.upstreams.size());
+			pushStatus();
 		}
 	}
 
 	logLine("Stopping");
-	writeStatus(config.status_path, "stopping", config.upstreams.size());
 
 	if (!no_os_switch)
 		restoreOsDns(ag, config.backup_path);
 	ag.deinit(proxy);
 
-	writeStatus(config.status_path, "stopped", config.upstreams.size());
 	logLine("Stopped");
 	return 0;
 }

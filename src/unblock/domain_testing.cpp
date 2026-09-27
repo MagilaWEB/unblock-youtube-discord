@@ -250,7 +250,9 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 
 				// Fully-tried verdict, relayed by the helper (lua reports
 				// EXHAUSTED to the helper only, never directly to unblock).
-				if (!host.empty() && ipc.has("helper_exhausted", host))
+				// Non-consuming snapshot read: peeking must not steal a
+				// verdict the UI also needs.
+				if (!host.empty() && ipc.snapshotContains("helper_exhausted", host))
 				{
 #ifdef DEBUG
 					Debug::info("ZAPRET2: exhausted for url[{}]", domain.url);

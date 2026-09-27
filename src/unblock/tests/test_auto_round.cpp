@@ -75,7 +75,7 @@ TEST_CASE("isHelperHostName mirrors helper filter", "[auto][hostname]")
 
 TEST_CASE("parseHelperStats full", "[auto][stats]")
 {
-	const auto stats = parseHelperStats("47:20:200");
+	const auto stats = parseHelperStats("47|20|200");
 	REQUIRE(stats.has_value());
 	CHECK(stats->queued == 47);
 	CHECK(stats->in_check == 20);
@@ -84,7 +84,7 @@ TEST_CASE("parseHelperStats full", "[auto][stats]")
 
 TEST_CASE("parseHelperStats zeros", "[auto][stats]")
 {
-	const auto stats = parseHelperStats("0:0:0");
+	const auto stats = parseHelperStats("0|0|0");
 	REQUIRE(stats.has_value());
 	CHECK(stats->queued == 0);
 	CHECK(stats->in_check == 0);
@@ -94,8 +94,8 @@ TEST_CASE("parseHelperStats zeros", "[auto][stats]")
 TEST_CASE("parseHelperStats garbage rejected", "[auto][stats]")
 {
 	CHECK_FALSE(parseHelperStats("").has_value());
-	CHECK_FALSE(parseHelperStats("47:20").has_value());
-	CHECK_FALSE(parseHelperStats("47:20:x").has_value());
-	CHECK_FALSE(parseHelperStats("47::200").has_value());
-	CHECK_FALSE(parseHelperStats("47:20:200:1").has_value());
+	CHECK_FALSE(parseHelperStats("47|20").has_value());
+	CHECK_FALSE(parseHelperStats("47|20|x").has_value());
+	CHECK_FALSE(parseHelperStats("47||200").has_value());
+	CHECK_FALSE(parseHelperStats("47|20|200|1").has_value());
 }

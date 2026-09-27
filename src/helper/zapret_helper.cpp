@@ -87,24 +87,22 @@ void ZapretHelper::_log(std::string_view text) const
 	_send(_makeLog(text), c_ipc_port);
 }
 
+void ZapretHelper::_sendSnapshot(std::string_view key, std::string_view payload) const
+{
+	const uint64_t seq	 = _snap_seq.fetch_add(1) + 1;
+	const size_t   total = payload.empty() ? 1 : (payload.size() + c_snapshot_chunk - 1) / c_snapshot_chunk;
+
+	for (size_t i = 0; i < total; ++i)
+	{
+		const size_t begin = i * c_snapshot_chunk;
+		const size_t len   = std::min(c_snapshot_chunk, payload.size() - begin);
+		_send(_makeSnapshotChunk(key, seq, i, total, payload.substr(begin, len)), c_ipc_port);
+	}
+}
+
 std::string ZapretHelper::_makeLog(std::string_view text)
 {
 	return std::format("LOG:INFO:helper:{}", text);
-}
-
-std::string ZapretHelper::_makeValidSignal(std::string_view host, std::string_view strategy)
-{
-	return std::format("STRING:helper_valid:{}:{}", host, strategy);
-}
-
-std::string ZapretHelper::_makeErrorSignal(std::string_view host, std::string_view strategy)
-{
-	return std::format("STRING:helper_error:{}:{}", host, strategy);
-}
-
-std::string ZapretHelper::_makeExhaustedSignal(std::string_view host, std::string_view strategy)
-{
-	return std::format("STRING:helper_exhausted:{}:{}", host, strategy);
 }
 
 std::string ZapretHelper::_makeDoneSignal(std::string_view host)
@@ -117,14 +115,14 @@ std::string ZapretHelper::_makeCheckingSignal(std::string_view host)
 	return std::format("STRING:helper_checking:{}", host);
 }
 
-std::string ZapretHelper::_makeSeenSignal(std::string_view host)
+std::string ZapretHelper::_makeSnapshotChunk(std::string_view key, uint64_t seq, size_t idx, size_t total, std::string_view data)
 {
-	return std::format("STRING:helper_seen:{}", host);
+	return std::format("SNAP:{}:{}|{}|{}|{}", key, seq, idx, total, data);
 }
 
 std::string ZapretHelper::_makeStatsSignal(size_t queued, size_t in_check, size_t known)
 {
-	return std::format("STRING:helper_stats:{}:{}:{}", queued, in_check, known);
+	return std::format("LATEST:helper_stats:{}|{}|{}", queued, in_check, known);
 }
 
 std::string ZapretHelper::_makeOk(std::string_view host)
@@ -187,10 +185,6 @@ void ZapretHelper::_handleMessage(std::string_view message)
 
 			if (!_known_hosts.contains(host))
 				_known_hosts.insert(host);
-
-			_valid_dirty	   = true;
-			_error_dirty	   = true;
-			_exhausted_dirty = true;
 		}
 	}
 	else if (message.starts_with("ERR:"))
@@ -221,9 +215,6 @@ void ZapretHelper::_handleMessage(std::string_view message)
 				_valid_hosts.erase(host);
 				_cv.notify_all();
 			}
-
-			_error_dirty = true;
-			_valid_dirty = true;
 		}
 	}
 	else if (message.starts_with("EXHAUSTED:"))
@@ -255,9 +246,6 @@ void ZapretHelper::_handleMessage(std::string_view message)
 
 			if (!_known_hosts.contains(host))
 				_known_hosts.insert(host);
-
-			_exhausted_dirty = true;
-			_valid_dirty	 = true;
 		}
 	}
 	else if (message.starts_with("CONFIG:"))
@@ -302,7 +290,7 @@ void ZapretHelper::_checkHost(std::string_view host)
 		if (CurlClient::isTerminalError(result.error()) && _isValidHost(host))
 		{
 			std::lock_guard lock(_mutex);
-			const auto now = std::chrono::steady_clock::now();
+			const auto		now = std::chrono::steady_clock::now();
 			if (const auto it = _exhausted_hosts.find(std::string{ host }); it != _exhausted_hosts.end())
 			{
 				it->second.last = now;
@@ -320,8 +308,16 @@ void ZapretHelper::_checkHost(std::string_view host)
 			if (!_known_hosts.contains(std::string{ host }))
 				_known_hosts.emplace(host);
 
-			for (auto& [known, info] : _exhausted_hosts)
-				_send(_makeExhaustedSignal(known, info.strategy), c_ipc_port);
+			// Fast-path snapshot so unblock can fast-fail the host without
+			// waiting for the next 500ms tick.
+			std::string exhausted_payload;
+			for (const auto& [known, info] : _exhausted_hosts)
+			{
+				if (!exhausted_payload.empty())
+					exhausted_payload += '\n';
+				exhausted_payload += known + "=" + info.strategy;
+			}
+			_sendSnapshot("helper_exhausted", exhausted_payload);
 
 			_log(std::format("dns-dead {} (terminal)", host));
 		}
@@ -344,7 +340,7 @@ std::optional<std::string> ZapretHelper::_popHost()
 
 		for (auto& h : _in_check)
 			_send(_makeCheckingSignal(h), c_ipc_port);
-		
+
 		return host;
 	}
 
@@ -436,11 +432,11 @@ void ZapretHelper::_idleStep()
 {
 	const auto now = std::chrono::steady_clock::now();
 
-	bool grew = false;
-	bool send_seen = false;
+	bool					 grew		   = false;
+	bool					 send_snapshot = false;
 	std::vector<std::string> seen;
-	std::vector<std::pair<std::string, std::string>> snap_valid, snap_error, snap_exhausted;
-	size_t stat_queued = 0, stat_in_check = 0, stat_known = 0;
+	std::vector<std::string> valid_lines, error_lines, exhausted_lines;
+	size_t					 stat_queued = 0, stat_in_check = 0, stat_known = 0;
 	{
 		std::lock_guard lock(_mutex);
 
@@ -462,31 +458,17 @@ void ZapretHelper::_idleStep()
 		if ((now - _last_seen_send) >= c_seen_interval)
 		{
 			seen.assign(_known_hosts.begin(), _known_hosts.end());
-			stat_queued	  = _queue.size();
-			stat_in_check = _in_check.size();
-			stat_known	  = _known_hosts.size();
-			// Verdict snapshots piggyback the same tick (at most 2Hz even
-			// under lua packet spam): unblock clear+refills its lists from
-			// these, so per-message rebroadcasts are unnecessary.
-			if (_valid_dirty)
-			{
-				snap_valid.assign(_valid_hosts.begin(), _valid_hosts.end());
-				_valid_dirty = false;
-			}
-			if (_error_dirty)
-			{
-				for (const auto& [host, info] : _error_hosts)
-					snap_error.emplace_back(host, info.strategy);
-				_error_dirty = false;
-			}
-			if (_exhausted_dirty)
-			{
-				for (const auto& [host, info] : _exhausted_hosts)
-					snap_exhausted.emplace_back(host, info.strategy);
-				_exhausted_dirty = false;
-			}
+			for (const auto& [host, strat] : _valid_hosts)
+				valid_lines.push_back(host + "=" + strat);
+			for (const auto& [host, info] : _error_hosts)
+				error_lines.push_back(host + "=" + info.strategy);
+			for (const auto& [host, info] : _exhausted_hosts)
+				exhausted_lines.push_back(host + "=" + info.strategy);
+			stat_queued		= _queue.size();
+			stat_in_check	= _in_check.size();
+			stat_known		= _known_hosts.size();
 			_last_seen_send = now;
-			send_seen		= true;
+			send_snapshot	= true;
 		}
 
 		for (auto& [host, info] : _error_hosts)
@@ -512,22 +494,30 @@ void ZapretHelper::_idleStep()
 		}
 	}
 
+	auto join_lines = [](const std::vector<std::string>& lines)
+	{
+		std::string out;
+		for (const auto& line : lines)
+		{
+			if (!out.empty())
+				out += '\n';
+			out += line;
+		}
+		return out;
+	};
+
 	// UDP sends and wakeups happen outside the mutex: holding it during
 	// hundreds of sendto calls serialized completions on all workers.
-	if (send_seen)
+	if (send_snapshot)
 	{
-		for (const auto& host : seen)
-			_send(_makeSeenSignal(host), c_ipc_port);
+		_sendSnapshot("helper_seen", join_lines(seen));
 		// Pool load snapshot (self-healing state, not edges): the checking
 		// set is an instant sample and reads ~0 under millisecond checks,
 		// while workers are actually buried in queue.
 		_send(_makeStatsSignal(stat_queued, stat_in_check, stat_known), c_ipc_port);
-		for (const auto& [host, strat] : snap_valid)
-			_send(_makeValidSignal(host, strat), c_ipc_port);
-		for (const auto& [host, strat] : snap_error)
-			_send(_makeErrorSignal(host, strat), c_ipc_port);
-		for (const auto& [host, strat] : snap_exhausted)
-			_send(_makeExhaustedSignal(host, strat), c_ipc_port);
+		_sendSnapshot("helper_valid", join_lines(valid_lines));
+		_sendSnapshot("helper_error", join_lines(error_lines));
+		_sendSnapshot("helper_exhausted", join_lines(exhausted_lines));
 	}
 
 	// Wake workers only when new work actually arrived. An unconditional

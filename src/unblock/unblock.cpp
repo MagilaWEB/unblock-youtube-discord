@@ -343,31 +343,74 @@ std::optional<Technology> Unblock::runningTechnology()
 	return std::nullopt;
 }
 
-bool Unblock::_dropExpiredHelperStates(std::chrono::steady_clock::time_point now)
+namespace
 {
-	if ((now - _helper_last_signal) > c_helper_signal_ttl)
+	std::vector<std::string> splitSnapshotLines(std::string_view text)
 	{
-		_helper_checking.clear();
-		_helper_seen.clear();
-		_helper_errors.clear();
-		_helper_valid.clear();
-		_helper_exhausted.clear();
-		_helper_stats = {};
-		return true;
+		std::vector<std::string> out;
+		size_t					 pos = 0;
+		while (pos <= text.size())
+		{
+			size_t end = text.find('\n', pos);
+			if (end == std::string_view::npos)
+				end = text.size();
+			if (end > pos)
+				out.emplace_back(text.substr(pos, end - pos));
+			pos = end + 1;
+		}
+		return out;
 	}
-	return false;
+
+	void parseHostStrategySnapshot(std::string_view payload, std::unordered_map<std::string, std::string>& out)
+	{
+		out.clear();
+		size_t pos = 0;
+		while (pos <= payload.size())
+		{
+			size_t end = payload.find('\n', pos);
+			if (end == std::string_view::npos)
+				end = payload.size();
+
+			const std::string_view line = payload.substr(pos, end - pos);
+			pos							= end + 1;
+			if (line.empty())
+				continue;
+
+			const size_t eq = line.find('=');
+			if (eq == std::string_view::npos)
+				continue;
+			out[std::string(line.substr(0, eq))] = std::string(line.substr(eq + 1));
+		}
+	}
+}
+
+bool Unblock::_dropExpiredHelperStates()
+{
+	// The helper re-broadcasts the full host snapshot every tick, always
+	// including helper_seen, so its age is the liveness signal. No fresh
+	// snapshot past the TTL means every list is stale.
+	const auto age = IPCSignals::get().latestAge("helper_seen");
+	if (age && *age <= c_helper_signal_ttl)
+		return false;
+
+	_helper_checking.clear();
+	_helper_seen.clear();
+	_helper_errors.clear();
+	_helper_valid.clear();
+	_helper_exhausted.clear();
+	_helper_stats = {};
+	return true;
 }
 
 std::vector<std::string> Unblock::helperCheckingHosts()
 {
-	auto&	   ipc = IPCSignals::get();
-	const auto now = std::chrono::steady_clock::now();
+	auto& ipc = IPCSignals::get();
 
+	// CHECKING/DONE stay edges: the in-check set is an instand sample that a
+	// 500ms snapshot would miss for millisecond checks.
 	while (auto host = ipc.getString("helper_checking"))
 	{
-		_helper_last_signal = now;
-		std::string name	= std::move(*host);
-		// Sync: one host lives in a single list (seen stays out of the sync).
+		std::string name = std::move(*host);
 		_helper_errors.erase(name);
 		_helper_valid.erase(name);
 		_helper_exhausted.erase(name);
@@ -375,12 +418,9 @@ std::vector<std::string> Unblock::helperCheckingHosts()
 	}
 
 	while (auto host = ipc.getString("helper_done"))
-	{
-		_helper_last_signal = now;
 		_helper_checking.erase(*host);
-	}
 
-	if (_dropExpiredHelperStates(now))
+	if (_dropExpiredHelperStates())
 		return {};
 
 	return { _helper_checking.begin(), _helper_checking.end() };
@@ -388,16 +428,14 @@ std::vector<std::string> Unblock::helperCheckingHosts()
 
 std::vector<std::string> Unblock::helperSeenHosts()
 {
-	auto&	   ipc = IPCSignals::get();
-	const auto now = std::chrono::steady_clock::now();
-
-	while (auto host = ipc.getString("helper_seen"))
+	if (auto payload = IPCSignals::get().getLatest("helper_seen"))
 	{
-		_helper_last_signal = now;
-		_helper_seen.insert(std::move(*host));
+		_helper_seen.clear();
+		for (auto& host : splitSnapshotLines(*payload))
+			_helper_seen.insert(std::move(host));
 	}
 
-	if (_dropExpiredHelperStates(now))
+	if (_dropExpiredHelperStates())
 		return {};
 
 	return { _helper_seen.begin(), _helper_seen.end() };
@@ -405,33 +443,18 @@ std::vector<std::string> Unblock::helperSeenHosts()
 
 std::vector<std::pair<std::string, std::string>> Unblock::helperErrorHosts()
 {
-	auto&	   ipc = IPCSignals::get();
-	const auto now = std::chrono::steady_clock::now();
-
-	auto entry = ipc.getString("helper_error");
-
-	if (entry)
+	if (auto payload = IPCSignals::get().getLatest("helper_error"))
 	{
-		_helper_last_signal = now;
-		_helper_errors.clear();
-
-		do
+		parseHostStrategySnapshot(*payload, _helper_errors);
+		for (const auto& [host, _] : _helper_errors)
 		{
-			const auto pos = entry->rfind(':');
-			if (pos != std::string::npos)
-			{
-				const auto host = entry->substr(0, pos);
-				// Sync: evict from the sibling lists (seen stays out of the sync).
-				_helper_checking.erase(host);
-				_helper_valid.erase(host);
-				_helper_exhausted.erase(host);
-				_helper_errors[host] = entry->substr(pos + 1);
-			}
-			_helper_last_signal = now;
-		} while ((entry = ipc.getString("helper_error")));
+			_helper_checking.erase(host);
+			_helper_valid.erase(host);
+			_helper_exhausted.erase(host);
+		}
 	}
 
-	if (_dropExpiredHelperStates(now))
+	if (_dropExpiredHelperStates())
 		return {};
 
 	std::vector<std::pair<std::string, std::string>> result;
@@ -444,33 +467,18 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperErrorHosts()
 
 std::vector<std::pair<std::string, std::string>> Unblock::helperValidHosts()
 {
-	auto&	   ipc = IPCSignals::get();
-	const auto now = std::chrono::steady_clock::now();
-
-	auto entry = ipc.getString("helper_valid");
-
-	if (entry)
+	if (auto payload = IPCSignals::get().getLatest("helper_valid"))
 	{
-		_helper_last_signal = now;
-		_helper_valid.clear();
-
-		do
+		parseHostStrategySnapshot(*payload, _helper_valid);
+		for (const auto& [host, _] : _helper_valid)
 		{
-			const auto pos = entry->rfind(':');
-			if (pos != std::string::npos)
-			{
-				const auto host = entry->substr(0, pos);
-				// Sync: evict from the sibling lists (seen stays out of the sync).
-				_helper_checking.erase(host);
-				_helper_errors.erase(host);
-				_helper_exhausted.erase(host);
-				_helper_valid[host] = entry->substr(pos + 1);
-			}
-			_helper_last_signal = now;
-		} while ((entry = ipc.getString("helper_valid")));
+			_helper_checking.erase(host);
+			_helper_errors.erase(host);
+			_helper_exhausted.erase(host);
+		}
 	}
 
-	if (_dropExpiredHelperStates(now))
+	if (_dropExpiredHelperStates())
 		return {};
 
 	std::vector<std::pair<std::string, std::string>> result;
@@ -483,33 +491,18 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperValidHosts()
 
 std::vector<std::pair<std::string, std::string>> Unblock::helperExhaustedHosts()
 {
-	auto&	   ipc = IPCSignals::get();
-	const auto now = std::chrono::steady_clock::now();
-
-	auto entry = ipc.getString("helper_exhausted");
-
-	if (entry)
+	if (auto payload = IPCSignals::get().getLatest("helper_exhausted"))
 	{
-		_helper_last_signal = now;
-		_helper_exhausted.clear();
-
-		do
+		parseHostStrategySnapshot(*payload, _helper_exhausted);
+		for (const auto& [host, _] : _helper_exhausted)
 		{
-			const auto pos = entry->rfind(':');
-			if (pos != std::string::npos)
-			{
-				const auto host = entry->substr(0, pos);
-				// Sync: evict from the sibling lists (seen stays out of the sync).
-				_helper_checking.erase(host);
-				_helper_errors.erase(host);
-				_helper_valid.erase(host);
-				_helper_exhausted[host] = entry->substr(pos + 1);
-			}
-			_helper_last_signal = now;
-		} while ((entry = ipc.getString("helper_exhausted")));
+			_helper_checking.erase(host);
+			_helper_errors.erase(host);
+			_helper_valid.erase(host);
+		}
 	}
 
-	if (_dropExpiredHelperStates(now))
+	if (_dropExpiredHelperStates())
 		return {};
 
 	std::vector<std::pair<std::string, std::string>> result;
@@ -522,20 +515,11 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperExhaustedHosts()
 
 HelperStats Unblock::helperStats()
 {
-	auto&	   ipc = IPCSignals::get();
-	const auto now = std::chrono::steady_clock::now();
+	if (auto payload = IPCSignals::get().getLatest("helper_stats"))
+		if (auto parsed = parseHelperStats(*payload))
+			_helper_stats = *parsed;
 
-	if (auto entry = ipc.getString("helper_stats"))
-	{
-		_helper_last_signal = now;
-		do
-		{
-			if (auto parsed = parseHelperStats(*entry))
-				_helper_stats = *parsed;
-		} while ((entry = ipc.getString("helper_stats")));
-	}
-
-	if (_dropExpiredHelperStates(now))
+	if (_dropExpiredHelperStates())
 		return {};
 
 	return _helper_stats;
@@ -617,29 +601,29 @@ bool Unblock::dnsHostsRegionAvailable(std::string_view region) const
 	return _dns_hosts.regionAvailable(region);
 }
 
-std::vector<Unblock::DnsProxyUpstream> Unblock::defaultDnsProxyUpstreams()
+std::vector<std::string> Unblock::defaultDnsProxyUpstreams()
 {
-	// The first entry is the primary resolver, the rest are fallbacks (see
-	// unblock_dns buildSettings). GeoHide leads because queries must reach it to
-	// get the region-specific answers. Xbox DNS (free Smart DNS, no sign-up) is
-	// the backup, with Cloudflare as an extra fallback behind it.
+	// Order is the priority: the first entry is the primary resolver, the
+	// rest are only fallbacks (see unblock_dns buildSettings). GeoHide leads
+	// because queries must reach it to get the region-specific answers. Xbox
+	// DNS (free Smart DNS, no sign-up) and Cloudflare are backups, with plain
+	// 1.1.1.1 as the last resort for when encrypted endpoints are blocked.
 	return {
-		{ true,	   "GeoHide",		  "https://dns.geohide.ru:8443/dns-query",
-		 "37.230.192.51,45.155.204.190,46.8.158.6,193.233.112.67,193.233.112.68,193.233.112.88" },
-		{ true, "Xbox DNS", "111.88.96.54", "" },
-		{ true, "Xbox DNS", "111.88.96.55", "" },
-		{ true, "Cloudflare", "https://cloudflare-dns.com/dns-query", "1.1.1.1,1.0.0.1" },
+		"https://dns.geohide.ru:8443/dns-query", "111.88.96.54", "111.88.96.55", "https://cloudflare-dns.com/dns-query", "1.1.1.1",
 	};
+}
+
+std::vector<std::string> Unblock::defaultDnsProxyBootstrap()
+{
+	// Plain DNS used only to resolve hostname upstreams. Editable in the UI;
+	// if the ISP poisons these, the user can point them at a reachable
+	// resolver (e.g. GeoHide's own IPs).
+	return { "1.1.1.1", "8.8.8.8", "9.9.9.9" };
 }
 
 std::filesystem::path Unblock::_dnsProxyConfigPath() const
 {
 	return Core::get().userPath() / "dns_proxy.conf";
-}
-
-std::filesystem::path Unblock::_dnsProxyStatusPath() const
-{
-	return Core::get().userPath() / "dns_proxy.status";
 }
 
 std::filesystem::path Unblock::_dnsProxyBackupPath() const
@@ -652,7 +636,7 @@ std::filesystem::path Unblock::_dnsProxyLogPath() const
 	return Core::get().userPath() / "dns_proxy.log";
 }
 
-void Unblock::_dnsProxyWriteConfig(const std::vector<DnsProxyUpstream>& upstreams)
+void Unblock::_dnsProxyWriteConfig(const std::vector<std::string>& upstreams, const std::vector<std::string>& bootstrap)
 {
 	File conf{ false };
 	conf.open(_dnsProxyConfigPath(), "", true);
@@ -661,14 +645,19 @@ void Unblock::_dnsProxyWriteConfig(const std::vector<DnsProxyUpstream>& upstream
 	conf.writeText("listen=127.0.0.1");
 	conf.writeText("port=53");
 	// Explicit paths: the wrapper reads these verbatim, so engine and wrapper
-	// can never disagree on where status/backup/log live.
-	conf.writeText("status=" + _dnsProxyStatusPath().string());
+	// can never disagree on where backup/log live. Status is pushed over IPC
+	// (UDP 9999), not written to disk.
 	conf.writeText("backup=" + _dnsProxyBackupPath().string());
 	conf.writeText("log=" + _dnsProxyLogPath().string());
 
-	for (auto& u : upstreams)
-		if (u.enabled && !u.address.empty())
-			conf.writeText("upstream=" + u.address + "|" + u.bootstrap);
+	std::string bootstrap_line;
+	for (const auto& b : bootstrap)
+		bootstrap_line += (bootstrap_line.empty() ? "" : ",") + b;
+	conf.writeText("bootstrap=" + bootstrap_line);
+
+	for (const auto& upstream : upstreams)
+		if (!upstream.empty())
+			conf.writeText("upstream=" + upstream);
 
 	conf.close();
 }
@@ -732,16 +721,21 @@ void Unblock::dnsProxy(bool state)
 		// so the wrapper never gets to run its own OS-DNS restore on stop. Undo
 		// the adapter switch from here, using the backup written when it happened.
 		dnsProxyRepairBoot();
+		IPCSignals::get().clear("dns.queries");
+		IPCSignals::get().clear("dns.cache_hits");
+		IPCSignals::get().clear("dns.errors");
 		return;
 	}
 
 	const auto& upstreams = _dns_proxy_upstreams.empty() ? defaultDnsProxyUpstreams() : _dns_proxy_upstreams;
+	const auto& bootstrap = _dns_proxy_bootstrap.empty() ? defaultDnsProxyBootstrap() : _dns_proxy_bootstrap;
 
-	_dnsProxyWriteConfig(upstreams);
+	_dnsProxyWriteConfig(upstreams, bootstrap);
 
-	// Drop the stale status so queries/cache_hits don't leak from a past run.
-	std::error_code ec;
-	std::filesystem::remove(_dnsProxyStatusPath(), ec);
+	// Reset the IPC counters so a stale run's numbers don't show on start.
+	IPCSignals::get().clear("dns.queries");
+	IPCSignals::get().clear("dns.cache_hits");
+	IPCSignals::get().clear("dns.errors");
 
 	_dns_proxy.remove();
 	_dns_proxy.setDescription("Unblock DNS proxy (AdGuard DnsLibs).");
@@ -755,24 +749,33 @@ bool Unblock::dnsProxyIsRun()
 	return _dns_proxy.isRun();
 }
 
-void Unblock::setDnsProxyUpstreams(std::vector<DnsProxyUpstream> upstreams)
+void Unblock::setDnsProxyUpstreams(std::vector<std::string> upstreams)
 {
 	_dns_proxy_upstreams = std::move(upstreams);
 }
 
-const std::vector<Unblock::DnsProxyUpstream>& Unblock::dnsProxyUpstreams() const
+const std::vector<std::string>& Unblock::dnsProxyUpstreams() const
 {
 	return _dns_proxy_upstreams;
 }
 
+void Unblock::setDnsProxyBootstrap(std::vector<std::string> bootstrap)
+{
+	_dns_proxy_bootstrap = std::move(bootstrap);
+}
+
+const std::vector<std::string>& Unblock::dnsProxyBootstrap() const
+{
+	return _dns_proxy_bootstrap;
+}
+
 std::string Unblock::dnsProxyStatus() const
 {
-	std::ifstream in{ _dnsProxyStatusPath(), std::ios::binary };
-	if (!in)
-		return {};
-
+	auto&			   ipc = IPCSignals::get();
 	std::ostringstream ss;
-	ss << in.rdbuf();
+	ss << "queries=" << ipc.getLatestU32("dns.queries").value_or(0) << "\n";
+	ss << "cache_hits=" << ipc.getLatestU32("dns.cache_hits").value_or(0) << "\n";
+	ss << "errors=" << ipc.getLatestU32("dns.errors").value_or(0) << "\n";
 	return ss.str();
 }
 
@@ -792,8 +795,19 @@ bool Unblock::dnsProxyTestUpstream(const std::string& value, std::string& output
 	std::error_code ec;
 	std::filesystem::remove(out_path, ec);
 
+	std::string bootstrap_csv;
+	const auto& bootstrap = _dns_proxy_bootstrap.empty() ? defaultDnsProxyBootstrap() : _dns_proxy_bootstrap;
+	for (const auto& b : bootstrap)
+		bootstrap_csv += (bootstrap_csv.empty() ? "" : ",") + b;
+
 	const bool ok = _dnsProxyRunHelper(
-		{ (Core::get().binPath() / "unblock_dns.exe").string(), "--test-upstream-file", in_path.string(), "--result", out_path.string() },
+		{ (Core::get().binPath() / "unblock_dns.exe").string(),
+		  "--test-upstream-file",
+		  in_path.string(),
+		  "--bootstrap",
+		  bootstrap_csv,
+		  "--result",
+		  out_path.string() },
 		15'000
 	);
 

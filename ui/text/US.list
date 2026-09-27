@@ -336,9 +336,11 @@ str_checkbox_enable_dns_proxy_description=🔒 System DNS over encrypted servers
 When enabled, Unblock starts the unblock_dns service and points adapter DNS at 127.0.0.1.
 When disabled, DNS settings are restored.
 str_dns_proxy_servers_title=🌐 DNS servers
-str_dns_proxy_servers_description=🌐 Lines shaped as «address|bootstrap» (comma-separated bootstrap, may be empty). The first server is primary, the rest are fallbacks. Defaults: GeoHide primary; Xbox DNS and Cloudflare fallbacks.
-Examples: https://cloudflare-dns.com/dns-query|1.1.1.1,1.0.0.1 or tls://dns.adguard.com|94.140.14.14
-str_input_dns_proxy_custom_placeholder=Add a server (e.g. tls://dns.adguard.com|94.140.14.14) and press Enter
+str_dns_proxy_servers_description=🌐 Each line is a DNS server address (DoH/DoT/QUIC or a plain IP). The first server is primary, the rest are fallbacks. Defaults: GeoHide primary; Xbox DNS, Cloudflare and 1.1.1.1 fallbacks.
+Examples: https://dns.geohide.ru:8443/dns-query or tls://dns.adguard.com
+str_dns_proxy_bootstrap_title=🧩 Bootstrap
+str_dns_proxy_bootstrap_description=🧩 Plain DNS servers, comma-separated; used to resolve the address of DoH/DoT servers (hostname to IP only). Defaults: 1.1.1.1,8.8.8.8,9.9.9.9. Press Enter to apply.
+str_input_dns_proxy_custom_placeholder=Add a server (e.g. https://cloudflare-dns.com/dns-query) and press Enter
 str_input_test_upstream_title=🧪 Server check
 str_input_test_upstream_description=🧪 Server line to check with the button below.
 The check runs through unblock_dns — AdguardDns64.dll must sit next to it or you will see a load error.
