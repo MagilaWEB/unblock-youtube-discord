@@ -194,7 +194,10 @@ void ZapretHelper::_handleMessage(std::string_view message)
 		const auto		pos	  = rest.find(':');
 		const auto		host  = std::string{ rest.substr(0, pos) };
 		const auto		strat = (pos != std::string_view::npos) ? rest.substr(pos + 1) : std::string_view{};
-		if (_isValidHost(host))
+		// A fully-tried host stays terminal until VALID; a later packet-level
+		// ERR must not drag it back into the error bucket (that refusal is
+		// what let autopick never settle).
+		if (_isValidHost(host) && !_exhausted_hosts.contains(host))
 		{
 			// Duplicate ERR while the host is already tracked: refresh only
 			// the strategy name. first/last timestamps are owned by the first
@@ -244,6 +247,11 @@ void ZapretHelper::_handleMessage(std::string_view message)
 				_valid_hosts.erase(host);
 			}
 
+			// The fully-tried mark supersedes an error mark: the host now
+			// lives in exactly one terminal bucket and is rechecked on the
+			// stale-error interval instead of the aggressive error loop.
+			_error_hosts.erase(host);
+
 			if (!_known_hosts.contains(host))
 				_known_hosts.insert(host);
 		}
@@ -272,12 +280,10 @@ void ZapretHelper::_checkHost(std::string_view host)
 
 	if (result)
 	{
-		// Slow-recheck recovery: the body flows again, the fully-tried
-		// mark must go (unblock side expires it by TTL as well).
-		{
-			std::lock_guard lock(_mutex);
-			_exhausted_hosts.erase(std::string{ host });
-		}
+		// Recovery is confirmed by lua's VALID, not by the probe itself: the
+		// fully-tried mark is cleared only when the host lands in the valid
+		// list, so the dead set stays terminal until then. The OK still goes
+		// to lua, which raises that VALID on the next confirmation.
 		_log(std::format("ok {} http={}", host, result.value()));
 		_send(_makeOk(host), c_receive_port);
 	}
@@ -486,6 +492,22 @@ void ZapretHelper::_idleStep()
 				grew = true;
 			}
 			else if ((now - info.last) > _errors_recheck_interval)
+			{
+				info.last = now;
+				_queue.insert(host);
+				grew = true;
+			}
+		}
+
+		// Dead hosts are rechecked on the same slow cadence as stale errors:
+		// recovery (curl OK -> lua VALID) is detected while the host never
+		// drops out of the exhausted bucket on its own.
+		for (auto& [host, info] : _exhausted_hosts)
+		{
+			if (_queue.contains(host) || _in_check.contains(host))
+				continue;
+
+			if ((now - info.last) > _errors_recheck_interval)
 			{
 				info.last = now;
 				_queue.insert(host);

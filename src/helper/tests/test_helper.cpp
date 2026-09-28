@@ -51,6 +51,15 @@ public:
 			it->second.last	 = lastQueued;
 		}
 	}
+	void setExhaustedTimes(const std::string& host, std::chrono::steady_clock::time_point firstSeen, std::chrono::steady_clock::time_point lastQueued)
+	{
+		auto it = helper._exhausted_hosts.find(host);
+		if (it != helper._exhausted_hosts.end())
+		{
+			it->second.first = firstSeen;
+			it->second.last	 = lastQueued;
+		}
+	}
 	void setInCheck(const std::string& host, bool value)
 	{
 		if (value)
@@ -814,6 +823,59 @@ TEST_CASE("VALID clears exhausted mark (packet-level recovery)", "[helper][exhau
 	t.handleMessage("VALID:google.com:7");
 	CHECK(t.exhaustedHosts().empty());
 	CHECK(t.valid().at("google.com") == "7");
+}
+
+TEST_CASE("EXHAUSTED clears an existing error mark", "[helper][exhausted]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("ERR:google.com:strategy_3");
+	REQUIRE(t.errorHosts().contains("google.com"));
+
+	t.handleMessage("EXHAUSTED:google.com:strategy_29");
+	CHECK_FALSE(t.errorHosts().contains("google.com"));
+	CHECK(t.exhaustedHosts().contains("google.com"));
+}
+
+TEST_CASE("ERR on an exhausted host is ignored (terminal)", "[helper][exhausted]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("EXHAUSTED:google.com:strategy_29");
+	REQUIRE(t.exhaustedHosts().contains("google.com"));
+
+	t.handleMessage("ERR:google.com:strategy_3");
+	CHECK(t.errorHosts().empty());
+	CHECK(t.exhaustedHosts().contains("google.com"));
+}
+
+TEST_CASE("VALID clears exhausted, a later ERR records again", "[helper][exhausted]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("EXHAUSTED:google.com:strategy_29");
+	REQUIRE(t.exhaustedHosts().contains("google.com"));
+
+	t.handleMessage("VALID:google.com:7");
+	REQUIRE(t.exhaustedHosts().empty());
+
+	t.handleMessage("ERR:google.com:strategy_3");
+	CHECK(t.errorHosts().contains("google.com"));
+	CHECK(t.exhaustedHosts().empty());
+}
+
+TEST_CASE("exhausted hosts recheck on the stale-error interval", "[helper][exhausted]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("EXHAUSTED:stale.com:strategy_1");
+	t.handleMessage("EXHAUSTED:fresh.com:strategy_1");
+	REQUIRE(t.exhaustedHosts().size() == 2);
+
+	t.clearQueue();
+	t.setLastRecheckNow();
+	const auto past = std::chrono::steady_clock::now() - std::chrono::hours(1);
+	t.setExhaustedTimes("stale.com", past, past);
+	t.idleStep();
+
+	CHECK(t.queue().contains("stale.com"));
+	CHECK_FALSE(t.queue().contains("fresh.com"));
 }
 
 TEST_CASE("makeStatsSignal format", "[helper][stats]")

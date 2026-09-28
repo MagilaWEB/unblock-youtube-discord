@@ -224,7 +224,9 @@ private:
 	// so startService() pushes this instead of letting the helper read it.
 	std::string _helper_config_message{};
 
-	// Accessed only from the JS thread (via Ui::update)
+	// Rebuilt from helper IPC snapshots. The passive autopick worker and the
+	// JS-thread Ui::update() both read/rebuild these, so all access is
+	// serialized by _helper_state_lock.
 	// The checking/error/valid/exhausted lists are mutually exclusive: one
 	// host lives in exactly one of them (seen stays out of the sync). Checking
 	// keeps a short done grace so a host does not blink out before its verdict
@@ -243,6 +245,10 @@ private:
 	// Last pool load snapshot (queued/in-flight/known). Refreshed by the
 	// helper_stats broadcast, zeroed with everything else on TTL expiry.
 	HelperStats									 _helper_stats{};
+
+	// Guards every helper-state container above (Ui::update() and the
+	// passive autopick worker both touch them).
+	std::mutex _helper_state_lock;
 
 	// Drops every helper list when the newest helper_seen snapshot is older
 	// than the TTL. Returns true when expired (all lists are empty after).

@@ -405,8 +405,9 @@ bool Unblock::_dropExpiredHelperStates()
 
 std::vector<std::string> Unblock::helperCheckingHosts()
 {
-	auto&	   ipc = IPCSignals::get();
-	const auto now = std::chrono::steady_clock::now();
+	std::lock_guard lock(_helper_state_lock);
+	auto&			ipc = IPCSignals::get();
+	const auto		now = std::chrono::steady_clock::now();
 
 	// CHECKING/DONE stay edges: the in-check set is an instant sample that a
 	// 500ms snapshot would miss for millisecond checks. DONE moves a host to
@@ -415,9 +416,12 @@ std::vector<std::string> Unblock::helperCheckingHosts()
 	while (auto host = ipc.getString("helper_checking"))
 	{
 		std::string name = std::move(*host);
+		// A fully-tried host is terminal: a recheck edge must not pull it
+		// out of the exhausted list (that flicker broke autopick settle).
+		if (_helper_exhausted.contains(name))
+			continue;
 		_helper_errors.erase(name);
 		_helper_valid.erase(name);
-		_helper_exhausted.erase(name);
 		_helper_checking.checkingEdge(std::move(name), now);
 	}
 
@@ -435,6 +439,7 @@ std::vector<std::string> Unblock::helperCheckingHosts()
 
 std::vector<std::string> Unblock::helperSeenHosts()
 {
+	std::lock_guard lock(_helper_state_lock);
 	if (auto payload = IPCSignals::get().getLatest("helper_seen"))
 	{
 		_helper_seen.clear();
@@ -450,14 +455,17 @@ std::vector<std::string> Unblock::helperSeenHosts()
 
 std::vector<std::pair<std::string, std::string>> Unblock::helperErrorHosts()
 {
+	std::lock_guard lock(_helper_state_lock);
 	if (auto payload = IPCSignals::get().getLatest("helper_error"))
 	{
 		parseHostStrategySnapshot(*payload, _helper_errors);
+		// Exhausted hosts are terminal; drop them from the error set instead
+		// of erasing the exhausted mark (the single exit is helperValidHosts).
+		std::erase_if(_helper_errors, [this](const auto& kv) { return _helper_exhausted.contains(kv.first); });
 		for (const auto& [host, _] : _helper_errors)
 		{
 			_helper_checking.verdict(host);
 			_helper_valid.erase(host);
-			_helper_exhausted.erase(host);
 		}
 	}
 
@@ -474,6 +482,7 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperErrorHosts()
 
 std::vector<std::pair<std::string, std::string>> Unblock::helperValidHosts()
 {
+	std::lock_guard lock(_helper_state_lock);
 	if (auto payload = IPCSignals::get().getLatest("helper_valid"))
 	{
 		parseHostStrategySnapshot(*payload, _helper_valid);
@@ -498,6 +507,7 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperValidHosts()
 
 std::vector<std::pair<std::string, std::string>> Unblock::helperExhaustedHosts()
 {
+	std::lock_guard lock(_helper_state_lock);
 	if (auto payload = IPCSignals::get().getLatest("helper_exhausted"))
 	{
 		parseHostStrategySnapshot(*payload, _helper_exhausted);
@@ -522,6 +532,7 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperExhaustedHosts()
 
 HelperStats Unblock::helperStats()
 {
+	std::lock_guard lock(_helper_state_lock);
 	if (auto payload = IPCSignals::get().getLatest("helper_stats"))
 		if (auto parsed = parseHelperStats(*payload))
 			_helper_stats = *parsed;
