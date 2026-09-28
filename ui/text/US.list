@@ -336,10 +336,10 @@ str_checkbox_enable_dns_proxy_description=🔒 System DNS over encrypted servers
 When enabled, Unblock starts the unblock_dns service and points adapter DNS at 127.0.0.1.
 When disabled, DNS settings are restored.
 str_dns_proxy_servers_title=🌐 DNS servers
-str_dns_proxy_servers_description=🌐 Each line is a DNS server address (DoH/DoT/QUIC or a plain IP). The first server is primary, the rest are fallbacks. Defaults: GeoHide primary; Xbox DNS, Cloudflare and 1.1.1.1 fallbacks.
+str_dns_proxy_servers_description=🌐 Each line is a DNS server address (DoH/DoT/QUIC or a plain IP). The first server is primary, the rest are fallbacks. Defaults: GeoHide primary; Comss.one, Xbox DNS and 1.1.1.1 fallbacks.
 Examples: https://dns.geohide.ru:8443/dns-query or tls://dns.adguard.com
 str_dns_proxy_bootstrap_title=🧩 Bootstrap
-str_dns_proxy_bootstrap_description=🧩 Plain DNS servers, comma-separated; used to resolve the address of DoH/DoT servers (hostname to IP only). Defaults: 1.1.1.1,8.8.8.8,9.9.9.9. Press Enter to apply.
+str_dns_proxy_bootstrap_description=🧩 Plain DNS servers, comma-separated; used to resolve the address of DoH/DoT servers (hostname to IP only). Defaults: 1.1.1.1,8.8.8.8,9.9.9.9,77.88.8.8. Press Enter to apply.
 str_dns_proxy_timeout_title=⏱️ Query timeout
 str_dns_proxy_timeout_description=⏱️ Seconds to wait for a DNS server response (1–120). Private resolvers like GeoHide stall now and then — raise it if you see errors. Press Enter to apply.
 str_input_dns_proxy_custom_placeholder=Add a server (e.g. https://cloudflare-dns.com/dns-query) and press Enter

@@ -612,8 +612,8 @@ std::vector<std::string> Unblock::defaultDnsProxyUpstreams()
 	// Order is the priority: the first entry is the primary resolver, the
 	// rest are only fallbacks (see unblock_dns buildSettings). GeoHide leads
 	// (queries must reach it for region-specific answers) across its DoH/DoT
-	// endpoints and ports, then Xbox DNS (free Smart DNS), then plain DNS as
-	// the last resort.
+	// endpoints and ports, then Comss.one (encrypted, unfiltered), then Xbox
+	// DNS (free Smart DNS), then plain DNS as the last resort.
 	return {
 		"https://dns.geohide.ru:8443/dns-query",
 		"https://dns.geohide.ru:853/dns-query",
@@ -621,11 +621,12 @@ std::vector<std::string> Unblock::defaultDnsProxyUpstreams()
 		"tls://dns.geohide.ru:8443",
 		"tls://dns.geohide.ru:853",
 		"tls://dns.geohide.ru:443",
+		"https://dns.comss.one/dns-query",
+		"tls://dns.comss.one",
 		"111.88.96.54",
 		"111.88.96.55",
 		"1.1.1.1",
 		"1.0.0.1",
-		"8.8.8.8",
 	};
 }
 
@@ -634,7 +635,7 @@ std::vector<std::string> Unblock::defaultDnsProxyBootstrap()
 	// Plain DNS used only to resolve hostname upstreams. Editable in the UI;
 	// if the ISP poisons these, the user can point them at a reachable
 	// resolver (e.g. GeoHide's own IPs).
-	return { "1.1.1.1", "8.8.8.8", "9.9.9.9" };
+	return { "1.1.1.1", "8.8.8.8", "9.9.9.9", "77.88.8.8" };
 }
 
 uint32_t Unblock::defaultDnsProxyTimeout()

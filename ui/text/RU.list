@@ -336,10 +336,10 @@ str_checkbox_enable_dns_proxy_description=🔒 Системный DNS через
 При включении Unblock поднимает службу unblock_dns и переключает DNS адаптеров на 127.0.0.1.
 При выключении настройки DNS возвращаются как были.
 str_dns_proxy_servers_title=🌐 DNS-серверы
-str_dns_proxy_servers_description=🌐 Каждая строка — адрес DNS-сервера (DoH/DoT/QUIC или обычный IP). Первый сервер — основной, остальные — запасные. По умолчанию: GeoHide основной; Xbox DNS, Cloudflare и 1.1.1.1 запасные.
+str_dns_proxy_servers_description=🌐 Каждая строка — адрес DNS-сервера (DoH/DoT/QUIC или обычный IP). Первый сервер — основной, остальные — запасные. По умолчанию: GeoHide основной; Comss.one, Xbox DNS и 1.1.1.1 запасные.
 Примеры: https://dns.geohide.ru:8443/dns-query или tls://dns.adguard.com
 str_dns_proxy_bootstrap_title=🧩 Bootstrap
-str_dns_proxy_bootstrap_description=🧩 Обычные DNS-серверы через запятую; ими резолвится адрес DoH/DoT-серверов (только получение IP по хостнейму). По умолчанию: 1.1.1.1,8.8.8.8,9.9.9.9. Нажмите Enter, чтобы применить.
+str_dns_proxy_bootstrap_description=🧩 Обычные DNS-серверы через запятую; ими резолвится адрес DoH/DoT-серверов (только получение IP по хостнейму). По умолчанию: 1.1.1.1,8.8.8.8,9.9.9.9,77.88.8.8. Нажмите Enter, чтобы применить.
 str_dns_proxy_timeout_title=⏱️ Таймаут запроса
 str_dns_proxy_timeout_description=⏱️ Сколько секунд ждать ответа от DNS-сервера (1–120). Частные резолверы вроде GeoHide иногда тупят — если видите ошибки, поднимите. Нажмите Enter, чтобы применить.
 str_input_dns_proxy_custom_placeholder=Добавить сервер (например, https://cloudflare-dns.com/dns-query) и нажать Enter
