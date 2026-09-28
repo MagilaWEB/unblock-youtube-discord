@@ -171,8 +171,6 @@ private:
 
 	void _startServiceFromConfig();
 
-	void _tcpGlobalChange(bool state = false) const;
-
 	void _initTestingWindow();
 	void _testingServiceDomains();
 };

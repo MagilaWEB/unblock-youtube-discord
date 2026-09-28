@@ -149,3 +149,24 @@ TEST_CASE("helper checking recheck cancels done grace", "[auto][helper]")
 	// with the previous DONE grace.
 	CHECK(checking.visible(start + milliseconds(1'200)) == std::vector<std::string>{ "recheck.test" });
 }
+
+TEST_CASE("strategyUsesTcpTimestamps detects ts fooling", "[auto][tcp]")
+{
+	CHECK(strategyUsesTcpTimestamps({ "--dpi-desync-fooling=ts" }));
+	CHECK(strategyUsesTcpTimestamps({ "--dpi-desync-fooling=badsum,ts" }));
+	CHECK(strategyUsesTcpTimestamps({ "--filter-tcp=443 --dpi-desync=fake --dpi-desync-fooling=ts,datanoack" }));
+
+	// zapret2 lua fooling.
+	CHECK(strategyUsesTcpTimestamps({ "--lua-desync=fake:blob=fake_default_tls:tcp_ts=-600000" }));
+	CHECK(strategyUsesTcpTimestamps({ "--lua-desync=fakedsplit:tcp_ts_up" }));
+}
+
+TEST_CASE("strategyUsesTcpTimestamps ignores unrelated strategies", "[auto][tcp]")
+{
+	CHECK_FALSE(strategyUsesTcpTimestamps({}));
+	CHECK_FALSE(strategyUsesTcpTimestamps({ "--dpi-desync=fake --dpi-desync-fooling=badsum" }));
+	CHECK_FALSE(strategyUsesTcpTimestamps({ "--dpi-desync=fake --dpi-desync-fooling=md5sig" }));
+	CHECK_FALSE(strategyUsesTcpTimestamps({ "--lua-desync=multisplit:pos=1" }));
+	// `ts` must be a whole fooling token, not a prefix of another method.
+	CHECK_FALSE(strategyUsesTcpTimestamps({ "--dpi-desync-fooling=tsx" }));
+}

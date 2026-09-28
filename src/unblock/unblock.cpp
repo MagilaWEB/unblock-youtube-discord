@@ -6,6 +6,7 @@
 #include <curl/curl.h>
 
 #include <shellapi.h>
+#include <winreg.h>
 
 #include <filesystem>
 #include <string>
@@ -687,7 +688,7 @@ void Unblock::_dnsProxyWriteConfig(const std::vector<std::string>& upstreams, co
 	conf.close();
 }
 
-bool Unblock::_dnsProxyRunHelper(const std::vector<std::string>& args, uint32_t timeout_ms)
+bool Unblock::_runHidden(const std::vector<std::string>& args, uint32_t timeout_ms)
 {
 	if (args.empty())
 		return false;
@@ -735,6 +736,52 @@ bool Unblock::_dnsProxyRunHelper(const std::vector<std::string>& args, uint32_t 
 	CloseHandle(pi.hProcess);
 
 	return code == 0;
+}
+
+namespace
+{
+	// RFC 1323 timestamps live in Tcp1323Opts bit 0x2. The value is absent on
+	// a stock Windows install (timestamps disabled), so a missing key means
+	// "off" — no need to parse localized netsh output.
+	bool tcpTimestampsEnabled()
+	{
+		DWORD		  value	 = 0;
+		DWORD		  size	 = sizeof(value);
+		const LSTATUS status = RegGetValueW(
+			HKEY_LOCAL_MACHINE,
+			L"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
+			L"Tcp1323Opts",
+			RRF_RT_REG_DWORD,
+			nullptr,
+			&value,
+			&size
+		);
+
+		return status == ERROR_SUCCESS && (value & 0x2) != 0;
+	}
+}	 // namespace
+
+void Unblock::_tcpTimestampSync(Technology technology)
+{
+	if (!strategyUsesTcpTimestamps(getStrategies(technology)))
+		return;
+
+	std::scoped_lock lock(_tcp_timestamp_lock);
+	if (_tcp_timestamps_owned || tcpTimestampsEnabled())
+		return;
+
+	if (_runHidden({ "netsh", "interface", "tcp", "set", "global", "timestamps=enabled" }, 10'000))
+		_tcp_timestamps_owned = true;
+}
+
+void Unblock::_tcpTimestampRestore()
+{
+	std::scoped_lock lock(_tcp_timestamp_lock);
+	if (!_tcp_timestamps_owned)
+		return;
+
+	if (_runHidden({ "netsh", "interface", "tcp", "set", "global", "timestamps=disabled" }, 10'000))
+		_tcp_timestamps_owned = false;
 }
 
 void Unblock::dnsProxy(bool state)
@@ -836,7 +883,7 @@ bool Unblock::dnsProxyTestUpstream(const std::string& value, std::string& output
 	for (const auto& b : bootstrap)
 		bootstrap_csv += (bootstrap_csv.empty() ? "" : ",") + b;
 
-	const bool ok = _dnsProxyRunHelper(
+	const bool ok = _runHidden(
 		{ (Core::get().binPath() / "unblock_dns.exe").string(),
 		  "--test-upstream-file",
 		  in_path.string(),
@@ -873,7 +920,7 @@ void Unblock::dnsProxyRepairBoot()
 
 	// All adapter work lives in the wrapper (DLL API), the engine never
 	// touches the registry itself.
-	if (_dnsProxyRunHelper({ (Core::get().binPath() / "unblock_dns.exe").string(), "--repair", "--backup", backup_path.string() }, 15'000))
+	if (_runHidden({ (Core::get().binPath() / "unblock_dns.exe").string(), "--repair", "--backup", backup_path.string() }, 15'000))
 		Debug::warning("DNS proxy was killed without restore, adapters repaired.");
 	else
 		Debug::warning("DNS proxy adapter restore failed, adapters may still point at the local proxy.");
@@ -938,6 +985,7 @@ void Unblock::localProxyTgLinkRun()
 
 void Unblock::removeService()
 {
+	_tcpTimestampRestore();
 	_helper_seen.clear();
 	_helper_checking.clear();
 	_helper_errors.clear();
@@ -951,6 +999,7 @@ void Unblock::removeService()
 
 void Unblock::stopService()
 {
+	_tcpTimestampRestore();
 	_helper_seen.clear();
 	_helper_checking.clear();
 	_helper_errors.clear();
@@ -1027,6 +1076,11 @@ void Unblock::startService(Technology technology)
 		_zapret_helper.create();
 		_zapret_helper.start();
 	}
+
+	// ts/tcp_ts fooling needs OS TCP timestamps, which Windows ships off.
+	// Enable them only when the effective strategy uses it, and remember it
+	// so stopService/removeService can put the system back.
+	_tcpTimestampSync(technology);
 
 	eng.start();
 

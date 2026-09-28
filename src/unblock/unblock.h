@@ -8,6 +8,7 @@
 #include <cctype>
 #include <charconv>
 #include <chrono>
+#include <mutex>
 #include <optional>
 #include <ranges>
 #include <string>
@@ -74,6 +75,43 @@ inline std::optional<HelperStats> parseHelperStats(std::string_view text)
 		pos		   = end + 1;
 	}
 	return out;
+}
+
+/** True when any strategy line toggles TCP timestamps: zapret1 `fooling=ts`
+ *  or zapret2 `tcp_ts`/`tcp_ts_up`. Windows disables timestamps by default,
+ *  so such strategies silently degrade unless the system enables them.
+ *  Header-inline so unit tests link without the engine. */
+inline bool strategyUsesTcpTimestamps(const std::vector<std::string>& strategies)
+{
+	for (const auto& line : strategies)
+	{
+		if (line.find("tcp_ts") != std::string::npos)
+			return true;
+
+		const auto pos = line.find("fooling=");
+		if (pos == std::string::npos)
+			continue;
+
+		const auto value_begin = pos + 8;
+		auto	   value_end   = line.find_first_of(" \t", value_begin);
+		if (value_end == std::string::npos)
+			value_end = line.size();
+
+		const std::string_view value{ line.data() + value_begin, value_end - value_begin };
+		size_t				   start = 0;
+		while (start <= value.size())
+		{
+			const auto comma = value.find(',', start);
+			const auto end	 = (comma == std::string_view::npos) ? value.size() : comma;
+			if (value.substr(start, end - start) == "ts")
+				return true;
+			if (comma == std::string_view::npos)
+				break;
+			start = comma + 1;
+		}
+	}
+
+	return false;
 }
 
 /** In-flight helper checks with a short done grace. The helper reports a
@@ -167,6 +205,10 @@ private:
 	std::vector<std::string> _dns_proxy_bootstrap;
 	uint32_t				 _dns_proxy_timeout_ms{ 0 };
 
+	// Guards "we enabled TCP timestamps" across start/stop worker threads.
+	std::mutex _tcp_timestamp_lock;
+	bool	   _tcp_timestamps_owned{ false };
+
 	DomainTesting _domain_testing;
 	DNSHost		  _dns_hosts;
 
@@ -212,7 +254,13 @@ private:
 	void _dnsProxyWriteConfig(const std::vector<std::string>& upstreams, const std::vector<std::string>& bootstrap, uint32_t timeout_ms);
 	/** Spawns unblock_dns.exe without a shell and waits up to timeout_ms.
 	 *  The upstream value is passed via a file, never on the command line. */
-	bool _dnsProxyRunHelper(const std::vector<std::string>& args, uint32_t timeout_ms);
+	bool _runHidden(const std::vector<std::string>& args, uint32_t timeout_ms);
+
+	/** Enables TCP timestamps when the strategy needs ts/tcp_ts and they are
+	 *  off, remembering that we changed the system. */
+	void _tcpTimestampSync(Technology technology);
+	/** Reverts TCP timestamps if this run enabled them. */
+	void _tcpTimestampRestore();
 
 public:
 	Unblock();
