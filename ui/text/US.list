@@ -625,6 +625,7 @@ str_tasks_indicator_title=⚙ Background ({})
 str_tasks_window_title=⚙ Background tasks
 str_task_check_update_title=🔍 Checking for updates
 str_task_dns_hosts_title=📁 Checking and caching GeoHide DNS data
+str_task_conflict_service_title=⚠ Scanning for conflicting services
 str_tour_tasks_title=⚙ Background tasks
 str_tour_tasks_description=Indicator of quiet background tasks in the screen corner. Visible only while something is running. Click to see the list with progress bars.
 

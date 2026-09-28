@@ -243,50 +243,70 @@ void Ui::_footerElements()
 
 void Ui::_checkConflictService()
 {
+	// Guard against re-entry (startup only for now, but the list is static).
+	if (_ui_background_tasks->exists("conflict_service"))
+		return;
+
 	_window_warning_conflict_service->create(Localization::Str{ "str_warning" }, "");
 	_window_warning_conflict_service->setType(SecondaryWindow::Type::YesNo);
 
-	auto description = Localization::Str{ "str_window_warning_conflict_service" }();
+	// Enumerating every service on the machine and reading its config is a
+	// multi-second scan at startup. Run it off the edge/main thread so the
+	// window stays movable, and surface it in the background tasks indicator.
+	_ui_background_tasks->start("conflict_service", "str_task_conflict_service_title");
 
-	auto& conflict_service = _unblock->getConflictingServices();
-	if (!conflict_service.empty())
-	{
-		std::string names_services;
-		for (auto& service : conflict_service)
-			names_services.append(service.getName()).append(",");
-		names_services.pop_back();
+	Core::get().addTask(
+		[self = self]
+		{
+			auto& conflict_service = self->_unblock->getConflictingServices();
+			self->_ui_background_tasks->finish("conflict_service");
 
-		_window_warning_conflict_service->setDescription(utils::format(description, names_services));
+			if (conflict_service.empty())
+				return;
 
-		_window_warning_conflict_service->show();
+			std::string names_services;
+			for (auto& service : conflict_service)
+				names_services.append(service.getName()).append(",");
+			names_services.pop_back();
 
-		_window_warning_conflict_service->addEventYesNo(
-			[ui_self = self, &conflict_service](JSArgs args)
-			{
-				if (JSToCPP<bool>(args[0]))
+			auto description = Localization::Str{ "str_window_warning_conflict_service" }();
+
+			self->_window_warning_conflict_service->setDescription(utils::format(description, names_services));
+			self->_window_warning_conflict_service->show();
+
+			// getConflictingServices() is a function-static list: the pointer
+			// stays valid for the whole process, so the handler can remove the
+			// services later without re-scanning.
+			auto* p_conflict = &conflict_service;
+
+			self->_window_warning_conflict_service->addEventYesNo(
+				[self = self, p_conflict](JSArgs args)
 				{
-					// Removing a service stops it first, which holds the
-					// service lock for seconds — off the edge/main thread so
-					// the window keeps moving while it runs.
-					Core::get().addTask(
-						[&conflict_service]
-						{
-							for (auto& service : conflict_service)
-								service.remove();
+					if (JSToCPP<bool>(args[0]))
+					{
+						// Removing a service stops it first, which holds the
+						// service lock for seconds — off the edge/main thread so
+						// the window keeps moving while it runs.
+						Core::get().addTask(
+							[p_conflict]
+							{
+								for (auto& service : *p_conflict)
+									service.remove();
 
-							conflict_service.clear();
-						}
-					);
+								p_conflict->clear();
+							}
+						);
+					}
+					else
+						p_conflict->clear();
+
+					self->_window_warning_conflict_service->hide();
+
+					return true;
 				}
-				else
-					conflict_service.clear();
-
-				ui_self->_window_warning_conflict_service->hide();
-
-				return true;
-			}
-		);
-	}
+			);
+		}
+	);
 }
 
 void Ui::_checkWhitelist()
