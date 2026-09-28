@@ -2,6 +2,8 @@
 #include "timer.h"
 #include "winsvc.h"
 
+#include <atomic>
+
 class Service final
 {
 public:
@@ -31,7 +33,20 @@ public:
 
 	Service(const std::string_view name) : _name(name), _file_name(std::filesystem::path("")) {}
 	Service(const std::string_view name, std::string_view name_file) : _name(name), _file_name(std::filesystem::path(name_file)) {}
-	Service(Service&&) = default;
+	Service(Service&& other) noexcept :
+		_cached_running(other._cached_running.load(std::memory_order_relaxed)),
+		_name(std::move(other._name)),
+		_description(std::move(other._description)),
+		_args(std::move(other._args)),
+		_file_name(std::move(other._file_name)),
+		_sc_manager(std::move(other._sc_manager)),
+		_sc(std::move(other._sc)),
+		_config(std::move(other._config)),
+		_time_limit(other._time_limit),
+		_dw_start_time(other._dw_start_time),
+		_dw_wait_time(other._dw_wait_time)
+	{
+	}
 	~Service();
 
 	void setName(std::string new_name);
@@ -57,8 +72,14 @@ public:
 private:
 	void _initScManager();
 	void _waitStatusService(DWORD check_state, DWORD check_stat_end, std::function<void()>&& on_timeout = [] {});
+	void _refreshCachedRunning();
 
 	CriticalSection _lock{};
+
+	// Last known running state, refreshed under _lock by update(). isRun()
+	// returns it without blocking when a stop/start holds the lock for
+	// seconds, so the UI tick never stalls the window on a service call.
+	std::atomic<bool> _cached_running{ false };
 
 	std::string				 _name;
 	std::string				 _description;

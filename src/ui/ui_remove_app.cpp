@@ -33,42 +33,50 @@ void Ui::_removeApp()
 
 void Ui::_removeAppRun()
 {
-	_ui_unblock->stopAllServices();
+	// Stopping every service and copying/launching the updater takes seconds.
+	// Run it on a background task so the edge/main thread stays responsive;
+	// the caller already hid the confirmation window.
+	Core::get().addTask(
+		[self = self]
+		{
+			self->_ui_unblock->stopAllServices();
 
-	_unblock->dnsHosts(false);
-	console(false);
+			self->_unblock->dnsHosts(false);
+			self->console(false);
 
-	// Uninstall is delegated to the standalone unblock_update.exe. We launch a
-	// %TEMP% copy of it because it must outlive engine.exe and then remove the
-	// application root it does not reside in itself.
-	const auto		temp_root = Core::get().tempPath() / "unblock";
-	std::error_code ec;
-	std::filesystem::create_directories(temp_root, ec);
+			// Uninstall is delegated to the standalone unblock_update.exe. We
+			// launch a %TEMP% copy of it because it must outlive engine.exe and
+			// then remove the application root it does not reside in itself.
+			const auto		temp_root = Core::get().tempPath() / "unblock";
+			std::error_code ec;
+			std::filesystem::create_directories(temp_root, ec);
 
-	const auto updater = Core::get().binPath() / "unblock_update.exe";
-	const auto self	   = temp_root / "unblock_update.exe";
-	std::filesystem::copy_file(updater, self, std::filesystem::copy_options::overwrite_existing, ec);
-	if (ec)
-	{
-		Debug::error("Failed to prepare unblock_update: {}", ec.message());
-		OnClose(nullptr);
-		return;
-	}
+			const auto updater	= Core::get().binPath() / "unblock_update.exe";
+			const auto temp_exe = temp_root / "unblock_update.exe";
+			std::filesystem::copy_file(updater, temp_exe, std::filesystem::copy_options::overwrite_existing, ec);
+			if (ec)
+			{
+				Debug::error("Failed to prepare unblock_update: {}", ec.message());
+				self->OnClose(nullptr);
+				return;
+			}
 
-	std::wstring cmd_line =
-		L"\"" + self.wstring() + L"\" \"" + Core::get().currentPath().wstring() + L"\" " + std::to_wstring(GetCurrentProcessId()) + L" remove";
+			std::wstring cmd_line = L"\"" + temp_exe.wstring() + L"\" \"" + Core::get().currentPath().wstring() + L"\" "
+								  + std::to_wstring(GetCurrentProcessId()) + L" remove";
 
-	STARTUPINFOW		startup{};
-	PROCESS_INFORMATION process{};
-	startup.cb = sizeof(startup);
+			STARTUPINFOW		startup{};
+			PROCESS_INFORMATION process{};
+			startup.cb = sizeof(startup);
 
-	if (!CreateProcessW(nullptr, cmd_line.data(), nullptr, nullptr, FALSE, 0, nullptr, temp_root.c_str(), &startup, &process))
-		Debug::error("Failed to start unblock_update: {}", static_cast<u32>(GetLastError()));
-	else
-	{
-		CloseHandle(process.hThread);
-		CloseHandle(process.hProcess);
-	}
+			if (!CreateProcessW(nullptr, cmd_line.data(), nullptr, nullptr, FALSE, 0, nullptr, temp_root.c_str(), &startup, &process))
+				Debug::error("Failed to start unblock_update: {}", static_cast<u32>(GetLastError()));
+			else
+			{
+				CloseHandle(process.hThread);
+				CloseHandle(process.hProcess);
+			}
 
-	OnClose(nullptr);
+			self->OnClose(nullptr);
+		}
+	);
 }

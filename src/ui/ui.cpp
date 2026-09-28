@@ -264,10 +264,22 @@ void Ui::_checkConflictService()
 			[ui_self = self, &conflict_service](JSArgs args)
 			{
 				if (JSToCPP<bool>(args[0]))
-					for (auto& service : conflict_service)
-						service.remove();
+				{
+					// Removing a service stops it first, which holds the
+					// service lock for seconds — off the edge/main thread so
+					// the window keeps moving while it runs.
+					Core::get().addTask(
+						[&conflict_service]
+						{
+							for (auto& service : conflict_service)
+								service.remove();
 
-				conflict_service.clear();
+							conflict_service.clear();
+						}
+					);
+				}
+				else
+					conflict_service.clear();
 
 				ui_self->_window_warning_conflict_service->hide();
 

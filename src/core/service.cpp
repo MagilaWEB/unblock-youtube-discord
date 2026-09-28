@@ -50,9 +50,25 @@ const Service::Config& Service::getConfig()
 
 bool Service::isRun()
 {
-	CRITICAL_SECTION_RAII(_lock);
-	update();
-	return _config.sc_status.dwCurrentState == SERVICE_START_PENDING || _config.sc_status.dwCurrentState == SERVICE_RUNNING;
+	// Never block: a stop/start holds _lock for seconds (up to _dw_timeout_ms
+	// per wait) while the UI tick polls this every frame. Refresh and cache
+	// only when the lock is free, otherwise answer from the last snapshot.
+	if (_lock.TryEnter())
+	{
+		update();
+		const bool running = _config.sc_status.dwCurrentState == SERVICE_START_PENDING || _config.sc_status.dwCurrentState == SERVICE_RUNNING;
+		_cached_running.store(running, std::memory_order_relaxed);
+		_lock.Leave();
+		return running;
+	}
+
+	return _cached_running.load(std::memory_order_relaxed);
+}
+
+void Service::_refreshCachedRunning()
+{
+	const DWORD state = _config.sc_status.dwCurrentState;
+	_cached_running.store(state == SERVICE_START_PENDING || state == SERVICE_RUNNING, std::memory_order_relaxed);
 }
 
 // -----------------------------------------------------------------------------
@@ -260,7 +276,11 @@ void Service::start()
 void Service::update()
 {
 	if (!_sc)
+	{
+		_config.sc_status = {};
+		_refreshCachedRunning();
 		return;
+	}
 
 	DWORD				   needed = 0;
 	SERVICE_STATUS_PROCESS temp{};
@@ -268,9 +288,11 @@ void Service::update()
 	{
 		_sc.reset();
 		_config.sc_status = {};
+		_refreshCachedRunning();
 		return;
 	}
 	_config.sc_status = temp;
+	_refreshCachedRunning();
 
 	needed = 0;
 	std::unique_ptr<QUERY_SERVICE_CONFIGA, decltype(&free)> configBuf{ nullptr, &free };
@@ -359,6 +381,7 @@ void Service::close()
 	_sc.reset();
 	_sc_manager.reset();
 	_config = {};
+	_refreshCachedRunning();
 }
 
 // -----------------------------------------------------------------------------
