@@ -60,43 +60,43 @@ std::span<const UiZapretHelper::HelperSettingDef> UiZapretHelper::helperSettingD
 	// (check_timeout_sec / connect_timeout_sec), sub-second input
 	// would be false precision.
 	static const HelperSettingDef defs[]{
-		{			"pool_size",Input::Types::count,20, 1,64,	   "","str_helper_pool_title",				"str_helper_pool_description",&UiZapretHelper::_helper_pool						 },
-		{	  "check_timeout_sec",
-		  Input::Types::duration_sec,
-		  6, 1,
-		  60, "sec",
-		  "str_helper_check_timeout_title",		  "str_helper_check_timeout_description",
-		  &UiZapretHelper::_helper_check_timeout		 },
+		{			 "pool_size",Input::Types::count,20, 1,64,	  "","str_helper_pool_title",				   "str_helper_pool_description",&UiZapretHelper::_helper_pool						 },
+		{	 "check_timeout_sec",
+		 Input::Types::duration_sec,
+		 6, 1,
+		 60, "sec",
+		 "str_helper_check_timeout_title",	   "str_helper_check_timeout_description",
+		 &UiZapretHelper::_helper_check_timeout		 },
 		{  "connect_timeout_sec",
-		  Input::Types::duration_sec,
-		  5, 1,
-		  30, "sec",
-		  "str_helper_connect_timeout_title",	  "str_helper_connect_timeout_description",
-		  &UiZapretHelper::_helper_connect_timeout	   },
-		{		  "max_redirects",
-		  Input::Types::count,
-		  5, 0,
-		  10,	  "",
-		  "str_helper_max_redirects_title",		  "str_helper_max_redirects_description",
-		  &UiZapretHelper::_helper_max_redirects		 },
+		 Input::Types::duration_sec,
+		 5, 1,
+		 30, "sec",
+		 "str_helper_connect_timeout_title",	 "str_helper_connect_timeout_description",
+		 &UiZapretHelper::_helper_connect_timeout	 },
+		{		 "max_redirects",
+		 Input::Types::count,
+		 5, 0,
+		 10,	"",
+		 "str_helper_max_redirects_title",	   "str_helper_max_redirects_description",
+		 &UiZapretHelper::_helper_max_redirects		 },
 		{ "recheck_interval_min",
-		  Input::Types::duration_min,
-		  30, 5,
-		  180, "min",
-		  "str_helper_recheck_min_title",		  "str_helper_recheck_min_description",
-		  &UiZapretHelper::_helper_recheck_min		   },
+		 Input::Types::duration_min,
+		 30, 5,
+		 180, "min",
+		 "str_helper_recheck_min_title",		 "str_helper_recheck_min_description",
+		 &UiZapretHelper::_helper_recheck_min		 },
 		{  "errors_progress_min",
-		  Input::Types::duration_min,
-		  3, 1,
-		  30, "min",
-		  "str_helper_errors_progress_min_title", "str_helper_errors_progress_min_description",
-		  &UiZapretHelper::_helper_errors_progress_min },
-		{	  "errors_recheck_sec",
-		  Input::Types::duration_sec,
-		  30, 5,
-		  300, "sec",
-		  "str_helper_errors_recheck_sec_title",  "str_helper_errors_recheck_sec_description",
-		  &UiZapretHelper::_helper_errors_recheck_sec },
+		 Input::Types::duration_min,
+		 3, 1,
+		 30, "min",
+		 "str_helper_errors_progress_min_title", "str_helper_errors_progress_min_description",
+		 &UiZapretHelper::_helper_errors_progress_min },
+		{	"errors_recheck_sec",
+		 Input::Types::duration_sec,
+		 30, 5,
+		 300, "sec",
+		 "str_helper_errors_recheck_sec_title",  "str_helper_errors_recheck_sec_description",
+		 &UiZapretHelper::_helper_errors_recheck_sec },
 	};
 
 	return defs;
@@ -132,29 +132,42 @@ void UiZapretHelper::updateChecking()
 	if (!_list_helper_checking->isCreate())
 		return;
 
-	auto hosts = _ui->_unblock->helperCheckingHosts();
-	std::ranges::sort(hosts);
+	// Unique among the helper lists: this one is fed by instant CHECKING/
+	// DONE edges, while seen/valid/error/exhausted ride the 500ms snapshots.
+	// Ui::update() ticks at ~33Hz and the in-check set rotates as workers
+	// start/finish, so rebuilding the scrollable <ul> every tick made the
+	// list strobe (and reset its scroll). Match the snapshot cadence: the
+	// list still reads edges, but only repaints twice a second.
+	LIMIT_UPDATE(HelperChecking, .5f, {
+		auto hosts = _ui->_unblock->helperCheckingHosts();
+		std::ranges::sort(hosts);
 
-	// Pool load snapshot from the helper (authoritative counts): per-host
-	// edges below stay truthful now that verdict snapshots no longer spam
-	// O(N) datagrams per lua packet and drown them on loopback.
-	const auto stats	= _ui->_unblock->helperStats();
-	const bool snapshot = stats.in_check != 0 || stats.queued != 0 || stats.known != 0 || hosts.empty();
-	const auto title	= utils::format(
-		Localization::Str{ "str_zapret_helper_checking_title" }(),
-		snapshot ? stats.in_check : hosts.size(),
-		snapshot ? stats.queued : 0
-	);
+		// Pool load snapshot from the helper (authoritative counts): per-host
+		// edges below stay truthful now that verdict snapshots no longer spam
+		// O(N) datagrams per lua packet and drown them on loopback.
+		const auto stats	= _ui->_unblock->helperStats();
+		const bool snapshot = stats.in_check != 0 || stats.queued != 0 || stats.known != 0 || hosts.empty();
+		const auto title	= utils::format(
+			Localization::Str{ "str_zapret_helper_checking_title" }(),
+			snapshot ? stats.in_check : hosts.size(),
+			snapshot ? stats.queued : 0
+		);
 
-	if (hosts == _last_helper_checking)
-		return;
+		if (title != _last_helper_checking_title)
+		{
+			_last_helper_checking_title = title;
+			_list_helper_checking->setTitle(title);
+		}
 
-	_last_helper_checking = hosts;
+		if (hosts == _last_helper_checking)
+			return;
 
-	_list_helper_checking->setTitle(title);
-	_list_helper_checking->clear();
-	for (auto& host : _last_helper_checking)
-		_list_helper_checking->createLi(Localization::Str{ host });
+		_last_helper_checking = hosts;
+
+		_list_helper_checking->clear();
+		for (auto& host : _last_helper_checking)
+			_list_helper_checking->createLi(Localization::Str{ host });
+	})
 }
 
 void UiZapretHelper::_initHelperSeen()

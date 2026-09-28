@@ -12,6 +12,7 @@ class UiZapretHelper
 	// Hosts currently being checked by zapret-helper
 	UL_LIST(_list_helper_checking);
 	std::vector<std::string> _last_helper_checking;
+	std::string				 _last_helper_checking_title;
 
 	// Hosts that have been checked by zapret-helper at least once
 	UL_LIST(_list_helper_seen);

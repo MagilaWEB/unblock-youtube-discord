@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <chrono>
 #include <string>
 #include <unordered_set>
 
@@ -98,4 +99,53 @@ TEST_CASE("parseHelperStats garbage rejected", "[auto][stats]")
 	CHECK_FALSE(parseHelperStats("47|20|x").has_value());
 	CHECK_FALSE(parseHelperStats("47||200").has_value());
 	CHECK_FALSE(parseHelperStats("47|20|200|1").has_value());
+}
+
+TEST_CASE("helper checking done grace keeps host visible", "[auto][helper]")
+{
+	using namespace std::chrono;
+
+	HelperCheckingTracker checking;
+	const auto			  start = steady_clock::now();
+
+	checking.checkingEdge("a.test", start);
+	checking.doneEdge("a.test", false, start);
+
+	// The terminal verdict snapshot trails DONE by up to one helper tick: the
+	// host must survive the gap instead of blinking out of the checking list.
+	CHECK(checking.visible(start + milliseconds(500)) == std::vector<std::string>{ "a.test" });
+	CHECK(checking.visible(start + milliseconds(1'500)).empty());
+}
+
+TEST_CASE("helper checking terminal done and verdict clear grace", "[auto][helper]")
+{
+	using namespace std::chrono;
+
+	HelperCheckingTracker checking;
+	const auto			  start = steady_clock::now();
+
+	checking.checkingEdge("done.test", start);
+	checking.doneEdge("done.test", true, start);
+	CHECK(checking.visible(start).empty());
+
+	checking.checkingEdge("verdict.test", start);
+	checking.doneEdge("verdict.test", false, start);
+	checking.verdict("verdict.test");
+	CHECK(checking.visible(start).empty());
+}
+
+TEST_CASE("helper checking recheck cancels done grace", "[auto][helper]")
+{
+	using namespace std::chrono;
+
+	HelperCheckingTracker checking;
+	const auto			  start = steady_clock::now();
+
+	checking.checkingEdge("recheck.test", start);
+	checking.doneEdge("recheck.test", false, start);
+	checking.checkingEdge("recheck.test", start + milliseconds(200));
+
+	// A fresh checking edge is live activity again: the host must not expire
+	// with the previous DONE grace.
+	CHECK(checking.visible(start + milliseconds(1'200)) == std::vector<std::string>{ "recheck.test" });
 }

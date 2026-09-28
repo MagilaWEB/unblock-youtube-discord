@@ -404,26 +404,32 @@ bool Unblock::_dropExpiredHelperStates()
 
 std::vector<std::string> Unblock::helperCheckingHosts()
 {
-	auto& ipc = IPCSignals::get();
+	auto&	   ipc = IPCSignals::get();
+	const auto now = std::chrono::steady_clock::now();
 
-	// CHECKING/DONE stay edges: the in-check set is an instand sample that a
-	// 500ms snapshot would miss for millisecond checks.
+	// CHECKING/DONE stay edges: the in-check set is an instant sample that a
+	// 500ms snapshot would miss for millisecond checks. DONE moves a host to
+	// a short grace instead of hiding it: the terminal verdict snapshot
+	// arrives later, and removing the host immediately blinks the list.
 	while (auto host = ipc.getString("helper_checking"))
 	{
 		std::string name = std::move(*host);
 		_helper_errors.erase(name);
 		_helper_valid.erase(name);
 		_helper_exhausted.erase(name);
-		_helper_checking.insert(std::move(name));
+		_helper_checking.checkingEdge(std::move(name), now);
 	}
 
 	while (auto host = ipc.getString("helper_done"))
-		_helper_checking.erase(*host);
+	{
+		const bool terminal = _helper_errors.contains(*host) || _helper_valid.contains(*host) || _helper_exhausted.contains(*host);
+		_helper_checking.doneEdge(*host, terminal, now);
+	}
 
 	if (_dropExpiredHelperStates())
 		return {};
 
-	return { _helper_checking.begin(), _helper_checking.end() };
+	return _helper_checking.visible(now);
 }
 
 std::vector<std::string> Unblock::helperSeenHosts()
@@ -448,7 +454,7 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperErrorHosts()
 		parseHostStrategySnapshot(*payload, _helper_errors);
 		for (const auto& [host, _] : _helper_errors)
 		{
-			_helper_checking.erase(host);
+			_helper_checking.verdict(host);
 			_helper_valid.erase(host);
 			_helper_exhausted.erase(host);
 		}
@@ -472,7 +478,7 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperValidHosts()
 		parseHostStrategySnapshot(*payload, _helper_valid);
 		for (const auto& [host, _] : _helper_valid)
 		{
-			_helper_checking.erase(host);
+			_helper_checking.verdict(host);
 			_helper_errors.erase(host);
 			_helper_exhausted.erase(host);
 		}
@@ -496,7 +502,7 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperExhaustedHosts()
 		parseHostStrategySnapshot(*payload, _helper_exhausted);
 		for (const auto& [host, _] : _helper_exhausted)
 		{
-			_helper_checking.erase(host);
+			_helper_checking.verdict(host);
 			_helper_errors.erase(host);
 			_helper_valid.erase(host);
 		}
