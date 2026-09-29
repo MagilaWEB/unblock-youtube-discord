@@ -1,6 +1,7 @@
 #pragma once
 #include "zapret_engine.h"
 #include "app_update.h"
+#include "tg_proxy.h"
 
 #include <cctype>
 #include <charconv>
@@ -201,7 +202,6 @@ private:
 	std::unique_ptr<Zapret2Engine> _zapret2_engine;
 
 	Service _zapret_helper{ "zapret2_helper", "SvcHost.exe" };
-	Service _tg_ws_proxy{ "TgWsProxy", "SvcHost.exe" };
 	Service _dns_proxy{ "unblock_dns", "SvcHost.exe" };
 	Service _win_divert{ "WinDivert" };
 
@@ -221,10 +221,7 @@ private:
 
 	std::list<std::string> _section_opt_service_names{};
 
-	std::string				   _tg_host{ "127.0.0.1" };
-	std::string				   _tg_port{ "9101" };
-	std::array<std::string, 4> _tg_dc_ip{ "149.154.175.50", "91.105.192.100", "149.154.175.100", "149.154.167.91" };
-	std::string				   _tg_cfproxy_domain{ "unblock.kermanua1488.workers.dev" };
+	TgProxy _tg_proxy;
 
 	// Fresh [HELPER] message (UDP CONFIG:...) from the UI. The on-disk
 	// setting.config is stale while unblock runs (File::save on close),
@@ -374,10 +371,10 @@ public:
 	void localProxyTgLinkRun();
 
 	void setTgProxyParams(std::string_view host, std::string_view port, std::array<std::string, 4> dc_ip, std::string_view cfproxy_worker_domain);
-	const std::string&				  tgProxyHost() const { return _tg_host; }
-	const std::string&				  tgProxyPort() const { return _tg_port; }
-	const std::array<std::string, 4>& tgProxyDcIp() const { return _tg_dc_ip; }
-	const std::string&				  tgProxyCfproxyDomain() const { return _tg_cfproxy_domain; }
+	const std::string&				  tgProxyHost() const { return _tg_proxy.host(); }
+	const std::string&				  tgProxyPort() const { return _tg_proxy.port(); }
+	const std::array<std::string, 4>& tgProxyDcIp() const { return _tg_proxy.dcIp(); }
+	const std::string&				  tgProxyCfproxyDomain() const { return _tg_proxy.cfproxyDomain(); }
 
 	void testingDomain(std::function<void(std::string_view, bool)>&& callback = [](std::string_view, bool) {}, bool base_test = true);
 	void testingDomainCancel();

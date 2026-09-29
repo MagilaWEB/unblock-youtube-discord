@@ -22,7 +22,6 @@ Unblock::Unblock()
 	(void)IPCSignals::get();
 	_zapret_helper.open();
 	_win_divert.open();
-	_tg_ws_proxy.open();
 	_dns_proxy.open();
 	dnsProxyRepairBoot();
 }
@@ -833,61 +832,24 @@ void Unblock::dnsProxyRepairBoot()
 		Debug::warning("DNS proxy adapter restore failed, adapters may still point at the local proxy.");
 }
 
-constexpr static std::string_view proxy_secret{ "dd92bc05d4dc4f4bef9cb4b7bf5628c5" };
-
 void Unblock::localProxyTg(bool run)
 {
-	if (run)
-	{
-		_tg_ws_proxy.remove();
-		_tg_ws_proxy.setDescription("Local proxy telegram.");
-		_tg_ws_proxy.setArgs(
-			{ (Core::get().binariesPath() / "tg-ws-proxy.exe").string(),
-			  std::string{ "--secret " } + proxy_secret.data(),
-			  "--dc-ip 1:" + _tg_dc_ip[0] + " --dc-ip 2:" + _tg_dc_ip[1] + " --dc-ip 3:" + _tg_dc_ip[2] + " --dc-ip 4:" + _tg_dc_ip[3],
-			  //		  "--cfproxy-worker-domain " + _tg_cfproxy_domain,
-			  "--host " + _tg_host,
-			  "--port " + _tg_port }
-		);
-		_tg_ws_proxy.create();
-		_tg_ws_proxy.start();
-		return;
-	}
-
-	_tg_ws_proxy.remove();
+	_tg_proxy.run(run);
 }
 
 void Unblock::setTgProxyParams(std::string_view host, std::string_view port, std::array<std::string, 4> dc_ip, std::string_view cfproxy_worker_domain)
 {
-	_tg_host		   = host;
-	_tg_port		   = port;
-	_tg_dc_ip		   = std::move(dc_ip);
-	_tg_cfproxy_domain = cfproxy_worker_domain;
+	_tg_proxy.setParams(host, port, std::move(dc_ip), cfproxy_worker_domain);
 }
 
 bool Unblock::localProxyTgIsRun()
 {
-	return _tg_ws_proxy.isRun();
+	return _tg_proxy.isRun();
 }
 
 void Unblock::localProxyTgLinkRun()
 {
-	Core::get().addTask(
-		[this]
-		{
-			std::string tg{ "tg://proxy?server=" };
-			tg.append(_tg_host);
-			tg.append("&port=");
-			tg.append(_tg_port);
-			tg.append("&secret=");
-			tg.append(proxy_secret);
-
-			// ShellExecuteA forwards '&' in the URL verbatim, whereas
-			// system("start ...") routes the link through cmd.exe, which
-			// interprets '&' as a command separator and truncates the URL.
-			ShellExecuteA(nullptr, "open", tg.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-		}
-	);
+	_tg_proxy.linkRun();
 }
 
 void Unblock::removeService()
