@@ -5,10 +5,10 @@
 
 // windows.h min/max macros break std::min/std::max/std::clamp.
 #ifdef min
-#	undef min
+	#undef min
 #endif
 #ifdef max
-#	undef max
+	#undef max
 #endif
 
 // Pure window-geometry helpers (no HWND, no saucer).
@@ -20,19 +20,19 @@
 namespace window_geometry
 {
 
-	constexpr int kBaseWidth	= 520;
-	constexpr int kBaseHeight	= 510;
-	constexpr int kMinWidth		= 480;
-	constexpr int kMinHeight	= 470;
-	constexpr int kMaxDefaultWidth	= 690;
-	constexpr int kMaxDefaultHeight = 819;
+	constexpr int c_base_width		   = 520;
+	constexpr int c_base_height		   = 510;
+	constexpr int c_min_width		   = 480;
+	constexpr int c_min_height		   = 470;
+	constexpr int c_max_default_width  = 690;
+	constexpr int c_max_default_height = 819;
 
-	constexpr double kDefaultWidthFrac	= 0.345;
-	constexpr double kDefaultHeightFrac = 0.593;
-	constexpr double kMaxFitFrac		= 0.92;
+	constexpr double c_default_width_frac  = 0.345;
+	constexpr double c_default_height_frac = 0.593;
+	constexpr double c_max_fit_frac		   = 0.92;
 
 	// Visible margin: a restored window must intersect some monitor by this.
-	constexpr int kVisibleMargin = 100;
+	constexpr int c_visible_margin = 100;
 
 	struct Area
 	{
@@ -47,8 +47,8 @@ namespace window_geometry
 	{
 		int x{ 0 };
 		int y{ 0 };
-		int w{ kBaseWidth };
-		int h{ kBaseHeight };
+		int w{ c_base_width };
+		int h{ c_base_height };
 	};
 
 	inline int toLogical(int physical, unsigned dpi)
@@ -64,19 +64,18 @@ namespace window_geometry
 	// Same area expressed in logical units (dpi is preserved for converting back).
 	inline Area logicalArea(const Area& area)
 	{
-		return { toLogical(area.x, area.dpi), toLogical(area.y, area.dpi), toLogical(area.w, area.dpi),
-			toLogical(area.h, area.dpi), area.dpi };
+		return { toLogical(area.x, area.dpi), toLogical(area.y, area.dpi), toLogical(area.w, area.dpi), toLogical(area.h, area.dpi), area.dpi };
 	}
 
 	inline Geometry defaultGeometry(const Area& work)
 	{
-		int w = std::clamp(static_cast<int>(work.w * kDefaultWidthFrac), kMinWidth, kMaxDefaultWidth);
-		int h = std::clamp(static_cast<int>(work.h * kDefaultHeightFrac), kMinHeight, kMaxDefaultHeight);
+		int w = std::clamp(static_cast<int>(work.w * c_default_width_frac), c_min_width, c_max_default_width);
+		int h = std::clamp(static_cast<int>(work.h * c_default_height_frac), c_min_height, c_max_default_height);
 
-		w = std::min(w, static_cast<int>(work.w * kMaxFitFrac));
-		h = std::min(h, static_cast<int>(work.h * kMaxFitFrac));
-		w = std::max(w, kMinWidth);
-		h = std::max(h, kMinHeight);
+		w = std::min(w, static_cast<int>(work.w * c_max_fit_frac));
+		h = std::min(h, static_cast<int>(work.h * c_max_fit_frac));
+		w = std::max(w, c_min_width);
+		h = std::max(h, c_min_height);
 
 		return { work.x + (work.w - w) / 2, work.y + (work.h - h) / 2, w, h };
 	}
@@ -87,7 +86,7 @@ namespace window_geometry
 		const int top	 = std::max(geo.y, area.y);
 		const int right	 = std::min(geo.x + geo.w, area.x + area.w);
 		const int bottom = std::min(geo.y + geo.h, area.y + area.h);
-		return (right - left) >= kVisibleMargin && (bottom - top) >= kVisibleMargin;
+		return (right - left) >= c_visible_margin && (bottom - top) >= c_visible_margin;
 	}
 
 	inline bool isVisibleAnywhere(const Geometry& geo, const std::vector<Area>& areas)
@@ -104,25 +103,25 @@ namespace window_geometry
 	// monitor — shrinking it on every launch is the bug being fixed.
 	inline Geometry clampPositionToArea(Geometry geo, const Area& work)
 	{
-		geo.w = std::max(geo.w, kMinWidth);
-		geo.h = std::max(geo.h, kMinHeight);
+		geo.w = std::max(geo.w, c_min_width);
+		geo.h = std::max(geo.h, c_min_height);
 
 		// Oversized dimension: pin to the origin edge so the caption stays reachable.
-		if (geo.w >= work.w - kVisibleMargin)
+		if (geo.w >= work.w - c_visible_margin)
 			geo.x = work.x;
 		else
 		{
-			const int min_x = work.x - geo.w + kVisibleMargin;
-			const int max_x = work.x + work.w - kVisibleMargin;
+			const int min_x = work.x - geo.w + c_visible_margin;
+			const int max_x = work.x + work.w - c_visible_margin;
 			geo.x			= (min_x <= max_x) ? std::clamp(geo.x, min_x, max_x) : work.x;
 		}
 
-		if (geo.h >= work.h - kVisibleMargin)
+		if (geo.h >= work.h - c_visible_margin)
 			geo.y = work.y;
 		else
 		{
-			const int min_y = work.y - geo.h + kVisibleMargin;
-			const int max_y = work.y + work.h - kVisibleMargin;
+			const int min_y = work.y - geo.h + c_visible_margin;
+			const int max_y = work.y + work.h - c_visible_margin;
 			geo.y			= (min_y <= max_y) ? std::clamp(geo.y, min_y, max_y) : work.y;
 		}
 

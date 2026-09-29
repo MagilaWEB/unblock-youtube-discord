@@ -33,8 +33,8 @@ class Engine final : public IEngineAPI
 	std::shared_ptr<File> _file_user_setting;
 
 	HWND			_hwnd_console;
-	std::streambuf *_cinBuffer, *_coutBuffer, *_cerrBuffer;
-	std::fstream	_consoleInput, _consoleOutput, _consoleError;
+	std::streambuf *_cin_buffer, *_cout_buffer, *_cerr_buffer;
+	std::fstream	_console_input, _console_output, _console_error;
 	FILE*			_fp_console;
 
 	// UI update ticker: posts update() to the main thread where JS and WebView2 live.
@@ -42,10 +42,10 @@ class Engine final : public IEngineAPI
 	std::atomic<bool> _update_ticker_run{ false };
 
 	// Debounced WINDOW geometry persistence (see markWindowGeometryDirty).
-	std::atomic<bool>							   _geom_dirty{ false };
-	std::chrono::steady_clock::time_point		   _geom_dirty_since{};
-	std::mutex									   _geom_mutex{};
-	static constexpr std::chrono::milliseconds kGeomFlushDelay{ 500 };
+	std::atomic<bool>						   _geom_dirty{ false };
+	std::chrono::steady_clock::time_point	   _geom_dirty_since{};
+	std::mutex								   _geom_mutex{};
+	static constexpr std::chrono::milliseconds c_geom_flush_delay{ 500 };
 
 	// Move/resize hook (WM_EXITSIZEMOVE): saucer has no move event, so the
 	// final position/size after a drag is settled and persisted here.
@@ -57,9 +57,9 @@ class Engine final : public IEngineAPI
 	// restoring onto another monitor. After show() the cache is synced via
 	// WM_DPICHANGED and the same logical values land correctly.
 	window_geometry::Geometry _restored_geo{};
-	unsigned				 _restored_dpi{ 96 };
-	bool					 _have_restored{ false };
-	static LRESULT CALLBACK _windowHookProc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
+	unsigned				  _restored_dpi{ 96 };
+	bool					  _have_restored{ false };
+	static LRESULT CALLBACK	  _windowHookProc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param);
 
 public:
 	Engine();

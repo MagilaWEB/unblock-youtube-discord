@@ -183,7 +183,7 @@ coco::stray Engine::_start(saucer::application* app)
 
 	// Saucer works in logical pixels (96 DPI base) and scales to physical
 	// itself per-monitor, so no manual GetSystemMetrics scaling here.
-	_window->set_min_size({ window_geometry::kMinWidth, window_geometry::kMinHeight });
+	_window->set_min_size({ window_geometry::c_min_width, window_geometry::c_min_height });
 	_window->set_resizable(true);
 	_window->set_background({ .r = 13, .g = 14, .b = 20, .a = 255 });
 	_window->set_title(("Unblock " + std::format("Version: {}", VERSION_STR)).c_str());
@@ -324,7 +324,7 @@ std::shared_ptr<saucer::window> Engine::window()
 
 void Engine::showConsole()
 {
-	if (_consoleInput.is_open())
+	if (_console_input.is_open())
 		return;
 
 	ASSERT(AllocConsole());
@@ -334,13 +334,13 @@ void Engine::showConsole()
 	freopen_s(&_fp_console, "CONOUT$", "w", stdout);
 	freopen_s(&_fp_console, "CONOUT$", "w", stderr);
 
-	_cinBuffer	= std::cin.rdbuf();
-	_coutBuffer = std::cout.rdbuf();
-	_cerrBuffer = std::cerr.rdbuf();
+	_cin_buffer	 = std::cin.rdbuf();
+	_cout_buffer = std::cout.rdbuf();
+	_cerr_buffer = std::cerr.rdbuf();
 
-	_consoleInput.open("CONIN$", std::ios::in);
-	_consoleOutput.open("CONOUT$", std::ios::out);
-	_consoleError.open("CONOUT$", std::ios::out);
+	_console_input.open("CONIN$", std::ios::in);
+	_console_output.open("CONOUT$", std::ios::out);
+	_console_error.open("CONOUT$", std::ios::out);
 
 	std::cin.rdbuf(std::cin.rdbuf());
 	std::cout.rdbuf(std::cout.rdbuf());
@@ -370,17 +370,17 @@ void Engine::hideConsole()
 {
 	if (FreeConsole())
 	{
-		_consoleInput.close();
-		_consoleOutput.close();
-		_consoleError.close();
+		_console_input.close();
+		_console_output.close();
+		_console_error.close();
 
-		std::cin.rdbuf(_cinBuffer);
-		std::cout.rdbuf(_coutBuffer);
-		std::cerr.rdbuf(_cerrBuffer);
+		std::cin.rdbuf(_cin_buffer);
+		std::cout.rdbuf(_cout_buffer);
+		std::cerr.rdbuf(_cerr_buffer);
 
-		_cinBuffer	= nullptr;
-		_coutBuffer = nullptr;
-		_cerrBuffer = nullptr;
+		_cin_buffer	 = nullptr;
+		_cout_buffer = nullptr;
+		_cerr_buffer = nullptr;
 
 		std::ios::sync_with_stdio(false);
 
@@ -468,7 +468,7 @@ void Engine::_restoreWindowGeometry()
 	const auto areas = listWorkAreas();
 	if (areas.empty())
 	{
-		_window->set_size({ window_geometry::kBaseWidth, window_geometry::kBaseHeight });
+		_window->set_size({ window_geometry::c_base_width, window_geometry::c_base_height });
 		return;
 	}
 
@@ -498,8 +498,8 @@ void Engine::_restoreWindowGeometry()
 	// is still valid — keep the size, recenter once.
 	if ((!saved_v || saved_v.value() < 2) && saved_w && saved_h)
 	{
-		geo.w = std::max(static_cast<int>(saved_w.value()), window_geometry::kMinWidth);
-		geo.h = std::max(static_cast<int>(saved_h.value()), window_geometry::kMinHeight);
+		geo.w = std::max(static_cast<int>(saved_w.value()), window_geometry::c_min_width);
+		geo.h = std::max(static_cast<int>(saved_h.value()), window_geometry::c_min_height);
 		geo.x = cursor_area.x + (cursor_area.w - geo.w) / 2;
 		geo.y = cursor_area.y + (cursor_area.h - geo.h) / 2;
 	}
@@ -532,8 +532,8 @@ void Engine::_restoreWindowGeometry()
 	if (use_saved_size && saved_dpi && saved_dpi.value() != 0 && target->dpi != 0 && saved_dpi.value() != target->dpi)
 	{
 		const double ratio = static_cast<double>(saved_dpi.value()) / target->dpi;
-		geo.w			   = std::max(static_cast<int>(std::lround(geo.w * ratio)), window_geometry::kMinWidth);
-		geo.h			   = std::max(static_cast<int>(std::lround(geo.h * ratio)), window_geometry::kMinHeight);
+		geo.w			   = std::max(static_cast<int>(std::lround(geo.w * ratio)), window_geometry::c_min_width);
+		geo.h			   = std::max(static_cast<int>(std::lround(geo.h * ratio)), window_geometry::c_min_height);
 	}
 
 	geo = window_geometry::clampPositionToArea(geo, *target);
@@ -570,7 +570,7 @@ void Engine::_maybeFlushWindowGeometry()
 {
 	{
 		std::lock_guard lock{ _geom_mutex };
-		if (!_geom_dirty || std::chrono::steady_clock::now() - _geom_dirty_since < kGeomFlushDelay)
+		if (!_geom_dirty || std::chrono::steady_clock::now() - _geom_dirty_since < c_geom_flush_delay)
 			return;
 		_geom_dirty = false;
 	}
@@ -588,7 +588,7 @@ void Engine::_flushWindowGeometry()
 			return;
 
 		const auto size = _window->size();
-		if (size.w < window_geometry::kMinWidth || size.h < window_geometry::kMinHeight)
+		if (size.w < window_geometry::c_min_width || size.h < window_geometry::c_min_height)
 			return;
 
 		// position() is physical; persist logical so restore math is DPI-clean.
