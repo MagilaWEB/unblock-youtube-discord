@@ -128,9 +128,9 @@ namespace
 	// the update forever — but every gate is logged.
 	void waitForEngineExit(DWORD pid, const fs::path& app_root, const fs::path& log_path)
 	{
-		constexpr DWORD kProcessMs = 120'000;
-		constexpr DWORD kProbeMs   = 30'000;
-		constexpr DWORD kFileMs	   = 60'000;
+		constexpr DWORD c_process_ms = 120'000;
+		constexpr DWORD c_probe_ms	 = 30'000;
+		constexpr DWORD c_file_ms	 = 60'000;
 
 		const ULONGLONG start	= GetTickCount64();
 		HANDLE			process = OpenProcess(SYNCHRONIZE, FALSE, pid);
@@ -142,13 +142,13 @@ namespace
 		{
 			while (true)
 			{
-				const DWORD wait_left = static_cast<DWORD>(GetTickCount64() - start < kProcessMs ? kProcessMs - (GetTickCount64() - start) : 0);
+				const DWORD wait_left = static_cast<DWORD>(GetTickCount64() - start < c_process_ms ? c_process_ms - (GetTickCount64() - start) : 0);
 				if (WaitForSingleObject(process, wait_left > 5'000 ? 5'000 : wait_left) == WAIT_OBJECT_0)
 				{
 					log(log_path, L"[wait] engine PID exited after " + std::to_wstring(GetTickCount64() - start) + L"ms");
 					break;
 				}
-				if (GetTickCount64() - start >= kProcessMs)
+				if (GetTickCount64() - start >= c_process_ms)
 				{
 					log(log_path, L"[wait] TIMEOUT waiting for engine PID, verifying anyway");
 					break;
@@ -160,7 +160,7 @@ namespace
 
 		while (!noOurEngineRunning(app_root, log_path))
 		{
-			if (GetTickCount64() - start >= kProcessMs + kProbeMs)
+			if (GetTickCount64() - start >= c_process_ms + c_probe_ms)
 			{
 				log(log_path, L"[wait] TIMEOUT waiting for engine.exe to disappear");
 				break;
@@ -188,7 +188,7 @@ namespace
 				log(log_path, L"[wait] engine.exe probe error=" + std::to_wstring(err) + L", proceeding");
 				return;
 			}
-			if (GetTickCount64() - start >= kProcessMs + kProbeMs + kFileMs)
+			if (GetTickCount64() - start >= c_process_ms + c_probe_ms + c_file_ms)
 			{
 				log(log_path, L"[wait] TIMEOUT waiting for engine.exe unlock, proceeding anyway");
 				return;
