@@ -31,16 +31,16 @@
 
 namespace
 {
-	std::atomic_bool g_stop{ false };
+	std::atomic_bool s_stop{ false };
 	// Set once at startup: add an IPv6 listener and switch adapter IPv6 DNS
 	// only when the IPv6 loopback is usable (IPv4-only hosts skip it).
-	bool			 g_ipv6{ false };
+	bool			 s_ipv6{ false };
 
 	BOOL WINAPI ctrlHandler(DWORD type)
 	{
 		if (type == CTRL_C_EVENT || type == CTRL_BREAK_EVENT || type == CTRL_CLOSE_EVENT || type == CTRL_SHUTDOWN_EVENT)
 		{
-			g_stop.store(true);
+			s_stop.store(true);
 			return TRUE;
 		}
 		return FALSE;
@@ -75,11 +75,11 @@ namespace
 		}
 	};
 
-	Logger g_log;
+	Logger s_log;
 
 	void logLine(const std::string& line)
 	{
-		g_log.write(line);
+		s_log.write(line);
 	}
 
 	void agLogCallback(void* /*attachment*/, ag_log_level level, const char* message, uint32_t length)
@@ -122,33 +122,33 @@ namespace
 		std::atomic_int32_t	 last_upstream{ -1 };
 	};
 
-	Stats g_stats;
+	Stats s_stats;
 
 	void requestProcessedCallback(const ag_dns_request_processed_event* event)
 	{
 		if (!event)
 			return;
 
-		g_stats.queries.fetch_add(1);
+		s_stats.queries.fetch_add(1);
 		if (event->cache_hit)
-			g_stats.cache_hits.fetch_add(1);
+			s_stats.cache_hits.fetch_add(1);
 		if (event->error)
 		{
-			g_stats.errors.fetch_add(1);
+			s_stats.errors.fetch_add(1);
 			// Throttled: a browser sprays HTTPS(65)/AAAA queries and each
 			// rejected one would otherwise flood the log. One line per second
 			// is enough to see what is failing.
-			static std::atomic_int64_t last_error_log_ms{ 0 };
+			static std::atomic_int64_t s_last_error_log_ms{ 0 };
 			const auto now_ms	= std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-			int64_t	   previous = last_error_log_ms.load();
-			if (now_ms - previous >= 1'000 && last_error_log_ms.compare_exchange_strong(previous, now_ms))
+			int64_t	   previous = s_last_error_log_ms.load();
+			if (now_ms - previous >= 1'000 && s_last_error_log_ms.compare_exchange_strong(previous, now_ms))
 				logLine(
 					std::string{ "query error [" } + (event->domain ? event->domain : "?") + " " + (event->type ? event->type : "?")
 					+ "]: " + event->error
 				);
 		}
 		if (event->upstream_id)
-			g_stats.last_upstream.store(*event->upstream_id);
+			s_stats.last_upstream.store(*event->upstream_id);
 	}
 
 	std::string readFile(const std::filesystem::path& path, std::string& error)
@@ -360,23 +360,23 @@ namespace
 	{
 		// DnsFlushResolverCache has no header declaration in current SDKs
 		// (the dnsapi.dll export itself is alive), so bind it at runtime.
-		using FlushFn		 = BOOL(WINAPI*)();
-		static FlushFn flush = nullptr;
-		static bool	   tried = false;
+		using FlushFn		   = BOOL(WINAPI*)();
+		static FlushFn s_flush = nullptr;
+		static bool	   s_tried = false;
 
-		if (!tried)
+		if (!s_tried)
 		{
-			tried = true;
+			s_tried = true;
 			if (HMODULE dnsapi = LoadLibraryW(L"dnsapi.dll"))
 			{
 				FARPROC proc = GetProcAddress(dnsapi, "DnsFlushResolverCache");
 				if (proc)
-					std::memcpy(&flush, &proc, sizeof(proc));
+					std::memcpy(&s_flush, &proc, sizeof(proc));
 			}
 		}
 
-		if (flush)
-			flush();
+		if (s_flush)
+			s_flush();
 	}
 
 	// Switches all up adapters to the proxy. A stale backup (previous run
@@ -391,7 +391,7 @@ namespace
 
 		logLine(
 			"Switching " + std::to_string(adapters.size()) + " adapter(s) to " + config.listen
-			+ (g_ipv6 ? " and " + std::string{ c_listen_ipv6 } : std::string{}) + note
+			+ (s_ipv6 ? " and " + std::string{ c_listen_ipv6 } : std::string{}) + note
 		);
 
 		for (auto& a : adapters)
@@ -420,7 +420,7 @@ namespace
 
 			// IPv6 too: Windows prefers router-advertised IPv6 DNS over our
 			// IPv4 127.0.0.1 and would sweep every query past the proxy.
-			if (g_ipv6)
+			if (s_ipv6)
 			{
 				std::string current6 = currentAdapterDns(ag, a.guid, true);
 
@@ -509,7 +509,7 @@ namespace
 				restored = true;
 
 			// IPv6 was switched alongside IPv4 (empty = back to automatic).
-			if (g_ipv6)
+			if (s_ipv6)
 				setAdapterDns(ag, a.guid, a.nameserver6, true);
 		}
 
@@ -635,7 +635,7 @@ namespace
 		backing.listeners.push_back(ag_listener_settings{ backing.listen_string.c_str(), config.port, AGLP_TCP, true, 30'000, {} });
 		// IPv6 loopback too, so router-advertised IPv6 DNS (which Windows
 		// prefers) is answered by us instead of bypassing the proxy.
-		if (g_ipv6)
+		if (s_ipv6)
 		{
 			backing.listen_string6 = c_listen_ipv6;
 			backing.listeners.push_back(ag_listener_settings{ backing.listen_string6.c_str(), config.port, AGLP_UDP, false, 0, {} });
@@ -669,24 +669,24 @@ namespace
 	// few seconds never grows a queue (unlike the STRING event FIFO).
 	void sendIpc(std::string_view message)
 	{
-		static SOCKET sock = INVALID_SOCKET;
-		if (sock == INVALID_SOCKET)
-			sock = socket(AF_INET, SOCK_DGRAM, 0);
-		if (sock == INVALID_SOCKET)
+		static SOCKET s_sock = INVALID_SOCKET;
+		if (s_sock == INVALID_SOCKET)
+			s_sock = socket(AF_INET, SOCK_DGRAM, 0);
+		if (s_sock == INVALID_SOCKET)
 			return;
 
 		sockaddr_in to{};
 		to.sin_family	   = AF_INET;
 		to.sin_port		   = htons(9'999);
 		to.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-		sendto(sock, message.data(), static_cast<int>(message.size()), 0, reinterpret_cast<sockaddr*>(&to), sizeof(to));
+		sendto(s_sock, message.data(), static_cast<int>(message.size()), 0, reinterpret_cast<sockaddr*>(&to), sizeof(to));
 	}
 
 	void pushStatus()
 	{
-		sendIpc("LATEST:dns.queries:" + std::to_string(g_stats.queries.load()));
-		sendIpc("LATEST:dns.cache_hits:" + std::to_string(g_stats.cache_hits.load()));
-		sendIpc("LATEST:dns.errors:" + std::to_string(g_stats.errors.load()));
+		sendIpc("LATEST:dns.queries:" + std::to_string(s_stats.queries.load()));
+		sendIpc("LATEST:dns.cache_hits:" + std::to_string(s_stats.cache_hits.load()));
+		sendIpc("LATEST:dns.errors:" + std::to_string(s_stats.errors.load()));
 	}
 
 	// AdGuard DnsLibs does not carry platform roots: on Windows the host must
@@ -794,7 +794,7 @@ int main(int argc, char** argv)
 {
 	WSADATA wsa{};
 	WSAStartup(MAKEWORD(2, 2), &wsa);
-	g_ipv6 = ipv6LoopbackAvailable();
+	s_ipv6 = ipv6LoopbackAvailable();
 
 	std::string config_path;
 	std::string test_upstream;
@@ -873,7 +873,7 @@ int main(int argc, char** argv)
 			std::cerr << "--repair needs --backup\n";
 			return 2;
 		}
-		g_log.open(exeDir() / "unblock_dns_repair.log");
+		s_log.open(exeDir() / "unblock_dns_repair.log");
 		return repairAdapters(ag, backup_path);
 	}
 
@@ -927,7 +927,7 @@ int main(int argc, char** argv)
 	if (config.backup_path.empty())
 		config.backup_path = (cfg_dir / "unblock_dns.adapters").string();
 
-	g_log.open(config.log_path);
+	s_log.open(config.log_path);
 	logLine("Starting with " + std::to_string(config.upstreams.size()) + " upstream(s)");
 
 	ProxySettingsBacking  backing;
@@ -963,7 +963,7 @@ int main(int argc, char** argv)
 	pushStatus();
 
 	auto last_tick = std::chrono::steady_clock::now();
-	while (!g_stop.load())
+	while (!s_stop.load())
 	{
 		Sleep(500);
 
