@@ -74,7 +74,7 @@ void Ui::_domReady()
 	Tutorial::initializeAll(view);
 }
 
-void Ui::OnClose(saucer::application*)
+void Ui::onClose(saucer::application*)
 {
 	Tutorial::release();
 	BaseElement::release();

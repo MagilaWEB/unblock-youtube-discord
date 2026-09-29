@@ -255,9 +255,9 @@ void Input::create(
 	_input = ui::dom::create("input");
 	_input.addClass("check");
 
-	// The initial value doubles as the fallback for untouched fields
-	// (previously only the placeholder showed it, so getValue() returned ""
-	// and callers overwrote configs with empties).
+	// The initial value doubles as the fallback for untouched fields: the
+	// placeholder alone leaves getValue() empty, which would overwrite
+	// configs with empties.
 	_value = value.toString();
 
 	_setPlaceholder(title, type, options);

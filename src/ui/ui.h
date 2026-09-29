@@ -82,7 +82,7 @@ public:
 	std::string langText(std::string_view text_id);
 
 	// App termination (used when uninstalling the program).
-	void OnClose(saucer::application*);
+	void onClose(saucer::application*);
 
 	// Registers the JS bridge (expose/inject) and window subscriptions; called before navigation.
 	void setup(saucer::smartview* view);

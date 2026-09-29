@@ -96,7 +96,7 @@ void Ui::_updateAppWindow()
 						self->_window_wait_update_unblock->hide();
 
 						if (state)
-							self->OnClose(nullptr);
+							self->onClose(nullptr);
 						else
 						{
 							self->_window_error_update_unblock->show();

@@ -14,7 +14,7 @@ void Ui::_checkValidRootDirectory()
 			[ui_self = self](JSArgs)
 			{
 				ui_self->console(false);
-				ui_self->OnClose(nullptr);
+				ui_self->onClose(nullptr);
 				return false;
 			}
 		);

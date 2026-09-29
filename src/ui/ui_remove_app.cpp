@@ -57,7 +57,7 @@ void Ui::_removeAppRun()
 			if (ec)
 			{
 				Debug::error("Failed to prepare unblock_update: {}", ec.message());
-				self->OnClose(nullptr);
+				self->onClose(nullptr);
 				return;
 			}
 
@@ -76,7 +76,7 @@ void Ui::_removeAppRun()
 				CloseHandle(process.hProcess);
 			}
 
-			self->OnClose(nullptr);
+			self->onClose(nullptr);
 		}
 	);
 }
