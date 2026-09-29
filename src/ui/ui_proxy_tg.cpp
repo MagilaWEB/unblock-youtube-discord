@@ -79,8 +79,8 @@ void UiProxyTg::_proxySettings()
 	auto dc_ip	 = _unblock->tgProxyDcIp();
 
 	std::array<std::string, 4> dc_settings;
-	for (u32 i = 0; i < 4; i++)
-		dc_settings[i] = _settingValue(utils::format("dc_ip_{}", i + 1), dc_ip[i]);
+	for (const auto& [i, ip] : std::views::enumerate(dc_ip))
+		dc_settings[i] = _settingValue(utils::format("dc_ip_{}", i + 1), ip);
 
 	_proxy_tg_host->create(
 		"#tg_ws_proxy section .common",
@@ -165,8 +165,8 @@ void UiProxyTg::_applyProxySettings()
 			_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", "host", host);
 			_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", "port", port);
 			//_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", "cfproxy_worker_domain", cfproxy);
-			for (u32 i = 0; i < 4; i++)
-				_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", utils::format("dc_ip_{}", i + 1), dc_ip[i]);
+			for (const auto& [i, ip] : std::views::enumerate(dc_ip))
+				_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", utils::format("dc_ip_{}", i + 1), ip);
 
 			_unblock->setTgProxyParams(host, port, dc_ip, "");	  // cfproxy
 

@@ -107,7 +107,7 @@ void SecondaryWindow::_buildYesNo()
 	{
 		const std::string_view view{ tag };
 		const auto			   pos = view.find(':');
-		const bool			   yes = view.substr(0, pos) == "yes";
+		const bool			   yes = view.starts_with("yes:");
 		std::string			   name{ (pos == std::string_view::npos) ? std::string_view{} : view.substr(pos + 1) };
 		return eventCPP({ std::move(name), yes }, _event_yes_no);
 	};

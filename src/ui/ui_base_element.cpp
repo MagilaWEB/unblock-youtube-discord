@@ -119,10 +119,7 @@ bool BaseElement::eventCPP(const JSArgs& args, MapEvent& map_event)
 	if (events.empty())
 		return true;
 
-	JSArgs new_args{};
-
-	for (u32 i = 1; i < args.size(); i++)
-		new_args.push_back(args[i]);
+	JSArgs new_args{ args.begin() + 1, args.end() };
 
 	std::erase_if(events, [new_args](const auto& callback) { return callback(new_args); });
 
