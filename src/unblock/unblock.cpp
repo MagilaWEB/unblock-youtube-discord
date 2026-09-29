@@ -6,6 +6,8 @@
 #include "zapret2_engine.h"
 #include <curl/curl.h>
 
+#include "../core/hidden_process.h"
+
 #include <shellapi.h>
 #include <winreg.h>
 
@@ -22,8 +24,7 @@ Unblock::Unblock()
 	(void)IPCSignals::get();
 	_zapret_helper.open();
 	_win_divert.open();
-	_dns_proxy.open();
-	dnsProxyRepairBoot();
+	_dns_proxy.repairBoot();
 }
 
 Unblock::~Unblock() = default;
@@ -516,132 +517,17 @@ bool Unblock::dnsHostsRegionAvailable(std::string_view region) const
 
 std::vector<std::string> Unblock::defaultDnsProxyUpstreams()
 {
-	// Order is the priority: the first entry is the primary resolver, the
-	// rest are only fallbacks (see unblock_dns buildSettings). GeoHide leads
-	// (queries must reach it for region-specific answers) across its DoH/DoT
-	// endpoints and ports, then Comss.one (encrypted, unfiltered), then Xbox
-	// DNS (free Smart DNS), then plain DNS as the last resort.
-	return {
-		"https://dns.geohide.ru:8443/dns-query",
-		"https://dns.geohide.ru:853/dns-query",
-		"https://dns.geohide.ru:443/dns-query",
-		"tls://dns.geohide.ru:8443",
-		"tls://dns.geohide.ru:853",
-		"tls://dns.geohide.ru:443",
-		"https://dns.comss.one/dns-query",
-		"tls://dns.comss.one",
-		"111.88.96.54",
-		"111.88.96.55",
-		"1.1.1.1",
-		"1.0.0.1",
-	};
+	return DnsProxy::defaultUpstreams();
 }
 
 std::vector<std::string> Unblock::defaultDnsProxyBootstrap()
 {
-	// Plain DNS used only to resolve hostname upstreams. Editable in the UI;
-	// if the ISP poisons these, the user can point them at a reachable
-	// resolver (e.g. GeoHide's own IPs).
-	return { "1.1.1.1", "8.8.8.8", "9.9.9.9", "77.88.8.8" };
+	return DnsProxy::defaultBootstrap();
 }
 
 uint32_t Unblock::defaultDnsProxyTimeout()
 {
-	// A private resolver (GeoHide) stalls from time to time; a generous
-	// default avoids spurious SERVFAILs. Editable in the UI.
-	return 15'000;
-}
-
-std::filesystem::path Unblock::_dnsProxyConfigPath() const
-{
-	return Core::get().userPath() / "dns_proxy.conf";
-}
-
-std::filesystem::path Unblock::_dnsProxyBackupPath() const
-{
-	return Core::get().userPath() / "dns_proxy.adapters";
-}
-
-std::filesystem::path Unblock::_dnsProxyLogPath() const
-{
-	return Core::get().userPath() / "dns_proxy.log";
-}
-
-void Unblock::_dnsProxyWriteConfig(const std::vector<std::string>& upstreams, const std::vector<std::string>& bootstrap, uint32_t timeout_ms)
-{
-	File conf{ false };
-	conf.open(_dnsProxyConfigPath(), "", true);
-	conf.clear();
-
-	conf.writeText("listen=127.0.0.1");
-	conf.writeText("port=53");
-	conf.writeText("timeout=" + std::to_string(timeout_ms));
-	// Explicit paths: the wrapper reads these verbatim, so engine and wrapper
-	// can never disagree on where backup/log live. Status is pushed over IPC
-	// (UDP 9999), not written to disk.
-	conf.writeText("backup=" + _dnsProxyBackupPath().string());
-	conf.writeText("log=" + _dnsProxyLogPath().string());
-
-	std::string bootstrap_line;
-	for (const auto& b : bootstrap)
-		bootstrap_line += (bootstrap_line.empty() ? "" : ",") + b;
-	conf.writeText("bootstrap=" + bootstrap_line);
-
-	for (const auto& upstream : upstreams)
-		if (!upstream.empty())
-			conf.writeText("upstream=" + upstream);
-
-	conf.close();
-}
-
-bool Unblock::_runHidden(const std::vector<std::string>& args, uint32_t timeout_ms)
-{
-	if (args.empty())
-		return false;
-
-	auto quote = [](const std::string& value)
-	{
-		std::string out{ "\"" };
-		for (char ch : value)
-		{
-			if (ch == '"')
-				out += '\\';
-			out += ch;
-		}
-		out += '"';
-		return out;
-	};
-
-	std::string cmdline;
-	for (auto& arg : args)
-	{
-		if (!cmdline.empty())
-			cmdline += ' ';
-		cmdline += quote(arg);
-	}
-
-	auto wide_cmd = utils::utf8ToUtf16(cmdline);
-	if (wide_cmd.empty())
-		return false;
-
-	STARTUPINFOW		si{};
-	PROCESS_INFORMATION pi{};
-	si.cb = sizeof(si);
-
-	if (!CreateProcessW(nullptr, wide_cmd.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi))
-		return false;
-
-	const DWORD wait = WaitForSingleObject(pi.hProcess, timeout_ms);
-	if (wait == WAIT_TIMEOUT)
-		TerminateProcess(pi.hProcess, 1);
-
-	DWORD code = 1;
-	GetExitCodeProcess(pi.hProcess, &code);
-
-	CloseHandle(pi.hThread);
-	CloseHandle(pi.hProcess);
-
-	return code == 0;
+	return DnsProxy::defaultTimeout();
 }
 
 namespace
@@ -676,7 +562,7 @@ void Unblock::_tcpTimestampSync(Technology technology)
 	if (_tcp_timestamps_owned || tcpTimestampsEnabled())
 		return;
 
-	if (_runHidden({ "netsh", "interface", "tcp", "set", "global", "timestamps=enabled" }, 10'000))
+	if (runHiddenProcess({ "netsh", "interface", "tcp", "set", "global", "timestamps=enabled" }, 10'000))
 		_tcp_timestamps_owned = true;
 }
 
@@ -686,41 +572,13 @@ void Unblock::_tcpTimestampRestore()
 	if (!_tcp_timestamps_owned)
 		return;
 
-	if (_runHidden({ "netsh", "interface", "tcp", "set", "global", "timestamps=disabled" }, 10'000))
+	if (runHiddenProcess({ "netsh", "interface", "tcp", "set", "global", "timestamps=disabled" }, 10'000))
 		_tcp_timestamps_owned = false;
 }
 
 void Unblock::dnsProxy(bool state)
 {
-	if (!state)
-	{
-		_dns_proxy.remove();
-		// SvcHost stops its child with TerminateProcess (see MagilaWEB/svc_host),
-		// so the wrapper never gets to run its own OS-DNS restore on stop. Undo
-		// the adapter switch from here, using the backup written when it happened.
-		dnsProxyRepairBoot();
-		IPCSignals::get().clear("dns.queries");
-		IPCSignals::get().clear("dns.cache_hits");
-		IPCSignals::get().clear("dns.errors");
-		return;
-	}
-
-	const auto& upstreams = _dns_proxy_upstreams.empty() ? defaultDnsProxyUpstreams() : _dns_proxy_upstreams;
-	const auto& bootstrap = _dns_proxy_bootstrap.empty() ? defaultDnsProxyBootstrap() : _dns_proxy_bootstrap;
-	const auto	timeout	  = _dns_proxy_timeout_ms != 0 ? _dns_proxy_timeout_ms : defaultDnsProxyTimeout();
-
-	_dnsProxyWriteConfig(upstreams, bootstrap, timeout);
-
-	// Reset the IPC counters so a stale run's numbers don't show on start.
-	IPCSignals::get().clear("dns.queries");
-	IPCSignals::get().clear("dns.cache_hits");
-	IPCSignals::get().clear("dns.errors");
-
-	_dns_proxy.remove();
-	_dns_proxy.setDescription("Unblock DNS proxy (AdGuard DnsLibs).");
-	_dns_proxy.setArgs({ (Core::get().binPath() / "unblock_dns.exe").string(), "--config", "\"" + _dnsProxyConfigPath().string() + "\"" });
-	_dns_proxy.create();
-	_dns_proxy.start();
+	_dns_proxy.run(state);
 }
 
 bool Unblock::dnsProxyIsRun()
@@ -730,106 +588,47 @@ bool Unblock::dnsProxyIsRun()
 
 void Unblock::setDnsProxyUpstreams(std::vector<std::string> upstreams)
 {
-	_dns_proxy_upstreams = std::move(upstreams);
+	_dns_proxy.setUpstreams(std::move(upstreams));
 }
 
 const std::vector<std::string>& Unblock::dnsProxyUpstreams() const
 {
-	return _dns_proxy_upstreams;
+	return _dns_proxy.upstreams();
 }
 
 void Unblock::setDnsProxyBootstrap(std::vector<std::string> bootstrap)
 {
-	_dns_proxy_bootstrap = std::move(bootstrap);
+	_dns_proxy.setBootstrap(std::move(bootstrap));
 }
 
 const std::vector<std::string>& Unblock::dnsProxyBootstrap() const
 {
-	return _dns_proxy_bootstrap;
+	return _dns_proxy.bootstrap();
 }
 
 void Unblock::setDnsProxyTimeout(uint32_t timeout_ms)
 {
-	_dns_proxy_timeout_ms = timeout_ms;
+	_dns_proxy.setTimeout(timeout_ms);
 }
 
 uint32_t Unblock::dnsProxyTimeout() const
 {
-	return _dns_proxy_timeout_ms;
+	return _dns_proxy.timeout();
 }
 
 std::string Unblock::dnsProxyStatus() const
 {
-	auto&			   ipc = IPCSignals::get();
-	std::ostringstream ss;
-	ss << "queries=" << ipc.getLatestU32("dns.queries").value_or(0) << "\n";
-	ss << "cache_hits=" << ipc.getLatestU32("dns.cache_hits").value_or(0) << "\n";
-	ss << "errors=" << ipc.getLatestU32("dns.errors").value_or(0) << "\n";
-	return ss.str();
+	return _dns_proxy.status();
 }
 
 bool Unblock::dnsProxyTestUpstream(const std::string& value, std::string& output)
 {
-	const auto in_path	= Core::get().tempPath() / "unblock_dns_test.in";
-	const auto out_path = Core::get().tempPath() / "unblock_dns_test.out";
-
-	{
-		File in{ false };
-		in.open(in_path, "", true);
-		in.clear();
-		in.writeText(value);
-		in.close();
-	}
-
-	std::error_code ec;
-	std::filesystem::remove(out_path, ec);
-
-	std::string bootstrap_csv;
-	const auto& bootstrap = _dns_proxy_bootstrap.empty() ? defaultDnsProxyBootstrap() : _dns_proxy_bootstrap;
-	for (const auto& b : bootstrap)
-		bootstrap_csv += (bootstrap_csv.empty() ? "" : ",") + b;
-
-	const bool ok = _runHidden(
-		{ (Core::get().binPath() / "unblock_dns.exe").string(),
-		  "--test-upstream-file",
-		  in_path.string(),
-		  "--bootstrap",
-		  bootstrap_csv,
-		  "--result",
-		  out_path.string() },
-		15'000
-	);
-
-	std::ifstream result{ out_path, std::ios::binary };
-	if (result)
-	{
-		std::ostringstream ss;
-		ss << result.rdbuf();
-		output = ss.str();
-	}
-	else
-	{
-		output = ok ? "OK" : "FAIL: unblock_dns produced no result";
-	}
-
-	return output.starts_with("OK");
+	return _dns_proxy.testUpstream(value, output);
 }
 
 void Unblock::dnsProxyRepairBoot()
 {
-	if (_dns_proxy.isRun())
-		return;
-
-	const auto backup_path = _dnsProxyBackupPath();
-	if (!std::filesystem::exists(backup_path))
-		return;
-
-	// All adapter work lives in the wrapper (DLL API), the engine never
-	// touches the registry itself.
-	if (_runHidden({ (Core::get().binPath() / "unblock_dns.exe").string(), "--repair", "--backup", backup_path.string() }, 15'000))
-		Debug::warning("DNS proxy was killed without restore, adapters repaired.");
-	else
-		Debug::warning("DNS proxy adapter restore failed, adapters may still point at the local proxy.");
+	_dns_proxy.repairBoot();
 }
 
 void Unblock::localProxyTg(bool run)

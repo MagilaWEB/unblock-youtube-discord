@@ -2,6 +2,7 @@
 #include "zapret_engine.h"
 #include "app_update.h"
 #include "tg_proxy.h"
+#include "dns_proxy.h"
 
 #include <cctype>
 #include <charconv>
@@ -202,12 +203,9 @@ private:
 	std::unique_ptr<Zapret2Engine> _zapret2_engine;
 
 	Service _zapret_helper{ "zapret2_helper", "SvcHost.exe" };
-	Service _dns_proxy{ "unblock_dns", "SvcHost.exe" };
 	Service _win_divert{ "WinDivert" };
 
-	std::vector<std::string> _dns_proxy_upstreams;
-	std::vector<std::string> _dns_proxy_bootstrap;
-	uint32_t				 _dns_proxy_timeout_ms{ 0 };
+	DnsProxy _dns_proxy;
 
 	// Guards "we enabled TCP timestamps" across start/stop worker threads.
 	std::mutex _tcp_timestamp_lock;
@@ -257,14 +255,6 @@ private:
 	// Drops every helper list when the newest helper_seen snapshot is older
 	// than the TTL. Returns true when expired (all lists are empty after).
 	bool _dropExpiredHelperStates();
-
-	std::filesystem::path _dnsProxyConfigPath() const;
-	std::filesystem::path _dnsProxyBackupPath() const;
-	std::filesystem::path _dnsProxyLogPath() const;
-	void _dnsProxyWriteConfig(const std::vector<std::string>& upstreams, const std::vector<std::string>& bootstrap, uint32_t timeout_ms);
-	/** Spawns unblock_dns.exe without a shell and waits up to timeout_ms.
-	 *  The upstream value is passed via a file, never on the command line. */
-	bool _runHidden(const std::vector<std::string>& args, uint32_t timeout_ms);
 
 	/** Enables TCP timestamps when the strategy needs ts/tcp_ts and they are
 	 *  off, remembering that we changed the system. */
