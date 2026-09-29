@@ -20,15 +20,19 @@
 
 ## 3. Имена
 
+Всё делится на **поля** и **методы**. Поля — всегда `snake_case` с префиксом по виду поля. Методы — `camelCase` (у приватных ведущее `_`).
+
 | Сущность | Стиль | Пример |
 |---|---|---|
 | Тип (`class`/`struct`/`enum`/`using`/`concept`) | PascalCase | `Unblock`, `HelperStats` |
-| Функция, метод | camelCase | `startService`, `parseHelperStats` |
-| Публичный член | camelCase | `activeService` |
-| Приватный/защищённый член | `_camelCase` | `_helper_state_lock` |
-| Константа (`constexpr`/`static const`) | `c_camelCase` | `c_helper_signal_ttl` |
-| Изменяемый статик | `s_camelCase` | `s_error_fatal` |
-| Локальная переменная, параметр | snake_case | `name_service` |
+| Метод, свободная функция | camelCase | `startService`, `isUtf8` |
+| Приватный/защищённый метод | `_camelCase` | `_dnsProxyWriteConfig`, `_getPrefix` |
+| Поле (любое) | `snake_case` | `_string_list`, `str_id` |
+| Приватное/защищённое поле | `_snake_case` | `_helper_state_lock`, `_command_line` |
+| Публичное поле | `snake_case` | `str_id` |
+| Константа (`constexpr`/`static const`) | `c_snake_case` | `c_helper_signal_ttl`, `c_min_workers` |
+| Изменяемый статик | `s_snake_case` | `s_error_fatal`, `s_next_handle` |
+| Локальная переменная, параметр | `snake_case` | `name_service` |
 | Макрос | `UPPER_SNAKE` | `LIMIT_UPDATE`, `FORWARD_CALL` |
 | Значение `enum class` | PascalCase | `Technology::Zapret1` |
 | Базовые алиасы | `u8/u16/u32/u64`, `s8…s64`, `pstr/pcstr/cpcstr` | `u32 count` |
@@ -39,9 +43,7 @@
 
 - Перечисления — только `enum class`, по возможности с явным underlying-типом (`enum class Type : u8`). Значения — PascalCase. Plain `enum` и `e`-префиксы не используем.
 - Новые целочисленные типы — через алиасы из `core/types.inl`, а не `int`/`unsigned`.
-- Публичные члены без ведущего подчёркивания; никаких «приватных на вид» публичных имён (`_readLogTail` и т.п.).
-
-Текущие расхождения (приводятся к контракту в рамках унификации): `utils::IsUTF8`, `utils::UTF8_to_*`, `utils::ltrim/rtrim/trim`; `kMinWorkers/kMaxWorkers` в `thread_pool.h`; `kPad/kGap/kMargin` в dom; `s_exposed_mutex`/`s_ui_thread` в dom; plain `enum MessageTypes` (`ePrint`); `Types::text`, `ColorType::BLACK`.
+- Публичные методы и поля не носят ведущего подчёркивания (`readLogTail`, а не `_readLogTail`).
 
 ## 4. C++23
 
