@@ -176,7 +176,7 @@ public:
 	}
 
 	template<typename... Args>
-	__forceinline static std::unexpected<std::string> strUnexpected(std::string_view fmt, Args&&... args)
+	inline static std::unexpected<std::string> strUnexpected(std::string_view fmt, Args&&... args)
 	{
 		return std::unexpected(utils::format(fmt, args...));
 	}

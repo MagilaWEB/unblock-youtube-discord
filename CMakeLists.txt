@@ -58,9 +58,10 @@ set (LOG4CPLUS_WORKING_LOCALE_DEFAULT ON)
 # uses std::min/std::max, so nothing depends on the macros.
 add_compile_definitions(NOMINMAX)
 
-# Enable C++23
+# Enable C++23 (ISO mode: no GNU/MS extensions)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

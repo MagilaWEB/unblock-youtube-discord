@@ -12,7 +12,7 @@ namespace utils
 	};
 
 	template<typename... Args>
-	__forceinline std::string format(std::string_view fmt, Args&&... args)
+	inline std::string format(std::string_view fmt, Args&&... args)
 	{
 		return std::vformat(fmt, std::make_format_args(args...));
 	}
