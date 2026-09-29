@@ -2,6 +2,7 @@
 
 #include "ui.h"
 #include "../unblock/unblock.h"
+#include "../unblock/auto_strategy_runner.h"
 #include "../core/input_console.h"
 
 #include <chrono>
@@ -673,221 +674,86 @@ void UiZapretPage::_autoStart()
 			Core::get().addTask(
 				[this]
 				{
-					InputConsole::textOk(Localization::Str{ "str_beginning_auto_selection" }());
-
 					_window_auto_start_wait->setDescription(_autoStartWaitDescription());
 					_window_auto_start_wait->show();
 
-					while (_autoStartTryNext())
+					const auto start_version = jsToCpp<std::string>(_select_version_strategy->getSelectedOptionValue());
+
+					AutoStrategyRunner runner{ *_ui->_unblock };
+
+					AutoStrategyRunner::Callbacks callbacks{};
+
+					callbacks.cancelled = [this] { return _automatically_strategy_cancel.load(); };
+
+					callbacks.progress = [this](std::string_view text) { _window_auto_start_wait->setDescription(std::string{ text }); };
+
+					callbacks.iteration = [this](std::string_view version, bool changed)
 					{
-						// The engine may have switched to another fake
-						// profile (Zapret1): persist it and reflect it in
-						// the selector before testing the combination.
+						if (changed)
+						{
+							_select_version_strategy->setSelectedOptionValue(std::string{ version });
+							_ui->userConfig()->writeSectionParameter(_rememberSection(), "version_strategy", std::string{ version });
+						}
+
+						// The engine may have switched to another fake profile
+						// (Zapret1): persist it and reflect it in the selector.
 						_syncFakeProfile();
+					};
 
-						if (_automatically_strategy_cancel)
+					callbacks.finished = [this](const AutoStrategyResult& result)
+					{
+						if (result.won)
 						{
-							_ui->_unblock->stopService();
-							break;
+							_ui->userConfig()->writeSectionParameter(_rememberSection(), "config", result.strategy);
+
+							const auto description = _technology == Technology::Zapret1
+													   ? utils::format(
+															 Localization::Str{ "str_window_auto_start_wait_name_strategy_description_zapret1" }(),
+															 result.strategy,
+															 result.version,
+															 result.fake_key
+														 )
+													   : utils::format(
+															 Localization::Str{ "str_window_continue_select_strategy_description" }(),
+															 result.strategy,
+															 result.version
+														 );
+
+							_window_continue_select_strategy->setDescription(description);
+							_window_continue_select_strategy->show();
 						}
-
-						_ui->_unblock->startService(_technology);
-
-						auto strategy_name = _ui->_unblock->getNameStrategies(_technology);
-						auto version_str   = jsToCpp<std::string>(_select_version_strategy->getSelectedOptionValue());
-
-						// On Zapret1 the same config is retried with every
-						// fake profile, so the description names the active
-						// one — otherwise iterations look like a stuck loop.
-						std::string text_desc;
-						if (_technology == Technology::Zapret1)
-							text_desc = utils::format(
-								Localization::Str{ "str_window_auto_start_wait_name_strategy_description_zapret1" }(),
-								strategy_name,
-								version_str,
-								_ui->_unblock->fakeBinKey(_technology)
-							);
-						else
-							text_desc = utils::format(
-								Localization::Str{ "str_window_auto_start_wait_name_strategy_description" }(),
-								strategy_name,
-								version_str
-							);
-
-						text_desc.insert(0, "\n");
-						text_desc.insert(0, Localization::Str{ _autoStartWaitDescription() }());
-
-						_window_auto_start_wait->setDescription(text_desc);
-
-						if (_technology == Technology::Zapret2)
+						else if (!result.cancelled)
 						{
-							// Passive round: no curl testing here at all. The helper
-							// probes every LIST host through the running desync,
-							// lua marks fully-tried hosts exhausted. The round ends
-							// when every expected host is valid or exhausted —
-							// event-driven, cancel is the escape hatch.
-							auto								  expected_hosts = _ui->_unblock->testHostNames();
-							const std::unordered_set<std::string> expected(expected_hosts.begin(), expected_hosts.end());
-
-							// Drop stale datagrams from previous rounds.
-							_ui->_unblock->helperCheckingHosts();
-							_ui->_unblock->helperSeenHosts();
-							_ui->_unblock->helperValidHosts();
-							_ui->_unblock->helperErrorHosts();
-							_ui->_unblock->helperExhaustedHosts();
-
-							bool		settled = expected.empty();
-							std::string last_live;
-							auto		last_live_at = std::chrono::steady_clock::now() - std::chrono::seconds(10);
-							while (!settled)
-							{
-								if (_automatically_strategy_cancel)
+							_window_configuration_selection_error->show();
+							_window_configuration_selection_error->addEventOk(
+								[this](JSArgs)
 								{
-									_ui->_unblock->stopService();
-									break;
+									_window_configuration_selection_error->hide();
+
+									_ui->getUiUnblock()->getWindowWaitStopService()->show();
+									Core::get().addTask(
+										[this]
+										{
+											_ui->_unblock->removeService();
+											_ui->getUiUnblock()->getWindowWaitStopService()->hide();
+										}
+									);
+									return true;
 								}
-								if (!_ui->_unblock->isRun(_technology))
-									break;	  // engine died: nothing will verdict
-
-								std::unordered_set<std::string> valid_set;
-								for (auto& [host, _] : _ui->_unblock->helperValidHosts())
-									valid_set.insert(host);
-								std::unordered_set<std::string> exhausted_set;
-								for (auto& [host, _] : _ui->_unblock->helperExhaustedHosts())
-									exhausted_set.insert(host);
-								auto checking = _ui->_unblock->helperCheckingHosts();
-								auto errors	  = _ui->_unblock->helperErrorHosts();
-
-								// DOM bridge from the worker: at most every 2s and
-								// only on change, never a blind 2Hz hammer.
-								const auto now	= std::chrono::steady_clock::now();
-								auto	   live = text_desc + "\n"
-												+ utils::format(
-													  Localization::Str{ "str_window_auto_start_wait_live" }(),
-													  valid_set.size(),
-													  checking.size(),
-													  errors.size(),
-													  exhausted_set.size()
-												);
-								if (live != last_live && now - last_live_at >= std::chrono::seconds(2))
-								{
-									last_live	 = std::move(live);
-									last_live_at = now;
-									_window_auto_start_wait->setDescription(last_live);
-								}
-
-								settled = autoRoundSettled(expected, valid_set, exhausted_set);
-								if (!settled)
-									std::this_thread::sleep_for(std::chrono::milliseconds(500));
-							}
-
-							size_t dead = 0;
-							if (!_automatically_strategy_cancel && _ui->_unblock->isRun(_technology))
-							{
-								for (auto& [host, _] : _ui->_unblock->helperExhaustedHosts())
-									if (expected.contains(host))
-										++dead;
-							}
-
-							if (!_automatically_strategy_cancel && _ui->_unblock->isRun(_technology) && judgeAutoRound(dead, expected.size()))
-							{
-								_ui->userConfig()->writeSectionParameter(_rememberSection(), "config", strategy_name);
-
-								_window_continue_select_strategy->setDescription(
-									utils::format(
-										Localization::Str{ "str_window_continue_select_strategy_description" }(),
-										strategy_name,
-										version_str
-									)
-								);
-								_window_continue_select_strategy->show();
-								break;
-							}
-							// Otherwise the next strategy/version is tried.
+							);
 						}
-						else
-						{
-							_ui->_unblock->testingDomain();
 
-							if (!_automatically_strategy_cancel && _ui->_unblock->validDomain())
-							{
-								_ui->userConfig()->writeSectionParameter(_rememberSection(), "config", strategy_name);
+						_buttonUpdate();
 
-								// The winning combination includes the fake
-								// profile (already synced above): name it so the
-								// user knows what exactly worked.
-								_window_continue_select_strategy->setDescription(
-									utils::format(
-										Localization::Str{ "str_window_auto_start_wait_name_strategy_description_zapret1" }(),
-										strategy_name,
-										version_str,
-										_ui->_unblock->fakeBinKey(_technology)
-									)
-								);
-								_window_continue_select_strategy->show();
-								break;
-							}
-						}
-					}
+						_automatically_strategy_cancel = false;
+						_window_auto_start_wait->hide();
+					};
 
-					_buttonUpdate();
-
-					_automatically_strategy_cancel = false;
-					_window_auto_start_wait->hide();
+					runner.run(_technology, start_version, callbacks);
 				}
 			);
 		}
 	);
-}
-
-bool UiZapretPage::_autoStartTryNext() const
-{
-	if (_ui->_unblock->automaticallyStrategy(_technology))
-		return true;
-
-	auto strategy_dirs = _ui->_unblock->listVersionStrategy(_technology);
-	if (strategy_dirs.empty())
-		return false;
-
-	auto it = std::ranges::find(strategy_dirs, jsToCpp<std::string>(_select_version_strategy->getSelectedOptionValue()));
-
-	auto save_version = [this](std::string version)
-	{
-		_select_version_strategy->setSelectedOptionValue(version);
-		_ui->_unblock->changeDirVersionStrategy(_technology, version);
-		_ui->userConfig()->writeSectionParameter(_rememberSection(), "version_strategy", version);
-	};
-
-	if (it != strategy_dirs.end())
-	{
-		if (++it != strategy_dirs.end())
-		{
-			save_version(*it);
-			return true;
-		}
-	}
-
-	save_version(strategy_dirs.front());
-
-	_window_configuration_selection_error->show();
-	_window_configuration_selection_error->addEventOk(
-		[this](JSArgs)
-		{
-			_window_configuration_selection_error->hide();
-
-			_ui->getUiUnblock()->getWindowWaitStopService()->show();
-			Core::get().addTask(
-				[this]
-				{
-					_ui->_unblock->removeService();
-					_ui->getUiUnblock()->getWindowWaitStopService()->hide();
-				}
-			);
-			return true;
-		}
-	);
-
-	return false;
 }
 
 void UiZapretPage::_startServiceFromConfig()

@@ -161,7 +161,6 @@ private:
 	void _clickStartService();
 
 	void _autoStart();
-	bool _autoStartTryNext() const;
 
 	// Mirrors the engine's active fake profile into the selector and the
 	// saved config (Zapret1 only). The autopick loop advances profiles
