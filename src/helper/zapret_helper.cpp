@@ -6,6 +6,19 @@
 #include <ranges>
 #include <vector>
 
+namespace
+{
+	// Split "left:right" at the first delimiter; right is empty when absent.
+	std::pair<std::string_view, std::string_view> splitOnce(std::string_view text, char delimiter)
+	{
+		const auto pos = text.find(delimiter);
+		if (pos == std::string_view::npos)
+			return { text, {} };
+
+		return { text.substr(0, pos), text.substr(pos + 1) };
+	}
+}	 // namespace
+
 ZapretHelper::~ZapretHelper()
 {
 	{
@@ -164,17 +177,15 @@ void ZapretHelper::_handleMessage(std::string_view message)
 	{
 		std::lock_guard lock(_mutex);
 		const auto		rest = message.substr(6);
-		const auto		pos	 = rest.find(':');
-		_addHost(rest.substr(0, pos));
+		_addHost(splitOnce(rest, ':').first);
 		_cv.notify_one();	 // single host: one worker is enough
 	}
 	else if (message.starts_with("VALID:"))
 	{
 		std::lock_guard lock(_mutex);
-		const auto		rest  = message.substr(6);
-		const auto		pos	  = rest.find(':');
-		const auto		host  = std::string{ rest.substr(0, pos) };
-		const auto		strat = (pos != std::string_view::npos) ? rest.substr(pos + 1) : std::string_view{};
+		const auto		rest		= message.substr(6);
+		const auto [host_sv, strat] = splitOnce(rest, ':');
+		const auto host				= std::string{ host_sv };
 		if (_isValidHost(host) && !strat.empty())
 		{
 			_valid_hosts[host] = std::string{ strat };
@@ -190,10 +201,9 @@ void ZapretHelper::_handleMessage(std::string_view message)
 	else if (message.starts_with("ERR:"))
 	{
 		std::lock_guard lock(_mutex);
-		const auto		rest  = message.substr(4);
-		const auto		pos	  = rest.find(':');
-		const auto		host  = std::string{ rest.substr(0, pos) };
-		const auto		strat = (pos != std::string_view::npos) ? rest.substr(pos + 1) : std::string_view{};
+		const auto		rest		= message.substr(4);
+		const auto [host_sv, strat] = splitOnce(rest, ':');
+		const auto host				= std::string{ host_sv };
 		// A fully-tried host stays terminal until VALID; a later packet-level
 		// ERR must not drag it back into the error bucket (that refusal is
 		// what let autopick never settle).
@@ -223,10 +233,9 @@ void ZapretHelper::_handleMessage(std::string_view message)
 	else if (message.starts_with("EXHAUSTED:"))
 	{
 		std::lock_guard lock(_mutex);
-		const auto		rest  = message.substr(10);
-		const auto		pos	  = rest.find(':');
-		const auto		host  = std::string{ rest.substr(0, pos) };
-		const auto		strat = (pos != std::string_view::npos) ? rest.substr(pos + 1) : std::string_view{};
+		const auto		rest		= message.substr(10);
+		const auto [host_sv, strat] = splitOnce(rest, ':');
+		const auto host				= std::string{ host_sv };
 		if (_isValidHost(host) && !strat.empty())
 		{
 			// First report owns the timestamps (packet spam must not
@@ -316,13 +325,9 @@ void ZapretHelper::_checkHost(std::string_view host)
 
 			// Fast-path snapshot so unblock can fast-fail the host without
 			// waiting for the next 500ms tick.
-			std::string exhausted_payload;
-			for (const auto& [known, info] : _exhausted_hosts)
-			{
-				if (!exhausted_payload.empty())
-					exhausted_payload += '\n';
-				exhausted_payload += known + "=" + info.strategy;
-			}
+			const std::string exhausted_payload = _exhausted_hosts
+												| std::views::transform([](const auto& kv) { return kv.first + "=" + kv.second.strategy; })
+												| std::views::join_with('\n') | std::ranges::to<std::string>();
 			_sendSnapshot("helper_exhausted", exhausted_payload);
 
 			_log(std::format("dns-dead {} (terminal)", host));
@@ -464,12 +469,12 @@ void ZapretHelper::_idleStep()
 		if ((now - _last_seen_send) >= c_seen_interval)
 		{
 			seen.assign(_known_hosts.begin(), _known_hosts.end());
-			for (const auto& [host, strat] : _valid_hosts)
-				valid_lines.push_back(host + "=" + strat);
-			for (const auto& [host, info] : _error_hosts)
-				error_lines.push_back(host + "=" + info.strategy);
-			for (const auto& [host, info] : _exhausted_hosts)
-				exhausted_lines.push_back(host + "=" + info.strategy);
+			valid_lines		= _valid_hosts | std::views::transform([](const auto& kv) { return kv.first + "=" + kv.second; })
+							| std::ranges::to<std::vector<std::string>>();
+			error_lines		= _error_hosts | std::views::transform([](const auto& kv) { return kv.first + "=" + kv.second.strategy; })
+							| std::ranges::to<std::vector<std::string>>();
+			exhausted_lines = _exhausted_hosts | std::views::transform([](const auto& kv) { return kv.first + "=" + kv.second.strategy; })
+							| std::ranges::to<std::vector<std::string>>();
 			stat_queued		= _queue.size();
 			stat_in_check	= _in_check.size();
 			stat_known		= _known_hosts.size();

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <fstream>
+#include <ranges>
 
 #ifdef _WIN32
 	#ifndef WIN32_LEAN_AND_MEAN
@@ -139,30 +140,25 @@ HelperConfig HelperConfig::loadFrom(const std::filesystem::path& path)
 HelperConfig HelperConfig::parsePayload(std::string_view payload, const HelperConfig& base)
 {
 	HelperConfig cfg = base;
-	std::string	 key, val;
-	std::string	 cur{ payload };
-	size_t		 pos = 0;
-	while (pos <= cur.size())
+
+	for (auto pair_range : payload | std::views::split(';'))
 	{
-		const auto	semi = cur.find(';', pos);
-		std::string pair = (semi == std::string::npos) ? cur.substr(pos) : cur.substr(pos, semi - pos);
+		std::string pair{ std::ranges::data(pair_range), std::ranges::size(pair_range) };
 		trim(pair);
-		if (!pair.empty())
-		{
-			const auto eq = pair.find('=');
-			if (eq != std::string::npos)
-			{
-				key = pair.substr(0, eq);
-				val = pair.substr(eq + 1);
-				trim(key);
-				trim(val);
-				applyPair(cfg, key, val);
-			}
-		}
-		if (semi == std::string::npos)
-			break;
-		pos = semi + 1;
+		if (pair.empty())
+			continue;
+
+		const auto eq = pair.find('=');
+		if (eq == std::string::npos)
+			continue;
+
+		std::string key = pair.substr(0, eq);
+		std::string val = pair.substr(eq + 1);
+		trim(key);
+		trim(val);
+		applyPair(cfg, key, val);
 	}
+
 	cfg.normalize();
 	return cfg;
 }
