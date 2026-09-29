@@ -2,7 +2,7 @@
 
 #include "ui.h"
 #include "../unblock/unblock.h"
-#include "../unblock_dns/dns_config.h"
+#include "dns_config.h"
 
 #include <algorithm>
 #include <ranges>

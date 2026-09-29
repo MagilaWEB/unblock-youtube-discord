@@ -321,6 +321,7 @@ set(PROJECT_WARNING_FLAGS -Wall -Wextra -Wpedantic -Werror
 )
 
 # Add submodules
+add_subdirectory(src/common)
 add_subdirectory(src/engine)
 add_subdirectory(src/core)
 add_subdirectory(src/dom)

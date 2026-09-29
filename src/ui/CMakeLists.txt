@@ -13,6 +13,7 @@ target_compile_options(${NAME} PRIVATE ${PROJECT_WARNING_FLAGS})
 
 # Link
 target_link_libraries(${NAME} PRIVATE
+        common
         core
         dom
         unblock

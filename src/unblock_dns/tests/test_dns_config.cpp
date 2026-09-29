@@ -1,6 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include "../dns_config.h"
+#include "dns_config.h"
 
 TEST_CASE("isValidUpstreamAddress accepts known forms", "[dns][config]")
 {
