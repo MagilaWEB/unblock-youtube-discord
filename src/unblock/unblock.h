@@ -8,6 +8,7 @@
 #include <cctype>
 #include <charconv>
 #include <chrono>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <ranges>
@@ -18,6 +19,8 @@
 #include <vector>
 
 #include "../core/service.h"
+
+class HttpsLoad;
 
 /** Passive autopick round (Zapret2): pure rules over helper verdict sets.
  *  No curl here — verdicts arrive from live traffic (helper probes every
@@ -209,6 +212,12 @@ private:
 	std::mutex _tcp_timestamp_lock;
 	bool	   _tcp_timestamps_owned{ false };
 
+	// Active update download. appUpdate() runs on a worker and creates it;
+	// the UI thread reads progress via appUpdateProgress(), so the shared_ptr
+	// is swapped under the mutex.
+	mutable std::mutex		   _update_load_mutex;
+	std::shared_ptr<HttpsLoad> _update_load;
+
 	DomainTesting _domain_testing;
 	DNSHost		  _dns_hosts;
 
@@ -303,7 +312,7 @@ public:
 	const std::vector<std::string>& getStrategies(Technology technology);
 
 	const std::vector<std::string>& getStrategiesList(Technology technology);
-	std::list<Service>&				getConflictingServices();
+	std::list<Service>				getConflictingServices();
 
 	void					  startService(Technology technology);
 	void					  stopService();

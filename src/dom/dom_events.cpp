@@ -49,22 +49,7 @@ namespace ui::dom
 				v->execute("__dom_listen_kind({}, {}, {}, {}, {})", h, cpp_name, tag, kind, persist);
 			}
 		}
-
-		void listenKindRemove(int h, std::string_view kind, std::string_view tag)
-		{
-			const std::string cpp_name{ std::string{ "CPP_" } + std::string{ kind } + '_' + std::to_string(h) + '_' + std::string{ tag } };
-
-			// Always untrack (even with no view): a dead view leaves nothing
-			// to unexpose, but the registry must not outlive the node.
-			detail::forgetExposed(h, cpp_name);
-			if (auto* v = view(); v && h >= 0)
-			{
-				v->unexpose(cpp_name);
-				v->execute("__dom_listen_kind_remove({}, {})", h, kind);
-			}
-		}
 	}
-
 
 	void Element::on(Event event, std::function<bool(std::string, js::Value)> func, std::string_view tag, ListenOpts opts) const
 	{
@@ -96,40 +81,6 @@ namespace ui::dom
 			break;
 		case Event::MouseLeave:
 			ui::dom::listenKind(_h, "mouseleave", func, tag, true);
-			break;
-		}
-	}
-
-	void Element::remove_on(Event event, std::string_view tag) const
-	{
-		if (_h < 0)
-			return;
-
-		switch (event)
-		{
-		case Event::Click:
-			ui::dom::listenKindRemove(_h, "click", tag);
-			break;
-		case Event::Change:
-			ui::dom::listenKindRemove(_h, "change", tag);
-			break;
-		case Event::Submit:
-			ui::dom::listenKindRemove(_h, "enter", tag);
-			break;
-		case Event::Input:
-			ui::dom::listenKindRemove(_h, "input", tag);
-			break;
-		case Event::Focus:
-			ui::dom::listenKindRemove(_h, "focus", tag);
-			break;
-		case Event::Blur:
-			ui::dom::listenKindRemove(_h, "blur", tag);
-			break;
-		case Event::MouseEnter:
-			ui::dom::listenKindRemove(_h, "mouseenter", tag);
-			break;
-		case Event::MouseLeave:
-			ui::dom::listenKindRemove(_h, "mouseleave", tag);
 			break;
 		}
 	}

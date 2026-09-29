@@ -41,10 +41,6 @@ Core& Core::get()
 	return instance;
 }
 
-void Core::initialize(const std::string& /*command_line*/)
-{
-}
-
 void Core::parallel_run()
 {
 	_pool.start();

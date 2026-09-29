@@ -31,25 +31,26 @@ bool utils::IsUTF8(std::string_view string)
 
 std::string utils::UTF8_to_CP1251(std::string_view utf8_str)
 {
-	if (IsUTF8(utf8_str))
-	{
-		const int len = static_cast<int>(utf8_str.length());
+	if (!IsUTF8(utf8_str))
+		return std::string{ utf8_str };
 
-		static thread_local wchar_t cache_str[4'096];
-		RtlZeroMemory(&cache_str, sizeof(cache_str));
+	const int len = static_cast<int>(utf8_str.size());
 
-		// NOLINTNEXTLINE(bugprone-suspicious-stringview-data-usage) — explicit size (len + 1) is passed to WinAPI.
-		MultiByteToWideChar(CP_UTF8, 0, utf8_str.data(), len + 1, cache_str, len + 1);
+	const int wide_len = MultiByteToWideChar(CP_UTF8, 0, utf8_str.data(), len, nullptr, 0);
+	if (wide_len <= 0)
+		return {};
 
-		static thread_local char cache_str_result[4'096];
-		RtlZeroMemory(&cache_str_result, sizeof(cache_str_result));
+	std::wstring wide(static_cast<size_t>(wide_len), L'\0');
+	MultiByteToWideChar(CP_UTF8, 0, utf8_str.data(), len, wide.data(), wide_len);
 
-		WideCharToMultiByte(1'251, 0, &cache_str[0], len, &cache_str_result[0], len, nullptr, nullptr);
+	const int narrow_len = WideCharToMultiByte(1'251, 0, wide.data(), wide_len, nullptr, 0, nullptr, nullptr);
+	if (narrow_len <= 0)
+		return {};
 
-		return { cache_str_result };
-	}
+	std::string result(static_cast<size_t>(narrow_len), '\0');
+	WideCharToMultiByte(1'251, 0, wide.data(), wide_len, result.data(), narrow_len, nullptr, nullptr);
 
-	return std::string{ utf8_str };
+	return result;
 }
 
 std::wstring utils::UTF8_to_UTF16(std::string_view utf8_str)
@@ -68,7 +69,7 @@ std::wstring utils::UTF8_to_UTF16(std::string_view utf8_str)
 	std::vector<wchar_t> buffer(static_cast<size_t>(size_needed) + 1);
 	int					 result = MultiByteToWideChar(CP_UTF8, 0, utf8_str.data(), static_cast<int>(utf8_str.size()), buffer.data(), size_needed);
 
-	if (size_needed <= 0)
+	if (result <= 0)
 	{
 		Debug::warning("UTF8_to_UTF16 Couldn't convert");
 		return std::wstring();
@@ -97,7 +98,7 @@ void utils::trim(std::string& str)
 
 namespace
 {
-	// Извлечение порта и хоста из строки вида [host]:port или host:port
+	// Split an authority into host and port: [host]:port or host:port
 	std::optional<std::pair<std::string_view, std::string_view>> splitHostPort(std::string_view input)
 	{
 		if (input.empty())
@@ -274,7 +275,7 @@ bool utils::isValidHostNamePort(std::string_view host)
 	if (!parts)
 		return false;
 
-	auto & [host_part, port_part] = *parts;
+	auto& [host_part, port_part] = *parts;
 
 	if (!port_part.empty())
 	{

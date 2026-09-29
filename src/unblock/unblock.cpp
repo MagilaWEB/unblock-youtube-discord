@@ -131,9 +131,9 @@ const std::vector<std::string>& Unblock::getStrategiesList(Technology technology
 	return engine(technology).strategiesList();
 }
 
-std::list<Service>& Unblock::getConflictingServices()
+std::list<Service> Unblock::getConflictingServices()
 {
-	static std::list<Service> conflicting_service;
+	std::list<Service> conflicting_service;
 
 	Service::allService(
 		[&](std::string name_service) -> void
@@ -218,12 +218,6 @@ std::optional<std::string> Unblock::checkUpdate() const
 	return {};
 }
 
-static HttpsLoad& getLoad7z()
-{
-	static HttpsLoad load{ "https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z" };
-	return load;
-}
-
 bool Unblock::appUpdate()
 {
 	// The update is delegated to the standalone unblock_update.exe (see src/unblock_update);
@@ -238,10 +232,16 @@ bool Unblock::appUpdate()
 
 	const auto archive = temp_root / "new_unblock.7z";
 
-	if (!getLoad7z().run_to_file(archive))
+	auto load = std::make_shared<HttpsLoad>("https://github.com/MagilaWEB/unblock-youtube-discord/releases/latest/download/unblock.7z");
+	{
+		std::scoped_lock lock(_update_load_mutex);
+		_update_load = load;
+	}
+
+	if (!load->run_to_file(archive))
 		return false;
 
-	const u32 code = getLoad7z().codeResult();
+	const u32 code = load->codeResult();
 	if (code != 200)
 		return false;
 
@@ -310,7 +310,13 @@ bool Unblock::appUpdate()
 
 float Unblock::appUpdateProgress() const
 {
-	return getLoad7z().progress();
+	std::shared_ptr<HttpsLoad> load;
+	{
+		std::scoped_lock lock(_update_load_mutex);
+		load = _update_load;
+	}
+
+	return load ? load->progress() : 0.F;
 }
 
 u32 Unblock::domainSuccessRate() const

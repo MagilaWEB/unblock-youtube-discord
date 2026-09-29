@@ -84,7 +84,7 @@ namespace ui::dom
 			return {};
 
 		const auto r = coco::await(v->evaluate<std::string>("__dom_getAttr({}, {})", _h, attr));
-		return r.value_or(std::string{});
+		return r.value_or("");
 	}
 
 	bool Element::hasAttr(std::string_view attr) const
@@ -122,7 +122,7 @@ namespace ui::dom
 			return {};
 
 		const auto r = coco::await(v->evaluate<std::string>("(__dom[{}] && __dom[{}].value) || ''", _h, _h));
-		return r.value_or(std::string{});
+		return r.value_or("");
 	}
 
 	Element& Element::checked(bool state)

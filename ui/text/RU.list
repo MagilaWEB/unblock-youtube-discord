@@ -47,9 +47,9 @@ str_console_input_please_select=выберите один из варианто�
 // services info
 str_service_zapret_description=DPI программное обеспечение для обхода блокировки.
 str_error_create_service=не удаётся создать службу [{}], причина [{}].
-str_error_stoping_service=служба [{}] не остановлена или в прогрессе остановки, запустить не возможно!
-str_wait_startig_service=подождите окончания запуска службы [{}]
-str_wait_stoping_service=подождите окончания остановки службы [{}]
+str_error_stopping_service=служба [{}] не остановлена или в прогрессе остановки, запустить не возможно!
+str_wait_starting_service=подождите окончания запуска службы [{}]
+str_wait_stopping_service=подождите окончания остановки службы [{}]
 str_error_wait_time_start_service=истекло время ожидания запуска службы [{}], процесс запуска прерван, причина не известна!
 str_expired_wait_time_start_service=истекло время ожидания запуска службы [{}], процесс будет остановлен!
 str_success_start_service=служба [{}] запущена.

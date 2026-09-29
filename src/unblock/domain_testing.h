@@ -52,8 +52,6 @@ private:
 	std::list<CurlDomain>  _list_host{};
 	std::list<std::string> _section_opt_service_names{};
 
-	inline static std::filesystem::path _zapret_exhausted{};
-
 	std::string _proxyIP{ "127.0.0.1" };
 	u32			_proxyPORT{ 1'080 };
 

@@ -68,7 +68,7 @@ std::string_view Debug::get_prefix(MessageTypes type)
 	case MessageTypes::eWarning:
 		return "\x1B[33m~WARNING: \033[0m";
 	case MessageTypes::ePlease:
-		return "\x1B[35m~PLAESE: \033[0m";
+		return "\x1B[35m~PLEASE: \033[0m";
 	case MessageTypes::eError:
 		return "\x1B[31m!ERROR: \033[0m";
 	case MessageTypes::eFatal:

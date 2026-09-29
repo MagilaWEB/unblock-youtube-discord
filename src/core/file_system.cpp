@@ -67,7 +67,7 @@ void File::forLineSection(std::string_view section, std::function<bool(std::stri
 				if (std::regex_match(str, r_section_name()))
 					return true;
 
-				if ((!str.empty()) && (!std::regex_match(str, std::regex{ "\n" })))
+				if (!str.empty())
 					list_string.emplace_back(str);
 
 				return false;
@@ -102,8 +102,7 @@ void File::forLineParametersSection(std::string_view section, std::function<bool
 			}
 
 			Debug::warning(
-				"when trying to get the keys and values in the [{}] file in the [{}] section The kneader is missing [=]! A string of the "
-				"following format [{}].",
+				"Missing '=' separator in the [{}] file, [{}] section. Expected a line of the format [key=value], got [{}].",
 				name().c_str(),
 				section,
 				str.c_str()
@@ -149,17 +148,17 @@ std::expected<TypeReturn, std::string> File::parameterSection(std::string_view s
 	{
 		if (info_debug)
 			Debug::warning("File [{}] not open!", _path_file.string().c_str());
-		return Debug::str_unexpected("Не удалось найти параметр [{}] в секции [{}] файл не был открыт!", parameter, section);
+		return Debug::str_unexpected("Parameter [{}] in section [{}] not found: the file is not open!", parameter, section);
 	}
 
-	std::optional<std::string> kay_value{ std::nullopt };
+	std::optional<std::string> key_value{ std::nullopt };
 	forLineParametersSection(
 		section,
-		[&kay_value, parameter](std::string key, std::string value)
+		[&key_value, parameter](std::string key, std::string value)
 		{
 			if (key == parameter)
 			{
-				kay_value = value;
+				key_value = value;
 				return true;
 			}
 
@@ -167,56 +166,56 @@ std::expected<TypeReturn, std::string> File::parameterSection(std::string_view s
 		}
 	);
 
-	if (kay_value && !kay_value.value().empty())
+	if (key_value && !key_value.value().empty())
 	{
 		using namespace concepts;
 		if constexpr (VallidString<TypeReturn>)
 		{
 			if constexpr (VallidStringPctr<TypeReturn>)
-				return kay_value.value().c_str();
+				return key_value.value().c_str();
 			else
-				return kay_value.value();
+				return key_value.value();
 		}
 
 		if constexpr (std::same_as<TypeReturn, bool>)
 		{
 			bool state;
-			std::istringstream{ kay_value.value() } >> std::boolalpha >> state;
+			std::istringstream{ key_value.value() } >> std::boolalpha >> state;
 			return state;
 		}
 		else if constexpr (VallidNumber<TypeReturn>)
 		{
 			if constexpr (std::same_as<TypeReturn, float>)
-				return std::stof(kay_value.value());
+				return std::stof(key_value.value());
 			else
-				return std::stod(kay_value.value());
+				return std::stod(key_value.value());
 		}
 		else if constexpr (VallidIntegerUsignet<TypeReturn>)
 		{
 			TypeReturn state{};
-			std::istringstream{ kay_value.value() } >> state;
+			std::istringstream{ key_value.value() } >> state;
 			return state;
 		}
 		else if constexpr (VallidInteger<TypeReturn>)
 		{
 			TypeReturn state{};
-			std::istringstream{ kay_value.value() } >> state;
+			std::istringstream{ key_value.value() } >> state;
 			return state;
 		}
 	}
 
-	return Debug::str_unexpected("Не удалось найти параметр [{}] в секции [{}]!", parameter, section);
+	return Debug::str_unexpected("Parameter [{}] in section [{}] not found!", parameter, section);
 }
 
 template std::expected<std::string, std::string> File::parameterSection<std::string>(std::string_view section, std::string parameter);
-template std::expected<cpcstr, std::string> File::parameterSection<cpcstr>(std::string_view section, std::string parameter);
-template std::expected<pcstr, std::string> File::parameterSection<pcstr>(std::string_view section, std::string parameter);
-template std::expected<bool, std::string> File::parameterSection<bool>(std::string_view section, std::string parameter);
-template std::expected<float, std::string> File::parameterSection<float>(std::string_view section, std::string parameter);
-template std::expected<s32, std::string> File::parameterSection<s32>(std::string_view section, std::string parameter);
-template std::expected<u8, std::string> File::parameterSection<u8>(std::string_view section, std::string parameter);
-template std::expected<u32, std::string> File::parameterSection<u32>(std::string_view section, std::string parameter);
-template std::expected<u64, std::string> File::parameterSection<u64>(std::string_view section, std::string parameter);
+template std::expected<cpcstr, std::string>		 File::parameterSection<cpcstr>(std::string_view section, std::string parameter);
+template std::expected<pcstr, std::string>		 File::parameterSection<pcstr>(std::string_view section, std::string parameter);
+template std::expected<bool, std::string>		 File::parameterSection<bool>(std::string_view section, std::string parameter);
+template std::expected<float, std::string>		 File::parameterSection<float>(std::string_view section, std::string parameter);
+template std::expected<s32, std::string>		 File::parameterSection<s32>(std::string_view section, std::string parameter);
+template std::expected<u8, std::string>			 File::parameterSection<u8>(std::string_view section, std::string parameter);
+template std::expected<u32, std::string>		 File::parameterSection<u32>(std::string_view section, std::string parameter);
+template std::expected<u64, std::string>		 File::parameterSection<u64>(std::string_view section, std::string parameter);
 
 void File::writeText(std::string_view str)
 {
@@ -269,10 +268,10 @@ void File::writeSectionParameter(std::string_view section, std::string parameter
 		return;
 	}
 
-	bool stoped{ false };
+	bool stopped{ false };
 	forLineSection(
 		section,
-		[&stoped, parameter, value_argument](std::string& str)
+		[&stopped, parameter, value_argument](std::string& str)
 		{
 			std::smatch para;
 			if (std::regex_search(str, para, reg_equally()))
@@ -286,8 +285,8 @@ void File::writeSectionParameter(std::string_view section, std::string parameter
 					// The old value must NOT be used as a regex — values like
 					// "a|b" or "1.2.3" are metacharacters and would corrupt the
 					// line (and grow it on every write).
-					str	   = para.prefix().str() + "=" + value_argument;
-					stoped = true;
+					str		= para.prefix().str() + "=" + value_argument;
+					stopped = true;
 					return true;
 				}
 			}
@@ -296,7 +295,7 @@ void File::writeSectionParameter(std::string_view section, std::string parameter
 		}
 	);
 
-	if (stoped)
+	if (stopped)
 		return;
 
 	_map_list_string[std::string{ section }].emplace_back(std::format("{}={}", parameter, value_argument));
@@ -338,7 +337,7 @@ std::string File::name() const
 	return _path_file.filename().string();
 }
 
-path File::getPath() const
+std::filesystem::path File::getPath() const
 {
 	return _path_file;
 }
@@ -452,9 +451,9 @@ void File::_normalize()
 
 	struct SectionLines
 	{
-		std::vector<std::string> lines; // parameters (for untouched sections)
-		bool touched{ false };			// present in _map_list_string
-		bool in_file{ false };			// found in _line_string
+		std::vector<std::string> lines;				  // parameters (for untouched sections)
+		bool					 touched{ false };	  // present in _map_list_string
+		bool					 in_file{ false };	  // found in _line_string
 	};
 
 	std::map<std::string, SectionLines> sections;
@@ -487,7 +486,7 @@ void File::_normalize()
 	// 2. Modified sections take their values from the map (map wins), the rest keep file lines.
 	for (auto& [section, list_string] : _map_list_string)
 	{
-		auto& entry = sections[section];
+		auto& entry	  = sections[section];
 		entry.touched = true;
 		entry.lines.clear();
 		entry.lines.reserve(list_string.size());
@@ -497,14 +496,12 @@ void File::_normalize()
 
 	// 3. New sections (not present in the file yet) are appended in creation order.
 	for (auto& section : _section_order)
-		if ((!sections[section].in_file) &&
-			std::find(order.begin(), order.end(), section) == order.end())
+		if ((!sections[section].in_file) && std::find(order.begin(), order.end(), section) == order.end())
 			order.push_back(section);
 
 	// Fallback: map sections that ended up outside the creation order (to avoid data loss).
 	for (auto& [section, list_string] : _map_list_string)
-		if ((!sections[section].in_file) &&
-			std::find(order.begin(), order.end(), section) == order.end())
+		if ((!sections[section].in_file) && std::find(order.begin(), order.end(), section) == order.end())
 			order.push_back(section);
 
 	// 4. Rebuild _line_string: no empty sections, blank line as separator.
@@ -557,7 +554,7 @@ void File::_removeEmptyLine()
 		_line_string,
 		[&front, &empty_line](const std::string& str)
 		{
-			if (front && (str.empty() || std::regex_match(str, std::regex{ "\n" })))
+			if (front && str.empty())
 				return true;
 			if (front)
 				front = false;

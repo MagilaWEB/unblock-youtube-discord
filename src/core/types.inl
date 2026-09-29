@@ -20,7 +20,7 @@ template<typename T>
 constexpr auto type_max = std::numeric_limits<T>::max();
 
 template<typename T>
-constexpr auto type_min = -std::numeric_limits<T>::max();
+constexpr auto type_min = std::numeric_limits<T>::lowest();
 
 template<typename T>
 constexpr auto type_zero = std::numeric_limits<T>::min();

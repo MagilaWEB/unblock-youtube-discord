@@ -47,9 +47,9 @@ str_console_input_please_select=choose one of the options
 // services info
 str_service_zapret_description=DPI software for bypassing blocks.
 str_error_create_service=failed to create service [{}], reason [{}].
-str_error_stoping_service=service [{}] is not stopped or is stopping, cannot start!
-str_wait_startig_service=wait for service [{}] to start
-str_wait_stoping_service=wait for service [{}] to stop
+str_error_stopping_service=service [{}] is not stopped or is stopping, cannot start!
+str_wait_starting_service=wait for service [{}] to start
+str_wait_stopping_service=wait for service [{}] to stop
 str_error_wait_time_start_service=timeout waiting for service [{}] to start, startup aborted, unknown reason!
 str_expired_wait_time_start_service=timeout waiting for service [{}] to start, process will be stopped!
 str_success_start_service=service [{}] started.

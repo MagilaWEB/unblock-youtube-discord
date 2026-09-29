@@ -217,7 +217,7 @@ void Service::start()
 
 		if (!_sc)
 		{
-			InputConsole::textError(Localization::Str{ "str_error_stoping_service" }(), _name);
+			InputConsole::textError(Localization::Str{ "str_error_stopping_service" }(), _name);
 			return;
 		}
 	}
@@ -227,11 +227,11 @@ void Service::start()
 	DWORD state = _config.sc_status.dwCurrentState;
 	if (state != SERVICE_STOPPED && state != SERVICE_STOP_PENDING)
 	{
-		InputConsole::textError(Localization::Str{ "str_error_stoping_service" }(), _name);
+		InputConsole::textError(Localization::Str{ "str_error_stopping_service" }(), _name);
 		return;
 	}
 
-	InputConsole::textPlease(Localization::Str{ "str_wait_startig_service" }(), true, _name);
+	InputConsole::textPlease(Localization::Str{ "str_wait_starting_service" }(), true, _name);
 
 	std::vector<pcstr> argv;
 	for (const auto& arg : _args)
@@ -291,6 +291,7 @@ void Service::update()
 		_refreshCachedRunning();
 		return;
 	}
+
 	_config.sc_status = temp;
 	_refreshCachedRunning();
 
@@ -338,7 +339,7 @@ void Service::stop()
 	if (_config.sc_status.dwCurrentState == SERVICE_STOPPED)
 		return;
 
-	InputConsole::textPlease(Localization::Str{ "str_wait_stoping_service" }(), true, _name);
+	InputConsole::textPlease(Localization::Str{ "str_wait_stopping_service" }(), true, _name);
 
 	bool stopped   = false;
 	auto send_stop = [&]

@@ -160,13 +160,6 @@ namespace ui::dom
 		/// @example label.on(Event::Click, ui, "open", { .persist = true });
 
 		void on(Event event, std::function<bool(std::string, js::Value)> func, std::string_view tag, ListenOpts opts = {}) const;
-		/// Explicit teardown for one subscription kind (drops the JS handler
-		/// via __dom_listen_kind_remove and unexposes cppName).
-		/// @note Reserved for future use: no widget calls it yet. Non-persist
-		///   listeners already self-remove when C++ returns true; this is for
-		///   cases where C++ must detach a listener proactively (e.g. widget
-		///   teardown while the DOM node outlives it).
-		void remove_on(Event event, std::string_view tag) const;
 
 		// --- Hover pop-up (universal, replaces widget tooltip) ------------
 		/// The pop-up follows the cursor, shown/hidden on mouseover/out.

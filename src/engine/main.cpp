@@ -2,12 +2,11 @@
 
 using namespace std;
 
-static void run(const std::string& command_line)
+static void run(const std::string& /*command_line*/)
 {
 	auto& core	 = Core::get();
 	auto& engine = Engine::get();
 
-	core.initialize(command_line);
 	engine.initialize();
 	core.parallel_run();
 	engine.run();

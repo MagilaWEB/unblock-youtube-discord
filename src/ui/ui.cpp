@@ -258,14 +258,14 @@ void Ui::_checkConflictService()
 	Core::get().addTask(
 		[self = self]
 		{
-			auto& conflict_service = self->_unblock->getConflictingServices();
+			auto conflict_service = std::make_shared<std::list<Service>>(self->_unblock->getConflictingServices());
 			self->_ui_background_tasks->finish("conflict_service");
 
-			if (conflict_service.empty())
+			if (conflict_service->empty())
 				return;
 
 			std::string names_services;
-			for (auto& service : conflict_service)
+			for (auto& service : *conflict_service)
 				names_services.append(service.getName()).append(",");
 			names_services.pop_back();
 
@@ -274,13 +274,10 @@ void Ui::_checkConflictService()
 			self->_window_warning_conflict_service->setDescription(utils::format(description, names_services));
 			self->_window_warning_conflict_service->show();
 
-			// getConflictingServices() is a function-static list: the pointer
-			// stays valid for the whole process, so the handler can remove the
-			// services later without re-scanning.
-			auto* p_conflict = &conflict_service;
-
+			// The list is move-only (Service holds a lock), so it is kept alive
+			// by the shared_ptr captured in the handler below.
 			self->_window_warning_conflict_service->addEventYesNo(
-				[self = self, p_conflict](JSArgs args)
+				[self = self, conflict_service](JSArgs args)
 				{
 					if (JSToCPP<bool>(args[0]))
 					{
@@ -288,17 +285,17 @@ void Ui::_checkConflictService()
 						// service lock for seconds — off the edge/main thread so
 						// the window keeps moving while it runs.
 						Core::get().addTask(
-							[p_conflict]
+							[conflict_service]
 							{
-								for (auto& service : *p_conflict)
+								for (auto& service : *conflict_service)
 									service.remove();
 
-								p_conflict->clear();
+								conflict_service->clear();
 							}
 						);
 					}
 					else
-						p_conflict->clear();
+						conflict_service->clear();
 
 					self->_window_warning_conflict_service->hide();
 

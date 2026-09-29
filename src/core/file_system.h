@@ -2,8 +2,6 @@
 
 #include "../core/concepts.h"
 
-using namespace std::filesystem;
-
 class File final
 {
 	CriticalSection lock;
@@ -12,10 +10,10 @@ class File final
 	using v_sections	= std::map<std::string, std::list<std::string>>;
 	bool info_debug{ true };
 
-	path		  _path_file{};
-	std::fstream  _stream;
-	v_line_string _line_string;
-	v_sections	  _map_list_string;
+	std::filesystem::path _path_file{};
+	std::fstream		  _stream;
+	v_line_string		  _line_string;
+	v_sections			  _map_list_string;
 
 	// Section order as they appear/created during the current session.
 	std::vector<std::string> _section_order{};
@@ -30,15 +28,15 @@ public:
 	File(bool info_debug) : info_debug(info_debug) {}
 	~File();
 
-	std::string name() const;
-	path		getPath() const;
+	std::string			  name() const;
+	std::filesystem::path getPath() const;
 
 	size_t lineSize() const;
 
 	bool isOpen() const;
 	bool empty() const;
 	void open();
-	void open(path file, std::string_view expansion, bool no_default_patch = false);
+	void open(std::filesystem::path file, std::string_view expansion, bool no_default_patch = false);
 	void clear();
 	void save();
 	void close();

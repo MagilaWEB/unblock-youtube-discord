@@ -71,8 +71,7 @@ namespace ui::dom
 		if (!v || _h < 0 || blockedOnUiThread("rect"))
 			return std::nullopt;
 
-		const auto		  r = coco::await(v->evaluate<std::string>("__dom_rect({})", _h));
-		const std::string s = r.value_or(std::string{});
+		const std::string s = coco::await(v->evaluate<std::string>("__dom_rect({})", _h)).value_or("");
 		if (s.empty())
 			return std::nullopt;
 
@@ -89,8 +88,7 @@ namespace ui::dom
 		if (!v || _h < 0 || blockedOnUiThread("offsetSize"))
 			return std::nullopt;
 
-		const auto		  r = coco::await(v->evaluate<std::string>("__dom_size({})", _h));
-		const std::string s = r.value_or(std::string{});
+		const std::string s = coco::await(v->evaluate<std::string>("__dom_size({})", _h)).value_or("");
 		if (s.empty())
 			return std::nullopt;
 
@@ -107,8 +105,7 @@ namespace ui::dom
 		if (!v || blockedOnUiThread("viewport"))
 			return {};
 
-		const auto		  r = coco::await(v->evaluate<std::string>("__dom_viewport()"));
-		const std::string s = r.value_or(std::string{});
+		const std::string s = coco::await(v->evaluate<std::string>("__dom_viewport()")).value_or("");
 		double			  nums[2]{};
 		if (!parseNums(s, nums, 2))
 			return {};

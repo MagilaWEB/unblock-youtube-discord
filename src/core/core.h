@@ -24,7 +24,6 @@ public:
 public:
 	static Core& get();
 
-	void initialize(const std::string& command_line);
 	void parallel_run();
 	void finish();
 

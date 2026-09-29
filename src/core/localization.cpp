@@ -25,20 +25,15 @@ void Localization::set(std::string_view lang_id)
 	_lang_file_string->forLine(
 		[&](std::string str)
 		{
-			if (str.empty() || std::regex_match(str, std::regex{ "\n" }))
+			if (str.empty() || str.starts_with("//"))
 				return false;
 
-			size_t pos = str.find_last_of("//", 2);
-			if (pos != std::string::npos)
-				return false;
-
-			pos = str.find_first_of('=');
+			const size_t pos = str.find_first_of('=');
 			if (pos != std::string::npos)
 			{
 				key = str.substr(0, pos);
 				utils::trim(key);
-				const auto& value = str.substr(++pos, str.size());
-				_string_list.emplace(key, value);
+				_string_list.emplace(key, std::string{ std::string_view{ str }.substr(pos + 1) });
 			}
 			else
 			{
@@ -51,13 +46,13 @@ void Localization::set(std::string_view lang_id)
 	);
 }
 
-pcstr Localization::translate(std::string_view str_id)
+std::string Localization::translate(std::string_view str_id)
 {
 	FAST_LOCK_SHARED(_lock);
 
 	auto it = _string_list.find(std::string{ str_id });
 	if (it != _string_list.end())
-		return it->second.c_str();
+		return it->second;
 
-	return str_id.data();
+	return std::string{ str_id };
 }
