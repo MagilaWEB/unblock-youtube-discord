@@ -210,7 +210,7 @@ void UiDnsHosts::_rebuildRegionSelect()
 	const auto& items = _region_list->items();
 
 	std::string active = jsToCpp<std::string>(_select_region->getSelectedOptionValue());
-	if (active.empty() || std::ranges::find(items, active) == items.end())
+	if (active.empty() || !std::ranges::contains(items, active))
 		active = items.empty() ? "" : items.front();
 
 	_select_region->clear();

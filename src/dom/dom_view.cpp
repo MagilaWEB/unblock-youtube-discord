@@ -64,7 +64,7 @@ namespace ui::dom
 
 			const std::lock_guard lock{ s_exposed_mutex };
 			auto&				  names = s_exposed[handle];
-			if (std::ranges::find(names, cpp_name) == names.end())
+			if (!std::ranges::contains(names, cpp_name))
 				names.push_back(std::move(cpp_name));
 		}
 

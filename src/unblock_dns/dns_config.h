@@ -210,7 +210,7 @@ inline std::optional<std::vector<std::string>> parseBootstrapList(std::string_vi
 			continue;
 		if (!isValidBootstrapAddress(part))
 			return std::nullopt;
-		if (std::ranges::find(out, part) == out.end())
+		if (!std::ranges::contains(out, part))
 			out.push_back(std::move(part));
 	}
 

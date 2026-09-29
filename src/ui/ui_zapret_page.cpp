@@ -648,7 +648,7 @@ void UiZapretPage::_clickStartService()
 	if (auto config = _ui->userConfig()->parameterSection<std::string>(_rememberSection(), "config"))
 	{
 		auto& strategy_list = _ui->_unblock->getStrategiesList(_technology);
-		if (std::ranges::find(strategy_list, config.value()) == strategy_list.end())
+		if (!std::ranges::contains(strategy_list, config.value()))
 		{
 			Debug::warning("config[{}] The specified strategy does not exist from the user's settings!", config.value());
 

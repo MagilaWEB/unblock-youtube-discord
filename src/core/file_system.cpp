@@ -535,7 +535,7 @@ void File::_normalize()
 void File::_registerSectionOrder(std::string_view section)
 {
 	auto name = std::string{ section };
-	if (std::ranges::find(_section_order, name) == _section_order.end())
+	if (!std::ranges::contains(_section_order, name))
 		_section_order.push_back(std::move(name));
 }
 

@@ -192,7 +192,7 @@ bool StrategyGenerator::_useIn(std::string str, std::string_view section)
 
 		if (_map_filters[result].empty())
 		{
-			if (std::ranges::find(_section_opt_service_names, result) == _section_opt_service_names.end())
+			if (!std::ranges::contains(_section_opt_service_names, result))
 			{
 				File blacklist{ false };
 				blacklist.open(_user_blacklist() / result, ".list", true);
@@ -285,7 +285,7 @@ void StrategyGenerator::_appendLines(const std::filesystem::path& file_path, con
 
 	std::vector<std::string> keep;
 	for (auto& line : file)
-		if (std::ranges::find(items, line) == items.end())
+		if (!std::ranges::contains(items, line))
 			keep.push_back(line);
 
 	file.clear();
