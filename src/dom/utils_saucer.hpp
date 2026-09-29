@@ -178,17 +178,11 @@ inline std::string jsQuote(std::string_view value)
 // Convert a value to a JS literal for embedding into code.
 inline std::string jsArgToString(const JSValue& arg);
 
-// Build the argument list for a JS call: "arg1, arg2, ..."
+// Build the argument list for a JS call: "arg1,arg2,..."
 inline std::string jsArgsList(const JSArgs& args)
 {
-	std::string result;
-	for (size_t i = 0; i < args.size(); i++)
-	{
-		if (i)
-			result.push_back(',');
-		result.append(jsArgToString(args[i]));
-	}
-	return result;
+	return args | std::views::transform([](const JSValue& arg) { return jsArgToString(arg); }) | std::views::join_with(',')
+		 | std::ranges::to<std::string>();
 }
 
 // Convert a value to a JS literal for embedding into code.

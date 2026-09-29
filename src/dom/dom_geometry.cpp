@@ -3,6 +3,7 @@
 #include <coco/utils/utils.hpp>
 
 #include <charconv>
+#include <span>
 #include <string_view>
 
 namespace ui::dom
@@ -12,23 +13,24 @@ namespace ui::dom
 		// Parsing "a,b,c,d" from evaluate into numbers. Empty/garbage = false.
 		// The JS side always returns a string (not an object) — the saucer
 		// serializer is only guaranteed to handle strings (see Input::getValue).
-		bool parseNums(const std::string& s, double* out, int n)
+		bool parseNums(std::string_view s, std::span<double> out)
 		{
-			std::string_view rest{ s };
-			for (int i = 0; i < n; ++i)
+			size_t idx = 0;
+			for (auto token_range : s | std::views::split(','))
 			{
-				const auto comma	 = rest.find(',');
-				const auto token	 = rest.substr(0, comma);
-				const auto [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), out[i]);
+				if (idx >= out.size())
+					return false;
+
+				const std::string_view token{ std::ranges::data(token_range), std::ranges::size(token_range) };
+
+				const auto [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), out[idx]);
 				if (ec != std::errc{} || ptr != token.data() + token.size())
 					return false;
 
-				if (comma == std::string_view::npos)
-					return i == n - 1;
-
-				rest.remove_prefix(comma + 1);
+				++idx;
 			}
-			return true;
+
+			return idx == out.size();
 		}
 	}
 
@@ -76,7 +78,7 @@ namespace ui::dom
 			return std::nullopt;
 
 		double nums[4]{};
-		if (!parseNums(s, nums, 4))
+		if (!parseNums(s, nums))
 			return std::nullopt;
 
 		return Rect{ nums[0], nums[1], nums[2], nums[3] };
@@ -93,7 +95,7 @@ namespace ui::dom
 			return std::nullopt;
 
 		double nums[2]{};
-		if (!parseNums(s, nums, 2))
+		if (!parseNums(s, nums))
 			return std::nullopt;
 
 		return Size{ nums[0], nums[1] };
@@ -107,7 +109,7 @@ namespace ui::dom
 
 		const std::string s = coco::await(v->evaluate<std::string>("__dom_viewport()")).value_or("");
 		double			  nums[2]{};
-		if (!parseNums(s, nums, 2))
+		if (!parseNums(s, nums))
 			return {};
 
 		return Size{ nums[0], nums[1] };
