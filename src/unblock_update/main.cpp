@@ -52,7 +52,7 @@ namespace
 
 	std::wstring lower(std::wstring value)
 	{
-		std::transform(value.begin(), value.end(), value.begin(), ::towlower);
+		std::ranges::transform(value, value.begin(), [](wchar_t c) { return static_cast<wchar_t>(::towlower(c)); });
 		return value;
 	}
 
