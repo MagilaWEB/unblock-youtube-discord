@@ -1,5 +1,6 @@
 #pragma once
 #include "zapret_engine.h"
+#include "app_update.h"
 
 #include <cctype>
 #include <charconv>
@@ -16,7 +17,6 @@
 
 #include "../core/service.h"
 
-class HttpsLoad;
 class Zapret1Engine;
 class Zapret2Engine;
 class DomainTesting;
@@ -213,11 +213,8 @@ private:
 	std::mutex _tcp_timestamp_lock;
 	bool	   _tcp_timestamps_owned{ false };
 
-	// Active update download. appUpdate() runs on a worker and creates it;
-	// the UI thread reads progress via appUpdateProgress(), so the shared_ptr
-	// is swapped under the mutex.
-	mutable std::mutex		   _update_load_mutex;
-	std::shared_ptr<HttpsLoad> _update_load;
+	// Self-update: version check + download orchestration.
+	AppUpdater _updater;
 
 	std::unique_ptr<DomainTesting> _domain_testing;
 	std::unique_ptr<DNSHost>	   _dns_hosts;
