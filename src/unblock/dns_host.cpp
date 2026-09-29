@@ -164,7 +164,7 @@ void DNSHost::update()
 			if (auto pin = parseDnsPin(trimmed))
 			{
 				auto& ips = domain_to_ips[pin->first];
-				if (std::ranges::find(ips, pin->second) == ips.end())
+				if (!std::ranges::contains(ips, pin->second))
 					ips.push_back(pin->second);
 			}
 			else
@@ -376,14 +376,8 @@ std::string DNSHost::_pathHostDir()
 {
 	static constexpr char XOR_KEY{ 0x5A };
 
-	std::string result;
-
-	std::transform(
-		data_vec().begin(),
-		data_vec().end(),
-		std::back_inserter(result),
-		[](unsigned char code) { return static_cast<char>(code ^ XOR_KEY); }
-	);
+	std::string result =
+		data_vec() | std::views::transform([](unsigned char code) { return static_cast<char>(code ^ XOR_KEY); }) | std::ranges::to<std::string>();
 
 	return result;
 }

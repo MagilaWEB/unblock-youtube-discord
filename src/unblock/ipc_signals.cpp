@@ -426,7 +426,7 @@ bool IPCSignals::snapshotContains(std::string_view name, std::string_view token)
 
 		if (line == token)
 			return true;
-		if (line.size() > token.size() && line.compare(0, token.size(), token) == 0 && line[token.size()] == '=')
+		if (line.starts_with(token) && line.size() > token.size() && line[token.size()] == '=')
 			return true;
 	}
 	return false;

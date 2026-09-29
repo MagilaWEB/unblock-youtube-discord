@@ -1115,14 +1115,8 @@ void Unblock::startService(Technology technology)
 		auto hosts = testHostNames();
 		if (!hosts.empty())
 		{
-			std::string list = "LIST:";
-			for (auto& host : hosts)
-			{
-				list += host;
-				list += ':';
-			}
+			std::string list = std::format("LIST:{}", hosts | std::views::join_with(':') | std::ranges::to<std::string>());
 
-			list.pop_back();
 			sendHelperUdp(list);
 		}
 	}

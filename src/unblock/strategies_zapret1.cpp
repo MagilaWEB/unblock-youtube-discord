@@ -172,12 +172,7 @@ std::optional<std::string> StrategiesZapret1::_getFake(std::string_view str)
 	const auto it = _fake_bin_params.find(_fake_bind_key);
 	if (it == _fake_bin_params.end())
 	{
-		std::string list_key{};
-		for (auto& [key, _] : _fake_bin_params)
-			if (list_key.empty())
-				list_key = key;
-			else
-				list_key.append("," + key);
+		const std::string list_key = _fake_bin_params | std::views::keys | std::views::join_with(',') | std::ranges::to<std::string>();
 
 		Debug::error("fake key [{}] not found! Available keys [{}].", _fake_bind_key, list_key);
 		return std::nullopt;

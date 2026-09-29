@@ -62,21 +62,27 @@ struct HelperStats
 inline std::optional<HelperStats> parseHelperStats(std::string_view text)
 {
 	HelperStats out{};
-	size_t		pos = 0;
 	size_t*		fields[3]{ &out.queued, &out.in_check, &out.known };
-	for (int i = 0; i < 3; ++i)
+	size_t		index = 0;
+
+	for (auto part_range : text | std::views::split('|'))
 	{
-		const size_t end = (i < 2) ? text.find('|', pos) : std::string_view::npos;
-		if (i < 2 && end == std::string_view::npos)
+		if (index >= 3)
 			return std::nullopt;
+
+		const std::string_view part{ std::ranges::data(part_range), std::ranges::size(part_range) };
+
 		unsigned long long num{};
-		const auto		   part = text.substr(pos, (i < 2) ? end - pos : std::string_view::npos);
-		const auto [ptr, ec]	= std::from_chars(part.data(), part.data() + part.size(), num);
+		const auto [ptr, ec] = std::from_chars(part.data(), part.data() + part.size(), num);
 		if (ec != std::errc{} || ptr != part.data() + part.size())
 			return std::nullopt;
-		*fields[i] = static_cast<size_t>(num);
-		pos		   = end + 1;
+
+		*fields[index++] = static_cast<size_t>(num);
 	}
+
+	if (index != 3)
+		return std::nullopt;
+
 	return out;
 }
 
@@ -88,7 +94,7 @@ inline bool strategyUsesTcpTimestamps(const std::vector<std::string>& strategies
 {
 	for (const auto& line : strategies)
 	{
-		if (line.find("tcp_ts") != std::string::npos)
+		if (line.contains("tcp_ts"))
 			return true;
 
 		const auto pos = line.find("fooling=");
@@ -101,17 +107,12 @@ inline bool strategyUsesTcpTimestamps(const std::vector<std::string>& strategies
 			value_end = line.size();
 
 		const std::string_view value{ line.data() + value_begin, value_end - value_begin };
-		size_t				   start = 0;
-		while (start <= value.size())
-		{
-			const auto comma = value.find(',', start);
-			const auto end	 = (comma == std::string_view::npos) ? value.size() : comma;
-			if (value.substr(start, end - start) == "ts")
-				return true;
-			if (comma == std::string_view::npos)
-				break;
-			start = comma + 1;
-		}
+
+		if (std::ranges::any_of(
+				value | std::views::split(','),
+				[](auto token_range) { return std::string_view{ std::ranges::data(token_range), std::ranges::size(token_range) } == "ts"; }
+			))
+			return true;
 	}
 
 	return false;
