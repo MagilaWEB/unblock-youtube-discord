@@ -215,10 +215,12 @@ inline static TResult KEY(VK key_num, bool wait_key_click)
 					if (GetForegroundWindow() == GetConsoleWindow())
 					{
 						if (!(GetKeyState(num) & 0x80'00))
+						{
 							if constexpr (std::is_same_v<TResult, bool>)
 								return true;
 							else
 								return;
+						}
 					}
 
 					std::this_thread::yield();

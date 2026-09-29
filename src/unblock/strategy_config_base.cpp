@@ -1,4 +1,5 @@
 #include "strategy_config_base.h"
+#include "../core/input_console.h"
 
 StrategyConfigBase::StrategyConfigBase()
 {

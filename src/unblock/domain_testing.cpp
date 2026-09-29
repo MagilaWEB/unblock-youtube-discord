@@ -1,6 +1,7 @@
 #include "domain_testing.h"
 #include "curl/curl.h"
 #include "ipc_signals.h"
+#include "../core/input_console.h"
 
 static size_t progressCallback(void* clientp, curl_off_t /*dltotal*/, curl_off_t /*dlnow*/, curl_off_t /*ultotal*/, curl_off_t /*ulnow*/)
 {

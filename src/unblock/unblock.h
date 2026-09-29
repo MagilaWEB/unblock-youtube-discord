@@ -1,9 +1,5 @@
 #pragma once
-#include "zapret1_engine.h"
-#include "zapret2_engine.h"
-#include "domain_testing.h"
-#include "dns_host.h"
-#include "ipc_signals.h"
+#include "zapret_engine.h"
 
 #include <cctype>
 #include <charconv>
@@ -21,6 +17,10 @@
 #include "../core/service.h"
 
 class HttpsLoad;
+class Zapret1Engine;
+class Zapret2Engine;
+class DomainTesting;
+class DNSHost;
 
 /** Passive autopick round (Zapret2): pure rules over helper verdict sets.
  *  No curl here — verdicts arrive from live traffic (helper probes every
@@ -197,8 +197,8 @@ public:
 	static uint32_t					defaultDnsProxyTimeout();
 
 private:
-	Zapret1Engine _zapret1_engine;
-	Zapret2Engine _zapret2_engine;
+	std::unique_ptr<Zapret1Engine> _zapret1_engine;
+	std::unique_ptr<Zapret2Engine> _zapret2_engine;
 
 	Service _zapret_helper{ "zapret2_helper", "SvcHost.exe" };
 	Service _tg_ws_proxy{ "TgWsProxy", "SvcHost.exe" };
@@ -219,8 +219,8 @@ private:
 	mutable std::mutex		   _update_load_mutex;
 	std::shared_ptr<HttpsLoad> _update_load;
 
-	DomainTesting _domain_testing;
-	DNSHost		  _dns_hosts;
+	std::unique_ptr<DomainTesting> _domain_testing;
+	std::unique_ptr<DNSHost>	   _dns_hosts;
 
 	std::list<std::string> _section_opt_service_names{};
 
@@ -280,6 +280,7 @@ private:
 
 public:
 	Unblock();
+	~Unblock();
 
 	bool testUrl(std::string_view str_url);
 

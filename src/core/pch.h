@@ -29,6 +29,5 @@
 
 #include "utils.h"
 #include "debug.h"
-#include "input_console.h"
 #include "core.h"
 #include "scheduler.h"

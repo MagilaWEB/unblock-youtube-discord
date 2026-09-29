@@ -1,7 +1,10 @@
 #include "unblock.h"
 #include "../engine/version.hpp"
 #include "domain_testing.h"
+#include "dns_host.h"
 #include "ipc_signals.h"
+#include "zapret1_engine.h"
+#include "zapret2_engine.h"
 #include <bit7z/bitfileextractor.hpp>
 #include <curl/curl.h>
 
@@ -13,6 +16,11 @@
 
 Unblock::Unblock()
 {
+	_zapret1_engine = std::make_unique<Zapret1Engine>();
+	_zapret2_engine = std::make_unique<Zapret2Engine>();
+	_domain_testing = std::make_unique<DomainTesting>();
+	_dns_hosts		= std::make_unique<DNSHost>();
+
 	(void)IPCSignals::get();
 	_zapret_helper.open();
 	_win_divert.open();
@@ -20,6 +28,8 @@ Unblock::Unblock()
 	_dns_proxy.open();
 	dnsProxyRepairBoot();
 }
+
+Unblock::~Unblock() = default;
 
 bool Unblock::testUrl(std::string_view str_url)
 {
@@ -32,9 +42,9 @@ bool Unblock::testUrl(std::string_view str_url)
 ZapretEngine& Unblock::engine(Technology technology)
 {
 	if (technology == Technology::Zapret1)
-		return _zapret1_engine;
+		return *_zapret1_engine;
 
-	return _zapret2_engine;
+	return *_zapret2_engine;
 }
 
 bool Unblock::automaticallyStrategy(Technology technology)
@@ -44,8 +54,8 @@ bool Unblock::automaticallyStrategy(Technology technology)
 
 void Unblock::serviceConfigFile(const std::shared_ptr<File>& config)
 {
-	_zapret1_engine.serviceConfigFile(config);
-	_zapret2_engine.serviceConfigFile(config);
+	_zapret1_engine->serviceConfigFile(config);
+	_zapret2_engine->serviceConfigFile(config);
 }
 
 void Unblock::changeStrategy(Technology technology, std::string_view name_config)
@@ -81,39 +91,39 @@ void Unblock::addOptionalStrategies(std::string_view name)
 
 	_section_opt_service_names.emplace_back(name);
 
-	_zapret1_engine.changeOptionalServices(_section_opt_service_names);
-	_zapret2_engine.changeOptionalServices(_section_opt_service_names);
-	_domain_testing.changeOptionalServices(_section_opt_service_names);
+	_zapret1_engine->changeOptionalServices(_section_opt_service_names);
+	_zapret2_engine->changeOptionalServices(_section_opt_service_names);
+	_domain_testing->changeOptionalServices(_section_opt_service_names);
 }
 
 void Unblock::removeOptionalStrategies(std::string_view name)
 {
 	std::erase(_section_opt_service_names, name);
-	_zapret1_engine.changeOptionalServices(_section_opt_service_names);
-	_zapret2_engine.changeOptionalServices(_section_opt_service_names);
-	_domain_testing.changeOptionalServices(_section_opt_service_names);
+	_zapret1_engine->changeOptionalServices(_section_opt_service_names);
+	_zapret2_engine->changeOptionalServices(_section_opt_service_names);
+	_domain_testing->changeOptionalServices(_section_opt_service_names);
 }
 
 void Unblock::clearOptionalStrategies()
 {
 	_section_opt_service_names.clear();
 
-	_zapret1_engine.changeOptionalServices({});
-	_zapret2_engine.changeOptionalServices({});
-	_domain_testing.changeOptionalServices({});
+	_zapret1_engine->changeOptionalServices({});
+	_zapret2_engine->changeOptionalServices({});
+	_domain_testing->changeOptionalServices({});
 }
 
 void Unblock::setCustomLists(
 	std::vector<std::string> hosts, std::vector<std::string> ip_set, std::vector<std::string> domains_exclude, std::vector<std::string> ip_exclude
 )
 {
-	_zapret1_engine.changeCustomLists(hosts, ip_set, domains_exclude, ip_exclude);
-	_zapret2_engine.changeCustomLists(std::move(hosts), std::move(ip_set), std::move(domains_exclude), std::move(ip_exclude));
+	_zapret1_engine->changeCustomLists(hosts, ip_set, domains_exclude, ip_exclude);
+	_zapret2_engine->changeCustomLists(std::move(hosts), std::move(ip_set), std::move(domains_exclude), std::move(ip_exclude));
 }
 
 bool Unblock::runTest()
 {
-	return _domain_testing.isTesting();
+	return _domain_testing->isTesting();
 }
 
 std::string Unblock::getNameStrategies(Technology technology)
@@ -152,10 +162,10 @@ std::list<Service> Unblock::getConflictingServices()
 			{
 				if (config.binary_path.contains(name_prosses))
 				{
-					if (name_service == _zapret1_engine.serviceName())
+					if (name_service == _zapret1_engine->serviceName())
 						continue;
 
-					if (name_service == _zapret2_engine.serviceName())
+					if (name_service == _zapret2_engine->serviceName())
 						continue;
 
 					if (name_service == _win_divert.getName())
@@ -176,14 +186,14 @@ void Unblock::testingDomain(std::function<void(std::string_view url, bool state)
 	// The retry/exhausted coordination over UDP 9999 (zcheck) exists only in
 	// Zapret2. With Zapret1 running the test must behave exactly like with
 	// everything stopped: a plain single-attempt curl per host.
-	_domain_testing.test(base_test, [callback](std::string_view url, bool state) { callback(url, state); }, _zapret2_engine.isRun());
+	_domain_testing->test(base_test, [callback](std::string_view url, bool state) { callback(url, state); }, _zapret2_engine->isRun());
 
-	_domain_testing.printTestInfo();
+	_domain_testing->printTestInfo();
 }
 
 void Unblock::testingDomainCancel()
 {
-	_domain_testing.cancelTesting();
+	_domain_testing->cancelTesting();
 }
 
 std::optional<std::string> Unblock::checkUpdate() const
@@ -321,7 +331,7 @@ float Unblock::appUpdateProgress() const
 
 u32 Unblock::domainSuccessRate() const
 {
-	return _domain_testing.successRate();
+	return _domain_testing->successRate();
 }
 
 bool Unblock::validDomain() const
@@ -341,10 +351,10 @@ bool Unblock::isRun(Technology technology)
 
 std::optional<Technology> Unblock::runningTechnology()
 {
-	if (_zapret1_engine.isRun())
+	if (_zapret1_engine->isRun())
 		return Technology::Zapret1;
 
-	if (_zapret2_engine.isRun())
+	if (_zapret2_engine->isRun())
 		return Technology::Zapret2;
 
 	return std::nullopt;
@@ -552,7 +562,7 @@ HelperStats Unblock::helperStats()
 std::vector<std::string> Unblock::testHostNames()
 {
 	std::vector<std::string> hosts;
-	for (auto& line : _domain_testing.listHost())
+	for (auto& line : _domain_testing->listHost())
 	{
 		std::smatch m;
 		if (!(std::regex_search(line, m, std::regex{ R"(://([^/?#]+))" }) && m.size() > 1))
@@ -572,57 +582,57 @@ std::vector<std::string> Unblock::listVersionStrategy(Technology technology)
 
 void Unblock::dnsHosts(bool state)
 {
-	state ? _dns_hosts.enable() : _dns_hosts.disable();
+	state ? _dns_hosts->enable() : _dns_hosts->disable();
 }
 
 void Unblock::dnsHostsUpdate()
 {
-	_dns_hosts.update();
+	_dns_hosts->update();
 }
 
 void Unblock::dnsHostsCancelUpdate()
 {
-	_dns_hosts.cancel();
+	_dns_hosts->cancel();
 }
 
 float Unblock::dnsHostsDownloadProgress() const
 {
-	return _dns_hosts.downloadProgress();
+	return _dns_hosts->downloadProgress();
 }
 
 bool Unblock::dnsHostsCheck() const
 {
-	return _dns_hosts.isHostsUser();
+	return _dns_hosts->isHostsUser();
 }
 
 const std::list<std::string>& Unblock::dnsHostsListName()
 {
-	return _dns_hosts.listDnsFileName();
+	return _dns_hosts->listDnsFileName();
 }
 
 void Unblock::setDnsHostsRegion(std::string_view region)
 {
-	_dns_hosts.setRegion(region);
+	_dns_hosts->setRegion(region);
 }
 
 const std::string& Unblock::dnsHostsRegion() const
 {
-	return _dns_hosts.region();
+	return _dns_hosts->region();
 }
 
 void Unblock::setDnsHostsBaseUrl(std::string_view url)
 {
-	_dns_hosts.setBaseUrl(url);
+	_dns_hosts->setBaseUrl(url);
 }
 
 const std::string& Unblock::dnsHostsBaseUrl() const
 {
-	return _dns_hosts.baseUrl();
+	return _dns_hosts->baseUrl();
 }
 
 bool Unblock::dnsHostsRegionAvailable(std::string_view region) const
 {
-	return _dns_hosts.regionAvailable(region);
+	return _dns_hosts->regionAvailable(region);
 }
 
 std::vector<std::string> Unblock::defaultDnsProxyUpstreams()
@@ -1008,8 +1018,8 @@ void Unblock::removeService()
 	_helper_errors.clear();
 	_helper_valid.clear();
 	_helper_exhausted.clear();
-	_zapret1_engine.remove();
-	_zapret2_engine.remove();
+	_zapret1_engine->remove();
+	_zapret2_engine->remove();
 	_zapret_helper.remove();
 	_win_divert.remove();
 }
@@ -1022,8 +1032,8 @@ void Unblock::stopService()
 	_helper_errors.clear();
 	_helper_valid.clear();
 	_helper_exhausted.clear();
-	_zapret1_engine.stop();
-	_zapret2_engine.stop();
+	_zapret1_engine->stop();
+	_zapret2_engine->stop();
 	_zapret_helper.stop();
 }
 
@@ -1073,9 +1083,9 @@ void Unblock::startService(Technology technology)
 
 	// Exactly one technology runs at a time.
 	if (technology == Technology::Zapret1)
-		_zapret2_engine.stop();
+		_zapret2_engine->stop();
 	else
-		_zapret1_engine.stop();
+		_zapret1_engine->stop();
 
 	_zapret_helper.remove();
 

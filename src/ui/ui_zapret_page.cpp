@@ -2,6 +2,7 @@
 
 #include "ui.h"
 #include "../unblock/unblock.h"
+#include "../core/input_console.h"
 
 #include <chrono>
 #include <thread>
