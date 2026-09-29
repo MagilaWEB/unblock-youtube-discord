@@ -2,7 +2,7 @@
 #include "curl/curl.h"
 #include "ipc_signals.h"
 
-static size_t progress_callback(void* clientp, curl_off_t /*dltotal*/, curl_off_t /*dlnow*/, curl_off_t /*ultotal*/, curl_off_t /*ulnow*/)
+static size_t progressCallback(void* clientp, curl_off_t /*dltotal*/, curl_off_t /*dlnow*/, curl_off_t /*ultotal*/, curl_off_t /*ulnow*/)
 {
 	if (clientp)
 	{
@@ -18,7 +18,7 @@ static size_t progress_callback(void* clientp, curl_off_t /*dltotal*/, curl_off_
 	return CURLE_OK;
 }
 
-static size_t write_data(void*, size_t size, size_t nmemb, void*)
+static size_t writeData(void*, size_t size, size_t nmemb, void*)
 {
 	return size * nmemb;
 }
@@ -42,32 +42,32 @@ DomainTesting::DomainTesting()
 		{
 			curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &total_time);
 			const u32 time_sec = static_cast<u32>(total_time * 10) + 3;
-			_max_wait_testing.store(time_sec > 10 ? 10 : time_sec);
+			s_max_wait_testing.store(time_sec > 10 ? 10 : time_sec);
 
 			curl_easy_cleanup(curl);
 			init_timer_wait_testing = true;
 			return;
 		}
 
-		_max_wait_testing.store(5);
+		s_max_wait_testing.store(5);
 	}
 }
 
 DomainTesting::~DomainTesting()
 {
-	_clearURLS();
+	_clearUrls();
 }
 
 void DomainTesting::loadDomain()
 {
-	_clearURLS();
-	_genericURLS();
+	_clearUrls();
+	_genericUrls();
 }
 
 void DomainTesting::changeProxy(std::string_view ip, u32 port)
 {
-	_proxyIP   = ip;
-	_proxyPORT = port;
+	_proxy_ip	= ip;
+	_proxy_port = port;
 }
 
 void DomainTesting::test(bool base_test, std::function<void(std::string url, bool state)>&& callback, bool reset_test)
@@ -83,9 +83,9 @@ void DomainTesting::test(bool base_test, std::function<void(std::string url, boo
 	{
 		// BASE TESTING!!!
 
-		_clearURLS();
+		_clearUrls();
 
-		_genericURLS("base");
+		_genericUrls("base");
 
 		bool state{ false };
 		std::for_each(
@@ -218,16 +218,16 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 	headers					   = curl_slist_append(headers, "Upgrade-Insecure-Requests: 1");
 	curl_easy_setopt(domain.curl, CURLOPT_HTTPHEADER, headers);
 
-	u32 timeout = _max_wait_testing.load();
+	u32 timeout = s_max_wait_testing.load();
 	curl_easy_setopt(domain.curl, CURLOPT_CONNECTTIMEOUT, timeout);
 	curl_easy_setopt(domain.curl, CURLOPT_TIMEOUT, timeout);
 
 	curl_easy_setopt(domain.curl, CURLOPT_NOPROGRESS, 0L);
 
 	curl_easy_setopt(domain.curl, CURLOPT_XFERINFODATA, obj);
-	curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
+	curl_easy_setopt(domain.curl, CURLOPT_XFERINFOFUNCTION, progressCallback);
 
-	curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, write_data);
+	curl_easy_setopt(domain.curl, CURLOPT_WRITEFUNCTION, writeData);
 
 	auto& ipc = IPCSignals::get();
 
@@ -346,7 +346,7 @@ bool DomainTesting::_loadFile(std::filesystem::path file)
 	return _file_test_host.isOpen() && !_file_test_host.empty();
 }
 
-void DomainTesting::_genericURLS(std::string base_name)
+void DomainTesting::_genericUrls(std::string base_name)
 {
 	if (_section_opt_service_names.empty())
 	{
@@ -354,12 +354,12 @@ void DomainTesting::_genericURLS(std::string base_name)
 		// ship. A base test still has its own base.list.
 		if (base_name.empty())
 		{
-			_appendAllServiceURLS();
+			_appendAllServiceUrls();
 			return;
 		}
 
 		if (_loadFile(base_name))
-			_appendURLS();
+			_appendUrls();
 
 		return;
 	}
@@ -369,13 +369,13 @@ void DomainTesting::_genericURLS(std::string base_name)
 
 	for (auto& name : _section_opt_service_names)
 		if (_loadFile(base_name + name))
-			_appendURLS();
+			_appendUrls();
 }
 
 // Union of every <service>.list in configs/domain_test. base.list and
 // base_<service>.list are the pre-flight check, not a service, so they are
 // skipped. Used when no service is enabled.
-void DomainTesting::_appendAllServiceURLS()
+void DomainTesting::_appendAllServiceUrls()
 {
 	std::error_code ec;
 	for (const auto& entry : std::filesystem::directory_iterator{ Core::get().configsPath() / "domain_test", ec })
@@ -388,11 +388,11 @@ void DomainTesting::_appendAllServiceURLS()
 			continue;
 
 		if (_loadFile(name))
-			_appendURLS();
+			_appendUrls();
 	}
 }
 
-void DomainTesting::_appendURLS()
+void DomainTesting::_appendUrls()
 {
 	if (_file_test_host.isOpen())
 	{
@@ -408,7 +408,7 @@ void DomainTesting::_appendURLS()
 	_file_test_host.close();
 }
 
-void DomainTesting::_clearURLS()
+void DomainTesting::_clearUrls()
 {
 	for (auto& curl_domain : _list_host)
 		if (curl_domain.curl)

@@ -37,7 +37,7 @@ std::vector<std::string> HttpsLoad::run()
 		return {};
 
 	// Reset per-request state: a reused handle must not report stale data.
-	_stringBuffer.clear();
+	_string_buffer.clear();
 	_code_result = 0;
 	_progress	 = 0.f;
 
@@ -45,7 +45,7 @@ std::vector<std::string> HttpsLoad::run()
 	curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYPEER, 0L);
 	curl_easy_setopt(_curl, CURLOPT_TIMEOUT, 20L);
 	curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-	curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &_stringBuffer);
+	curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &_string_buffer);
 	curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 0L);
 	curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, ProgressCallback);
 	curl_easy_setopt(_curl, CURLOPT_XFERINFODATA, &_progress);
@@ -60,7 +60,7 @@ std::vector<std::string> HttpsLoad::run()
 
 	std::vector<std::string> _line_content{};
 
-	std::stringstream stream{ _stringBuffer };
+	std::stringstream stream{ _string_buffer };
 	std::string		  line;
 	while (std::getline(stream, line, '\n'))
 		_line_content.push_back(line);
@@ -68,7 +68,7 @@ std::vector<std::string> HttpsLoad::run()
 	return _line_content;
 }
 
-static size_t write_file(void* ptr, size_t size, size_t nmemb, void* stream)
+static size_t writeFile(void* ptr, size_t size, size_t nmemb, void* stream)
 {
 	std::fstream* file	  = static_cast<std::fstream*>(stream);
 	size_t		  written = size * nmemb;
@@ -76,7 +76,7 @@ static size_t write_file(void* ptr, size_t size, size_t nmemb, void* stream)
 	return written;
 }
 
-bool HttpsLoad::run_to_file(std::filesystem::path path)
+bool HttpsLoad::runToFile(std::filesystem::path path)
 {
 	if (!_curl)
 		return false;
@@ -102,7 +102,7 @@ bool HttpsLoad::run_to_file(std::filesystem::path path)
 	curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYPEER, 0L);
 	curl_easy_setopt(_curl, CURLOPT_CONNECTTIMEOUT, 30L);
 	curl_easy_setopt(_curl, CURLOPT_TIMEOUT, 300L);
-	curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, write_file);
+	curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, writeFile);
 	curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &file);
 	curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, 0L);
 	curl_easy_setopt(_curl, CURLOPT_XFERINFOFUNCTION, ProgressCallback);

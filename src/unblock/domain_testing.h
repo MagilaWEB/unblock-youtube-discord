@@ -40,20 +40,20 @@ public:
 
 private:
 	bool _loadFile(std::filesystem::path file);
-	void _genericURLS(std::string base_name = "");
-	void _appendAllServiceURLS();
-	void _appendURLS();
-	void _clearURLS();
+	void _genericUrls(std::string base_name = "");
+	void _appendAllServiceUrls();
+	void _appendUrls();
+	void _clearUrls();
 
 private:
-	inline static std::atomic_uint _max_wait_testing{ 0 };
+	inline static std::atomic_uint s_max_wait_testing{ 0 };
 
 	File				   _file_test_host{ false };
 	std::list<CurlDomain>  _list_host{};
 	std::list<std::string> _section_opt_service_names{};
 
-	std::string _proxyIP{ "127.0.0.1" };
-	u32			_proxyPORT{ 1'080 };
+	std::string _proxy_ip{ "127.0.0.1" };
+	u32			_proxy_port{ 1'080 };
 
 	std::atomic_uint _domain_ok{ 0 };
 	std::atomic_uint _domain_error{ 0 };

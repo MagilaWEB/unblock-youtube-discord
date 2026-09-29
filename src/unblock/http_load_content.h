@@ -8,7 +8,7 @@ class HttpsLoad
 {
 	CURL*			   _curl{ nullptr };
 	std::string		   _url{};
-	std::string		   _stringBuffer;
+	std::string		   _string_buffer;
 	u32				   _code_result{ 0 };
 	std::atomic<float> _progress{ 0.F };
 
@@ -18,6 +18,6 @@ public:
 	~HttpsLoad();
 	u32						 codeResult() const;
 	std::vector<std::string> run();
-	bool					 run_to_file(std::filesystem::path);
+	bool					 runToFile(std::filesystem::path);
 	float					 progress() const;
 };

@@ -238,7 +238,7 @@ bool Unblock::appUpdate()
 		_update_load = load;
 	}
 
-	if (!load->run_to_file(archive))
+	if (!load->runToFile(archive))
 		return false;
 
 	const u32 code = load->codeResult();
