@@ -3,6 +3,7 @@
 #include "app_update.h"
 #include "tg_proxy.h"
 #include "dns_proxy.h"
+#include "helper_state.h"
 
 #include <cctype>
 #include <charconv>
@@ -52,42 +53,6 @@ inline bool isHelperHostName(std::string_view host)
 	return std::ranges::any_of(host, [](char ch) { return std::isalpha(static_cast<unsigned char>(ch)); });
 }
 
-/** Helper pool load snapshot ("queued|in_check|known"). Header-inline so
- *  unit tests link without the engine. */
-struct HelperStats
-{
-	size_t queued{ 0 };
-	size_t in_check{ 0 };
-	size_t known{ 0 };
-};
-
-inline std::optional<HelperStats> parseHelperStats(std::string_view text)
-{
-	HelperStats out{};
-	size_t*		fields[3]{ &out.queued, &out.in_check, &out.known };
-	size_t		index = 0;
-
-	for (auto part_range : text | std::views::split('|'))
-	{
-		if (index >= 3)
-			return std::nullopt;
-
-		const std::string_view part{ std::ranges::data(part_range), std::ranges::size(part_range) };
-
-		unsigned long long num{};
-		const auto [ptr, ec] = std::from_chars(part.data(), part.data() + part.size(), num);
-		if (ec != std::errc{} || ptr != part.data() + part.size())
-			return std::nullopt;
-
-		*fields[index++] = static_cast<size_t>(num);
-	}
-
-	if (index != 3)
-		return std::nullopt;
-
-	return out;
-}
-
 /** True when any strategy line toggles TCP timestamps: zapret1 `fooling=ts`
  *  or zapret2 `tcp_ts`/`tcp_ts_up`. Windows disables timestamps by default,
  *  so such strategies silently degrade unless the system enables them.
@@ -120,77 +85,6 @@ inline bool strategyUsesTcpTimestamps(const std::vector<std::string>& strategies
 	return false;
 }
 
-/** In-flight helper checks with a short done grace. The helper reports a
- *  fast DONE edge while the terminal valid/error/exhausted verdict only
- *  arrives with the next snapshot, so removing a host on DONE alone makes
- *  the checking list blink. Recently finished hosts stay visible until a
- *  verdict arrives or the grace expires. Header-inline for unit tests. */
-class HelperCheckingTracker
-{
-public:
-	explicit HelperCheckingTracker(std::chrono::steady_clock::duration grace_ttl = std::chrono::seconds(1)) : _grace_ttl(grace_ttl) {}
-
-	void checkingEdge(std::string host, std::chrono::steady_clock::time_point now)
-	{
-		(void)now;
-		_active.insert(host);
-		_grace.erase(host);
-	}
-
-	void doneEdge(std::string host, bool terminal, std::chrono::steady_clock::time_point now)
-	{
-		_active.erase(host);
-		if (terminal)
-		{
-			_grace.erase(host);
-			return;
-		}
-
-		_grace[std::move(host)] = now;
-	}
-
-	void verdict(std::string_view host)
-	{
-		const std::string name{ host };
-		_active.erase(name);
-		_grace.erase(name);
-	}
-
-	std::vector<std::string> visible(std::chrono::steady_clock::time_point now)
-	{
-		prune(now);
-
-		std::vector<std::string> out;
-		out.reserve(_active.size() + _grace.size());
-		for (const auto& host : _active)
-			out.emplace_back(host);
-		for (const auto& [host, _] : _grace)
-			if (!_active.contains(host))
-				out.emplace_back(host);
-		return out;
-	}
-
-	void clear()
-	{
-		_active.clear();
-		_grace.clear();
-	}
-
-private:
-	void prune(std::chrono::steady_clock::time_point now)
-	{
-		for (auto it = _grace.begin(); it != _grace.end();)
-			if (now - it->second > _grace_ttl)
-				it = _grace.erase(it);
-			else
-				++it;
-	}
-
-	std::unordered_set<std::string>										   _active;
-	std::unordered_map<std::string, std::chrono::steady_clock::time_point> _grace;
-	std::chrono::steady_clock::duration									   _grace_ttl;
-};
-
 class Unblock final : public std::enable_shared_from_this<Unblock>
 {
 public:
@@ -221,40 +115,9 @@ private:
 
 	TgProxy _tg_proxy;
 
-	// Fresh [HELPER] message (UDP CONFIG:...) from the UI. The on-disk
-	// setting.config is stale while unblock runs (File::save on close),
-	// so startService() pushes this instead of letting the helper read it.
-	std::string _helper_config_message{};
-
-	// Rebuilt from helper IPC snapshots. The passive autopick worker and the
-	// JS-thread Ui::update() both read/rebuild these, so all access is
-	// serialized by _helper_state_lock.
-	// The checking/error/valid/exhausted lists are mutually exclusive: one
-	// host lives in exactly one of them (seen stays out of the sync). Checking
-	// keeps a short done grace so a host does not blink out before its verdict
-	// snapshot arrives. The helper_seen snapshot age drives the TTL: after
-	// c_helper_signal_ttl of total silence every list is dropped, so the UI
-	// never shows dead hosts.
-	static constexpr auto						 c_helper_signal_ttl{ std::chrono::seconds(5) };
-	HelperCheckingTracker						 _helper_checking;
-	std::unordered_set<std::string>				 _helper_seen;
-	std::unordered_map<std::string, std::string> _helper_errors;
-	std::unordered_map<std::string, std::string> _helper_valid;
-	// Fully-tried hosts relayed by the helper (lua wrapped a whole plan).
-	// Terminal verdict like valid, but means "nothing works": autopick
-	// fast-fails these without burning curl timeouts.
-	std::unordered_map<std::string, std::string> _helper_exhausted;
-	// Last pool load snapshot (queued/in-flight/known). Refreshed by the
-	// helper_stats broadcast, zeroed with everything else on TTL expiry.
-	HelperStats									 _helper_stats{};
-
-	// Guards every helper-state container above (Ui::update() and the
-	// passive autopick worker both touch them).
-	std::mutex _helper_state_lock;
-
-	// Drops every helper list when the newest helper_seen snapshot is older
-	// than the TTL. Returns true when expired (all lists are empty after).
-	bool _dropExpiredHelperStates();
+	// Helper IPC aggregation: host verdict sets rebuilt from the snapshots
+	// plus the CONFIG:/LIST: pushes to the helper process.
+	HelperState _helper;
 
 	/** Enables TCP timestamps when the strategy needs ts/tcp_ts and they are
 	 *  off, remembering that we changed the system. */
@@ -310,7 +173,7 @@ public:
 	/** Fresh [HELPER] payload from the UI (in-memory userConfig, not the
 	 *  stale on-disk file). Sent as UDP CONFIG: right after the helper is
 	 *  launched and on Apply while it is running. */
-	void setHelperConfigMessage(std::string message) { _helper_config_message = std::move(message); }
+	void setHelperConfigMessage(std::string message) { _helper.setConfigMessage(std::move(message)); }
 	void pushHelperConfig() const;
 
 	std::vector<std::string>						 helperCheckingHosts();

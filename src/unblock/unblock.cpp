@@ -240,203 +240,34 @@ std::optional<Technology> Unblock::runningTechnology()
 	return std::nullopt;
 }
 
-namespace
-{
-	std::vector<std::string> splitSnapshotLines(std::string_view text)
-	{
-		std::vector<std::string> out;
-		size_t					 pos = 0;
-		while (pos <= text.size())
-		{
-			size_t end = text.find('\n', pos);
-			if (end == std::string_view::npos)
-				end = text.size();
-			if (end > pos)
-				out.emplace_back(text.substr(pos, end - pos));
-			pos = end + 1;
-		}
-		return out;
-	}
-
-	void parseHostStrategySnapshot(std::string_view payload, std::unordered_map<std::string, std::string>& out)
-	{
-		out.clear();
-		size_t pos = 0;
-		while (pos <= payload.size())
-		{
-			size_t end = payload.find('\n', pos);
-			if (end == std::string_view::npos)
-				end = payload.size();
-
-			const std::string_view line = payload.substr(pos, end - pos);
-			pos							= end + 1;
-			if (line.empty())
-				continue;
-
-			const size_t eq = line.find('=');
-			if (eq == std::string_view::npos)
-				continue;
-			out[std::string(line.substr(0, eq))] = std::string(line.substr(eq + 1));
-		}
-	}
-}
-
-bool Unblock::_dropExpiredHelperStates()
-{
-	// The helper re-broadcasts the full host snapshot every tick, always
-	// including helper_seen, so its age is the liveness signal. No fresh
-	// snapshot past the TTL means every list is stale.
-	const auto age = IPCSignals::get().latestAge("helper_seen");
-	if (age && *age <= c_helper_signal_ttl)
-		return false;
-
-	_helper_checking.clear();
-	_helper_seen.clear();
-	_helper_errors.clear();
-	_helper_valid.clear();
-	_helper_exhausted.clear();
-	_helper_stats = {};
-	return true;
-}
-
 std::vector<std::string> Unblock::helperCheckingHosts()
 {
-	std::lock_guard lock(_helper_state_lock);
-	auto&			ipc = IPCSignals::get();
-	const auto		now = std::chrono::steady_clock::now();
-
-	// CHECKING/DONE stay edges: the in-check set is an instant sample that a
-	// 500ms snapshot would miss for millisecond checks. DONE moves a host to
-	// a short grace instead of hiding it: the terminal verdict snapshot
-	// arrives later, and removing the host immediately blinks the list.
-	while (auto host = ipc.getString("helper_checking"))
-	{
-		std::string name = std::move(*host);
-		// A fully-tried host is terminal: a recheck edge must not pull it
-		// out of the exhausted list (that flicker broke autopick settle).
-		if (_helper_exhausted.contains(name))
-			continue;
-		_helper_errors.erase(name);
-		_helper_valid.erase(name);
-		_helper_checking.checkingEdge(std::move(name), now);
-	}
-
-	while (auto host = ipc.getString("helper_done"))
-	{
-		const bool terminal = _helper_errors.contains(*host) || _helper_valid.contains(*host) || _helper_exhausted.contains(*host);
-		_helper_checking.doneEdge(*host, terminal, now);
-	}
-
-	if (_dropExpiredHelperStates())
-		return {};
-
-	return _helper_checking.visible(now);
+	return _helper.checkingHosts();
 }
 
 std::vector<std::string> Unblock::helperSeenHosts()
 {
-	std::lock_guard lock(_helper_state_lock);
-	if (auto payload = IPCSignals::get().getLatest("helper_seen"))
-	{
-		_helper_seen.clear();
-		for (auto& host : splitSnapshotLines(*payload))
-			_helper_seen.insert(std::move(host));
-	}
-
-	if (_dropExpiredHelperStates())
-		return {};
-
-	return { _helper_seen.begin(), _helper_seen.end() };
+	return _helper.seenHosts();
 }
 
 std::vector<std::pair<std::string, std::string>> Unblock::helperErrorHosts()
 {
-	std::lock_guard lock(_helper_state_lock);
-	if (auto payload = IPCSignals::get().getLatest("helper_error"))
-	{
-		parseHostStrategySnapshot(*payload, _helper_errors);
-		// Exhausted hosts are terminal; drop them from the error set instead
-		// of erasing the exhausted mark (the single exit is helperValidHosts).
-		std::erase_if(_helper_errors, [this](const auto& kv) { return _helper_exhausted.contains(kv.first); });
-		for (const auto& [host, _] : _helper_errors)
-		{
-			_helper_checking.verdict(host);
-			_helper_valid.erase(host);
-		}
-	}
-
-	if (_dropExpiredHelperStates())
-		return {};
-
-	std::vector<std::pair<std::string, std::string>> result;
-	result.reserve(_helper_errors.size());
-	for (const auto& [host, strategy] : _helper_errors)
-		result.emplace_back(host, strategy);
-
-	return result;
+	return _helper.errorHosts();
 }
 
 std::vector<std::pair<std::string, std::string>> Unblock::helperValidHosts()
 {
-	std::lock_guard lock(_helper_state_lock);
-	if (auto payload = IPCSignals::get().getLatest("helper_valid"))
-	{
-		parseHostStrategySnapshot(*payload, _helper_valid);
-		for (const auto& [host, _] : _helper_valid)
-		{
-			_helper_checking.verdict(host);
-			_helper_errors.erase(host);
-			_helper_exhausted.erase(host);
-		}
-	}
-
-	if (_dropExpiredHelperStates())
-		return {};
-
-	std::vector<std::pair<std::string, std::string>> result;
-	result.reserve(_helper_valid.size());
-	for (const auto& [host, strategy] : _helper_valid)
-		result.emplace_back(host, strategy);
-
-	return result;
+	return _helper.validHosts();
 }
 
 std::vector<std::pair<std::string, std::string>> Unblock::helperExhaustedHosts()
 {
-	std::lock_guard lock(_helper_state_lock);
-	if (auto payload = IPCSignals::get().getLatest("helper_exhausted"))
-	{
-		parseHostStrategySnapshot(*payload, _helper_exhausted);
-		for (const auto& [host, _] : _helper_exhausted)
-		{
-			_helper_checking.verdict(host);
-			_helper_errors.erase(host);
-			_helper_valid.erase(host);
-		}
-	}
-
-	if (_dropExpiredHelperStates())
-		return {};
-
-	std::vector<std::pair<std::string, std::string>> result;
-	result.reserve(_helper_exhausted.size());
-	for (const auto& [host, strategy] : _helper_exhausted)
-		result.emplace_back(host, strategy);
-
-	return result;
+	return _helper.exhaustedHosts();
 }
 
 HelperStats Unblock::helperStats()
 {
-	std::lock_guard lock(_helper_state_lock);
-	if (auto payload = IPCSignals::get().getLatest("helper_stats"))
-		if (auto parsed = parseHelperStats(*payload))
-			_helper_stats = *parsed;
-
-	if (_dropExpiredHelperStates())
-		return {};
-
-	return _helper_stats;
+	return _helper.stats();
 }
 
 std::vector<std::string> Unblock::testHostNames()
@@ -654,11 +485,7 @@ void Unblock::localProxyTgLinkRun()
 void Unblock::removeService()
 {
 	_tcpTimestampRestore();
-	_helper_seen.clear();
-	_helper_checking.clear();
-	_helper_errors.clear();
-	_helper_valid.clear();
-	_helper_exhausted.clear();
+	_helper.clear();
 	_zapret1_engine->remove();
 	_zapret2_engine->remove();
 	_zapret_helper.remove();
@@ -668,59 +495,20 @@ void Unblock::removeService()
 void Unblock::stopService()
 {
 	_tcpTimestampRestore();
-	_helper_seen.clear();
-	_helper_checking.clear();
-	_helper_errors.clear();
-	_helper_valid.clear();
-	_helper_exhausted.clear();
+	_helper.clear();
 	_zapret1_engine->stop();
 	_zapret2_engine->stop();
 	_zapret_helper.stop();
 }
 
-namespace
-{
-	void sendHelperUdp(const std::string& message, u32 retries = 5)
-	{
-		if (message.empty())
-			return;
-
-		for (u32 attempt = 0; attempt < retries; ++attempt)
-		{
-			auto sock = socket(AF_INET, SOCK_DGRAM, 0);
-			if (sock == INVALID_SOCKET)
-			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(200));
-				continue;
-			}
-
-			sockaddr_in addr{};
-			addr.sin_family		 = AF_INET;
-			addr.sin_port		 = htons(10'000);
-			addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-			sendto(sock, message.c_str(), static_cast<int>(message.size()), 0, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
-			closesocket(sock);
-
-			// The helper may not have bound 10000 yet right after service
-			// start; a short burst covers the bind race without blocking long.
-			if (attempt + 1 < retries)
-				std::this_thread::sleep_for(std::chrono::milliseconds(200));
-		}
-	}
-}	 // namespace
-
 void Unblock::pushHelperConfig() const
 {
-	sendHelperUdp(_helper_config_message, 3);
+	_helper.pushConfig();
 }
 
 void Unblock::startService(Technology technology)
 {
-	_helper_seen.clear();
-	_helper_checking.clear();
-	_helper_errors.clear();
-	_helper_valid.clear();
-	_helper_exhausted.clear();
+	_helper.clear();
 
 	// Exactly one technology runs at a time.
 	if (technology == Technology::Zapret1)
@@ -762,13 +550,5 @@ void Unblock::startService(Technology technology)
 	pushHelperConfig();
 
 	// send domain list to zapret-helper
-	{
-		auto hosts = testHostNames();
-		if (!hosts.empty())
-		{
-			std::string list = std::format("LIST:{}", hosts | std::views::join_with(':') | std::ranges::to<std::string>());
-
-			sendHelperUdp(list);
-		}
-	}
+	_helper.sendHostList(testHostNames());
 }
