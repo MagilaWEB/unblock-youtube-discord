@@ -20,10 +20,10 @@ File::~File()
 
 void File::forLine(std::function<bool(std::string)> fn)
 {
-	CRITICAL_SECTION_RAII(lock);
+	CRITICAL_SECTION_RAII(_lock);
 	if (!isOpen())
 	{
-		if (info_debug)
+		if (_info_debug)
 			Debug::warning("File [{}] not open!", _path_file.string().c_str());
 		return;
 	}
@@ -38,11 +38,11 @@ void File::forLine(std::function<bool(std::string)> fn)
 
 void File::forLineSection(std::string_view section, std::function<bool(std::string&)> fn)
 {
-	CRITICAL_SECTION_RAII(lock);
+	CRITICAL_SECTION_RAII(_lock);
 
 	if (!isOpen())
 	{
-		if (info_debug)
+		if (_info_debug)
 			Debug::warning("File [{}] not open!", _path_file.string().c_str());
 		return;
 	}
@@ -85,7 +85,7 @@ void File::forLineSection(std::string_view section, std::function<bool(std::stri
 
 void File::forLineParametersSection(std::string_view section, std::function<bool(std::string key, std::string value)> fn)
 {
-	CRITICAL_SECTION_RAII(lock);
+	CRITICAL_SECTION_RAII(_lock);
 
 	forLineSection(
 		section,
@@ -139,16 +139,16 @@ std::optional<u32> File::positionSection(std::string_view section)
 	return position;
 }
 
-template<concepts::VallidALL TypeReturn>
+template<concepts::ValidAll TypeReturn>
 std::expected<TypeReturn, std::string> File::parameterSection(std::string_view section, std::string parameter)
 {
-	CRITICAL_SECTION_RAII(lock);
+	CRITICAL_SECTION_RAII(_lock);
 
 	if (!isOpen())
 	{
-		if (info_debug)
+		if (_info_debug)
 			Debug::warning("File [{}] not open!", _path_file.string().c_str());
-		return Debug::str_unexpected("Parameter [{}] in section [{}] not found: the file is not open!", parameter, section);
+		return Debug::strUnexpected("Parameter [{}] in section [{}] not found: the file is not open!", parameter, section);
 	}
 
 	std::optional<std::string> key_value{ std::nullopt };
@@ -169,9 +169,9 @@ std::expected<TypeReturn, std::string> File::parameterSection(std::string_view s
 	if (key_value && !key_value.value().empty())
 	{
 		using namespace concepts;
-		if constexpr (VallidString<TypeReturn>)
+		if constexpr (ValidString<TypeReturn>)
 		{
-			if constexpr (VallidStringPctr<TypeReturn>)
+			if constexpr (ValidStringPtr<TypeReturn>)
 				return key_value.value().c_str();
 			else
 				return key_value.value();
@@ -183,20 +183,20 @@ std::expected<TypeReturn, std::string> File::parameterSection(std::string_view s
 			std::istringstream{ key_value.value() } >> std::boolalpha >> state;
 			return state;
 		}
-		else if constexpr (VallidNumber<TypeReturn>)
+		else if constexpr (ValidNumber<TypeReturn>)
 		{
 			if constexpr (std::same_as<TypeReturn, float>)
 				return std::stof(key_value.value());
 			else
 				return std::stod(key_value.value());
 		}
-		else if constexpr (VallidIntegerUsignet<TypeReturn>)
+		else if constexpr (ValidIntegerUnsigned<TypeReturn>)
 		{
 			TypeReturn state{};
 			std::istringstream{ key_value.value() } >> state;
 			return state;
 		}
-		else if constexpr (VallidInteger<TypeReturn>)
+		else if constexpr (ValidInteger<TypeReturn>)
 		{
 			TypeReturn state{};
 			std::istringstream{ key_value.value() } >> state;
@@ -204,7 +204,7 @@ std::expected<TypeReturn, std::string> File::parameterSection(std::string_view s
 		}
 	}
 
-	return Debug::str_unexpected("Parameter [{}] in section [{}] not found!", parameter, section);
+	return Debug::strUnexpected("Parameter [{}] in section [{}] not found!", parameter, section);
 }
 
 template std::expected<std::string, std::string> File::parameterSection<std::string>(std::string_view section, std::string parameter);
@@ -219,7 +219,7 @@ template std::expected<u64, std::string>		 File::parameterSection<u64>(std::stri
 
 void File::writeText(std::string_view str)
 {
-	CRITICAL_SECTION_RAII(lock);
+	CRITICAL_SECTION_RAII(_lock);
 
 	if (!isOpen())
 		_open_state = true;
@@ -231,7 +231,7 @@ void File::writeText(std::string_view str)
 
 void File::writeSectionParameter(std::string_view section, std::string parameter, std::string value_argument)
 {
-	CRITICAL_SECTION_RAII(lock);
+	CRITICAL_SECTION_RAII(_lock);
 
 	if (!isOpen())
 		_open_state = true;
@@ -242,7 +242,7 @@ void File::writeSectionParameter(std::string_view section, std::string parameter
 	// values never linger in the map (from reads or empty vector lists).
 	if (auto trimmed = value_argument; utils::trim(trimmed), trimmed.empty())
 	{
-		if (info_debug)
+		if (_info_debug)
 			Debug::warning("File [{}]: deleted [{}] from section [{}] (empty value)!", name(), parameter, section);
 		// Populate the section cache, then drop the key. _normalize() rebuilds
 		// the file lines without it (and drops the section if left empty).
@@ -364,7 +364,7 @@ void File::open()
 
 void File::open(std::filesystem::path file, std::string_view expansion, bool no_default_patch)
 {
-	CRITICAL_SECTION_RAII(lock);
+	CRITICAL_SECTION_RAII(_lock);
 	_is_write = false;
 
 	if (isOpen())
@@ -382,7 +382,7 @@ void File::open(std::filesystem::path file, std::string_view expansion, bool no_
 
 	if (!_stream.is_open())
 	{
-		if (info_debug)
+		if (_info_debug)
 			Debug::warning("File open fail [{}]!", _path_file.string().c_str());
 		_open_state = false;
 		_stream.close();
@@ -406,7 +406,7 @@ void File::open(std::filesystem::path file, std::string_view expansion, bool no_
 
 void File::clear()
 {
-	CRITICAL_SECTION_RAII(lock);
+	CRITICAL_SECTION_RAII(_lock);
 
 	_is_write = true;
 
@@ -435,7 +435,7 @@ void File::save()
 
 void File::close()
 {
-	CRITICAL_SECTION_RAII(lock);
+	CRITICAL_SECTION_RAII(_lock);
 	if (_open_state)
 		save();
 

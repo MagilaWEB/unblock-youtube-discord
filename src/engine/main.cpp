@@ -8,7 +8,7 @@ static void run(const std::string& /*command_line*/)
 	auto& engine = Engine::get();
 
 	engine.initialize();
-	core.parallel_run();
+	core.parallelRun();
 	engine.run();
 	core.finish();
 }
@@ -55,7 +55,7 @@ static bool requestElevation()
 	return true;
 }
 
-// NOLINTNEXTLINE(bugprone-exception-escape) - unhandled exceptions are caught by Debug::try_wrap/SEH handlers
+// NOLINTNEXTLINE(bugprone-exception-escape) - unhandled exceptions are caught by Debug::tryWrap/SEH handlers
 int main(int argc, char** argv)
 {
 	std::string lp_cmd_line{};
@@ -71,6 +71,6 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	auto res = Debug::try_wrap(run, lp_cmd_line);
+	auto res = Debug::tryWrap(run, lp_cmd_line);
 	return res;
 }

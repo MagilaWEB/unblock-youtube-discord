@@ -17,9 +17,9 @@ namespace utils
 		return std::vformat(fmt, std::make_format_args(args...));
 	}
 
-	bool		 IsUTF8(std::string_view string);
-	std::string	 UTF8_to_CP1251(std::string_view utf8_str);
-	std::wstring UTF8_to_UTF16(std::string_view utf8_str);
+	bool		 isUtf8(std::string_view string);
+	std::string	 utf8ToCp1251(std::string_view utf8_str);
+	std::wstring utf8ToUtf16(std::string_view utf8_str);
 
 	void ltrim(std::string& str);
 	void rtrim(std::string& str);

@@ -66,26 +66,26 @@ u32 InputConsole::getU32()
 u32 InputConsole::sendNum(std::list<u8> nums)
 {
 	constexpr std::pair<VK, u32> key_nums[]{
-		{	  VK::NUM0, 0 },
-		{	  VK::NUM1, 1 },
-		{	  VK::NUM2, 2 },
-		{	  VK::NUM3, 3 },
-		{	  VK::NUM4, 4 },
-		{	  VK::NUM5, 5 },
-		{	  VK::NUM6, 6 },
-		{	  VK::NUM7, 7 },
-		{	  VK::NUM8, 8 },
-		{	  VK::NUM9, 9 },
+		{	 VK::NUM0, 0 },
+		{	 VK::NUM1, 1 },
+		{	 VK::NUM2, 2 },
+		{	 VK::NUM3, 3 },
+		{	 VK::NUM4, 4 },
+		{	 VK::NUM5, 5 },
+		{	 VK::NUM6, 6 },
+		{	 VK::NUM7, 7 },
+		{	 VK::NUM8, 8 },
+		{	 VK::NUM9, 9 },
 		{ VK::NUMPAD0, 0 },
-		{ VK::NUMPAD1, 1 },
-		{ VK::NUMPAD2, 2 },
-		{ VK::NUMPAD3, 3 },
+		   { VK::NUMPAD1, 1 },
+		  { VK::NUMPAD2, 2 },
+		 { VK::NUMPAD3, 3 },
 		{ VK::NUMPAD4, 4 },
-		{ VK::NUMPAD5, 5 },
-		{ VK::NUMPAD6, 6 },
-		{ VK::NUMPAD7, 7 },
+		   { VK::NUMPAD5, 5 },
+		  { VK::NUMPAD6, 6 },
+		 { VK::NUMPAD7, 7 },
 		{ VK::NUMPAD8, 8 },
-		{ VK::NUMPAD9, 9 },
+		   { VK::NUMPAD9, 9 },
 	};
 
 	std::string str_nums{};
@@ -228,37 +228,37 @@ std::string InputConsole::textColor(std::string_view text, ColorType type, bool 
 	{
 		switch (type)
 		{
-		case ColorType::BLACK:
+		case ColorType::Black:
 			return "30";
-		case ColorType::DARK_BLUE:
+		case ColorType::DarkBlue:
 			return "34";
-		case ColorType::DARK_GREEN:
+		case ColorType::DarkGreen:
 			return "32";
-		case ColorType::LIGHT_BLUE:
+		case ColorType::LightBlue:
 			return "36";
-		case ColorType::DARK_RED:
+		case ColorType::DarkRed:
 			return "31";
-		case ColorType::MAGENTA:
+		case ColorType::Magenta:
 			return "35";	// color_magenta    5
-		case ColorType::ORANGE:
+		case ColorType::Orange:
 			return "33";	// color_orange     6
-		case ColorType::LIGHT_GRAY:
+		case ColorType::LightGray:
 			return "37";	// color_light_gray 7
-		case ColorType::GRAY:
+		case ColorType::Gray:
 			return "90";	// color_gray       8
-		case ColorType::BLUE:
+		case ColorType::Blue:
 			return "94";	// color_blue       9
-		case ColorType::GREEN:
+		case ColorType::Green:
 			return "92";	// color_green     10
-		case ColorType::CYAN:
+		case ColorType::Cyan:
 			return "96";	// color_cyan      11
-		case ColorType::RED:
+		case ColorType::Red:
 			return "91";	// color_red       12
-		case ColorType::PINK:
+		case ColorType::Pink:
 			return "95";	// color_pink      13
-		case ColorType::YELLOW:
+		case ColorType::Yellow:
 			return "93";	// color_yellow    14
-		case ColorType::WHITE:
+		case ColorType::White:
 			return "97";	// color_white     15
 		default:
 			return "37";
@@ -275,7 +275,7 @@ std::string InputConsole::textColor(std::string_view text, ColorType type, bool 
 
 void InputConsole::clear()
 {
-	CriticalSection::raii mt{ _lock };
+	CriticalSection::Raii mt{ _lock };
 #if defined _WIN32
 	system("cls");
 #elif defined(__LINUX__) || defined(__gnu_linux__) || defined(__linux__)

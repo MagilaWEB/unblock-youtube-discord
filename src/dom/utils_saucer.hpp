@@ -202,13 +202,13 @@ inline std::string jsArgToString(const JSValue& arg)
 }
 
 // Analog of ultralight::JSToCPP — convert a value from a JS event to a CPP type.
-template<concepts::VallidALL Type = std::string>
+template<concepts::ValidAll Type = std::string>
 Type JSToCPP(const JSValue& value)
 {
-	if constexpr (concepts::VallidString<Type>)
+	if constexpr (concepts::ValidString<Type>)
 	{
 		const auto str = value.ToString();
-		if constexpr (concepts::VallidStringPctr<Type>)
+		if constexpr (concepts::ValidStringPtr<Type>)
 			return str.c_str();
 		else
 			return str;
@@ -217,7 +217,7 @@ Type JSToCPP(const JSValue& value)
 	if constexpr (std::same_as<Type, bool>)
 		return value.ToBoolean();
 
-	if constexpr (concepts::VallidIntegerUsignet<Type>)
+	if constexpr (concepts::ValidIntegerUnsigned<Type>)
 	{
 		const auto integer = value.ToInteger();
 		if (integer < 0)
@@ -245,10 +245,10 @@ Type JSToCPP(const JSValue& value)
 		return static_cast<Type>(integer);
 	}
 
-	if constexpr (concepts::VallidIntegerLong<Type>)
+	if constexpr (concepts::ValidIntegerLong<Type>)
 		return value.ToInteger();
 
-	if constexpr (concepts::VallidInteger<Type>)
+	if constexpr (concepts::ValidInteger<Type>)
 	{
 		const auto	   integer	   = value.ToInteger();
 		constexpr Type min_integer = type_min<Type>;
@@ -279,7 +279,7 @@ Type JSToCPP(const JSValue& value)
 		return static_cast<Type>(integer);
 	}
 
-	if constexpr (concepts::VallidNumber<Type>)
+	if constexpr (concepts::ValidNumber<Type>)
 	{
 		const auto number = value.ToNumber();
 		if constexpr (std::same_as<Type, float>)

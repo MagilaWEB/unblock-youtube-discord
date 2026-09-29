@@ -3,18 +3,18 @@
 namespace
 {
 	// URL percent-encoding (UTF-8): every byte except unreserved characters is encoded as %XX.
-	std::string url_encode(std::string_view str)
+	std::string urlEncode(std::string_view str)
 	{
 		static constexpr pcstr hex_digits = "0123456789ABCDEF";
 
 		std::string encoded;
 		encoded.reserve(str.size() * 3);
 
-		const auto is_unreserved = [](unsigned char c) { return std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~'; };
+		const auto isUnreserved = [](unsigned char c) { return std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~'; };
 
 		for (const unsigned char c : str)
 		{
-			if (is_unreserved(c))
+			if (isUnreserved(c))
 				encoded.push_back(static_cast<char>(c));
 			else
 			{
@@ -27,7 +27,7 @@ namespace
 		return encoded;
 	}
 
-	std::string read_log_tail(size_t tail_lines)
+	std::string readLogTailLines(size_t tail_lines)
 	{
 		auto dir_logs = Core::get().currentPath() / "logs";
 
@@ -54,24 +54,24 @@ namespace
 	}
 }	 // namespace
 
-std::string_view Debug::get_prefix(MessageTypes type)
+std::string_view Debug::_getPrefix(MessageTypes type)
 {
 #ifdef WINDOWS
 	switch (type)
 	{
-	case MessageTypes::ePrint:
+	case MessageTypes::Print:
 		return "";
-	case MessageTypes::eOk:
+	case MessageTypes::Ok:
 		return "\x1B[32mOK: \033[0m";
-	case MessageTypes::eInfo:
+	case MessageTypes::Info:
 		return "\x1B[34mINFO: \033[0m";
-	case MessageTypes::eWarning:
+	case MessageTypes::Warning:
 		return "\x1B[33m~WARNING: \033[0m";
-	case MessageTypes::ePlease:
+	case MessageTypes::Please:
 		return "\x1B[35m~PLEASE: \033[0m";
-	case MessageTypes::eError:
+	case MessageTypes::Error:
 		return "\x1B[31m!ERROR: \033[0m";
-	case MessageTypes::eFatal:
+	case MessageTypes::Fatal:
 		return "\x1B[31m!FATAL: \033[0m";
 	default:
 		error("unexpected debug message type {}", static_cast<u32>(type));
@@ -79,17 +79,17 @@ std::string_view Debug::get_prefix(MessageTypes type)
 #else
 	switch (type)
 	{
-	case MessageTypes::ePrint:
+	case MessageTypes::Print:
 		return "";
-	case MessageTypes::eOk:
+	case MessageTypes::Ok:
 		return "OK: ";
-	case MessageTypes::eInfo:
+	case MessageTypes::Info:
 		return "INFO: ";
-	case MessageTypes::eWarning:
+	case MessageTypes::Warning:
 		return "~WARNING: ";
-	case MessageTypes::eError:
+	case MessageTypes::Error:
 		return "!ERROR: ";
-	case MessageTypes::eFatal:
+	case MessageTypes::Fatal:
 		return "!FATAL: ";
 	default:
 		error("unexpected debug message type {}", static_cast<u32>(type));
@@ -103,13 +103,13 @@ namespace
 	// Prevent duplicate handling when multiple handlers catch the same exception.
 	bool crash_handled{ false };
 
-	std::string lang_str(std::string_view key)
+	std::string langStr(std::string_view key)
 	{
 		return Localization::Str{ key }();
 	}
 
 	// Builds the common user template section: "what were you doing" + reproduce steps + expected/actual.
-	std::string user_template(bool crash)
+	std::string userTemplate(bool crash)
 	{
 		return utils::format(
 			"{}\n\n"
@@ -123,15 +123,15 @@ namespace
 			"...\n\n"
 			"{}\n"
 			"...\n",
-			lang_str("str_issue_describe_header"),
-			crash ? lang_str("str_issue_before_crash") : lang_str("str_issue_report_description"),
-			lang_str("str_issue_steps"),
-			lang_str("str_issue_expected"),
-			lang_str("str_issue_actual")
+			langStr("str_issue_describe_header"),
+			crash ? langStr("str_issue_before_crash") : langStr("str_issue_report_description"),
+			langStr("str_issue_steps"),
+			langStr("str_issue_expected"),
+			langStr("str_issue_actual")
 		);
 	}
 
-	std::string build_crash_message(PEXCEPTION_RECORD record)
+	std::string buildCrashMessage(PEXCEPTION_RECORD record)
 	{
 		std::string msg = "SEH Exception (Crash) caught!\n";
 
@@ -159,7 +159,7 @@ namespace
 			try
 			{
 				msg += "\n\n";
-				msg += Debug::pretty_stacktrace();
+				msg += Debug::prettyStacktrace();
 			}
 			catch (...)
 			{
@@ -172,7 +172,7 @@ namespace
 		return msg;
 	}
 
-	[[noreturn]] void handle_crash(const std::string& msg, u32 error_code)
+	[[noreturn]] void handleCrash(const std::string& msg, u32 error_code)
 	{
 		if (crash_handled)
 			ExitProcess(1);
@@ -185,12 +185,12 @@ namespace
 		// so the crash message + stack trace appear once as the last log entry.
 		Debug::fatalErrorMessage(msg);
 
-		const std::string log_tail = Debug::_readLogTail(150);
+		const std::string log_tail = Debug::readLogTail(150);
 
-		const std::string title = utils::format(lang_str("str_issue_crash_title"), utils::format("0x{:08X}", error_code));
+		const std::string title = utils::format(langStr("str_issue_crash_title"), utils::format("0x{:08X}", error_code));
 		Debug::openGitHubIssue(title, Debug::buildCrashIssueBody(log_tail));
 
-		Debug::log.close();
+		Debug::s_log.close();
 
 		// Terminate immediately: the process state is corrupted.
 		ExitProcess(static_cast<UINT>(0xC0'00'00'05));
@@ -210,10 +210,10 @@ static LONG WINAPI seh_unhandled_filter(_EXCEPTION_POINTERS* pExceptionInfo)
 	if (pExceptionInfo->ExceptionRecord->ExceptionCode == 0xE0'6D'73'63)
 		return EXCEPTION_CONTINUE_SEARCH;
 
-	const std::string msg = build_crash_message(pExceptionInfo->ExceptionRecord);
-	handle_crash(msg, pExceptionInfo->ExceptionRecord->ExceptionCode);
+	const std::string msg = buildCrashMessage(pExceptionInfo->ExceptionRecord);
+	handleCrash(msg, pExceptionInfo->ExceptionRecord->ExceptionCode);
 
-	// Unreachable (handle_crash terminates the process).
+	// Unreachable (handleCrash terminates the process).
 	return EXCEPTION_EXECUTE_HANDLER;
 }
 
@@ -235,10 +235,10 @@ static LONG CALLBACK vectored_exception_handler(PEXCEPTION_POINTERS pExceptionIn
 	if (pExceptionInfo->ExceptionRecord->ExceptionCode == 0xE0'6D'73'63)
 		return EXCEPTION_CONTINUE_SEARCH;
 
-	const std::string msg = build_crash_message(pExceptionInfo->ExceptionRecord);
-	handle_crash(msg, pExceptionInfo->ExceptionRecord->ExceptionCode);
+	const std::string msg = buildCrashMessage(pExceptionInfo->ExceptionRecord);
+	handleCrash(msg, pExceptionInfo->ExceptionRecord->ExceptionCode);
 
-	// Unreachable (handle_crash terminates the process).
+	// Unreachable (handleCrash terminates the process).
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
@@ -272,7 +272,7 @@ void Debug::initialize(const std::string& command_line)
 
 	_command_line = command_line;
 
-	std::set_terminate(cpp_terminate_handler);
+	std::set_terminate(_cppTerminateHandler);
 }
 
 void Debug::initLogFile()
@@ -287,24 +287,24 @@ void Debug::initLogFile()
 	if (!std::filesystem::exists(dir_logs))
 		std::filesystem::create_directories(dir_logs);
 
-	log.open(dir_logs / "log", ".txt", true);
-	if (log.isOpen())
+	s_log.open(dir_logs / "log", ".txt", true);
+	if (s_log.isOpen())
 	{
-		log_backup.open(dir_logs / "log_backup", ".txt", true);
-		if (log_backup.isOpen())
-			log_backup.clear();
+		s_log_backup.open(dir_logs / "log_backup", ".txt", true);
+		if (s_log_backup.isOpen())
+			s_log_backup.clear();
 
-		for (auto& line : log)
-			log_backup.writeText(line);
+		for (auto& line : s_log)
+			s_log_backup.writeText(line);
 
-		log.clear();
+		s_log.clear();
 	}
 }
 
 void Debug::fatalErrorMessage(std::string message)
 {
-	log.writeText(std::to_string(++_console_line) + ". " + message);
-	log.close();
+	s_log.writeText(std::to_string(++_console_line) + ". " + message);
+	s_log.close();
 	std::cerr << message << '\n';
 }
 
@@ -317,7 +317,7 @@ void Debug::openGitHubIssue(const std::string& title, const std::string& body)
 {
 	constexpr pcstr c_issue_url_base{ "https://github.com/MagilaWEB/unblock-youtube-discord/issues/new" };
 
-	const std::string url = std::string{ c_issue_url_base } + "?title=" + url_encode(title) + "&body=" + url_encode(body);
+	const std::string url = std::string{ c_issue_url_base } + "?title=" + urlEncode(title) + "&body=" + urlEncode(body);
 
 	// ShellExecuteA is safe for '?' and '&' in the URL (unlike system("start ...")).
 	ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
@@ -332,12 +332,12 @@ std::string Debug::buildCrashIssueBody(const std::string& log_tail)
 		"```\n{}\n```\n\n</details>\n\n"
 		"{}\n\n"
 		"{}",
-		lang_str("str_issue_crash_header"),
-		utils::format(lang_str("str_issue_version"), version()),
-		lang_str("str_issue_log_summary"),
+		langStr("str_issue_crash_header"),
+		utils::format(langStr("str_issue_version"), version()),
+		langStr("str_issue_log_summary"),
 		log_tail,
-		user_template(true),
-		lang_str("str_issue_full_log_hint")
+		userTemplate(true),
+		langStr("str_issue_full_log_hint")
 	);
 }
 
@@ -347,18 +347,18 @@ std::string Debug::buildReportIssueBody()
 		"{}\n\n"
 		"{}\n\n"
 		"{}",
-		lang_str("str_issue_report_header"),
-		utils::format(lang_str("str_issue_version"), version()),
-		user_template(false)
+		langStr("str_issue_report_header"),
+		utils::format(langStr("str_issue_version"), version()),
+		userTemplate(false)
 	);
 }
 
-std::string Debug::_readLogTail(size_t tail_lines)
+std::string Debug::readLogTail(size_t tail_lines)
 {
-	return read_log_tail(tail_lines);
+	return readLogTailLines(tail_lines);
 }
 
-std::string Debug::pretty_stacktrace()
+std::string Debug::prettyStacktrace()
 {
 	try
 	{

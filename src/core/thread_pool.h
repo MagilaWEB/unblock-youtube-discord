@@ -35,10 +35,10 @@ public:
 	using TaskId = std::uint64_t;
 	using Count	 = std::uint32_t;
 
-	static constexpr Count kMinWorkers = 2;
-	static constexpr Count kMaxWorkers = 32;
+	static constexpr Count c_min_workers = 2;
+	static constexpr Count c_max_workers = 32;
 
-	/// Resolve worker count: hardware_concurrency clamped to [kMinWorkers, kMaxWorkers].
+	/// Resolve worker count: hardware_concurrency clamped to [c_min_workers, c_max_workers].
 	/// Falls back to 4 when hardware_concurrency() reports 0.
 	static Count defaultThreadCount();
 

@@ -96,7 +96,7 @@ TEST_CASE("Core::addTask runs in pool and taskComplete(id) fires", "[core][tasks
 {
 	CoreFixture fx;
 	auto&		core = Core::get();
-	core.parallel_run();
+	core.parallelRun();
 
 	std::atomic_bool taskDone{ false };
 	std::atomic_bool cbDone{ false };

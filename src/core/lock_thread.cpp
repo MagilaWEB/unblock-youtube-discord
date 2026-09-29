@@ -2,93 +2,93 @@
 
 CriticalSection::CriticalSection()
 {
-	InitializeCriticalSection(&pmutex);
+	InitializeCriticalSection(&_pmutex);
 }
 
 CriticalSection::~CriticalSection()
 {
-	DeleteCriticalSection(&pmutex);
+	DeleteCriticalSection(&_pmutex);
 }
 
-void CriticalSection::Enter()
+void CriticalSection::enter()
 {
-	EnterCriticalSection(&pmutex);
+	EnterCriticalSection(&_pmutex);
 }
 
-void CriticalSection::Leave()
+void CriticalSection::leave()
 {
-	LeaveCriticalSection(&pmutex);
+	LeaveCriticalSection(&_pmutex);
 }
 
-BOOL CriticalSection::TryEnter()
+BOOL CriticalSection::tryEnter()
 {
-	return TryEnterCriticalSection(&pmutex);
+	return TryEnterCriticalSection(&_pmutex);
 }
 
-CriticalSection::raii::raii(CriticalSection& other) : critical_section(&std::forward<CriticalSection&>(other))
+CriticalSection::Raii::Raii(CriticalSection& other) : _critical_section(&std::forward<CriticalSection&>(other))
 {
-	VERIFY(critical_section);
-	critical_section->Enter();
+	VERIFY(_critical_section);
+	_critical_section->enter();
 }
 
-CriticalSection::raii::~raii()
+CriticalSection::Raii::~Raii()
 {
-	critical_section->Leave();
+	_critical_section->leave();
 }
 
 FastLock::FastLock()
 {
-	InitializeSRWLock(&srw);
+	InitializeSRWLock(&_srw);
 }
 
-void FastLock::Enter()
+void FastLock::enter()
 {
-	AcquireSRWLockExclusive(&srw);
+	AcquireSRWLockExclusive(&_srw);
 }
 
-bool FastLock::TryEnter()
+bool FastLock::tryEnter()
 {
-	return 0 != TryAcquireSRWLockExclusive(&srw);
+	return 0 != TryAcquireSRWLockExclusive(&_srw);
 }
 
-void FastLock::Leave()
+void FastLock::leave()
 {
-	ReleaseSRWLockExclusive(&srw);
+	ReleaseSRWLockExclusive(&_srw);
 }
 
-void FastLock::EnterShared()
+void FastLock::enterShared()
 {
-	AcquireSRWLockShared(&srw);
+	AcquireSRWLockShared(&_srw);
 }
 
-bool FastLock::TryEnterShared()
+bool FastLock::tryEnterShared()
 {
-	return 0 != TryAcquireSRWLockShared(&srw);
+	return 0 != TryAcquireSRWLockShared(&_srw);
 }
 
-void FastLock::LeaveShared()
+void FastLock::leaveShared()
 {
-	ReleaseSRWLockShared(&srw);
+	ReleaseSRWLockShared(&_srw);
 }
 
-void* FastLock::GetHandle()
+void* FastLock::getHandle()
 {
-	return reinterpret_cast<void*>(&srw);
+	return reinterpret_cast<void*>(&_srw);
 }
 
-FastLock::raii::raii(FastLock& other, bool shared) : fast_lock(&std::forward<FastLock&>(other)), _shared(shared)
+FastLock::Raii::Raii(FastLock& other, bool shared) : _fast_lock(&std::forward<FastLock&>(other)), _shared(shared)
 {
-	VERIFY(fast_lock);
+	VERIFY(_fast_lock);
 	if (_shared)
-		fast_lock->EnterShared();
+		_fast_lock->enterShared();
 	else
-		fast_lock->Enter();
+		_fast_lock->enter();
 }
 
-FastLock::raii::~raii()
+FastLock::Raii::~Raii()
 {
 	if (_shared)
-		fast_lock->LeaveShared();
+		_fast_lock->leaveShared();
 	else
-		fast_lock->Leave();
+		_fast_lock->leave();
 }

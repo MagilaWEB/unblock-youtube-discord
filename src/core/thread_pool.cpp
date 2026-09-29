@@ -9,7 +9,7 @@ ThreadPool::Count ThreadPool::defaultThreadCount()
 	unsigned hw = std::thread::hardware_concurrency();
 	if (hw == 0)
 		hw = 4;
-	return std::clamp<Count>(static_cast<Count>(hw), kMinWorkers, kMaxWorkers);
+	return std::clamp<Count>(static_cast<Count>(hw), c_min_workers, c_max_workers);
 }
 
 void ThreadPool::start(Count threadCount)
@@ -20,7 +20,7 @@ void ThreadPool::start(Count threadCount)
 
 	if (threadCount == 0)
 		threadCount = defaultThreadCount();
-	threadCount = std::clamp(threadCount, kMinWorkers, kMaxWorkers);
+	threadCount = std::clamp(threadCount, c_min_workers, c_max_workers);
 
 	_stop.store(false, std::memory_order_release);
 	_workers.reserve(threadCount);

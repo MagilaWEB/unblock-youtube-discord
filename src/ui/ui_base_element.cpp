@@ -96,7 +96,7 @@ bool BaseElement::isShow() const
 
 void BaseElement::addTutorialStep(Localization::Str title, Localization::Str description, u32 priority)
 {
-	_tutorial_steps.push_back(TutorialStep{ _name, _tutorial_type, title._str_id, description._str_id, priority });
+	_tutorial_steps.push_back(TutorialStep{ _name, _tutorial_type, title.str_id, description.str_id, priority });
 }
 
 const std::vector<BaseElement::TutorialStep>& BaseElement::tutorialSteps()

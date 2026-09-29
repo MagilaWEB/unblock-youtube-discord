@@ -4,16 +4,16 @@
 
 class File final
 {
-	CriticalSection lock;
+	CriticalSection _lock;
 
-	using v_line_string = std::vector<std::string>;
-	using v_sections	= std::map<std::string, std::list<std::string>>;
-	bool info_debug{ true };
+	using LineStrings = std::vector<std::string>;
+	using Sections	  = std::map<std::string, std::list<std::string>>;
+	bool _info_debug{ true };
 
 	std::filesystem::path _path_file{};
 	std::fstream		  _stream;
-	v_line_string		  _line_string;
-	v_sections			  _map_list_string;
+	LineStrings			  _line_string;
+	Sections			  _map_list_string;
 
 	// Section order as they appear/are created in this File instance.
 	std::vector<std::string> _section_order{};
@@ -25,7 +25,7 @@ class File final
 
 public:
 	File() = default;
-	File(bool info_debug) : info_debug(info_debug) {}
+	File(bool info_debug) : _info_debug(info_debug) {}
 	~File();
 
 	std::string			  name() const;
@@ -50,15 +50,15 @@ public:
 
 	std::optional<u32> positionSection(std::string_view section);
 
-	template<concepts::VallidALL TypeReturn>
-	std::expected<TypeReturn, std::string> parameterSection(std::string_view section, std::string paramert);
+	template<concepts::ValidAll TypeReturn>
+	std::expected<TypeReturn, std::string> parameterSection(std::string_view section, std::string parameter);
 
-	std::expected<std::vector<std::string>, std::string> parameterSectionVector(std::string_view section, std::string paramert);
+	std::expected<std::vector<std::string>, std::string> parameterSectionVector(std::string_view section, std::string parameter);
 
 	void writeText(std::string_view str);
-	void writeSectionParameter(std::string_view section, std::string paramert, std::string value_argument);
+	void writeSectionParameter(std::string_view section, std::string parameter, std::string value_argument);
 
-	void writeSectionParameterVector(std::string_view section, std::string paramert, const std::vector<std::string>& values);
+	void writeSectionParameterVector(std::string_view section, std::string parameter, const std::vector<std::string>& values);
 
 private:
 	void _normalize();

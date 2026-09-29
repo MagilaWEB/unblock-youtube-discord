@@ -1,6 +1,6 @@
 #include "utils.h"
 
-bool utils::IsUTF8(std::string_view string)
+bool utils::isUtf8(std::string_view string)
 {
 	if (string.empty())
 		return true;
@@ -29,9 +29,9 @@ bool utils::IsUTF8(std::string_view string)
 	return true;
 }
 
-std::string utils::UTF8_to_CP1251(std::string_view utf8_str)
+std::string utils::utf8ToCp1251(std::string_view utf8_str)
 {
-	if (!IsUTF8(utf8_str))
+	if (!isUtf8(utf8_str))
 		return std::string{ utf8_str };
 
 	const int len = static_cast<int>(utf8_str.size());
@@ -53,7 +53,7 @@ std::string utils::UTF8_to_CP1251(std::string_view utf8_str)
 	return result;
 }
 
-std::wstring utils::UTF8_to_UTF16(std::string_view utf8_str)
+std::wstring utils::utf8ToUtf16(std::string_view utf8_str)
 {
 	if (utf8_str.empty())
 		return std::wstring();
@@ -62,7 +62,7 @@ std::wstring utils::UTF8_to_UTF16(std::string_view utf8_str)
 
 	if (size_needed <= 0)
 	{
-		Debug::warning("UTF8_to_UTF16 Couldn't convert");
+		Debug::warning("utf8ToUtf16 Couldn't convert");
 		return std::wstring();
 	}
 
@@ -71,7 +71,7 @@ std::wstring utils::UTF8_to_UTF16(std::string_view utf8_str)
 
 	if (result <= 0)
 	{
-		Debug::warning("UTF8_to_UTF16 Couldn't convert");
+		Debug::warning("utf8ToUtf16 Couldn't convert");
 		return std::wstring();
 	}
 

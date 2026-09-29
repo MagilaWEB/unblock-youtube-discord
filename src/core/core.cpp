@@ -41,7 +41,7 @@ Core& Core::get()
 	return instance;
 }
 
-void Core::parallel_run()
+void Core::parallelRun()
 {
 	_pool.start();
 }
@@ -96,7 +96,7 @@ std::vector<std::string> Core::exec(std::string cmd)
 	throw std::runtime_error("popen() failed!");
 }
 
-void Core::exec_parallel(std::string cmd, std::function<bool(std::string)>&& callback)
+void Core::execParallel(std::string cmd, std::function<bool(std::string)>&& callback)
 {
 	std::jthread(
 		[cmd, callback]

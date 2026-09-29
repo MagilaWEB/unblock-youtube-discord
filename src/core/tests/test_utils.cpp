@@ -2,87 +2,87 @@
 #include "../pch.h"
 #include "../utils.h"
 
-TEST_CASE("utils::IsUTF8 empty string", "[utils][utf8]")
+TEST_CASE("utils::isUtf8 empty string", "[utils][utf8]")
 {
-	CHECK(utils::IsUTF8(""));
+	CHECK(utils::isUtf8(""));
 }
 
-TEST_CASE("utils::IsUTF8 plain ASCII", "[utils][utf8]")
+TEST_CASE("utils::isUtf8 plain ASCII", "[utils][utf8]")
 {
-	CHECK(utils::IsUTF8("Hello, World!"));
+	CHECK(utils::isUtf8("Hello, World!"));
 }
 
-TEST_CASE("utils::IsUTF8 Russian text", "[utils][utf8]")
+TEST_CASE("utils::isUtf8 Russian text", "[utils][utf8]")
 {
-	CHECK(utils::IsUTF8("Привет, мир!"));
+	CHECK(utils::isUtf8("Привет, мир!"));
 }
 
-TEST_CASE("utils::IsUTF8 2-byte sequence", "[utils][utf8]")
+TEST_CASE("utils::isUtf8 2-byte sequence", "[utils][utf8]")
 {
-	CHECK(utils::IsUTF8("\xC3\xA9"));
+	CHECK(utils::isUtf8("\xC3\xA9"));
 }
 
-TEST_CASE("utils::IsUTF8 3-byte sequence", "[utils][utf8]")
+TEST_CASE("utils::isUtf8 3-byte sequence", "[utils][utf8]")
 {
-	CHECK(utils::IsUTF8("\xE0\xA0\x80"));
+	CHECK(utils::isUtf8("\xE0\xA0\x80"));
 }
 
-TEST_CASE("utils::IsUTF8 4-byte sequence", "[utils][utf8]")
+TEST_CASE("utils::isUtf8 4-byte sequence", "[utils][utf8]")
 {
-	CHECK(utils::IsUTF8("\xF0\x9F\x98\x80"));
+	CHECK(utils::isUtf8("\xF0\x9F\x98\x80"));
 }
 
-TEST_CASE("utils::IsUTF8 invalid stray continuation byte", "[utils][utf8]")
+TEST_CASE("utils::isUtf8 invalid stray continuation byte", "[utils][utf8]")
 {
-	CHECK_FALSE(utils::IsUTF8("\x80"));
+	CHECK_FALSE(utils::isUtf8("\x80"));
 }
 
-TEST_CASE("utils::IsUTF8 invalid missing continuation", "[utils][utf8]")
+TEST_CASE("utils::isUtf8 invalid missing continuation", "[utils][utf8]")
 {
-	CHECK_FALSE(utils::IsUTF8("\xC3"));
+	CHECK_FALSE(utils::isUtf8("\xC3"));
 }
 
-TEST_CASE("utils::IsUTF8 invalid 0xFE byte", "[utils][utf8]")
+TEST_CASE("utils::isUtf8 invalid 0xFE byte", "[utils][utf8]")
 {
-	CHECK_FALSE(utils::IsUTF8("\xFE"));
+	CHECK_FALSE(utils::isUtf8("\xFE"));
 }
 
-TEST_CASE("utils::IsUTF8 mixed valid and invalid", "[utils][utf8]")
+TEST_CASE("utils::isUtf8 mixed valid and invalid", "[utils][utf8]")
 {
-	CHECK_FALSE(utils::IsUTF8("abc\x80xyz"));
+	CHECK_FALSE(utils::isUtf8("abc\x80xyz"));
 }
 
-TEST_CASE("utils::UTF8_to_CP1251 ASCII passthrough", "[utils][cp1251]")
+TEST_CASE("utils::utf8ToCp1251 ASCII passthrough", "[utils][cp1251]")
 {
-	CHECK(utils::UTF8_to_CP1251("Hello") == "Hello");
+	CHECK(utils::utf8ToCp1251("Hello") == "Hello");
 }
 
-TEST_CASE("utils::UTF8_to_CP1251 Russian", "[utils][cp1251]")
+TEST_CASE("utils::utf8ToCp1251 Russian", "[utils][cp1251]")
 {
-	auto result = utils::UTF8_to_CP1251("Привет");
+	auto result = utils::utf8ToCp1251("Привет");
 	CHECK_FALSE(result.empty());
 	CHECK_FALSE(result == "Привет");
 }
 
-TEST_CASE("utils::UTF8_to_CP1251 non-UTF8 returns input", "[utils][cp1251]")
+TEST_CASE("utils::utf8ToCp1251 non-UTF8 returns input", "[utils][cp1251]")
 {
-	CHECK(utils::UTF8_to_CP1251("\x80\x81\x82") == "\x80\x81\x82");
+	CHECK(utils::utf8ToCp1251("\x80\x81\x82") == "\x80\x81\x82");
 }
 
-TEST_CASE("utils::UTF8_to_UTF16 empty", "[utils][utf16]")
+TEST_CASE("utils::utf8ToUtf16 empty", "[utils][utf16]")
 {
-	CHECK(utils::UTF8_to_UTF16("").empty());
+	CHECK(utils::utf8ToUtf16("").empty());
 }
 
-TEST_CASE("utils::UTF8_to_UTF16 ASCII", "[utils][utf16]")
+TEST_CASE("utils::utf8ToUtf16 ASCII", "[utils][utf16]")
 {
-	auto result = utils::UTF8_to_UTF16("Hello");
+	auto result = utils::utf8ToUtf16("Hello");
 	CHECK(result == L"Hello");
 }
 
-TEST_CASE("utils::UTF8_to_UTF16 Russian", "[utils][utf16]")
+TEST_CASE("utils::utf8ToUtf16 Russian", "[utils][utf16]")
 {
-	auto result = utils::UTF8_to_UTF16("Привет");
+	auto result = utils::utf8ToUtf16("Привет");
 	CHECK_FALSE(result.empty());
 	CHECK(result.size() == 6);
 }

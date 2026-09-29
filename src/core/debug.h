@@ -7,15 +7,15 @@
 
 class Debug
 {
-	enum MessageTypes
+	enum class MessageTypes
 	{
-		ePrint,
-		eOk,
-		eInfo,
-		eWarning,
-		ePlease,
-		eError,
-		eFatal
+		Print,
+		Ok,
+		Info,
+		Warning,
+		Please,
+		Error,
+		Fatal
 	};
 
 	inline static std::string	   _command_line{};
@@ -27,8 +27,8 @@ class Debug
 public:
 	using exception = std::runtime_error;
 
-	inline static File log;
-	inline static File log_backup;
+	inline static File s_log;
+	inline static File s_log_backup;
 
 public:
 	Debug()		   = delete;
@@ -39,35 +39,35 @@ private:
 	inline static bool s_error_fatal{ debug };
 	inline static bool s_catch_exceptions{ !debug };
 
-	[[nodiscard]] static std::string_view get_prefix(MessageTypes type);
+	[[nodiscard]] static std::string_view _getPrefix(MessageTypes type);
 
-	static std::string strip_ansi(const std::string& s)
+	static std::string _stripAnsi(const std::string& s)
 	{
 		static const std::regex ansi_re("\\x1B\\[[0-9;]*m");
 		return std::regex_replace(s, ansi_re, "");
 	}
 
 	template<typename... Args>
-	static void msg(MessageTypes type, std::string_view message, Args&&... args)
+	static void _msg(MessageTypes type, std::string_view message, Args&&... args)
 	{
-		CriticalSection::raii mt{ _lock };
+		CriticalSection::Raii mt{ _lock };
 
 		std::string str = utils::format(message, args...);
 
-		const bool error_state = type >= MessageTypes::eError;
+		const bool error_state = std::to_underlying(type) >= std::to_underlying(MessageTypes::Error);
 		if (error_state)
-			str.append("\n" + pretty_stacktrace());
+			str.append("\n" + prettyStacktrace());
 
-		log.writeText(std::to_string(_console_line) + ". " + strip_ansi(str));
+		s_log.writeText(std::to_string(_console_line) + ". " + _stripAnsi(str));
 
-		auto log_str = std::format("{}. {}{}", ++_console_line, get_prefix(type), str);
+		auto log_str = std::format("{}. {}{}", ++_console_line, _getPrefix(type), str);
 		(error_state ? std::cerr : std::cout) << log_str.c_str() << std::endl;
 
-		if (type == MessageTypes::eFatal || (type == MessageTypes::eError && s_error_fatal))
+		if (type == MessageTypes::Fatal || (type == MessageTypes::Error && s_error_fatal))
 			throw(exception(str.c_str()));
 	}
 
-	[[noreturn]] static void cpp_terminate_handler()
+	[[noreturn]] static void _cppTerminateHandler()
 	{
 		std::string msg;
 
@@ -93,7 +93,7 @@ private:
 		}
 
 		msg += "\n\n";
-		msg += Debug::pretty_stacktrace();
+		msg += Debug::prettyStacktrace();
 
 		Debug::winApiWindowShow("str_error", msg.c_str());
 
@@ -101,13 +101,13 @@ private:
 		// so the crash message + stack trace appear once as the last log entry.
 		Debug::fatalErrorMessage(msg.c_str());
 
-		const std::string log_tail = _readLogTail(150);
+		const std::string log_tail = readLogTail(150);
 
 		// Automatically open a GitHub issue with a crash report.
 		const std::string title = utils::format(Localization::Str{ "str_issue_crash_title" }(), utils::format("0x{:08X}", 0u));
 		openGitHubIssue(title, buildCrashIssueBody(log_tail));
 
-		Debug::log.close();
+		Debug::s_log.close();
 		std::abort();
 	}
 
@@ -130,7 +130,7 @@ public:
 	static std::string buildReportIssueBody();
 
 	/** Reads the last tail_lines lines from logs/log.txt. */
-	static std::string _readLogTail(size_t tail_lines);
+	static std::string readLogTail(size_t tail_lines);
 
 	static void				  setVersion(std::string_view version) { _version_str = version; }
 	static const std::string& version() { return _version_str; }
@@ -152,11 +152,11 @@ public:
 		else
 			format = desc_format;
 
-		MessageBoxA(nullptr, utils::UTF8_to_CP1251(format.c_str()).c_str(), utils::UTF8_to_CP1251(text_lang_title()).c_str(), MB_OK);
+		MessageBoxA(nullptr, utils::utf8ToCp1251(format.c_str()).c_str(), utils::utf8ToCp1251(text_lang_title()).c_str(), MB_OK);
 	}
 
 	template<typename Fn, typename... Args>
-	static int try_wrap(Fn&& fn, Args&&... args)
+	static int tryWrap(Fn&& fn, Args&&... args)
 	{
 		if (s_catch_exceptions)
 		{
@@ -166,7 +166,7 @@ public:
 			}
 			catch (...)
 			{
-				cpp_terminate_handler();
+				_cppTerminateHandler();
 			}
 		}
 		else
@@ -176,7 +176,7 @@ public:
 	}
 
 	template<typename... Args>
-	__forceinline static std::unexpected<std::string> str_unexpected(std::string_view fmt, Args&&... args)
+	__forceinline static std::unexpected<std::string> strUnexpected(std::string_view fmt, Args&&... args)
 	{
 		return std::unexpected(utils::format(fmt, args...));
 	}
@@ -184,45 +184,45 @@ public:
 	template<typename... Args>
 	static void print(std::string_view message, Args&&... args)
 	{
-		msg(MessageTypes::ePrint, message, args...);
+		_msg(MessageTypes::Print, message, args...);
 	}
 
 	template<typename... Args>
 	static void ok(std::string_view message, Args&&... args)
 	{
-		msg(MessageTypes::eOk, message, args...);
+		_msg(MessageTypes::Ok, message, args...);
 	}
 
 	template<typename... Args>
 	static void info(std::string_view message, Args&&... args)
 	{
-		msg(MessageTypes::eInfo, message, args...);
+		_msg(MessageTypes::Info, message, args...);
 	}
 
 	template<typename... Args>
 	static void warning(std::string_view message, Args&&... args)
 	{
-		msg(MessageTypes::eWarning, message, args...);
+		_msg(MessageTypes::Warning, message, args...);
 	}
 
 	template<typename... Args>
 	static void please(std::string_view message, Args&&... args)
 	{
-		msg(MessageTypes::ePlease, message, args...);
+		_msg(MessageTypes::Please, message, args...);
 	}
 
 	/** Display error message and exit in certain conditions */
 	template<typename... Args>
 	static void error(std::string_view message, Args&&... args)
 	{
-		msg(MessageTypes::eError, message, args...);
+		_msg(MessageTypes::Error, message, args...);
 	}
 
 	/** Display error message and exit anyway */
 	template<typename... Args>
 	[[noreturn]] static void fatal(std::string_view message, Args&&... args)
 	{
-		msg(MessageTypes::eFatal, message, args...);
+		_msg(MessageTypes::Fatal, message, args...);
 	}
 
 	/** Check condition and throw warning if it fails */
@@ -243,13 +243,13 @@ public:
 
 	/** Check condition and fatal if it fails */
 	template<typename... Args>
-	static void _assert(bool condition, std::string_view message, Args&&... args)
+	static void assertion(bool condition, std::string_view message, Args&&... args)
 	{
 		if (!condition)
 			fatal(message, args...);
 	}
 
-	static std::string pretty_stacktrace();
+	static std::string prettyStacktrace();
 };
 
 #define VERIFY(expr)                                                                            \
@@ -263,7 +263,7 @@ public:
 	)
 
 #define ASSERT(expr)                                                                           \
-	Debug::_assert(                                                                            \
+	Debug::assertion(                                                                          \
 		!!(expr),                                                                              \
 		"ASSERTION FAILED!\n\tExpression: \t{}\n\tFile: \t{}\n\tLine: \t{}\n\tFunction: \t{}", \
 		#expr,                                                                                 \
@@ -273,7 +273,7 @@ public:
 	)
 
 #define ASSERT_ARGS(expr, msg, ...)                                                                                             \
-	Debug::_assert(                                                                                                             \
+	Debug::assertion(                                                                                                           \
 		!!(expr),                                                                                                               \
 		std::string{ "ASSERTION FAILED!\n\tExpression: \t{}\n\tFile: \t{}\n\tLine: \t{}\n\tFunction: \t{}\n\n\t" }.append(msg), \
 		#expr,                                                                                                                  \

@@ -2,7 +2,7 @@
 
 using namespace std::chrono_literals;
 
-static std::string win_error_message(DWORD err)
+static std::string winErrorMessage(DWORD err)
 {
 	return std::system_category().message(static_cast<int>(err));
 }
@@ -50,15 +50,15 @@ const Service::Config& Service::getConfig()
 
 bool Service::isRun()
 {
-	// Never block: a stop/start holds _lock for seconds (up to _dw_timeout_ms
+	// Never block: a stop/start holds _lock for seconds (up to c_dw_timeout_ms
 	// per wait) while the UI tick polls this every frame. Refresh and cache
 	// only when the lock is free, otherwise answer from the last snapshot.
-	if (_lock.TryEnter())
+	if (_lock.tryEnter())
 	{
 		update();
 		const bool running = _config.sc_status.dwCurrentState == SERVICE_START_PENDING || _config.sc_status.dwCurrentState == SERVICE_RUNNING;
 		_cached_running.store(running, std::memory_order_relaxed);
-		_lock.Leave();
+		_lock.leave();
 		return running;
 	}
 
@@ -94,7 +94,7 @@ void Service::open()
 
 	_initScManager();
 
-	for (size_t i = 0; i < _max_open_retries; ++i)
+	for (size_t i = 0; i < c_max_open_retries; ++i)
 	{
 		SC_HANDLE h = OpenService(_sc_manager.get(), _name.c_str(), SC_MANAGER_ALL_ACCESS);
 		if (h)
@@ -104,8 +104,8 @@ void Service::open()
 			return;
 		}
 
-		if (i < _max_open_retries - 1)
-			std::this_thread::sleep_for(std::chrono::milliseconds(_open_retry_ms));
+		if (i < c_max_open_retries - 1)
+			std::this_thread::sleep_for(std::chrono::milliseconds(c_open_retry_ms));
 	}
 }
 
@@ -132,10 +132,10 @@ void Service::create()
 			fullCmdLine.length()
 		);
 
-	auto wname	  = utils::UTF8_to_UTF16(_name);
-	auto wdesc	  = utils::UTF8_to_UTF16(_description);
-	auto wtempBin = utils::UTF8_to_UTF16(tempBinPath);
-	auto wfullCmd = utils::UTF8_to_UTF16(fullCmdLine);
+	auto wname	  = utils::utf8ToUtf16(_name);
+	auto wdesc	  = utils::utf8ToUtf16(_description);
+	auto wtempBin = utils::utf8ToUtf16(tempBinPath);
+	auto wfullCmd = utils::utf8ToUtf16(fullCmdLine);
 
 	_time_limit.start();
 	while (true)
@@ -179,7 +179,7 @@ void Service::create()
 				))
 			{
 				DWORD		err		= GetLastError();
-				std::string message = win_error_message(err);
+				std::string message = winErrorMessage(err);
 				InputConsole::textError(Localization::Str{ "str_error_create_service" }(), _name, message.c_str());
 				_sc.reset();
 				return;
@@ -196,14 +196,14 @@ void Service::create()
 		if (_sc)
 			return;
 
-		if (_time_limit.getElapsed_sec() > 5.0F)
+		if (_time_limit.getElapsedSec() > 5.0F)
 		{
-			std::string message = win_error_message(err);
+			std::string message = winErrorMessage(err);
 			InputConsole::textError(Localization::Str{ "str_error_create_service" }(), _name, message.c_str());
 			return;
 		}
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(_create_retry_ms));
+		std::this_thread::sleep_for(std::chrono::milliseconds(c_create_retry_ms));
 	}
 }
 
@@ -245,12 +245,12 @@ void Service::start()
 		if (started)
 			break;
 
-		if (_time_limit.getElapsed_sec() > 5.0F)
+		if (_time_limit.getElapsedSec() > 5.0F)
 		{
 			InputConsole::textError(Localization::Str{ "str_error_wait_time_start_service" }(), _name);
 			return;
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(_start_retry_ms));
+		std::this_thread::sleep_for(std::chrono::milliseconds(c_start_retry_ms));
 	}
 
 	update();
@@ -447,7 +447,7 @@ void Service::_waitStatusService(DWORD check_state, DWORD check_stat_end, std::f
 		if (_config.sc_status.dwCurrentState == check_stat_end)
 			break;
 
-		if ((GetTickCount64() - _dw_start_time) > _dw_timeout_ms)
+		if ((GetTickCount64() - _dw_start_time) > c_dw_timeout_ms)
 		{
 			on_timeout();
 			break;

@@ -731,7 +731,7 @@ bool Unblock::_runHidden(const std::vector<std::string>& args, uint32_t timeout_
 		cmdline += quote(arg);
 	}
 
-	auto wide_cmd = utils::UTF8_to_UTF16(cmdline);
+	auto wide_cmd = utils::utf8ToUtf16(cmdline);
 	if (wide_cmd.empty())
 		return false;
 

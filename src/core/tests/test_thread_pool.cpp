@@ -26,8 +26,8 @@ namespace
 TEST_CASE("ThreadPool::defaultThreadCount is clamped to [2, 32]", "[thread_pool]")
 {
 	const auto n = ThreadPool::defaultThreadCount();
-	CHECK(n >= ThreadPool::kMinWorkers);
-	CHECK(n <= ThreadPool::kMaxWorkers);
+	CHECK(n >= ThreadPool::c_min_workers);
+	CHECK(n <= ThreadPool::c_max_workers);
 }
 
 TEST_CASE("ThreadPool runs all enqueued tasks", "[thread_pool]")

@@ -24,7 +24,7 @@ public:
 public:
 	static Core& get();
 
-	void parallel_run();
+	void parallelRun();
 	void finish();
 
 	std::filesystem::path currentPath() const;
@@ -35,7 +35,7 @@ public:
 	std::filesystem::path tempPath() const;
 
 	std::vector<std::string> exec(std::string cmd);
-	void					 exec_parallel(std::string cmd, std::function<bool(std::string)>&& callback);
+	void					 execParallel(std::string cmd, std::function<bool(std::string)>&& callback);
 
 	bool isVersionNewer(std::string version1, std::string version2);
 

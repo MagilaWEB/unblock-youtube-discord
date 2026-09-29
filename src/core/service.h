@@ -94,9 +94,9 @@ private:
 	ULONGLONG _dw_start_time{ 0 };
 	ULONGLONG _dw_wait_time{ 0 };
 
-	static constexpr DWORD	_dw_timeout_ms	  = 30'000;
-	static constexpr DWORD	_create_retry_ms  = 300;
-	static constexpr DWORD	_start_retry_ms	  = 300;
-	static constexpr DWORD	_open_retry_ms	  = 5;
-	static constexpr size_t _max_open_retries = 3;
+	static constexpr DWORD	c_dw_timeout_ms	   = 30'000;
+	static constexpr DWORD	c_create_retry_ms  = 300;
+	static constexpr DWORD	c_start_retry_ms   = 300;
+	static constexpr DWORD	c_open_retry_ms	   = 5;
+	static constexpr size_t c_max_open_retries = 3;
 };

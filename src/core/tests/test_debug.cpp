@@ -89,9 +89,9 @@ struct IssueTemplateFixture
 
 // ─── Stacktrace ─────────────────────────────────────────────
 
-TEST_CASE("Debug::pretty_stacktrace returns non-empty", "[debug][stacktrace]")
+TEST_CASE("Debug::prettyStacktrace returns non-empty", "[debug][stacktrace]")
 {
-	auto trace = Debug::pretty_stacktrace();
+	auto trace = Debug::prettyStacktrace();
 	CHECK_FALSE(trace.empty());
 	CHECK(trace.find("Stacktrace") != std::string::npos);
 }
@@ -206,16 +206,16 @@ TEST_CASE("Debug log file contains written messages", "[debug][log]")
 		std::ofstream touch(log_path);
 	}
 
-	Debug::log.clear();
-	Debug::log.close();
-	Debug::log.open(log_path, "", true);
+	Debug::s_log.clear();
+	Debug::s_log.close();
+	Debug::s_log.open(log_path, "", true);
 
 	Debug::print("log test {} {}", "print", 1);
 	Debug::ok("log ok test");
 	Debug::info("log info test");
 	Debug::warning("log warning test");
 
-	Debug::log.close();
+	Debug::s_log.close();
 
 	REQUIRE(fs::exists(log_path));
 
@@ -254,7 +254,7 @@ TEST_CASE("Debug::version default is empty", "[debug][version]")
 
 // ─── Log tail ────────────────────────────────────────────────
 
-TEST_CASE("Debug::_readLogTail returns last N lines", "[debug][logtail]")
+TEST_CASE("Debug::readLogTail returns last N lines", "[debug][logtail]")
 {
 	DebugFixture fx;
 
@@ -265,7 +265,7 @@ TEST_CASE("Debug::_readLogTail returns last N lines", "[debug][logtail]")
 		ofs << "line1\nline2\nline3\nline4\nline5\n";
 	}
 
-	auto tail = Debug::_readLogTail(3);
+	auto tail = Debug::readLogTail(3);
 	CHECK(tail.find("line3") != std::string::npos);
 	CHECK(tail.find("line4") != std::string::npos);
 	CHECK(tail.find("line5") != std::string::npos);
@@ -273,7 +273,7 @@ TEST_CASE("Debug::_readLogTail returns last N lines", "[debug][logtail]")
 	CHECK(tail.find("line2") == std::string::npos);
 }
 
-TEST_CASE("Debug::_readLogTail all lines when tail exceeds size", "[debug][logtail]")
+TEST_CASE("Debug::readLogTail all lines when tail exceeds size", "[debug][logtail]")
 {
 	DebugFixture fx;
 
@@ -284,15 +284,15 @@ TEST_CASE("Debug::_readLogTail all lines when tail exceeds size", "[debug][logta
 		ofs << "only_line\n";
 	}
 
-	auto tail = Debug::_readLogTail(100);
+	auto tail = Debug::readLogTail(100);
 	CHECK(tail.find("only_line") != std::string::npos);
 }
 
-TEST_CASE("Debug::_readLogTail missing file returns message", "[debug][logtail]")
+TEST_CASE("Debug::readLogTail missing file returns message", "[debug][logtail]")
 {
 	DebugFixture fx;
 
-	auto tail = Debug::_readLogTail(10);
+	auto tail = Debug::readLogTail(10);
 	CHECK(tail.find("not found") != std::string::npos);
 }
 
