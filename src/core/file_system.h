@@ -15,7 +15,7 @@ class File final
 	v_line_string		  _line_string;
 	v_sections			  _map_list_string;
 
-	// Section order as they appear/created during the current session.
+	// Section order as they appear/are created in this File instance.
 	std::vector<std::string> _section_order{};
 
 	void _registerSectionOrder(std::string_view section);

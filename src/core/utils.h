@@ -17,20 +17,20 @@ namespace utils
 		return std::vformat(fmt, std::make_format_args(args...));
 	}
 
-	bool IsUTF8(std::string_view string);
-	std::string UTF8_to_CP1251(std::string_view utf8_str);
+	bool		 IsUTF8(std::string_view string);
+	std::string	 UTF8_to_CP1251(std::string_view utf8_str);
 	std::wstring UTF8_to_UTF16(std::string_view utf8_str);
 
 	void ltrim(std::string& str);
 	void rtrim(std::string& str);
 	void trim(std::string& str);
 
-	/** Проверяет, что строка — валидное имя хоста (домен). */
+	/** Returns true when the string is a valid host name (domain). */
 	bool isValidHostName(std::string_view str);
 
-	/** Проверяет, что строка — валидное имя хоста (домен), опционально с портом. */
+	/** Returns true when the string is a valid host name (domain), optionally with a port. */
 	bool isValidHostNamePort(std::string_view host);
 
-	/** Проверяет, что строка — валидный IP-адрес или подсеть (IPv4/IPv6, опционально с префиксом /N). */
+	/** Returns true when the string is a valid IP address or subnet (IPv4/IPv6, optional /N prefix). */
 	bool isValidNetwork(std::string_view network);
 }

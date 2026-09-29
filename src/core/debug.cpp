@@ -363,7 +363,7 @@ std::string Debug::pretty_stacktrace()
 	try
 	{
 		auto		trace  = std::stacktrace::current(1);
-		std::string result = "🚨 Stacktrace (depth: " + std::to_string(trace.size()) + "):\n";
+		std::string result = "Stacktrace (depth: " + std::to_string(trace.size()) + "):\n";
 
 		int frame_num = 0;
 		for (const auto& frame : trace)
@@ -395,6 +395,6 @@ std::string Debug::pretty_stacktrace()
 	}
 	catch (const std::exception& e)
 	{
-		return std::format("🚨 Stacktrace unavailable: {}", e.what());
+		return std::format("Stacktrace unavailable: {}", e.what());
 	}
 }

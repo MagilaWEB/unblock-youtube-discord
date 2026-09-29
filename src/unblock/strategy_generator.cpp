@@ -135,11 +135,11 @@ void StrategyGenerator::_convertDataFiles()
 	if (!ip_set_all.isOpen())
 		ip_set_all.save();
 
-	// Кастомные хосты и ip-set дописываются в all.list (пересоздаётся выше).
+	// Custom hosts and ip-set are appended to all.list (recreated above).
 	_appendLines(_user_blacklist() / "all.list", _custom_hosts);
 	_appendLines(_user_ip_set() / "all.list", _custom_ip_set);
 
-	// Эффективные файлы исключений: база из configs + кастомные, пересобираются каждый раз.
+	// Effective exclude files: the configs base plus the custom entries, rebuilt on every run.
 	_buildUserExclude(Core::get().configsPath() / "domains_exclude.list", _user_domains_exclude(), _custom_domains_exclude);
 	_buildUserExclude(Core::get().configsPath() / "ip-exclude.list", _user_ip_exclude(), _custom_ip_exclude);
 }
