@@ -26,6 +26,7 @@
 #include <fstream>
 #include <iostream>
 #include <mutex>
+#include <ranges>
 #include <set>
 #include <sstream>
 
@@ -289,11 +290,10 @@ namespace
 		if (content.empty())
 			return out;
 
-		std::istringstream in{ content };
-		std::string		   line;
-		while (std::getline(in, line))
+		std::string line;
+		for (auto line_range : content | std::views::split('\n'))
 		{
-			line = trimConfigLine(line);
+			line = trimConfigLine(std::string_view{ std::ranges::data(line_range), std::ranges::size(line_range) });
 			if (line.empty() || line.starts_with('#'))
 				continue;
 
@@ -328,11 +328,9 @@ namespace
 		std::string error;
 		const auto	content = readFile(path, error);
 
-		std::istringstream in{ content };
-		std::string		   line;
-		while (std::getline(in, line))
+		for (auto line_range : content | std::views::split('\n'))
 		{
-			line = trimConfigLine(line);
+			const std::string line = trimConfigLine(std::string_view{ std::ranges::data(line_range), std::ranges::size(line_range) });
 			if (line.starts_with("# listen="))
 				return trimConfigLine(line.substr(9));
 		}
@@ -607,9 +605,9 @@ namespace
 			backing.bootstrap_ptrs.push_back(b.c_str());
 
 		int32_t id = 0;
-		for (size_t i = 0; i < config.upstreams.size(); ++i)
+		for (const auto& [i, upstream] : std::views::enumerate(config.upstreams))
 		{
-			backing.upstream_strings.push_back(config.upstreams[i]);
+			backing.upstream_strings.push_back(upstream);
 
 			ag_upstream_options opt{};
 			opt.address					 = backing.upstream_strings.back().c_str();

@@ -102,7 +102,7 @@ inline bool isHostname(std::string_view s)
 // checked for a usable bootstrap separately in parseProxyConfig().
 inline bool isValidUpstreamAddress(const std::string& address)
 {
-	if (address.empty() || address.find(' ') != std::string::npos)
+	if (address.empty() || address.contains(' '))
 		return false;
 
 	for (const char* scheme : { "tcp://", "tls://", "https://", "quic://", "h3://", "sdns://" })
