@@ -115,7 +115,7 @@ ui::dom::Element BaseElement::element(std::string_view name)
 
 bool BaseElement::eventCPP(const JSArgs& args, MapEvent& map_event)
 {
-	auto& events = map_event[JSToCPP<std::string>(args[0])];
+	auto& events = map_event[jsToCpp<std::string>(args[0])];
 	if (events.empty())
 		return true;
 

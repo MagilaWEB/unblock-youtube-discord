@@ -30,8 +30,8 @@ void UiUnblock::_showConsole()
 		_show_console->addEventClick(
 			[self = _ui](JSArgs args)
 			{
-				self->console(JSToCPP<bool>(args[0]));
-				self->userConfig()->writeSectionParameter("SYSTEM", "show_console", JSToCPP(args[0]));
+				self->console(jsToCpp<bool>(args[0]));
+				self->userConfig()->writeSectionParameter("SYSTEM", "show_console", jsToCpp(args[0]));
 				return false;
 			}
 		);
@@ -55,7 +55,7 @@ void UiUnblock::_keepPhysicalSize()
 	_keep_physical_size->addEventClick(
 		[self = _ui](JSArgs args)
 		{
-			self->userConfig()->writeSectionParameter("WINDOW", "keep_physical_size", JSToCPP(args[0]));
+			self->userConfig()->writeSectionParameter("WINDOW", "keep_physical_size", jsToCpp(args[0]));
 			return false;
 		}
 	);
@@ -73,7 +73,7 @@ void UiUnblock::_testDomainsStartup()
 	_testing_domains_startup->addEventClick(
 		[self = _ui](JSArgs args)
 		{
-			self->userConfig()->writeSectionParameter("TESTING", "startup", JSToCPP(args[0]));
+			self->userConfig()->writeSectionParameter("TESTING", "startup", jsToCpp(args[0]));
 			return false;
 		}
 	);

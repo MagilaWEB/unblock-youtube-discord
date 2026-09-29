@@ -18,7 +18,7 @@ void Ui::_updateApp()
 	_enable_check_update_startup->addEventClick(
 		[self = self](JSArgs args)
 		{
-			self->userConfig()->writeSectionParameter("SYSTEM", "check_update_app_startup", JSToCPP(args[0]));
+			self->userConfig()->writeSectionParameter("SYSTEM", "check_update_app_startup", jsToCpp(args[0]));
 			return false;
 		}
 	);
@@ -82,7 +82,7 @@ void Ui::_updateAppWindow()
 	_window_update_unblock->addEventYesNo(
 		[self = self](JSArgs args)
 		{
-			if (JSToCPP<bool>(args[0]))
+			if (jsToCpp<bool>(args[0]))
 			{
 				self->console(false);
 

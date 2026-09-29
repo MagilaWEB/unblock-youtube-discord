@@ -59,7 +59,7 @@ void SelectList::createOption(JSValue value, Localization::Str text, bool select
 	if (!_created)
 		return;
 
-	const std::string value_str = value.ToString();
+	const std::string value_str = value.toString();
 
 	auto option = ui::dom::create("div");
 	option.addClass("option").text(text());
@@ -157,7 +157,7 @@ bool SelectList::_action(std::string action)
 	}
 	else if (action == "blur")
 	{
-		// As in the old shim: blur past the options does not close —
+		// Blur past the options does not close —
 		// the option click follows the blur, hover saves it.
 		if (!_hover)
 			close();

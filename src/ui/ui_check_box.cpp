@@ -48,7 +48,7 @@ void CheckBox::create(std::string_view selector, Localization::Str title, Locali
 		ui::dom::Event::Change,
 		[this](std::string element_name, js::Value state) -> bool
 		{
-			_state = state.ToBoolean();
+			_state = state.toBoolean();
 			return eventCPP({ std::move(element_name), state }, _event_click);
 		},
 		_name

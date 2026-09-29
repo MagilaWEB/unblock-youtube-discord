@@ -29,7 +29,7 @@ void UiProxyTg::_enableProxyTg()
 			Core::get().addTask(
 				[this, args]
 				{
-					const bool state = JSToCPP<bool>(args[0]);
+					const bool state = jsToCpp<bool>(args[0]);
 					if (state)
 						_ui->getWindowWaitStartService()->show();
 					else
@@ -154,13 +154,13 @@ void UiProxyTg::_applyProxySettings()
 			_unblock->localProxyTg(false);
 			_ui->getUiUnblock()->getWindowWaitStopService()->hide();
 
-			const auto				   host	   = JSToCPP<std::string>(_proxy_tg_host->getValue());
-			const auto				   port	   = JSToCPP<std::string>(_proxy_tg_port->getValue());
-			//const auto				   cfproxy = JSToCPP<std::string>(_proxy_tg_cfproxy_domain->getValue());
-			std::array<std::string, 4> dc_ip{ JSToCPP<std::string>(_proxy_tg_dc_ip_1->getValue()),
-											  JSToCPP<std::string>(_proxy_tg_dc_ip_2->getValue()),
-											  JSToCPP<std::string>(_proxy_tg_dc_ip_3->getValue()),
-											  JSToCPP<std::string>(_proxy_tg_dc_ip_4->getValue()) };
+			const auto				   host = jsToCpp<std::string>(_proxy_tg_host->getValue());
+			const auto				   port = jsToCpp<std::string>(_proxy_tg_port->getValue());
+			// const auto				   cfproxy = jsToCpp<std::string>(_proxy_tg_cfproxy_domain->getValue());
+			std::array<std::string, 4> dc_ip{ jsToCpp<std::string>(_proxy_tg_dc_ip_1->getValue()),
+											  jsToCpp<std::string>(_proxy_tg_dc_ip_2->getValue()),
+											  jsToCpp<std::string>(_proxy_tg_dc_ip_3->getValue()),
+											  jsToCpp<std::string>(_proxy_tg_dc_ip_4->getValue()) };
 
 			_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", "host", host);
 			_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", "port", port);

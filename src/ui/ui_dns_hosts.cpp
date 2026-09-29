@@ -25,7 +25,7 @@ void UiDnsHosts::_enableDnsHosts()
 	_window_to_warn_enable_dns_hosts->addEventYesNo(
 		[this](JSArgs args)
 		{
-			_ui->userConfig()->writeSectionParameter("SYSTEM", "enable_dns_hosts", JSToCPP(args[0]));
+			_ui->userConfig()->writeSectionParameter("SYSTEM", "enable_dns_hosts", jsToCpp(args[0]));
 			_enableDnsHostsUpdate();
 			_window_to_warn_enable_dns_hosts->hide();
 			return false;
@@ -50,7 +50,7 @@ void UiDnsHosts::_enableDnsHosts()
 	_enable_dns_hosts->addEventClick(
 		[this](JSArgs args)
 		{
-			if (JSToCPP<bool>(args[0]))
+			if (jsToCpp<bool>(args[0]))
 			{
 				_enableDnsHostsWarningUser();
 				return false;
@@ -79,7 +79,7 @@ void UiDnsHosts::_enableDnsHosts()
 	_select_region->addEventChange(
 		[this](JSArgs args)
 		{
-			const auto region	= JSToCPP<std::string>(args[0]);
+			const auto region	= jsToCpp<std::string>(args[0]);
 			const auto previous = _unblock->dnsHostsRegion();
 
 			Core::get().addTask(
@@ -147,7 +147,7 @@ void UiDnsHosts::_enableDnsHosts()
 	_dns_hosts_url->addEventSubmit(
 		[this](JSArgs args)
 		{
-			const auto host = JSToCPP<std::string>(args[0]);
+			const auto host = jsToCpp<std::string>(args[0]);
 			if (!utils::isValidHostName(host))
 				return false;
 
@@ -164,7 +164,7 @@ void UiDnsHosts::_enableDnsHosts()
 	_region_list->setItems(regions);
 	_rebuildRegionSelect();
 
-	std::string active = JSToCPP<std::string>(_select_region->getSelectedOptionValue());
+	std::string active = jsToCpp<std::string>(_select_region->getSelectedOptionValue());
 	if (auto cfg = _ui->userConfig()->parameterSection<std::string>("SYSTEM", "dns_hosts_region"))
 		if (std::ranges::find(regions, cfg.value()) != regions.end())
 			active = cfg.value();
@@ -209,7 +209,7 @@ void UiDnsHosts::_rebuildRegionSelect()
 {
 	const auto& items = _region_list->items();
 
-	std::string active = JSToCPP<std::string>(_select_region->getSelectedOptionValue());
+	std::string active = jsToCpp<std::string>(_select_region->getSelectedOptionValue());
 	if (active.empty() || std::ranges::find(items, active) == items.end())
 		active = items.empty() ? "" : items.front();
 
@@ -227,9 +227,9 @@ void UiDnsHosts::_onRegionsChanged(JSArgs args)
 	_rebuildRegionSelect();
 
 	// A region added by the user is checked for availability right away.
-	if (args.size() >= 2 && JSToCPP<std::string>(args[0]) == "add")
+	if (args.size() >= 2 && jsToCpp<std::string>(args[0]) == "add")
 	{
-		const auto region = JSToCPP<std::string>(args[1]);
+		const auto region = jsToCpp<std::string>(args[1]);
 		Core::get().addTask(
 			// NOLINTNEXTLINE(bugprone-exception-escape) - worker callback; the availability check may allocate.
 			[this, region]

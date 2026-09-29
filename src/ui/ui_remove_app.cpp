@@ -22,7 +22,7 @@ void Ui::_removeApp()
 	_window_remove_app->addEventYesNo(
 		[ui_self = self](JSArgs args)
 		{
-			if (JSToCPP<bool>(args[0]))
+			if (jsToCpp<bool>(args[0]))
 				ui_self->_removeAppRun();
 
 			ui_self->_window_remove_app->hide();

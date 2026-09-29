@@ -279,7 +279,7 @@ void Ui::_checkConflictService()
 			self->_window_warning_conflict_service->addEventYesNo(
 				[self = self, conflict_service](JSArgs args)
 				{
-					if (JSToCPP<bool>(args[0]))
+					if (jsToCpp<bool>(args[0]))
 					{
 						// Removing a service stops it first, which holds the
 						// service lock for seconds — off the edge/main thread so

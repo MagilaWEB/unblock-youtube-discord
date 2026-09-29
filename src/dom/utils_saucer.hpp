@@ -17,8 +17,7 @@
 #include <limits>
 
 // -------------------------------------------------------------------------------------
-// Mini-compatible JS value type: this used to be ultralight::JSValue, now it's our own
-// variant so we don't pull in browser-engine dependencies.
+// Minimal JS value type: a small variant so we don't pull in browser-engine dependencies.
 // -------------------------------------------------------------------------------------
 
 namespace js
@@ -42,11 +41,11 @@ namespace js
 		Value(std::string v) : _value(std::move(v)) {}
 
 	public:
-		[[nodiscard]] bool IsBoolean() const { return std::holds_alternative<bool>(_value); }
-		[[nodiscard]] bool IsNumber() const { return std::holds_alternative<s64>(_value) || std::holds_alternative<double>(_value); }
-		[[nodiscard]] bool IsString() const { return std::holds_alternative<std::string>(_value); }
+		[[nodiscard]] bool isBoolean() const { return std::holds_alternative<bool>(_value); }
+		[[nodiscard]] bool isNumber() const { return std::holds_alternative<s64>(_value) || std::holds_alternative<double>(_value); }
+		[[nodiscard]] bool isString() const { return std::holds_alternative<std::string>(_value); }
 
-		[[nodiscard]] bool ToBoolean() const
+		[[nodiscard]] bool toBoolean() const
 		{
 			return std::visit(
 				[](const auto& val) -> bool
@@ -65,7 +64,7 @@ namespace js
 			);
 		}
 
-		[[nodiscard]] s64 ToInteger() const
+		[[nodiscard]] s64 toInteger() const
 		{
 			return std::visit(
 				[](const auto& val) -> s64
@@ -89,7 +88,7 @@ namespace js
 			);
 		}
 
-		[[nodiscard]] double ToNumber() const
+		[[nodiscard]] double toNumber() const
 		{
 			return std::visit(
 				[](const auto& val) -> double
@@ -108,7 +107,7 @@ namespace js
 			);
 		}
 
-		[[nodiscard]] std::string ToString() const
+		[[nodiscard]] std::string toString() const
 		{
 			return std::visit(
 				[](const auto& val) -> std::string
@@ -195,19 +194,19 @@ inline std::string jsArgsList(const JSArgs& args)
 // Convert a value to a JS literal for embedding into code.
 inline std::string jsArgToString(const JSValue& arg)
 {
-	if (arg.IsString())
-		return jsQuote(arg.ToString());
+	if (arg.isString())
+		return jsQuote(arg.toString());
 
-	return arg.ToString();
+	return arg.toString();
 }
 
-// Analog of ultralight::JSToCPP — convert a value from a JS event to a CPP type.
+// Convert a value from a JS event to a CPP type.
 template<concepts::ValidAll Type = std::string>
-Type JSToCPP(const JSValue& value)
+Type jsToCpp(const JSValue& value)
 {
 	if constexpr (concepts::ValidString<Type>)
 	{
-		const auto str = value.ToString();
+		const auto str = value.toString();
 		if constexpr (concepts::ValidStringPtr<Type>)
 			return str.c_str();
 		else
@@ -215,11 +214,11 @@ Type JSToCPP(const JSValue& value)
 	}
 
 	if constexpr (std::same_as<Type, bool>)
-		return value.ToBoolean();
+		return value.toBoolean();
 
 	if constexpr (concepts::ValidIntegerUnsigned<Type>)
 	{
-		const auto integer = value.ToInteger();
+		const auto integer = value.toInteger();
 		if (integer < 0)
 		{
 			Debug::warning(
@@ -246,11 +245,11 @@ Type JSToCPP(const JSValue& value)
 	}
 
 	if constexpr (concepts::ValidIntegerLong<Type>)
-		return value.ToInteger();
+		return value.toInteger();
 
 	if constexpr (concepts::ValidInteger<Type>)
 	{
-		const auto	   integer	   = value.ToInteger();
+		const auto	   integer	   = value.toInteger();
 		constexpr Type min_integer = type_min<Type>;
 		if (integer < min_integer)
 		{
@@ -281,7 +280,7 @@ Type JSToCPP(const JSValue& value)
 
 	if constexpr (concepts::ValidNumber<Type>)
 	{
-		const auto number = value.ToNumber();
+		const auto number = value.toNumber();
 		if constexpr (std::same_as<Type, float>)
 		{
 			constexpr Type min_integer = type_min<Type>;

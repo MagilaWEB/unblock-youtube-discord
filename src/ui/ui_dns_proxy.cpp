@@ -28,7 +28,7 @@ void UiDnsProxy::initialize()
 	_enable_dns_proxy->addEventClick(
 		[this](JSArgs args)
 		{
-			const bool state = JSToCPP<bool>(args[0]);
+			const bool state = jsToCpp<bool>(args[0]);
 			_ui->userConfig()->writeSectionParameter("DNS", "enable", state ? "true" : "false");
 
 			_ui->backgroundTasks()->start("dns_proxy_apply", "str_task_dns_proxy_title");
@@ -89,7 +89,7 @@ void UiDnsProxy::initialize()
 	_bootstrap->addEventSubmit(
 		[this](JSArgs args)
 		{
-			if (auto parsed = parseBootstrapList(trimConfigLine(JSToCPP<std::string>(args[0]))))
+			if (auto parsed = parseBootstrapList(trimConfigLine(jsToCpp<std::string>(args[0]))))
 			{
 				_unblock->setDnsProxyBootstrap(std::move(*parsed));
 				_collectUpstreams();
@@ -127,7 +127,7 @@ void UiDnsProxy::initialize()
 		{
 			try
 			{
-				int seconds = std::stoi(trimConfigLine(JSToCPP<std::string>(args[0])));
+				int seconds = std::stoi(trimConfigLine(jsToCpp<std::string>(args[0])));
 				seconds		= std::clamp(seconds, 1, 120);
 				_unblock->setDnsProxyTimeout(static_cast<uint32_t>(seconds) * 1'000);
 				_collectUpstreams();
@@ -158,7 +158,7 @@ void UiDnsProxy::initialize()
 				[this]
 				{
 					// Blocking DOM getter: background task only, never the UI thread.
-					const auto value = JSToCPP<std::string>(_test_input->getValue());
+					const auto value = jsToCpp<std::string>(_test_input->getValue());
 					// Empty or invalid — the field already says so, no window.
 					if (value.empty() || !isValidUpstreamAddress(trimConfigLine(value)))
 						return;

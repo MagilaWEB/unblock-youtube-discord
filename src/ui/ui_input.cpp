@@ -12,7 +12,7 @@ std::pair<Input::Types, pcstr> Input::convert_types[]{
 	// Custom kinds still map to valid HTML types: the browser knows only
 	// text/number/color/time, "port"/"ip" would silently fall back to text
 	// with no numeric keyboard or spinner.
-	{			Input::Types::ip,	 "text" },
+	{			Input::Types::ip,	"text" },
 	{		  Input::Types::port, "number" },
 	{		 Input::Types::count, "number" },
 	// Fixed-unit durations are strict numbers in the target unit.
@@ -22,7 +22,7 @@ std::pair<Input::Types, pcstr> Input::convert_types[]{
 	// Generic duration accepts suffixes ("30sec", "2min", "500ms",
 	// "1h", "1d"), so it needs type=text: type=number would block
 	// non-digit input in the browser.
-	{      Input::Types::duration,   "text" },
+	{	  Input::Types::duration,	"text" },
 };
 
 namespace
@@ -112,44 +112,44 @@ namespace
 			double ms;
 		};
 		static constexpr SuffixFactor kSuffixes[]{
-			{		 "ms",		  1.0 },
-			{	   "msec",		  1.0 },
-			{		"мc",		  1.0 },
-			{		"мс",		  1.0 },
-			{		  "s",	  1'000.0 },
-			{		"sec",	  1'000.0 },
-			{	   "secs",	  1'000.0 },
-			{	 "second",	  1'000.0 },
-			{	"seconds",	  1'000.0 },
-			{		  "с",	  1'000.0 },
-			{		"сек",	  1'000.0 },
-			{		  "m",	 60'000.0 },
-			{		"min",	 60'000.0 },
-			{	   "mins",	 60'000.0 },
-			{	 "minute",	 60'000.0 },
-			{	"minutes",	 60'000.0 },
-			{		"мин",	 60'000.0 },
-			{		  "h", 3'600'000.0 },
-			{	   "hour", 3'600'000.0 },
-			{	  "hours", 3'600'000.0 },
-			{		  "ч", 3'600'000.0 },
-			{		"час", 3'600'000.0 },
-			{		  "d", 86'400'000.0 },
-			{		"day", 86'400'000.0 },
-			{	   "days", 86'400'000.0 },
-			{		  "д", 86'400'000.0 },
-			{		 "дн", 86'400'000.0 },
-			{	   "день", 86'400'000.0 },
-			{		"дня", 86'400'000.0 },
-			{	   "дней", 86'400'000.0 },
-			{		  "w", 604'800'000.0 },
-			{	   "week", 604'800'000.0 },
-			{	  "weeks", 604'800'000.0 },
-			{		  "н", 604'800'000.0 },
-			{		"нед", 604'800'000.0 },
-			{	 "неделя", 604'800'000.0 },
-			{	 "недели", 604'800'000.0 },
-			{	 "недель", 604'800'000.0 },
+			{	   "ms",		   1.0 },
+			{	 "msec",		   1.0 },
+			{	   "мc",		   1.0 },
+			{	   "мс",		   1.0 },
+			{		"s",	   1'000.0 },
+			{	  "sec",	   1'000.0 },
+			{	 "secs",	   1'000.0 },
+			{  "second",	   1'000.0 },
+			{ "seconds",	   1'000.0 },
+			{		"с",	   1'000.0 },
+			{	  "сек",	   1'000.0 },
+			{		"m",	  60'000.0 },
+			{	  "min",	  60'000.0 },
+			{	 "mins",	  60'000.0 },
+			{  "minute",	  60'000.0 },
+			{ "minutes",	  60'000.0 },
+			{	  "мин",	  60'000.0 },
+			{		"h",   3'600'000.0 },
+			{	 "hour",   3'600'000.0 },
+			{	"hours",   3'600'000.0 },
+			{		"ч",   3'600'000.0 },
+			{	  "час",   3'600'000.0 },
+			{		"d",  86'400'000.0 },
+			{	  "day",  86'400'000.0 },
+			{	 "days",  86'400'000.0 },
+			{		"д",  86'400'000.0 },
+			{	   "дн",  86'400'000.0 },
+			{	 "день",  86'400'000.0 },
+			{	  "дня",  86'400'000.0 },
+			{	 "дней",  86'400'000.0 },
+			{		"w", 604'800'000.0 },
+			{	 "week", 604'800'000.0 },
+			{	"weeks", 604'800'000.0 },
+			{		"н", 604'800'000.0 },
+			{	  "нед", 604'800'000.0 },
+			{  "неделя", 604'800'000.0 },
+			{  "недели", 604'800'000.0 },
+			{  "недель", 604'800'000.0 },
 		};
 
 		double suffix_ms  = 0.0;
@@ -258,7 +258,7 @@ void Input::create(
 	// The initial value doubles as the fallback for untouched fields
 	// (previously only the placeholder showed it, so getValue() returned ""
 	// and callers overwrote configs with empties).
-	_value = value.ToString();
+	_value = value.toString();
 
 	_setPlaceholder(title, type, options);
 
@@ -277,7 +277,7 @@ void Input::create(
 			if (_created)
 				_input.value("");
 
-			_value = value.ToString();
+			_value = value.toString();
 
 			_setPlaceholder(title, type, options);
 
@@ -314,7 +314,7 @@ void Input::setValidator(std::function<bool(const std::string&)> validator)
 			if (!_validator)
 				return false;
 
-			const std::string text = value.ToString();
+			const std::string text = value.toString();
 			if (text.empty() || _validator(text))
 				_input.removeClass("input_error_validator");
 			else
@@ -342,14 +342,14 @@ void Input::setValue(JSValue value)
 {
 	// Remember the programmatic value and refresh the placeholder so the UI
 	// shows the active setting; the typed text itself is owned by the user.
-	_value = value.ToString();
+	_value = value.toString();
 	if (_created)
 		_input.setAttr("value", _value);
 }
 
 u32 Input::getValueU32(Types type, u32 default_value, u32 min_value, u32 max_value)
 {
-	const std::string raw = JSToCPP<std::string>(getValue());
+	const std::string raw = jsToCpp<std::string>(getValue());
 	if (raw.empty())
 		return std::clamp(default_value, min_value, max_value);
 
@@ -416,9 +416,7 @@ void Input::_setPlaceholder(Localization::Str title, Types type, Options options
 		// NOTE: no "title" attr here — the native tooltip would overlap
 		// the custom description popup; suffix docs live in the caller
 		// description strings (see str_helper_*_description).
-		_input.setAttr("inputmode", "text")
-			.setAttr("maxlength", "12")
-			.setAttr("pattern", "[0-9]+[.,]?[0-9]*\\s*[A-Za-zА-Яа-яёЁ]*");
+		_input.setAttr("inputmode", "text").setAttr("maxlength", "12").setAttr("pattern", "[0-9]+[.,]?[0-9]*\\s*[A-Za-zА-Яа-яёЁ]*");
 	}
 
 	_input.id(_name).setAttr("placeholder", placeholder);

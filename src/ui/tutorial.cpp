@@ -328,8 +328,7 @@ bool Tutorial::stale(int gen)
 
 void Tutorial::scheduleCenter(int gen)
 {
-	// Intro: give the tab a moment to paint (300ms as in the old shim),
-	// then center the panel.
+	// Intro: give the tab a moment to paint (300ms), then center the panel.
 	using namespace std::chrono_literals;
 	Scheduler::get().after(
 		300ms,
@@ -345,8 +344,8 @@ void Tutorial::scheduleCenter(int gen)
 
 void Tutorial::scheduleLayout(int gen, Step step, ui::dom::Element target)
 {
-	// Element step (timings as in the old shim): wait for the tab render,
-	// scroll the target to center, and measure only after the smooth scroll.
+	// Element step: wait for the tab render, scroll the target to center,
+	// and measure only after the smooth scroll.
 	using namespace std::chrono_literals;
 	Scheduler::get().after(
 		900ms,

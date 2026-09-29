@@ -8,7 +8,7 @@ namespace ui::dom
 	{
 		// Kind listener, re-registered per node+kind — a second on() replaces
 		// the previous handler instead of stacking duplicates (protection
-		// against WebView2 script replay, see ab59fbd). Reply protocol:
+		// against WebView2 script replay). Reply protocol:
 		// exposed[tag](tag, detail), detail depends on kind
 		// (click/focus/blur/mouseenter/mouseleave — "", change — "true"/"false",
 		// enter/input — field value). All details cross the bridge as strings

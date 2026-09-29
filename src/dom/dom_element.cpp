@@ -11,14 +11,14 @@ namespace ui::dom
 {
 	namespace
 	{
-		std::atomic<int> s_nextHandle{ 0 };
+		std::atomic<int> s_next_handle{ 0 };
 
-		// Visibility epochs (ab59fbd): every show()/hide() carries a strictly
+		// Visibility epochs: every show()/hide() carries a strictly
 		// increasing per-handle number, JS applies max-wins only. A replayed
 		// script carries a stale number and is ignored — a hidden modal
 		// can never be resurrected, ordering stays causal.
-		std::mutex			s_visMutex;
-		std::map<int, long> s_visEpoch;
+		std::mutex			s_vis_mutex;
+		std::map<int, long> s_vis_epoch;
 	}
 
 	// --- Classes ------------------------------------------------------
@@ -65,8 +65,8 @@ namespace ui::dom
 		{
 			long epoch = 0;
 			{
-				std::lock_guard lk{ s_visMutex };
-				epoch = ++s_visEpoch[_h];
+				std::lock_guard lk{ s_vis_mutex };
+				epoch = ++s_vis_epoch[_h];
 			}
 			v->execute("__dom_show({}, {})", _h, epoch);
 		}
@@ -79,8 +79,8 @@ namespace ui::dom
 		{
 			long epoch = 0;
 			{
-				std::lock_guard lk{ s_visMutex };
-				epoch = ++s_visEpoch[_h];
+				std::lock_guard lk{ s_vis_mutex };
+				epoch = ++s_vis_epoch[_h];
 			}
 			v->execute("__dom_hide({}, {})", _h, epoch);
 		}
@@ -92,7 +92,7 @@ namespace ui::dom
 	Element& Element::append(const Element& child)
 	{
 		if (auto* v = view(); v && _h >= 0 && child._h >= 0)
-			// Idempotent (ab59fbd): a second pass only moves the node,
+			// Idempotent: a second pass only moves the node,
 			// a replayed script is skipped instead of scrambling layout.
 			v->execute("__dom_appendOnce({}, {})", _h, child._h);
 
@@ -119,7 +119,7 @@ namespace ui::dom
 	{
 		if (auto* v = view(); v && _h >= 0)
 		{
-			int ch = s_nextHandle++;
+			int ch = s_next_handle++;
 			v->execute("if (!__dom[{}]) {{ __dom[{}] = document.createElement({}); __dom[{}].appendChild(__dom[{}]); }}", ch, ch, tag, _h, ch);
 			return Element(ch);
 		}
@@ -151,7 +151,7 @@ namespace ui::dom
 		if (_h < 0)
 			return Element(-1);
 
-		int h = s_nextHandle++;
+		int h = s_next_handle++;
 		if (auto* v = view())
 			v->execute("__dom[{}] = __dom[{}].firstChild ? __dom[{}].firstChild.cloneNode(true) : document.createElement('span')", h, _h, _h);
 
@@ -170,7 +170,7 @@ namespace ui::dom
 		if (_h < 0)
 			return Element(-1);
 
-		int h = s_nextHandle++;
+		int h = s_next_handle++;
 		if (auto* v = view())
 			v->execute("__dom[{}] = __dom_closest({}, {})", h, _h, selector);
 
@@ -181,9 +181,9 @@ namespace ui::dom
 
 	Element create(std::string_view tag)
 	{
-		int h = s_nextHandle++;
+		int h = s_next_handle++;
 		if (auto* v = view())
-			// Idempotent (ab59fbd): a second pass keeps the first node.
+			// Idempotent: a second pass keeps the first node.
 			v->execute("if (!__dom[{}]) __dom[{}] = document.createElement({})", h, h, tag);
 
 		return Element(h);
@@ -191,7 +191,7 @@ namespace ui::dom
 
 	Element getElementById(std::string_view id)
 	{
-		int h = s_nextHandle++;
+		int h = s_next_handle++;
 		if (auto* v = view())
 			v->execute("__dom[{}] = document.getElementById({})", h, id);
 
@@ -200,7 +200,7 @@ namespace ui::dom
 
 	Element querySelector(std::string_view sel)
 	{
-		int h = s_nextHandle++;
+		int h = s_next_handle++;
 		if (auto* v = view())
 			v->execute("__dom[{}] = document.querySelector({})", h, sel);
 
@@ -212,7 +212,7 @@ namespace ui::dom
 		if (parent._h < 0)
 			return Element(-1);
 
-		int h = s_nextHandle++;
+		int h = s_next_handle++;
 		if (auto* v = view())
 			v->execute("__dom[{}] = __dom_queryIn({}, {})", h, parent._h, sel);
 

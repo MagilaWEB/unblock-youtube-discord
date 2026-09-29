@@ -59,7 +59,7 @@ void UiZapretPage::_selectEngine()
 	_select_engine->addEventChange(
 		[this](JSArgs args)
 		{
-			_requestTechnologySwitch(technologyFromString(JSToCPP<std::string>(args[0])));
+			_requestTechnologySwitch(technologyFromString(jsToCpp<std::string>(args[0])));
 			return false;
 		}
 	);
@@ -114,7 +114,7 @@ void UiZapretPage::_requestTechnologySwitch(Technology technology)
 		{
 			_window_warning_technology_busy->hide();
 
-			if (!JSToCPP<bool>(args[0]))
+			if (!jsToCpp<bool>(args[0]))
 			{
 				_select_engine->setSelectedOptionValue(std::string{ toStringView(_technology) });
 				return true;
@@ -150,7 +150,7 @@ void UiZapretPage::_listEnableServices()
 			// NOLINTNEXTLINE(bugprone-exception-escape) - Ultralight callback contract
 			[this, name](JSArgs args)
 			{
-				_ui->userConfig()->writeSectionParameter("UNBLOCK", std::string{ "enable_" } + name, JSToCPP(args[0]));
+				_ui->userConfig()->writeSectionParameter("UNBLOCK", std::string{ "enable_" } + name, jsToCpp(args[0]));
 
 				_listEnableServicesUpdate();
 				return false;
@@ -272,7 +272,7 @@ void UiZapretPage::_selectStrategyVersion()
 	_select_version_strategy->addEventChange(
 		[this](JSArgs args)
 		{
-			_ui->userConfig()->writeSectionParameter(_rememberSection(), "version_strategy", JSToCPP(args[0]));
+			_ui->userConfig()->writeSectionParameter(_rememberSection(), "version_strategy", jsToCpp(args[0]));
 			_selectStrategyVersionUpdate();
 			return false;
 		}
@@ -319,7 +319,7 @@ void UiZapretPage::_selectConfig()
 	_select_config->addEventChange(
 		[this](JSArgs args)
 		{
-			_ui->userConfig()->writeSectionParameter(_rememberSection(), "config", JSToCPP(args[0]));
+			_ui->userConfig()->writeSectionParameter(_rememberSection(), "config", jsToCpp(args[0]));
 			return false;
 		}
 	);
@@ -355,7 +355,7 @@ void UiZapretPage::_selectConfigUpdate()
 	_select_config->setSelectedOptionValue(active_config);
 
 	_buttonUpdate();
-	_ui->_unblock->changeStrategy(_technology, JSToCPP(_select_config->getSelectedOptionValue()));
+	_ui->_unblock->changeStrategy(_technology, jsToCpp(_select_config->getSelectedOptionValue()));
 }
 
 void UiZapretPage::_initFakeKey()
@@ -392,7 +392,7 @@ void UiZapretPage::_selectFakeBin()
 		_select_fake_bin->addEventChange(
 			[this](JSArgs args)
 			{
-				_ui->userConfig()->writeSectionParameter(_rememberSection(), "fake_bin", JSToCPP(args[0]));
+				_ui->userConfig()->writeSectionParameter(_rememberSection(), "fake_bin", jsToCpp(args[0]));
 				_selectFakeBinUpdate();
 				return false;
 			}
@@ -497,7 +497,7 @@ void UiZapretPage::_initMainControls()
 		{
 			_window_continue_select_strategy->hide();
 
-			if (!args[0].ToBoolean())
+			if (!args[0].toBoolean())
 				_autoStart();
 
 			return false;
@@ -632,7 +632,7 @@ void UiZapretPage::_startWithTechnologyCheck(std::function<void()>&& proceed)
 		{
 			_window_warning_technology_busy->hide();
 
-			if (JSToCPP<bool>(args[0]))
+			if (jsToCpp<bool>(args[0]))
 				proceed();
 
 			return true;
@@ -693,7 +693,7 @@ void UiZapretPage::_autoStart()
 						_ui->_unblock->startService(_technology);
 
 						auto strategy_name = _ui->_unblock->getNameStrategies(_technology);
-						auto version_str   = JSToCPP<std::string>(_select_version_strategy->getSelectedOptionValue());
+						auto version_str   = jsToCpp<std::string>(_select_version_strategy->getSelectedOptionValue());
 
 						// On Zapret1 the same config is retried with every
 						// fake profile, so the description names the active
@@ -848,7 +848,7 @@ bool UiZapretPage::_autoStartTryNext() const
 	if (strategy_dirs.empty())
 		return false;
 
-	auto it = std::ranges::find(strategy_dirs, JSToCPP<std::string>(_select_version_strategy->getSelectedOptionValue()));
+	auto it = std::ranges::find(strategy_dirs, jsToCpp<std::string>(_select_version_strategy->getSelectedOptionValue()));
 
 	auto save_version = [this](std::string version)
 	{
@@ -896,7 +896,7 @@ void UiZapretPage::_startServiceFromConfig()
 		{
 			_ui->getWindowWaitStartService()->show();
 
-			_ui->_unblock->changeStrategy(_technology, JSToCPP(_select_config->getSelectedOptionValue()));
+			_ui->_unblock->changeStrategy(_technology, jsToCpp(_select_config->getSelectedOptionValue()));
 
 			_ui->_unblock->startService(_technology);
 			_buttonUpdate();

@@ -13,11 +13,11 @@
 // BRIDGE (allowed in this file):
 //   node creation/lookup, tree (append/prepend/remove/query),
 //   classes, text, styles, attributes, forms, events, measurements, clicks.
-// WIDGET (forbidden here — hands will be slapped):
+// WIDGET (not part of this layer):
 //   the words tour/tooltip/select/list/panel/spotlight/dimmer/widget.
 //   Combinatorics over primitives lives in src/ui/, not here.
 //
-// Threads (contract, not up for debate):
+// Threading contract:
 //   - setters — fire-and-forget via execute, callable from the UI thread;
 //   - getters rect()/offsetSize()/viewport()/getAttr()/hasAttr()/
 //     valueStr()/isChecked()/hasClass() — blocking via
@@ -26,7 +26,7 @@
 //     the guard (dom::onUiThread) detects it, logs and returns the
 //     default instead of deadlocking on the message loop.
 //
-// WebView2 spike (commit ab59fbd, Release replays a slice of scripts):
+// WebView2 notes (Release replays a slice of scripts):
 //   - create keep-first: if (!__dom[H]), or twins hijack handles;
 //   - append/prepend Once: skip when already attached;
 //   - show/hide carry an epoch, JS applies max-wins only;
@@ -94,7 +94,7 @@ namespace ui::dom
 		/// Blocking getter (see the threading contract above).
 		[[nodiscard]] bool hasClass(std::string_view cls) const;
 
-		// --- Visibility (epoch-guard, see ab59fbd) -----------------------
+		// --- Visibility (epoch-guard) ------------------------------------
 		Element& show();
 		Element& hide();
 
@@ -196,7 +196,7 @@ namespace ui::dom
 
 	// -------------------------------------------------------------------
 	// Factories. Idempotent (keep-first): a replayed script pass must not
-	// spawn twin nodes or hijack handles (ab59fbd).
+	// spawn twin nodes or hijack handles.
 	// -------------------------------------------------------------------
 	Element create(std::string_view tag);
 	Element getElementById(std::string_view id);
