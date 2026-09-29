@@ -91,10 +91,7 @@ namespace window_geometry
 
 	inline bool isVisibleAnywhere(const Geometry& geo, const std::vector<Area>& areas)
 	{
-		for (const auto& area : areas)
-			if (isVisibleOn(geo, area))
-				return true;
-		return false;
+		return std::ranges::any_of(areas, [&geo](const Area& area) { return isVisibleOn(geo, area); });
 	}
 
 	// Pull the position so the window stays visible. The size is deliberately

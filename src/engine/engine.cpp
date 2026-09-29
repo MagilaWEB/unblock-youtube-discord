@@ -139,12 +139,14 @@ namespace
 		POINT cursor{};
 		if (GetCursorPos(&cursor))
 		{
-			for (size_t i = 0; i < areas.size(); ++i)
-			{
-				const auto& a = areas[i];
-				if (cursor.x >= a.x && cursor.x < a.x + a.w && cursor.y >= a.y && cursor.y < a.y + a.h)
-					return i;
-			}
+			const auto it = std::ranges::find_if(
+				areas,
+				[&cursor](const window_geometry::Area& a)
+				{ return cursor.x >= a.x && cursor.x < a.x + a.w && cursor.y >= a.y && cursor.y < a.y + a.h; }
+			);
+
+			if (it != areas.end())
+				return static_cast<size_t>(std::distance(areas.begin(), it));
 		}
 		return 0;
 	}
