@@ -310,26 +310,19 @@ std::expected<std::vector<std::string>, std::string> File::parameterSectionVecto
 		return std::unexpected(result.error());
 
 	std::vector<std::string> list;
-	std::stringstream		 stream{ result.value() };
-	std::string				 item;
-	while (std::getline(stream, item, ';'))
+	for (auto item_range : result.value() | std::views::split(';'))
+	{
+		const std::string_view item{ std::ranges::data(item_range), std::ranges::size(item_range) };
 		if (!item.empty())
-			list.push_back(std::move(item));
+			list.emplace_back(item);
+	}
 
 	return list;
 }
 
 void File::writeSectionParameterVector(std::string_view section, std::string parameter, const std::vector<std::string>& values)
 {
-	std::string joined;
-	for (std::size_t i = 0; i < values.size(); i++)
-	{
-		if (i)
-			joined.push_back(';');
-		joined += values[i];
-	}
-
-	writeSectionParameter(section, std::move(parameter), std::move(joined));
+	writeSectionParameter(section, std::move(parameter), values | std::views::join_with(';') | std::ranges::to<std::string>());
 }
 
 std::string File::name() const

@@ -50,7 +50,7 @@ std::string Localization::translate(std::string_view str_id)
 {
 	FAST_LOCK_SHARED(_lock);
 
-	auto it = _string_list.find(std::string{ str_id });
+	auto it = _string_list.find(str_id);
 	if (it != _string_list.end())
 		return it->second;
 

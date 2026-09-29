@@ -1,12 +1,14 @@
 #include "utils.h"
 
+#include <span>
+
 bool utils::isUtf8(std::string_view string)
 {
 	if (string.empty())
 		return true;
 
-	const auto* bytes = reinterpret_cast<const unsigned char*>(string.data());
-	u32			num;
+	const std::span<const unsigned char> bytes{ reinterpret_cast<const unsigned char*>(string.data()), string.size() };
+	u32									 num;
 	for (size_t idx = 0; idx < string.size();)
 	{
 		if ((bytes[idx] & 0x80) == 0x00)
@@ -235,32 +237,22 @@ bool utils::isValidHostName(std::string_view str)
 	if (str.empty() || str.size() > 253)
 		return false;
 
-	size_t start  = 0;
-	int	   labels = 0;
-	for (size_t i = 0; i <= str.size(); ++i)
+	int labels = 0;
+	for (auto label_range : str | std::views::split('.'))
 	{
-		if (i == str.size() || str[i] == '.')
-		{
-			if (i == start)
+		const std::string_view label{ std::ranges::data(label_range), std::ranges::size(label_range) };
+
+		if (label.empty() || label.size() > 63)
+			return false;
+
+		if (label.front() == '-' || label.back() == '-')
+			return false;
+
+		for (const char c : label)
+			if (!std::isalnum(static_cast<unsigned char>(c)) && c != '-' && c != '_')
 				return false;
 
-			size_t len = i - start;
-			if (len > 63)
-				return false;
-
-			for (size_t j = start; j < i; ++j)
-			{
-				char c = str[j];
-				if (!std::isalnum(c) && c != '-' && c != '_')
-					return false;
-
-				if (c == '-' && (j == start || j == i - 1))
-					return false;
-			}
-
-			++labels;
-			start = i + 1;
-		}
+		++labels;
 	}
 
 	return labels > 0;
@@ -293,9 +285,9 @@ bool utils::isValidHostNamePort(std::string_view host)
 		std::string_view ipv6 = host_part.substr(1, host_part.size() - 2);
 		return isValidIpv6(ipv6);
 	}
-	else if (host_part.find(':') != std::string_view::npos)
+	else if (host_part.contains(':'))
 		return isValidIpv6(host_part);
-	else if (host_part.find('.') != std::string_view::npos && isValidIpv4(host_part))
+	else if (host_part.contains('.') && isValidIpv4(host_part))
 		return true;
 
 	return isValidHostName(host_part);

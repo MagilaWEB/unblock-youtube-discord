@@ -4,9 +4,9 @@
 
 class Localization final
 {
-	FastLock						   _lock;
-	Ptr<File>						   _lang_file_string{ false };
-	std::map<std::string, std::string> _string_list;
+	FastLock										_lock;
+	Ptr<File>										_lang_file_string{ false };
+	std::map<std::string, std::string, std::less<>> _string_list;
 
 public:
 	struct Str

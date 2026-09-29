@@ -1,4 +1,6 @@
-﻿Core::Core()
+﻿#include <charconv>
+
+Core::Core()
 {
 	auto current_path = std::filesystem::current_path();
 
@@ -122,14 +124,24 @@ void Core::execParallel(std::string cmd, std::function<bool(std::string)>&& call
 
 std::tuple<u32, u32, u32> Core::_parseSimpleVersion(const std::string& version)
 {
-	std::stringstream ss(version);
-	std::string		  major, minor, patch;
+	std::array<u32, 3> parts{};
+	size_t			   idx = 0;
 
-	std::getline(ss, major, '.');
-	std::getline(ss, minor, '.');
-	std::getline(ss, patch, '.');
+	for (auto part : version | std::views::split('.'))
+	{
+		if (idx >= parts.size())
+			break;
 
-	return std::make_tuple(std::stoi(major), std::stoi(minor), patch.empty() ? 0 : std::stoi(patch));
+		const std::string_view token{ std::ranges::data(part), std::ranges::size(part) };
+
+		u32 value = 0;
+		if (auto [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), value); ec == std::errc{})
+			parts[idx] = value;
+
+		++idx;
+	}
+
+	return { parts[0], parts[1], parts[2] };
 }
 
 bool Core::isVersionNewer(std::string version1, std::string version2)
