@@ -187,17 +187,8 @@ public:
 
 	std::vector<std::string> listVersionStrategy(Technology technology);
 
-	void						  dnsHosts(bool state);
-	void						  dnsHostsUpdate();
-	void						  dnsHostsCancelUpdate();
-	float						  dnsHostsDownloadProgress() const;
-	bool						  dnsHostsCheck() const;
-	const std::list<std::string>& dnsHostsListName();
-	void						  setDnsHostsRegion(std::string_view region);
-	const std::string&			  dnsHostsRegion() const;
-	void						  setDnsHostsBaseUrl(std::string_view url);
-	const std::string&			  dnsHostsBaseUrl() const;
-	bool						  dnsHostsRegionAvailable(std::string_view region) const;
+	/** DNS hosts (GeoHide) subsystem. Consumers talk to it directly. */
+	DNSHost& dnsHosts();
 
 	/** DNS proxy subsystem (unblock_dns.exe). Consumers talk to it directly. */
 	DnsProxy& dnsProxy() { return _dns_proxy; }
@@ -208,9 +199,8 @@ public:
 	void testingDomain(std::function<void(std::string_view, bool)>&& callback = [](std::string_view, bool) {}, bool base_test = true);
 	void testingDomainCancel();
 
-	std::optional<std::string> checkUpdate() const;
-	bool					   appUpdate();
-	float					   appUpdateProgress() const;
+	/** Self-update subsystem (version check + download). Consumers talk to it directly. */
+	AppUpdater& updater() { return _updater; }
 
 	u32	 domainSuccessRate() const;
 	bool validDomain() const;

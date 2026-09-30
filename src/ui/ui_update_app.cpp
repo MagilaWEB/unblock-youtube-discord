@@ -50,7 +50,7 @@ void Ui::_checkAppUpdate()
 	Core::get().addTask(
 		[self = self]
 		{
-			if (auto new_version = self->_unblock->checkUpdate())
+			if (auto new_version = self->_unblock->updater().check())
 			{
 				static auto desc = Localization::Str{ "str_window_update_unblock" }();
 				self->_window_update_unblock->setDescription(utils::format(desc, new_version.value()));
@@ -92,7 +92,7 @@ void Ui::_updateAppWindow()
 						self->_ui_unblock->stopAllServices();
 						self->_window_update_unblock->hide();
 						self->_window_wait_update_unblock->show();
-						bool state = self->_unblock->appUpdate();
+						bool state = self->_unblock->updater().run();
 						self->_window_wait_update_unblock->hide();
 
 						if (state)
@@ -126,6 +126,6 @@ void Ui::_updateAppProgressWindowInfo()
 	// creation and never rewritten (see SecondaryWindow::setProgress).
 	LIMIT_UPDATE(Description, .5f, {
 		if (_window_wait_update_unblock->isShow())
-			_window_wait_update_unblock->setProgress(_unblock->appUpdateProgress());
+			_window_wait_update_unblock->setProgress(_unblock->updater().progress());
 	})
 }

@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "../unblock/dns_host.h"
 
 #include <windows.h>
 
@@ -41,7 +42,7 @@ void Ui::_removeAppRun()
 		{
 			self->_ui_unblock->stopAllServices();
 
-			self->_unblock->dnsHosts(false);
+			self->_unblock->dnsHosts().disable();
 			self->console(false);
 
 			// Uninstall is delegated to the standalone unblock_update.exe. We

@@ -194,21 +194,6 @@ void Unblock::testingDomainCancel()
 	_domain_testing->cancelTesting();
 }
 
-std::optional<std::string> Unblock::checkUpdate() const
-{
-	return _updater.check();
-}
-
-bool Unblock::appUpdate()
-{
-	return _updater.run();
-}
-
-float Unblock::appUpdateProgress() const
-{
-	return _updater.progress();
-}
-
 u32 Unblock::domainSuccessRate() const
 {
 	return _domain_testing->successRate();
@@ -291,59 +276,9 @@ std::vector<std::string> Unblock::listVersionStrategy(Technology technology)
 	return engine(technology).listVersionStrategy();
 }
 
-void Unblock::dnsHosts(bool state)
+DNSHost& Unblock::dnsHosts()
 {
-	state ? _dns_hosts->enable() : _dns_hosts->disable();
-}
-
-void Unblock::dnsHostsUpdate()
-{
-	_dns_hosts->update();
-}
-
-void Unblock::dnsHostsCancelUpdate()
-{
-	_dns_hosts->cancel();
-}
-
-float Unblock::dnsHostsDownloadProgress() const
-{
-	return _dns_hosts->downloadProgress();
-}
-
-bool Unblock::dnsHostsCheck() const
-{
-	return _dns_hosts->isHostsUser();
-}
-
-const std::list<std::string>& Unblock::dnsHostsListName()
-{
-	return _dns_hosts->listDnsFileName();
-}
-
-void Unblock::setDnsHostsRegion(std::string_view region)
-{
-	_dns_hosts->setRegion(region);
-}
-
-const std::string& Unblock::dnsHostsRegion() const
-{
-	return _dns_hosts->region();
-}
-
-void Unblock::setDnsHostsBaseUrl(std::string_view url)
-{
-	_dns_hosts->setBaseUrl(url);
-}
-
-const std::string& Unblock::dnsHostsBaseUrl() const
-{
-	return _dns_hosts->baseUrl();
-}
-
-bool Unblock::dnsHostsRegionAvailable(std::string_view region) const
-{
-	return _dns_hosts->regionAvailable(region);
+	return *_dns_hosts;
 }
 
 namespace

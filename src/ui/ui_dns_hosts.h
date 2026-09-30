@@ -7,13 +7,13 @@
 #include "ui_secondary_window.h"
 
 class Ui;
-class Unblock;
+class DNSHost;
 
 class UiDnsHosts
 {
 private:
-	std::shared_ptr<Ui>		 _ui;
-	std::shared_ptr<Unblock> _unblock;
+	std::shared_ptr<Ui> _ui;
+	DNSHost&			_dns_hosts;
 
 	CHECK_BOX(_enable_dns_hosts);
 	BUTTON(_start_update_dns_hosts);
@@ -26,7 +26,7 @@ private:
 	SECONDARY_WINDOW(_window_check_region);
 
 public:
-	UiDnsHosts(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock);
+	UiDnsHosts(std::shared_ptr<Ui> ui, DNSHost& dns_hosts);
 
 	void initialize();
 	void updateInfoWindow();

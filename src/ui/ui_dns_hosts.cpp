@@ -1,11 +1,11 @@
 #include "ui_dns_hosts.h"
 
 #include "ui.h"
-#include "../unblock/unblock.h"
+#include "../unblock/dns_host.h"
 
 #include <algorithm>
 
-UiDnsHosts::UiDnsHosts(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock) : _ui(std::move(ui)), _unblock(std::move(unblock))
+UiDnsHosts::UiDnsHosts(std::shared_ptr<Ui> ui, DNSHost& dns_hosts) : _ui(std::move(ui)), _dns_hosts(dns_hosts)
 {
 }
 
@@ -39,7 +39,7 @@ void UiDnsHosts::_enableDnsHosts()
 	_window_wait_update_dns->addEventCancel(
 		[this](JSArgs)
 		{
-			_unblock->dnsHostsCancelUpdate();
+			_dns_hosts.cancel();
 			return false;
 		}
 	);
@@ -80,14 +80,14 @@ void UiDnsHosts::_enableDnsHosts()
 		[this](JSArgs args)
 		{
 			const auto region	= jsToCpp<std::string>(args[0]);
-			const auto previous = _unblock->dnsHostsRegion();
+			const auto previous = _dns_hosts.region();
 
 			Core::get().addTask(
 				// NOLINTNEXTLINE(bugprone-exception-escape) - worker callback; the availability check may allocate.
 				[this, region, previous]
 				{
 					_window_check_region->show();
-					const bool available = _unblock->dnsHostsRegionAvailable(region);
+					const bool available = _dns_hosts.regionAvailable(region);
 					_window_check_region->hide();
 
 					if (available)
@@ -170,13 +170,13 @@ void UiDnsHosts::_enableDnsHosts()
 			active = cfg.value();
 
 	_select_region->setSelectedOptionValue(active);
-	_unblock->setDnsHostsRegion(active);
+	_dns_hosts.setRegion(active);
 
 	std::string base_url = "geohide.ru";
 	if (auto cfg = _ui->userConfig()->parameterSection<std::string>("SYSTEM", "dns_hosts_url"))
 		base_url = cfg.value();
 
-	_unblock->setDnsHostsBaseUrl(base_url);
+	_dns_hosts.setBaseUrl(base_url);
 
 	_enableDnsHostsUpdate();
 }
@@ -187,16 +187,16 @@ void UiDnsHosts::updateInfoWindow()
 	// once at creation and never rewritten (see SecondaryWindow::setProgress).
 	LIMIT_UPDATE(Description, .5f, {
 		if (_window_wait_update_dns->isShow())
-			_window_wait_update_dns->setProgress(_unblock->dnsHostsDownloadProgress());
+			_window_wait_update_dns->setProgress(_dns_hosts.downloadProgress());
 	})
 }
 
 void UiDnsHosts::_updateDnsHosts()
 {
 	_window_wait_update_dns->show();
-	_unblock->dnsHostsUpdate();
-	_unblock->dnsHosts(false);
-	_unblock->dnsHosts(true);
+	_dns_hosts.update();
+	_dns_hosts.disable();
+	_dns_hosts.enable();
 	_window_wait_update_dns->hide();
 }
 
@@ -246,7 +246,7 @@ void UiDnsHosts::_onRegionsChanged(JSArgs args)
 
 void UiDnsHosts::_checkRegionAvailability(std::string region)
 {
-	if (!_unblock->dnsHostsRegionAvailable(region))
+	if (!_dns_hosts.regionAvailable(region))
 	{
 		Debug::warning("Region [{}] is not available, removed", region);
 		_region_list->removeItem(region);
@@ -256,7 +256,7 @@ void UiDnsHosts::_checkRegionAvailability(std::string region)
 void UiDnsHosts::_applyActiveRegion(const std::string& region)
 {
 	_ui->userConfig()->writeSectionParameter("SYSTEM", "dns_hosts_region", region);
-	_unblock->setDnsHostsRegion(region);
+	_dns_hosts.setRegion(region);
 
 	if (_ui->userConfig()->parameterSection<bool>("SYSTEM", "enable_dns_hosts").value_or(false))
 		Core::get().addTask([this] { _updateDnsHosts(); });
@@ -265,7 +265,7 @@ void UiDnsHosts::_applyActiveRegion(const std::string& region)
 void UiDnsHosts::_applyBaseUrl(const std::string& url)
 {
 	_ui->userConfig()->writeSectionParameter("SYSTEM", "dns_hosts_url", url);
-	_unblock->setDnsHostsBaseUrl(url);
+	_dns_hosts.setBaseUrl(url);
 
 	if (_ui->userConfig()->parameterSection<bool>("SYSTEM", "enable_dns_hosts").value_or(false))
 		Core::get().addTask([this] { _updateDnsHosts(); });
@@ -289,14 +289,14 @@ void UiDnsHosts::_enableDnsHostsUpdate()
 		Core::get().addTask(
 			[this, state]
 			{
-				if (state && (!_unblock->dnsHostsCheck()))
+				if (state && (!_dns_hosts.isHostsUser()))
 				{
 					_window_wait_update_dns->show();
-					_unblock->dnsHostsUpdate();
+					_dns_hosts.update();
 					_window_wait_update_dns->hide();
 				}
 
-				_unblock->dnsHosts(state);
+				state ? _dns_hosts.enable() : _dns_hosts.disable();
 
 				_ui->backgroundTasks()->finish("dns_hosts_apply");
 			}
@@ -317,7 +317,7 @@ void UiDnsHosts::_enableDnsHostsWarningUser()
 		[this]
 		{
 			std::string str_list_name{};
-			auto&		list_name = _unblock->dnsHostsListName();
+			auto&		list_name = _dns_hosts.listDnsFileName();
 			for (auto& name : list_name)
 				str_list_name.append(name).append(", ");
 
