@@ -2,6 +2,10 @@ set(NAME unblock_dns)
 
 add_executable(${NAME}
     unblock_dns.cpp
+    dns_adapters.cpp
+    dns_proxy.cpp
+    dns_telemetry.cpp
+    dns_util.cpp
     ag_bind.h
     ag_dns.h
 )
