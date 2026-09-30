@@ -392,26 +392,6 @@ void Unblock::_tcpTimestampRestore()
 		_tcp_timestamps_owned = false;
 }
 
-void Unblock::localProxyTg(bool run)
-{
-	_tg_proxy.run(run);
-}
-
-void Unblock::setTgProxyParams(std::string_view host, std::string_view port, std::array<std::string, 4> dc_ip, std::string_view cfproxy_worker_domain)
-{
-	_tg_proxy.setParams(host, port, std::move(dc_ip), cfproxy_worker_domain);
-}
-
-bool Unblock::localProxyTgIsRun()
-{
-	return _tg_proxy.isRun();
-}
-
-void Unblock::localProxyTgLinkRun()
-{
-	_tg_proxy.linkRun();
-}
-
 void Unblock::removeService()
 {
 	_tcpTimestampRestore();

@@ -4,13 +4,13 @@
 #include "ui_input.h"
 
 class Ui;
-class Unblock;
+class TgProxy;
 
 class UiProxyTg
 {
 private:
-	std::shared_ptr<Ui>		 _ui;
-	std::shared_ptr<Unblock> _unblock;
+	std::shared_ptr<Ui> _ui;
+	TgProxy&			_tg_proxy;
 
 	CHECK_BOX(_proxy_tg_enable);
 	BUTTON(_proxy_link_tg);
@@ -21,11 +21,11 @@ private:
 	INPUT(_proxy_tg_dc_ip_2);
 	INPUT(_proxy_tg_dc_ip_3);
 	INPUT(_proxy_tg_dc_ip_4);
-	//INPUT(_proxy_tg_cfproxy_domain);
+	// INPUT(_proxy_tg_cfproxy_domain);
 	BUTTON(_proxy_tg_apply);
 
 public:
-	UiProxyTg(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock);
+	UiProxyTg(std::shared_ptr<Ui> ui, TgProxy& tg_proxy);
 
 	void initialize();
 

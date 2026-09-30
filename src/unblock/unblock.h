@@ -202,15 +202,8 @@ public:
 	/** DNS proxy subsystem (unblock_dns.exe). Consumers talk to it directly. */
 	DnsProxy& dnsProxy() { return _dns_proxy; }
 
-	void localProxyTg(bool run = true);
-	bool localProxyTgIsRun();
-	void localProxyTgLinkRun();
-
-	void setTgProxyParams(std::string_view host, std::string_view port, std::array<std::string, 4> dc_ip, std::string_view cfproxy_worker_domain);
-	const std::string&				  tgProxyHost() const { return _tg_proxy.host(); }
-	const std::string&				  tgProxyPort() const { return _tg_proxy.port(); }
-	const std::array<std::string, 4>& tgProxyDcIp() const { return _tg_proxy.dcIp(); }
-	const std::string&				  tgProxyCfproxyDomain() const { return _tg_proxy.cfproxyDomain(); }
+	/** Local Telegram WS proxy subsystem. Consumers talk to it directly. */
+	TgProxy& tgProxy() { return _tg_proxy; }
 
 	void testingDomain(std::function<void(std::string_view, bool)>&& callback = [](std::string_view, bool) {}, bool base_test = true);
 	void testingDomainCancel();

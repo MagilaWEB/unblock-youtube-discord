@@ -106,7 +106,7 @@ void UiUnblock::_stopService()
 void UiUnblock::stopAllServices() const
 {
 	_ui->_unblock->removeService();
-	_ui->_unblock->localProxyTg(false);
+	_ui->_unblock->tgProxy().run(false);
 	_ui->_unblock->dnsHosts(false);
 	_ui->_ui_proxy_tg->getCheckBoxProxyTg()->setState(false);
 }

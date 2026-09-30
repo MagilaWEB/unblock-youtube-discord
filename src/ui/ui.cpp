@@ -16,7 +16,7 @@ void Ui::postConstruct()
 
 	_ui_dns_hosts		 = std::make_unique<UiDnsHosts>(self, _unblock);
 	_ui_dns_proxy		 = std::make_unique<UiDnsProxy>(self, _unblock->dnsProxy());
-	_ui_proxy_tg		 = std::make_unique<UiProxyTg>(self, _unblock);
+	_ui_proxy_tg		 = std::make_unique<UiProxyTg>(self, _unblock->tgProxy());
 	_ui_zapret			 = std::make_unique<UiZapretPage>(self);
 	_ui_zapret_helper	 = std::make_unique<UiZapretHelper>(self, "#zapret");
 	_ui_unblock			 = std::make_unique<UiUnblock>(self);

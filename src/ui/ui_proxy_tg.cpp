@@ -1,9 +1,9 @@
 #include "ui_proxy_tg.h"
 
 #include "ui.h"
-#include "../unblock/unblock.h"
+#include "../unblock/tg_proxy.h"
 
-UiProxyTg::UiProxyTg(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock) : _ui(std::move(ui)), _unblock(std::move(unblock))
+UiProxyTg::UiProxyTg(std::shared_ptr<Ui> ui, TgProxy& tg_proxy) : _ui(std::move(ui)), _tg_proxy(tg_proxy)
 {
 }
 
@@ -22,7 +22,7 @@ void UiProxyTg::_enableProxyTg()
 		Localization::Str{ "str_checkbox_enable_proxy_tg_description" }
 	);
 	_proxy_tg_enable->addTutorialStep("str_tour_proxy_tg_title", "str_tour_proxy_tg_description", 14);
-	_proxy_tg_enable->setState(_unblock->localProxyTgIsRun());
+	_proxy_tg_enable->setState(_tg_proxy.isRun());
 	_proxy_tg_enable->addEventClick(
 		[this](JSArgs args)
 		{
@@ -35,7 +35,7 @@ void UiProxyTg::_enableProxyTg()
 					else
 						_ui->getUiUnblock()->getWindowWaitStopService()->show();
 
-					_unblock->localProxyTg(state);
+					_tg_proxy.run(state);
 
 					if (state)
 						_ui->getWindowWaitStartService()->hide();
@@ -57,7 +57,7 @@ void UiProxyTg::_enableProxyLinkTg()
 	_proxy_link_tg->addEventClick(
 		[this](JSArgs)
 		{
-			_unblock->localProxyTgLinkRun();
+			_tg_proxy.linkRun();
 			return false;
 		}
 	);
@@ -73,10 +73,10 @@ std::string UiProxyTg::_settingValue(std::string_view key, std::string_view defa
 
 void UiProxyTg::_proxySettings()
 {
-	auto host	 = _settingValue("host", _unblock->tgProxyHost());
-	auto port	 = _settingValue("port", _unblock->tgProxyPort());
-	auto cfproxy = _settingValue("cfproxy_worker_domain", _unblock->tgProxyCfproxyDomain());
-	auto dc_ip	 = _unblock->tgProxyDcIp();
+	auto host	 = _settingValue("host", _tg_proxy.host());
+	auto port	 = _settingValue("port", _tg_proxy.port());
+	auto cfproxy = _settingValue("cfproxy_worker_domain", _tg_proxy.cfproxyDomain());
+	auto dc_ip	 = _tg_proxy.dcIp();
 
 	std::array<std::string, 4> dc_settings;
 	for (const auto& [i, ip] : std::views::enumerate(dc_ip))
@@ -132,7 +132,7 @@ void UiProxyTg::_proxySettings()
 		Localization::Str{ "str_proxy_tg_cfproxy_domain_description" }
 	);*/
 
-	_unblock->setTgProxyParams(host, port, dc_settings, cfproxy);
+	_tg_proxy.setParams(host, port, dc_settings, cfproxy);
 
 	_proxy_tg_apply->create("#tg_ws_proxy section .common", "str_b_proxy_tg_apply");
 	_proxy_tg_apply->addTutorialStep("str_tour_proxy_apply_title", "str_tour_proxy_apply_description", 16);
@@ -151,7 +151,7 @@ void UiProxyTg::_applyProxySettings()
 		[this]
 		{
 			_ui->getUiUnblock()->getWindowWaitStopService()->show();
-			_unblock->localProxyTg(false);
+			_tg_proxy.run(false);
 			_ui->getUiUnblock()->getWindowWaitStopService()->hide();
 
 			const auto				   host = jsToCpp<std::string>(_proxy_tg_host->getValue());
@@ -168,10 +168,10 @@ void UiProxyTg::_applyProxySettings()
 			for (const auto& [i, ip] : std::views::enumerate(dc_ip))
 				_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", utils::format("dc_ip_{}", i + 1), ip);
 
-			_unblock->setTgProxyParams(host, port, dc_ip, "");	  // cfproxy
+			_tg_proxy.setParams(host, port, dc_ip, "");	   // cfproxy
 
 			_ui->getWindowWaitStartService()->show();
-			_unblock->localProxyTg(true);
+			_tg_proxy.run(true);
 			_ui->getWindowWaitStartService()->hide();
 		}
 	);
