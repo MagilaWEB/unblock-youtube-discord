@@ -346,21 +346,6 @@ bool Unblock::dnsHostsRegionAvailable(std::string_view region) const
 	return _dns_hosts->regionAvailable(region);
 }
 
-std::vector<std::string> Unblock::defaultDnsProxyUpstreams()
-{
-	return DnsProxy::defaultUpstreams();
-}
-
-std::vector<std::string> Unblock::defaultDnsProxyBootstrap()
-{
-	return DnsProxy::defaultBootstrap();
-}
-
-uint32_t Unblock::defaultDnsProxyTimeout()
-{
-	return DnsProxy::defaultTimeout();
-}
-
 namespace
 {
 	// RFC 1323 timestamps live in Tcp1323Opts bit 0x2. The value is absent on
@@ -405,61 +390,6 @@ void Unblock::_tcpTimestampRestore()
 
 	if (runHiddenProcess({ "netsh", "interface", "tcp", "set", "global", "timestamps=disabled" }, 10'000))
 		_tcp_timestamps_owned = false;
-}
-
-void Unblock::dnsProxy(bool state)
-{
-	_dns_proxy.run(state);
-}
-
-bool Unblock::dnsProxyIsRun()
-{
-	return _dns_proxy.isRun();
-}
-
-void Unblock::setDnsProxyUpstreams(std::vector<std::string> upstreams)
-{
-	_dns_proxy.setUpstreams(std::move(upstreams));
-}
-
-const std::vector<std::string>& Unblock::dnsProxyUpstreams() const
-{
-	return _dns_proxy.upstreams();
-}
-
-void Unblock::setDnsProxyBootstrap(std::vector<std::string> bootstrap)
-{
-	_dns_proxy.setBootstrap(std::move(bootstrap));
-}
-
-const std::vector<std::string>& Unblock::dnsProxyBootstrap() const
-{
-	return _dns_proxy.bootstrap();
-}
-
-void Unblock::setDnsProxyTimeout(uint32_t timeout_ms)
-{
-	_dns_proxy.setTimeout(timeout_ms);
-}
-
-uint32_t Unblock::dnsProxyTimeout() const
-{
-	return _dns_proxy.timeout();
-}
-
-std::string Unblock::dnsProxyStatus() const
-{
-	return _dns_proxy.status();
-}
-
-bool Unblock::dnsProxyTestUpstream(const std::string& value, std::string& output)
-{
-	return _dns_proxy.testUpstream(value, output);
-}
-
-void Unblock::dnsProxyRepairBoot()
-{
-	_dns_proxy.repairBoot();
 }
 
 void Unblock::localProxyTg(bool run)

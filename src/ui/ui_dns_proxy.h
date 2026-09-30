@@ -7,13 +7,13 @@
 #include "ui_status.h"
 
 class Ui;
-class Unblock;
+class DnsProxy;
 
 class UiDnsProxy
 {
 private:
-	std::shared_ptr<Ui>		 _ui;
-	std::shared_ptr<Unblock> _unblock;
+	std::shared_ptr<Ui> _ui;
+	DnsProxy&			_dns_proxy;
 
 	CHECK_BOX(_enable_dns_proxy);
 	STATUS(_status_dns);
@@ -28,7 +28,7 @@ private:
 	std::string _last_status;
 
 public:
-	UiDnsProxy(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock);
+	UiDnsProxy(std::shared_ptr<Ui> ui, DnsProxy& dns_proxy);
 
 	void initialize();
 	void updateInfoWindow();

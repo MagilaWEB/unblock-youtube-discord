@@ -87,11 +87,6 @@ inline bool strategyUsesTcpTimestamps(const std::vector<std::string>& strategies
 
 class Unblock final : public std::enable_shared_from_this<Unblock>
 {
-public:
-	static std::vector<std::string> defaultDnsProxyUpstreams();
-	static std::vector<std::string> defaultDnsProxyBootstrap();
-	static uint32_t					defaultDnsProxyTimeout();
-
 private:
 	std::unique_ptr<Zapret1Engine> _zapret1_engine;
 	std::unique_ptr<Zapret2Engine> _zapret2_engine;
@@ -204,20 +199,8 @@ public:
 	const std::string&			  dnsHostsBaseUrl() const;
 	bool						  dnsHostsRegionAvailable(std::string_view region) const;
 
-	void							dnsProxy(bool state);
-	bool							dnsProxyIsRun();
-	void							setDnsProxyUpstreams(std::vector<std::string> upstreams);
-	const std::vector<std::string>& dnsProxyUpstreams() const;
-	void							setDnsProxyBootstrap(std::vector<std::string> bootstrap);
-	const std::vector<std::string>& dnsProxyBootstrap() const;
-	void							setDnsProxyTimeout(uint32_t timeout_ms);
-	uint32_t						dnsProxyTimeout() const;
-	/** Status counters pushed by the proxy over IPC (zeros when unknown). */
-	std::string						dnsProxyStatus() const;
-	/** Runs unblock_dns --test-upstream, output holds OK/FAIL text. */
-	bool							dnsProxyTestUpstream(const std::string& value, std::string& output);
-	/** Restores adapters left on 127.0.0.1 by a killed proxy run. */
-	void							dnsProxyRepairBoot();
+	/** DNS proxy subsystem (unblock_dns.exe). Consumers talk to it directly. */
+	DnsProxy& dnsProxy() { return _dns_proxy; }
 
 	void localProxyTg(bool run = true);
 	bool localProxyTgIsRun();

@@ -1,13 +1,13 @@
 #include "ui_dns_proxy.h"
 
 #include "ui.h"
-#include "../unblock/unblock.h"
+#include "../unblock/dns_proxy.h"
 #include "dns_config.h"
 
 #include <algorithm>
 #include <ranges>
 
-UiDnsProxy::UiDnsProxy(std::shared_ptr<Ui> ui, std::shared_ptr<Unblock> unblock) : _ui(std::move(ui)), _unblock(std::move(unblock))
+UiDnsProxy::UiDnsProxy(std::shared_ptr<Ui> ui, DnsProxy& dns_proxy) : _ui(std::move(ui)), _dns_proxy(dns_proxy)
 {
 }
 
@@ -35,7 +35,7 @@ void UiDnsProxy::initialize()
 			Core::get().addTask(
 				[this, state]
 				{
-					_unblock->dnsProxy(state);
+					_dns_proxy.run(state);
 					_ui->backgroundTasks()->finish("dns_proxy_apply");
 				}
 			);
@@ -69,14 +69,14 @@ void UiDnsProxy::initialize()
 	// Shared bootstrap: plain DNS used only to resolve the hostname of
 	// DoH/DoT upstreams. Editable in case the ISP blocks the defaults.
 	std::string				 bootstrap_csv;
-	std::vector<std::string> bootstrap = Unblock::defaultDnsProxyBootstrap();
+	std::vector<std::string> bootstrap = DnsProxy::defaultBootstrap();
 	if (auto cfg = _ui->userConfig()->parameterSection<std::string>("DNS", "bootstrap"))
 		if (auto parsed = parseBootstrapList(trimConfigLine(cfg.value())))
 			if (!parsed->empty())
 				bootstrap = std::move(*parsed);
 	for (const auto& b : bootstrap)
 		bootstrap_csv += (bootstrap_csv.empty() ? "" : ",") + b;
-	_unblock->setDnsProxyBootstrap(bootstrap);
+	_dns_proxy.setBootstrap(bootstrap);
 
 	_bootstrap->create(
 		"#dns section .common",
@@ -91,7 +91,7 @@ void UiDnsProxy::initialize()
 		{
 			if (auto parsed = parseBootstrapList(trimConfigLine(jsToCpp<std::string>(args[0]))))
 			{
-				_unblock->setDnsProxyBootstrap(std::move(*parsed));
+				_dns_proxy.setBootstrap(std::move(*parsed));
 				_collectUpstreams();
 				_applyUpstreams();
 			}
@@ -101,7 +101,7 @@ void UiDnsProxy::initialize()
 
 	// Upstream exchange timeout (seconds). Private resolvers stall now and
 	// then, so it is tunable without rebuilding.
-	uint32_t timeout_sec = Unblock::defaultDnsProxyTimeout() / 1'000;
+	uint32_t timeout_sec = DnsProxy::defaultTimeout() / 1'000;
 	if (auto cfg = _ui->userConfig()->parameterSection<std::string>("DNS", "timeout"))
 		try
 		{
@@ -112,7 +112,7 @@ void UiDnsProxy::initialize()
 		catch (...)
 		{
 		}
-	_unblock->setDnsProxyTimeout(timeout_sec * 1'000);
+	_dns_proxy.setTimeout(timeout_sec * 1'000);
 
 	_timeout->create(
 		"#dns section .common",
@@ -129,7 +129,7 @@ void UiDnsProxy::initialize()
 			{
 				int seconds = std::stoi(trimConfigLine(jsToCpp<std::string>(args[0])));
 				seconds		= std::clamp(seconds, 1, 120);
-				_unblock->setDnsProxyTimeout(static_cast<uint32_t>(seconds) * 1'000);
+				_dns_proxy.setTimeout(static_cast<uint32_t>(seconds) * 1'000);
 				_collectUpstreams();
 				_applyUpstreams();
 			}
@@ -166,7 +166,7 @@ void UiDnsProxy::initialize()
 					_ui->backgroundTasks()->start("dns_proxy_test", "str_task_dns_proxy_test_title");
 
 					std::string output;
-					_unblock->dnsProxyTestUpstream(value, output);
+					_dns_proxy.testUpstream(value, output);
 
 					_ui->backgroundTasks()->finish("dns_proxy_test");
 
@@ -189,11 +189,11 @@ void UiDnsProxy::initialize()
 		}
 
 	if (items.empty())
-		items = Unblock::defaultDnsProxyUpstreams();
+		items = DnsProxy::defaultUpstreams();
 
 	_upstreams->setItems(std::move(items));
 
-	// Seed Unblock and persist the list.
+	// Seed the proxy and persist the list.
 	_collectUpstreams();
 
 	const bool enabled = _ui->userConfig()->parameterSection<bool>("DNS", "enable").value_or(false);
@@ -206,7 +206,7 @@ void UiDnsProxy::initialize()
 	Core::get().addTask(
 		[this, enabled]
 		{
-			_unblock->dnsProxy(enabled);
+			_dns_proxy.run(enabled);
 			_ui->backgroundTasks()->finish("dns_proxy_apply");
 		}
 	);
@@ -228,16 +228,16 @@ void UiDnsProxy::_collectUpstreams()
 			upstreams.push_back(address);
 	}
 
-	_unblock->setDnsProxyUpstreams(upstreams);
+	_dns_proxy.setUpstreams(upstreams);
 	_ui->userConfig()->writeSectionParameterVector("DNS", "upstreams", upstreams);
 
 	// Persist the shared bootstrap alongside the servers.
 	std::string bootstrap_csv;
-	for (const auto& b : _unblock->dnsProxyBootstrap())
+	for (const auto& b : _dns_proxy.bootstrap())
 		bootstrap_csv += (bootstrap_csv.empty() ? "" : ",") + b;
 	_ui->userConfig()->writeSectionParameter("DNS", "bootstrap", bootstrap_csv);
 
-	_ui->userConfig()->writeSectionParameter("DNS", "timeout", std::to_string(_unblock->dnsProxyTimeout() / 1'000));
+	_ui->userConfig()->writeSectionParameter("DNS", "timeout", std::to_string(_dns_proxy.timeout() / 1'000));
 }
 
 void UiDnsProxy::_applyUpstreams()
@@ -249,7 +249,7 @@ void UiDnsProxy::_applyUpstreams()
 	Core::get().addTask(
 		[this]
 		{
-			_unblock->dnsProxy(true);
+			_dns_proxy.run(true);
 			_ui->backgroundTasks()->finish("dns_proxy_apply");
 		}
 	);
@@ -264,7 +264,7 @@ void UiDnsProxy::_refreshStatus()
 	std::string cached	= "0";
 	std::string errors	= "0";
 
-	const std::string status = _unblock->dnsProxyStatus();
+	const std::string status = _dns_proxy.status();
 	for (auto row : status | std::views::split('\n'))
 	{
 		const std::string line{ row.begin(), row.end() };
@@ -276,7 +276,7 @@ void UiDnsProxy::_refreshStatus()
 			errors = line.substr(7);
 	}
 
-	const bool		  running = _unblock->dnsProxyIsRun();
+	const bool		  running = _dns_proxy.isRun();
 	const std::string text	  = running ? utils::format(Localization::Str{ "str_status_dns_running" }(), queries, cached, errors)
 										: Localization::Str{ "str_status_dns_stopped" }();
 
