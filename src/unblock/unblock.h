@@ -30,13 +30,14 @@ class DNSHost;
  *  LIST host through the running desync, lua marks fully-tried hosts
  *  exhausted). Header-inline so unit tests link without the engine. */
 inline bool autoRoundSettled(
-	const std::unordered_set<std::string>& expected, const std::unordered_set<std::string>& valid, const std::unordered_set<std::string>& exhausted
+	const std::unordered_set<std::string>& expected, const std::unordered_set<std::string>& valid, const std::unordered_set<std::string>& exhausted,
+	const std::unordered_set<std::string>& unjudged
 )
 {
 	if (expected.empty())
 		return false;
 	for (const auto& h : expected)
-		if (!valid.contains(h) && !exhausted.contains(h))
+		if (!valid.contains(h) && !exhausted.contains(h) && !unjudged.contains(h))
 			return false;
 	return true;
 }
@@ -173,6 +174,7 @@ public:
 
 	std::vector<std::string>						 helperCheckingHosts();
 	std::vector<std::string>						 helperSeenHosts();
+	std::vector<std::string>						 helperUnjudgedHosts();
 	std::vector<std::pair<std::string, std::string>> helperErrorHosts();
 	std::vector<std::pair<std::string, std::string>> helperValidHosts();
 	/** Fully-tried hosts: every strategy failed, nothing left to attempt. */

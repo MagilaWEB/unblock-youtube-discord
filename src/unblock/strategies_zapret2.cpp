@@ -152,12 +152,6 @@ void StrategiesZapret2::_normalizeStrategyFinal()
 	while (_strategy_dpi.back().starts_with("--new"))
 		_strategy_dpi.pop_back();
 
-	_strategy_dpi.emplace_back("--new");
-	_strategy_dpi.emplace_back("--filter-udp=10000");
-	_strategy_dpi.emplace_back("--ipset-ip=127.0.0.1/32");
-	_strategy_dpi.emplace_back("--payload=all");
-	_strategy_dpi.emplace_back("--lua-desync=zcheck");
-
 	for (auto& line : _strategy_dpi)
 		Debug::ok("{}", line);
 }

@@ -111,13 +111,14 @@ bool AutoStrategyRunner::_runPassiveRound(Technology technology, std::string_vie
 	// Drop stale datagrams from previous rounds.
 	_unblock.helperCheckingHosts();
 	_unblock.helperSeenHosts();
+	_unblock.helperUnjudgedHosts();
 	_unblock.helperValidHosts();
 	_unblock.helperErrorHosts();
 	_unblock.helperExhaustedHosts();
 
 	// Passive round: no curl testing here at all. The helper probes every LIST
 	// host through the running desync, lua marks fully-tried hosts exhausted.
-	// The round ends when every expected host is valid or exhausted.
+	// The round ends when every expected host is valid, exhausted or unjudged.
 	bool		settled = expected.empty();
 	std::string last_live;
 	auto		last_live_at = std::chrono::steady_clock::now() - std::chrono::seconds(10);
@@ -135,6 +136,9 @@ bool AutoStrategyRunner::_runPassiveRound(Technology technology, std::string_vie
 		std::unordered_set<std::string> exhausted_set;
 		for (auto& [host, _] : _unblock.helperExhaustedHosts())
 			exhausted_set.insert(host);
+		std::unordered_set<std::string> unjudged_set;
+		for (auto& host : _unblock.helperUnjudgedHosts())
+			unjudged_set.insert(host);
 		auto checking = _unblock.helperCheckingHosts();
 		auto errors	  = _unblock.helperErrorHosts();
 
@@ -157,7 +161,7 @@ bool AutoStrategyRunner::_runPassiveRound(Technology technology, std::string_vie
 				callbacks.progress(last_live);
 		}
 
-		settled = autoRoundSettled(expected, valid_set, exhausted_set);
+		settled = autoRoundSettled(expected, valid_set, exhausted_set, unjudged_set);
 		if (!settled)
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	}
@@ -167,12 +171,15 @@ bool AutoStrategyRunner::_runPassiveRound(Technology technology, std::string_vie
 	if (!_unblock.isRun(technology))
 		return false;
 
-	size_t dead = 0;
+	std::unordered_set<std::string> dead_hosts;
 	for (auto& [host, _] : _unblock.helperExhaustedHosts())
 		if (expected.contains(host))
-			++dead;
+			dead_hosts.insert(host);
+	for (auto& host : _unblock.helperUnjudgedHosts())
+		if (expected.contains(host))
+			dead_hosts.insert(host);
 
-	return judgeAutoRound(dead, expected.size());
+	return judgeAutoRound(dead_hosts.size(), expected.size());
 }
 
 bool AutoStrategyRunner::_runTestingRound(const Callbacks& callbacks)

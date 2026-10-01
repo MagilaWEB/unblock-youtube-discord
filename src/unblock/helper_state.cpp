@@ -83,6 +83,7 @@ bool HelperState::_dropExpired()
 
 	_checking.clear();
 	_seen.clear();
+	_unjudged.clear();
 	_errors.clear();
 	_valid.clear();
 	_exhausted.clear();
@@ -109,6 +110,7 @@ std::vector<std::string> HelperState::checkingHosts()
 			continue;
 		_errors.erase(name);
 		_valid.erase(name);
+		_unjudged.erase(name);
 		_checking.checkingEdge(std::move(name), now);
 	}
 
@@ -138,6 +140,26 @@ std::vector<std::string> HelperState::seenHosts()
 		return {};
 
 	return { _seen.begin(), _seen.end() };
+}
+
+std::vector<std::string> HelperState::unjudgedHosts()
+{
+	std::lock_guard lock(_lock);
+	if (auto payload = IPCSignals::get().getLatest("helper_unjudged"))
+	{
+		// Snapshot lines are "host=no-verdict": parse the host=value map and
+		// keep only the hostnames.
+		std::unordered_map<std::string, std::string> parsed;
+		parseHostStrategySnapshot(*payload, parsed);
+		_unjudged.clear();
+		for (auto& [host, _] : parsed)
+			_unjudged.insert(std::move(host));
+	}
+
+	if (_dropExpired())
+		return {};
+
+	return { _unjudged.begin(), _unjudged.end() };
 }
 
 std::vector<std::pair<std::string, std::string>> HelperState::errorHosts()
@@ -235,6 +257,7 @@ void HelperState::clear()
 	std::lock_guard lock(_lock);
 	_checking.clear();
 	_seen.clear();
+	_unjudged.clear();
 	_errors.clear();
 	_valid.clear();
 	_exhausted.clear();

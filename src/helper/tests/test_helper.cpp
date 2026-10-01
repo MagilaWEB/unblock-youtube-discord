@@ -24,13 +24,16 @@ public:
 
 	void handleMessage(std::string_view message) { helper._handleMessage(message); }
 
-	const std::unordered_set<std::string>&							knownHosts() const { return helper._known_hosts; }
-	const std::unordered_set<std::string>&							queue() const { return helper._queue; }
-	const std::unordered_set<std::string>&							inCheck() const { return helper._in_check; }
-	const std::unordered_map<std::string, ZapretHelper::ErrorInfo>& errorHosts() const { return helper._error_hosts; }
-	const std::unordered_map<std::string, std::string>&				valid() const { return helper._valid_hosts; }
-	const std::unordered_map<std::string, ZapretHelper::ErrorInfo>& exhaustedHosts() const { return helper._exhausted_hosts; }
-	std::string														exhaustedStrategy(const std::string& host) const
+	const std::unordered_set<std::string>&									knownHosts() const { return helper._known_hosts; }
+	const std::unordered_set<std::string>&									queue() const { return helper._queue; }
+	const std::unordered_set<std::string>&									inCheck() const { return helper._in_check; }
+	const std::unordered_map<std::string, ZapretHelper::ErrorInfo>&			errorHosts() const { return helper._error_hosts; }
+	const std::unordered_map<std::string, std::string>&						valid() const { return helper._valid_hosts; }
+	const std::unordered_map<std::string, ZapretHelper::ErrorInfo>&			exhaustedHosts() const { return helper._exhausted_hosts; }
+	const std::unordered_map<std::string, ZapretHelper::ErrorInfo>&			unjudgedHosts() const { return helper._unjudged_hosts; }
+	std::unordered_map<std::string, std::chrono::steady_clock::time_point>& probedAt() { return helper._probed_at; }
+	void																	refreshUnjudged() { helper._refreshUnjudged(); }
+	std::string																exhaustedStrategy(const std::string& host) const
 	{
 		auto it = helper._exhausted_hosts.find(host);
 		return it == helper._exhausted_hosts.end() ? std::string{} : it->second.strategy;
@@ -79,6 +82,13 @@ public:
 	void   startWorkers(u32 n) { helper._startWorkers(n); }
 	size_t poolThreads() const { return helper._pool.size(); }
 
+	bool zapretReady() const { return helper._zapret_ready.load(); }
+	void setZapretReady(bool value) { helper._zapret_ready = value; }
+	bool workersStarted() const { return helper._workers_started; }
+	void setLastReadyNow() { helper._last_ready = std::chrono::steady_clock::now(); }
+	void setLastReadyInPast() { helper._last_ready = std::chrono::steady_clock::now() - ZapretHelper::c_zapret_timeout - std::chrono::seconds(1); }
+	void checkZapretLiveness() { helper._checkZapretLiveness(); }
+
 	std::string makeLog(std::string_view text) const { return ZapretHelper::_makeLog(text); }
 	std::string makeDoneSignal(std::string_view h) const { return ZapretHelper::_makeDoneSignal(h); }
 	std::string makeCheckingSignal(std::string_view h) const { return ZapretHelper::_makeCheckingSignal(h); }
@@ -86,8 +96,6 @@ public:
 	{
 		return ZapretHelper::_makeSnapshotChunk(k, seq, i, n, d);
 	}
-	std::string makeOk(std::string_view h) const { return ZapretHelper::_makeOk(h); }
-	std::string makeFail(std::string_view h) const { return ZapretHelper::_makeFail(h); }
 	std::string makeStatsSignal(size_t q, size_t c, size_t k) const { return ZapretHelper::_makeStatsSignal(q, c, k); }
 };
 
@@ -508,18 +516,6 @@ TEST_CASE("makeCheckingSignal format", "[helper][format]")
 	CHECK(t.makeCheckingSignal("a.com") == "STRING:helper_checking:a.com");
 }
 
-TEST_CASE("makeOk format", "[helper][format]")
-{
-	ZapretHelperTest t;
-	CHECK(t.makeOk("a.com") == "OK:a.com");
-}
-
-TEST_CASE("makeFail format", "[helper][format]")
-{
-	ZapretHelperTest t;
-	CHECK(t.makeFail("a.com") == "FAIL:a.com");
-}
-
 TEST_CASE("idleStep within interval reports seen, does not refill queue", "[helper][idle]")
 {
 	ZapretHelperTest t;
@@ -682,9 +678,6 @@ TEST_CASE("HelperConfig defaults match legacy constexpr", "[helper][config]")
 {
 	const auto cfg = HelperConfig::defaults();
 	CHECK(cfg.pool_size == 20);
-	CHECK(cfg.check_timeout_sec == 6);
-	CHECK(cfg.connect_timeout_sec == 5);
-	CHECK(cfg.max_redirects == 5);
 	CHECK(cfg.recheck_interval_min == 30);
 	CHECK(cfg.errors_progress_min == 3);
 	CHECK(cfg.errors_recheck_sec == 30);
@@ -694,27 +687,23 @@ TEST_CASE("HelperConfig missing file -> defaults", "[helper][config]")
 {
 	const auto cfg = HelperConfig::loadFrom("Z:/no/such/dir/setting.config");
 	CHECK(cfg.pool_size == 20);
-	CHECK(cfg.check_timeout_sec == 6);
 }
 
 TEST_CASE("HelperConfig reads only [HELPER]", "[helper][config]")
 {
-	const auto path = writeTempConfig("[SYSTEM]\npool_size=99\n[HELPER]\npool_size=7\ncheck_timeout_sec=9\n[OTHER]\npool_size=100\n");
+	const auto path = writeTempConfig("[SYSTEM]\npool_size=99\n[HELPER]\npool_size=7\nrecheck_interval_min=9\n[OTHER]\npool_size=100\n");
 	const auto cfg	= HelperConfig::loadFrom(path);
 	CHECK(cfg.pool_size == 7);
-	CHECK(cfg.check_timeout_sec == 9);
-	CHECK(cfg.connect_timeout_sec == 5);
+	CHECK(cfg.recheck_interval_min == 9);
 	std::error_code ec;
 	std::filesystem::remove(path, ec);
 }
 
 TEST_CASE("HelperConfig clamps out-of-range values", "[helper][config]")
 {
-	const auto path = writeTempConfig("[HELPER]\npool_size=9999\ncheck_timeout_sec=0\nmax_redirects=99\nrecheck_interval_min=1\n");
+	const auto path = writeTempConfig("[HELPER]\npool_size=9999\nrecheck_interval_min=1\n");
 	const auto cfg	= HelperConfig::loadFrom(path);
 	CHECK(cfg.pool_size == 64);
-	CHECK(cfg.check_timeout_sec == 1);
-	CHECK(cfg.max_redirects == 10);
 	CHECK(cfg.recheck_interval_min == 5);
 	std::error_code ec;
 	std::filesystem::remove(path, ec);
@@ -732,11 +721,9 @@ TEST_CASE("HelperConfig ignores garbage lines", "[helper][config]")
 
 TEST_CASE("HelperConfig CONFIG: payload round trip", "[helper][config]")
 {
-	const auto cfg = HelperConfig::parsePayload("pool_size=8;check_timeout_sec=9;errors_recheck_sec=45");
+	const auto cfg = HelperConfig::parsePayload("pool_size=8;errors_recheck_sec=45");
 	CHECK(cfg.pool_size == 8);
-	CHECK(cfg.check_timeout_sec == 9);
 	CHECK(cfg.errors_recheck_sec == 45);
-	CHECK(cfg.connect_timeout_sec == 5);
 
 	const std::string msg = cfg.makeMessage();
 	CHECK(msg.starts_with("CONFIG:"));
@@ -747,9 +734,9 @@ TEST_CASE("CONFIG: message updates runtime without restart", "[helper][config]")
 {
 	ZapretHelperTest t;
 	CHECK(t.poolSize() == 20);
-	t.handleMessage("CONFIG:pool_size=4;check_timeout_sec=9;recheck_interval_min=45;errors_recheck_sec=60");
+	t.handleMessage("CONFIG:pool_size=4;recheck_interval_min=45;errors_recheck_sec=60");
 	CHECK(t.poolSize() == 4);
-	// Pool is empty in tests (workers start in run()), so no thread churn.
+	// Pool is empty in tests (workers start on the first READY), so no thread churn.
 	CHECK(t.queue().empty());
 }
 
@@ -761,7 +748,7 @@ TEST_CASE("CONFIG: live pool resize with running workers does not hang", "[helpe
 	// Queue is empty so workers only wait. Resize must retire them via the
 	// pool epoch and start the new generation. Joining threads that wait on
 	// !_running deadlocked the main loop and killed the helper on Apply.
-	t.handleMessage("CONFIG:pool_size=4;check_timeout_sec=6;recheck_interval_min=30;errors_recheck_sec=30");
+	t.handleMessage("CONFIG:pool_size=4;recheck_interval_min=30;errors_recheck_sec=30");
 	CHECK(t.poolSize() == 4);
 	CHECK(t.poolThreads() == 4);
 }
@@ -769,7 +756,7 @@ TEST_CASE("CONFIG: live pool resize with running workers does not hang", "[helpe
 TEST_CASE("CONFIG: clamps garbage, keeps running", "[helper][config]")
 {
 	ZapretHelperTest t;
-	t.handleMessage("CONFIG:pool_size=9999;check_timeout_sec=abc");
+	t.handleMessage("CONFIG:pool_size=9999");
 	CHECK(t.poolSize() == 64);
 }
 
@@ -878,6 +865,52 @@ TEST_CASE("exhausted hosts recheck on the stale-error interval", "[helper][exhau
 	CHECK_FALSE(t.queue().contains("fresh.com"));
 }
 
+TEST_CASE("unjudged: fresh probe is not promoted", "[helper][unjudged]")
+{
+	ZapretHelperTest t;
+	t.probedAt()["a.com"] = std::chrono::steady_clock::now();
+	t.refreshUnjudged();
+	CHECK(t.unjudgedHosts().empty());
+}
+
+TEST_CASE("unjudged: stale probe is promoted and sticky", "[helper][unjudged]")
+{
+	ZapretHelperTest t;
+	t.probedAt()["a.com"] = std::chrono::steady_clock::now() - std::chrono::seconds(3'600);
+	t.refreshUnjudged();
+	CHECK(t.unjudgedHosts().contains("a.com"));
+
+	// Sticky: a second refresh must not drop the mark on its own.
+	t.refreshUnjudged();
+	CHECK(t.unjudgedHosts().contains("a.com"));
+}
+
+TEST_CASE("unjudged: VALID drops unjudged and probe marks", "[helper][unjudged]")
+{
+	ZapretHelperTest t;
+	t.probedAt()["a.com"] = std::chrono::steady_clock::now() - std::chrono::seconds(3'600);
+	t.refreshUnjudged();
+	REQUIRE(t.unjudgedHosts().contains("a.com"));
+
+	t.handleMessage("VALID:a.com:direct");
+	CHECK(t.unjudgedHosts().empty());
+	CHECK(t.probedAt().empty());
+}
+
+TEST_CASE("unjudged: ERR drops probe mark even on an exhausted host", "[helper][unjudged]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("EXHAUSTED:b.com:strategy_3");
+	t.probedAt()["b.com"] = std::chrono::steady_clock::now() - std::chrono::seconds(3'600);
+	t.refreshUnjudged();
+	// b.com is already terminal, so refresh must not promote it.
+	CHECK(t.unjudgedHosts().empty());
+
+	t.handleMessage("ERR:b.com:strategy_3");
+	CHECK(t.unjudgedHosts().empty());
+	CHECK(t.probedAt().empty());
+}
+
 TEST_CASE("makeStatsSignal format", "[helper][stats]")
 {
 	ZapretHelperTest t;
@@ -896,4 +929,55 @@ TEST_CASE("isTerminalError later failures keep hunting", "[helper][terminal]")
 	CHECK_FALSE(CurlClient::isTerminalError(CURLE_COULDNT_CONNECT));
 	CHECK_FALSE(CurlClient::isTerminalError(CURLE_OPERATION_TIMEDOUT));
 	CHECK_FALSE(CurlClient::isTerminalError(CURLE_SSL_CONNECT_ERROR));
+}
+
+TEST_CASE("READY wakes the helper and starts the pool once", "[helper][ready]")
+{
+	ZapretHelperTest t;
+	HelperConfig	 cfg;
+	cfg.pool_size = 2;
+	t.applyConfig(cfg);
+
+	CHECK_FALSE(t.zapretReady());
+	CHECK_FALSE(t.workersStarted());
+	CHECK(t.poolThreads() == 0);
+
+	t.handleMessage("READY:zapret");
+
+	CHECK(t.zapretReady());
+	CHECK(t.workersStarted());
+	CHECK(t.poolThreads() == 2);
+
+	// Repeated heartbeats must not spawn a second pool.
+	t.handleMessage("READY:zapret");
+	CHECK(t.poolThreads() == 2);
+}
+
+TEST_CASE("liveness: heartbeat keeps host work running", "[helper][ready]")
+{
+	ZapretHelperTest t;
+	t.setZapretReady(true);
+	t.setLastReadyNow();
+	t.addHost("a.com");
+
+	t.checkZapretLiveness();
+
+	CHECK(t.zapretReady());
+	CHECK_FALSE(t.queue().empty());
+}
+
+TEST_CASE("liveness: a minute of silence suspends host work", "[helper][ready]")
+{
+	ZapretHelperTest t;
+	t.setZapretReady(true);
+	t.addHost("a.com");
+	REQUIRE_FALSE(t.queue().empty());
+
+	t.setLastReadyInPast();
+	t.checkZapretLiveness();
+
+	CHECK_FALSE(t.zapretReady());
+	CHECK(t.queue().empty());
+	// Seen is preserved: the host stays known, only the work queue is dropped.
+	CHECK(t.knownHosts().contains("a.com"));
 }

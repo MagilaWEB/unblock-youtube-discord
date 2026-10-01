@@ -26,9 +26,12 @@
 - `src/core/` — база: File, Debug, Localization, Service, utils
 - `src/ui/` — интерфейс на Ultralight
 - `src/unblock/` — логика: Unblock, StrategiesDPI (генерация стратегий), DomainTesting (curl-проверка), DNSHost, IPCSignals (UDP 9999, Lua→C++)
-- `src/helper/` — `zapret_helper.exe`: UDP-сервер (порт 10000), принимает LIST:/CHECK:/STAT:/ERR:, батчит проверку хостов через curl, отвечает OK:/FAIL:, шлёт логи на 9999
+- `src/helper/` — `zapret_helper.exe`: UDP-сервер (порт 10000), принимает LIST:/CHECK:/CONFIG:/VALID:/ERR:/EXHAUSTED:/READY:, гонит проверку хостов через curl (насос трафика), состоянием мёртвых/valid/exhausted/unjudged владеет по вердиктам Lua и релеит его в unblock снапшотами на 9999
+  - до первого `READY` (пульс zapret из Lua раз в 5 c) helper спит: воркеры не подняты, пробы и снапшоты не идут; после минуты тишины работа по хостам приостанавливается
 - Lua-скрипты: исходники в `resources/lua/`, в рантайме загружаются из `binaries/lua/` (копируются при сборке). Правки Lua применяются только после сборки!
-- `winws2.exe` (zapret2) запускается как служба с аргументами из `_normalizeStrategyFinal()` (добавляет `--lua-desync=zcheck`, `--filter-udp=10000` и номера `strategy=N`)
+- `winws2.exe` (zapret2) запускается как служба с аргументами из `_normalizeStrategyFinal()` (номера `strategy=N`), профиль zcheck и `--filter-udp=10000` больше не несёт, а в конфигах убраны `--wf-filter-loopback=0` и порт 10000 из списков `--wf-udp-in/out`
+  - helper больше не присылает вердикты OK/FAIL и не судит работоспособность: по команде `CHECK:` он гонит трафик (насос), владеет состоянием мёртвых/exhausted/unjudged хостов и релеит его в unblock по UDP 9999 (unjudged — проба прошла, но вердикта от Lua нет)
+  - Lua (`auto_strategy`) — единственный судья по пакетным уликам: ретрансмиссия, RST, DPI16KB (payload>=16000), DPI-redirect, throttle-after-handshake; на провале при наличии hostname Lua просит helper сделать `CHECK:` (насос), а положительный вердикт VALID рождается из throttle
 
 ## Style
 

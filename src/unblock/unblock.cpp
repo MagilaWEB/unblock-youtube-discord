@@ -181,9 +181,10 @@ std::list<Service> Unblock::getConflictingServices()
 
 void Unblock::testingDomain(std::function<void(std::string_view url, bool state)>&& callback, bool base_test)
 {
-	// The retry/exhausted coordination over UDP 9999 (zcheck) exists only in
-	// Zapret2. With Zapret1 running the test must behave exactly like with
-	// everything stopped: a plain single-attempt curl per host.
+	// The retry/exhausted coordination over UDP 9999 (helper snapshots)
+	// exists only in Zapret2. With Zapret1 running the test must behave
+	// exactly like with everything stopped: a plain single-attempt curl per
+	// host.
 	_domain_testing->test(base_test, [callback](std::string_view url, bool state) { callback(url, state); }, _zapret2_engine->isRun());
 
 	_domain_testing->printTestInfo();
@@ -233,6 +234,11 @@ std::vector<std::string> Unblock::helperCheckingHosts()
 std::vector<std::string> Unblock::helperSeenHosts()
 {
 	return _helper.seenHosts();
+}
+
+std::vector<std::string> Unblock::helperUnjudgedHosts()
+{
+	return _helper.unjudgedHosts();
 }
 
 std::vector<std::pair<std::string, std::string>> Unblock::helperErrorHosts()
@@ -368,8 +374,8 @@ void Unblock::startService(Technology technology)
 	if (list.empty())
 		return;
 
-	// The helper only understands the zapret2 protocol (zcheck over
-	// --lua-desync); Zapret1 runs standalone like in 1.4.19.
+	// The helper only understands the zapret2 protocol (Lua auto_strategy
+	// over --lua-desync); Zapret1 runs standalone like in 1.4.19.
 	if (technology == Technology::Zapret2)
 	{
 		_zapret_helper.setDescription(Localization::Str{ "str_service_zapret_description" }());

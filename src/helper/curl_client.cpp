@@ -1,6 +1,5 @@
 #include "curl_client.h"
 
-#include <algorithm>
 #include <chrono>
 #include <format>
 #include <memory>
@@ -12,17 +11,9 @@ namespace
 	inline constexpr const char* c_user_agent{
 		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 	};
-	inline constexpr u32 c_check_timeout_default{ 6 };
-	inline constexpr u32 c_connect_timeout_default{ 5 };
-	inline constexpr u32 c_max_redirects_default{ 5 };
-
-	// Bulk-flow proof (throttling-after-handshake precaution): headers may
-	// fly while the body is starved to ~100 B/s. A ranged GET of the first
-	// kilobyte must arrive faster than the floor below, otherwise the host
-	// counts as broken. Small fast pages are unaffected.
-	inline constexpr long c_bulk_probe_range_end{ 1'023 };
-	inline constexpr long c_low_speed_limit_bps{ 500 };
-	inline constexpr long c_low_speed_time_sec{ 6 };
+	inline constexpr long c_check_timeout_sec{ 10 };
+	inline constexpr long c_connect_timeout_sec{ 5 };
+	inline constexpr long c_max_redirects{ 5 };
 
 	// Voice-gateway probe: overall budget and the ping/pong exchange shape.
 	inline constexpr u32 c_voice_timeout_sec{ 14 };
@@ -39,21 +30,6 @@ void CurlCleanup::operator()(CURL* curl) const
 {
 	if (curl)
 		curl_easy_cleanup(curl);
-}
-
-namespace
-{
-	// Runtime-tunable via CurlClient::configure() (HelperConfig / UDP CONFIG:).
-	inline u32 s_check_timeout_sec{ c_check_timeout_default };
-	inline u32 s_connect_timeout_sec{ c_connect_timeout_default };
-	inline u32 s_max_redirects{ c_max_redirects_default };
-}	 // namespace
-
-void CurlClient::configure(u32 check_timeout_sec, u32 connect_timeout_sec, u32 max_redirects)
-{
-	s_check_timeout_sec	  = std::clamp(check_timeout_sec, 1u, 60u);
-	s_connect_timeout_sec = std::clamp(connect_timeout_sec, 1u, 30u);
-	s_max_redirects		  = std::clamp(max_redirects, 0u, 10u);
 }
 
 void SlistCleanup::operator()(curl_slist* list) const
@@ -90,7 +66,7 @@ curl_slist* CurlClient::_buildHeaders()
 	return list;
 }
 
-std::expected<long, int> CurlClient::_fetch(const std::string& url, bool head)
+std::expected<long, int> CurlClient::_fetch(const std::string& url)
 {
 	std::unique_ptr<CURL, CurlCleanup> curl{ curl_easy_init() };
 	if (!curl)
@@ -102,29 +78,16 @@ std::expected<long, int> CurlClient::_fetch(const std::string& url, bool head)
 	curl_easy_setopt(curl.get(), CURLOPT_NOSIGNAL, 1L);
 	curl_easy_setopt(curl.get(), CURLOPT_FRESH_CONNECT, 1L);
 	curl_easy_setopt(curl.get(), CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(curl.get(), CURLOPT_MAXREDIRS, static_cast<long>(s_max_redirects));
-	curl_easy_setopt(curl.get(), CURLOPT_NOBODY, head ? 1L : 0L);
+	curl_easy_setopt(curl.get(), CURLOPT_MAXREDIRS, c_max_redirects);
 	curl_easy_setopt(curl.get(), CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_DEFAULT);
 	curl_easy_setopt(curl.get(), CURLOPT_SSL_VERIFYPEER, 0L);
 	curl_easy_setopt(curl.get(), CURLOPT_USERAGENT, c_user_agent);
 	curl_easy_setopt(curl.get(), CURLOPT_ACCEPT_ENCODING, "");
 	curl_easy_setopt(curl.get(), CURLOPT_HTTPHEADER, headers.get());
-	curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT, static_cast<long>(s_check_timeout_sec));
-	curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT, static_cast<long>(s_connect_timeout_sec));
-	curl_easy_setopt(curl.get(), CURLOPT_LOW_SPEED_LIMIT, c_low_speed_limit_bps);
-	curl_easy_setopt(curl.get(), CURLOPT_LOW_SPEED_TIME, c_low_speed_time_sec);
+	curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT, c_check_timeout_sec);
+	curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT, c_connect_timeout_sec);
 	curl_easy_setopt(curl.get(), CURLOPT_NOPROGRESS, 0L);
 	curl_easy_setopt(curl.get(), CURLOPT_WRITEFUNCTION, &CurlClient::_writeCallback);
-
-	if (!head)
-	{
-		// Body-flow proof: first kilobyte only, the write callback drops
-		// everything. Servers ignoring Range send 200 + full body (roots
-		// are small); 206/200/416 all prove the path, the speed guard
-		// judges starvation.
-		const std::string range = std::format("0-{}", c_bulk_probe_range_end);
-		curl_easy_setopt(curl.get(), CURLOPT_RANGE, range.c_str());
-	}
 
 	CURLcode res = curl_easy_perform(curl.get());
 	if (res != CURLE_OK)
@@ -147,14 +110,7 @@ std::expected<long, int> CurlClient::checkHost(const std::string& host)
 
 	const std::string url = is_googlevideo ? std::format("https://{}/videoplayback?expire=1", host) : std::format("https://{}", host);
 
-	auto result = _fetch(url, true);
-	if (!result)
-		return _fetch(url, false);
-
-	// Headers fly but the body may be starved (throttling-after-handshake):
-	// a HEAD-only OK locked "direct works" while file downloads crawled.
-	// The ranged GET proof decides.
-	return _fetch(url, false);
+	return _fetch(url);
 }
 
 std::expected<long, int> CurlClient::checkVoiceHost(const std::string& host)
@@ -171,7 +127,7 @@ std::expected<long, int> CurlClient::checkVoiceHost(const std::string& host)
 	curl_easy_setopt(curl.get(), CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_DEFAULT);
 	curl_easy_setopt(curl.get(), CURLOPT_SSL_VERIFYPEER, 0L);
 	curl_easy_setopt(curl.get(), CURLOPT_USERAGENT, c_user_agent);
-	curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT, static_cast<long>(s_connect_timeout_sec));
+	curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT, c_connect_timeout_sec);
 
 	CURLcode res = curl_easy_perform(curl.get());
 	if (res != CURLE_OK)

@@ -1,21 +1,35 @@
 -- auto_strategy — адаптивный перебор стратегий для обхода DPI
 -- Автор: MagilaWEB (МогилныйПатчер)
 --
+-- Принцип: helper (zapret_helper.exe) больше не выносит вердиктов. Он —
+-- насос и исполнитель: Lua — единственный судья по пакетным уликам. На
+-- провале Lua просит helper сделать CHECK:<host> — свежее соединение через
+-- текущую стратегию рождает новые пакеты, чтобы счётчик ошибок набрался без
+-- трафика пользователя. Положительный вердикт (VALID) рождается из ответа
+-- сервера, а не из helper OK.
+--
 -- Как работает:
 --   1. Сначала пробуем прямое соединение (direct, nstrategy = 0)
---   2. TCP, host_name известен: шлём helper только ERR (порт 10000 —
---      спам-канал), CHECK не шлём вообще. Helper обо всех узнает и
---      перепроверит по таймеру.
---   3. Helper ответил OK → пускаем с текущей стратегией, is_retransmission
---      не проверяем вообще.
---   4. Helper ответил FAIL + is_retransmission → reset + ERR, переключение
---      по локальному счётчику fails (защита от шторма пакетов).
---   5. Пакеты без retrans при висящем FAIL → ждём вердикт helper; свежий FAIL
---      копится в отдельном счётчике helper_fails (по умолч. 2, против ложных
---      коротких FAIL), switch только по нему, мимо локального счётчика.
---   6. host_name неизвестен (чистый IP helper проверить не может) → только
---      пакетная логика zapret (RST, 16KB, redirect, retrans) по счётчику fails.
---   7. UDP (QUIC, STUN, WireGuard, ...) — helper не умеет проверять UDP:
+--   2. TCP, host_name известен: Lua судит по пакетам — ретрансмиссия, RST
+--      (seq 1..8192), payload >= 16000 (DPI16KB), DPI-redirect
+--      (http_reply 302/307), throttle-thin и throttle-silence watchdog.
+--      Каждый провал просит у helper CHECK:<host> (насос), копит локальный
+--      счётчик fails и по порогу переключает стратегию (ERR хелперу, порт
+--      10000 — спам-канал).
+--   3. Положительный вердикт — по ответу сервера: входящий tls_server_hello
+--      или http_reply выставляет server_responded, и только тогда шлём VALID
+--      хелперу. Исходящий ClientHello не подтверждает (DPI пропускает запрос
+--      и режет ответ). Throttle-after-handshake: здоровое окно
+--      (rate >= throttle_min_bps) подтверждает стратегию и кладёт её в
+--      success-list. Тоньше порога — evidence в общий
+--      счётчик fails (THROTTLE), плюс взводится одноразовый watchdog-таймер:
+--      если пакеты встанут вообще (ни капель для вердикта, нечего
+--      ретранслировать — пакетный путь глух по построению), срабатывает
+--      таймер (THROTTLE-SILENCE). Здоровое окно снимает watchdog.
+--   4. host_name неизвестен (чистый IP helper проверить не может): та же
+--      пакетная логика (RST, 16KB, redirect, retrans) по счётчику fails, но
+--      насос CHECK не шлётся.
+--   5. UDP (QUIC, STUN, WireGuard, ...) — helper не умеет проверять UDP:
 --      никакой связи с helper, всё решает пакетная логика. Состояние своё:
 --      autostate.auto_strategy_udp[host], своя счётчик-очередь fails и своя
 --      очередь успехов _G.udp_strategy_success. Детект как в zapret2
@@ -26,22 +40,15 @@
 --      (водяной знак udp_judged_client в lua_state соединения). Долгоживущие
 --      потоки (голос Discord, WireGuard) перебирают стратегии без
 --      переподключения.
---   8. Все стратегии перебраны (exhausted) → прямой трафик + сигнал EXHAUSTED
+--   6. Все стратегии перебраны (exhausted) → прямой трафик + сигнал EXHAUSTED
 --      хелперу (он владеет мёртвыми хостами и докладывает в unblock сам)
---   9. Throttling-after-handshake: даунстрим тоньше throttle_min_bps за окно
---      throttle_window → evidence в общий счётчик fails (THROTTLE), плюс
---      взводится одноразовый watchdog-таймер: если пакеты встанут вообще
---      (ни капель для вердикта, нечего ретранслировать — пакетный путь глух
---      по построению), срабатывает таймер (THROTTLE-SILENCE). Здоровое окно
---      снимает watchdog. Таймеры — единственный источник выполнения без
---      пакетов: timer_set/timer_del, колбэк по имени.
+--   7. Таймеры — единственный источник выполнения без пакетов:
+--      timer_set/timer_del, колбэк по имени.
 --
 -- Перебор: 1, 2, 3, 4, ..., N (последовательно)
 -- Параметры (через --lua-desync=auto_strategy:fails=4:...):
 --   fails=N        — локальных ошибок до переключения (по умолч. 3)
---   helper_fails=N — подряд FAIL от helper до переключения (по умолч. 2)
 --   time=N         — время через которое произойдет сброс ошибок (по умолч. 300 сек)
---   helper_time=N  — окно сброса счётчика helper (по умолч. = time)
 --   maxseq=N       — макс. seq для проверок (по умолч. 32768)
 --   throttle_window=N — окно замера скорости даунстрима в сек (по умолч. 8)
 --   throttle_min_bps=N — ниже этой скорости за окно — throttling (по умолч. 500)
@@ -197,8 +204,8 @@ end
 -- direct signal to unblock. UDP never sends it: UDP exhaustion says
 -- nothing about TCP reachability of the host.
 function auto_do_switch(rec, success_list, reason, peer, dport, send_exhausted)
-    ULOG("WARNING", "zapret:auto_strategy: FAIL " .. auto_strategy_name(rec) .. " " .. reason .. "->" .. peer ..
-        ":" .. dport)
+    ULOG("WARNING",
+        "zapret:auto_strategy: FAIL " .. auto_strategy_name(rec) .. " " .. reason .. "->" .. peer .. ":" .. dport)
 
     if rec.strategy_success_fail then
         if rec.nstrategy < rec.ctstrategy then
@@ -250,7 +257,7 @@ function auto_do_switch(rec, success_list, reason, peer, dport, send_exhausted)
 end
 
 -- Per-protocol queue of strategies confirmed to work: TCP fills it from
--- helper OK verdicts, UDP from connections with a server reply.
+-- healthy throttle windows, UDP from connections with a server reply.
 function auto_strategy_success_list(is_udp)
     if is_udp then
         _G.udp_strategy_success = _G.udp_strategy_success or {}
@@ -260,37 +267,19 @@ function auto_strategy_success_list(is_udp)
     return _G.strategy_success
 end
 
--- Separate counter for helper FAIL verdicts (TCP only). The helper may
--- briefly report a working host as broken, so a single FAIL never switches:
--- only helper_fails consecutive fresh verdicts do.
-function auto_check_helper_fails(rec, arg)
-    local threshold = arg.helper_fails or 2
-    if threshold then
-        local now = os.time()
-        local window = tonumber(arg.helper_time) or (tonumber(arg.time) or 60)
-        if rec.helper_last_fail_time and now - rec.helper_last_fail_time > window then
-            rec.helper_fails = nil
-        end
-
-        if not rec.helper_fails then
-            rec.helper_fails = 0
-        end
-
-        rec.helper_fails = rec.helper_fails + 1
-        rec.helper_last_fail_time = now
-
-        if rec.helper_fails >= threshold then
-            rec.helper_fails = nil
-            return true
-        end
+-- The helper is a pump and executor, not a judge: TCP asks it to open a
+-- fresh connection for the host through the current strategy (CHECK:<host>)
+-- so new packets keep the local error counter filling without user traffic.
+-- UDP is never sent: the helper cannot check UDP traffic.
+function auto_request_check(host_name)
+    if host_name then
+        send_signal("CHECK", host_name, nil, 10000)
     end
-    return false
 end
 
--- Only TCP talks to the helper: only ERR is sent (port 10000 is the spam
--- channel). CHECK is never sent: the helper learns every host from ERR/VALID
--- and rechecks everyone by its own timer. UDP is never sent: the helper
--- cannot check UDP traffic.
+-- TCP error report to the helper (port 10000 is the spam channel). ERR tells
+-- the helper the strategy failed for this host; the verdict itself is made
+-- by Lua from packet evidence.
 function auto_fail_helper_strategy(name, host_name)
     if host_name then
         send_signal("ERR", host_name, name, 10000)
@@ -411,16 +400,14 @@ function auto_throttle_watchdog(name, data)
     hrec.t_watch_fired = now
 
     local strat_name = (hrec.nstrategy == 0) and "direct" or ("strategy_" .. tostring(hrec.nstrategy or "?"))
-    ULOG("WARNING", "zapret:auto_strategy: THROTTLE-SILENCE " .. strat_name .. "->" .. tostring(data.peer) .. ":" .. tostring(data.dport))
-    auto_fail_helper_strategy(strat_name, data.host_name)
+    ULOG("WARNING", "zapret:auto_strategy: THROTTLE-SILENCE " .. strat_name .. "->" .. tostring(data.peer) .. ":" ..
+        tostring(data.dport))
+    auto_request_check(data.host_name)
 
     if auto_check_fails(hrec, data.arg or {}) then
-        auto_do_switch(hrec, auto_strategy_success_list(false), "THROTTLE-SILENCE", tostring(data.peer), tostring(data.dport), true)
-        -- Same-episode guard, see THROTTLE.
-        hrec.helper_fails = nil
-        if data.host_name and _G.helper_check then
-            _G.helper_check[data.host_name] = true
-        end
+        auto_fail_helper_strategy(strat_name, data.host_name)
+        auto_do_switch(hrec, auto_strategy_success_list(false), "THROTTLE-SILENCE", tostring(data.peer),
+            tostring(data.dport), true)
     end
 end
 
@@ -506,185 +493,142 @@ function auto_strategy(ctx, desync)
         DLOG("auto_strategy: " .. name .. "->" .. host_or_ip .. ":" .. dport)
 
         if desync.dis.tcp then
-            -- Helper verdict storage (zcheck fills it). TCP only: the UDP
-            -- handler never talks to the helper and never consumes its
-            -- verdicts.
-            if not _G.zapret_ipc then
-                _G.zapret_ipc = {}
-            end
-
-            if not _G.helper_check then
-                _G.helper_check = {}
-            end
-
-            -- Throttling-after-handshake: thin but alive downstream while the
-            -- connection stands. Runs before the helper-OK fast path so it
-            -- can dethrone a locked strategy (e.g. direct) whose body is
-            -- starved. Debounced by the shared fails counter like every
-            -- other local evidence.
+            -- Throttling-after-handshake account first: every packet feeds the
+            -- downstream window, and any packet proves the host alive (vetoes
+            -- stale watchdog fires). Failures are judged next, the throttle
+            -- verdict last.
             local now = os.time()
             auto_throttle_account(crec, desync, now)
-            -- Any packet proves the host alive: vetoes stale watchdog fires.
             hrec.t_last_progress = now
-            local rate = auto_throttle_rate(crec, arg, now)
-            local window = tonumber(arg.throttle_window) or 8
-            local watch = auto_throttle_watch_name(askey, host_name or host_or_ip, dport)
-            if rate then
-                if rate < (tonumber(arg.throttle_min_bps) or 500) then
-                    -- Thin flow: if packets stop entirely from here, only the
-                    -- timer below can still react. Re-arming replaces the
-                    -- previous timer. pcall: a timer failure must never break
-                    -- the packet path.
-                    pcall(
-                        timer_set, watch, "auto_throttle_watchdog", 2 * window * 1000, true,
-                        { hrec = hrec, host_name = host_name, peer = host_or_ip, dport = dport, window = window, arg = arg }
-                    )
-                    auto_reset_connection(desync, arg, name, host_or_ip, dport)
-                    auto_fail_helper_strategy(name, host_name)
 
-                    if auto_check_fails(hrec, arg) then
-                        auto_do_switch(hrec, auto_strategy_success_list(false), "THROTTLE", host_or_ip, dport, true)
-                        -- Same-episode guard: our ERR above (re)triggers a
-                        -- helper verdict for this exact stall; counting it
-                        -- again would rotate twice. Later fresh FAILs count.
-                        hrec.helper_fails = nil
-                        if host_name and _G.helper_check then
-                            _G.helper_check[host_name] = true
-                        end
-                    end
-
-                    return auto_strategy_plan(desync, hrec, verdict)
-                else
-                    -- Healthy window: flow recovered, drop the watchdog.
-                    pcall(timer_del, watch)
-                end
+            -- Positive verdict evidence: the server actually answered. An
+            -- outgoing ClientHello alone proves nothing (DPI lets the request
+            -- out and kills the reply), so only an incoming handshake/HTTP
+            -- reply may confirm the strategy.
+            local from_server = (not desync.outgoing) and
+                (desync.l7payload == "tls_server_hello" or desync.l7payload == "http_reply")
+            if from_server then
+                crec.server_responded = true
             end
 
-            -- Retransmissions count even when the helper locked this strategy:
-            -- a frozen flow keeps retransmitting unacked data while the
-            -- helper keeps saying OK (headers fly, body dead). Silent count
-            -- here: no RST on a helper-blessed strategy, the shared fails
-            -- counter plus the helper recheck (via ERR) decide.
-            if host_name and desync.outgoing and is_retransmission(desync) and _G.zapret_ipc[host_name] == true then
-                auto_fail_helper_strategy(name, host_name)
-
-                if auto_check_fails(hrec, arg) then
-                    auto_do_switch(hrec, auto_strategy_success_list(false), "RETRANSMIT", host_or_ip, dport, true)
-                    -- Same-episode guard, see THROTTLE above.
-                    hrec.helper_fails = nil
-                    if host_name and _G.helper_check then
-                        _G.helper_check[host_name] = true
-                    end
-                end
-
-                return auto_strategy_plan(desync, hrec, verdict)
-            end
-
-            -- Helper says the host works: pass with the current strategy.
-            -- Retransmissions are handled above, so they are never ignored
-            -- on a locked strategy; anything else passes straight through.
-            if host_name and _G.zapret_ipc[host_name] == true then
-                verdict = auto_strategy_plan(desync, hrec, verdict)
-
-                send_signal("VALID", host_name, name, 10000)
-
-                if hrec.nstrategy ~= 0 and auto_check_valid_strategy(hrec, auto_strategy_success_list(false)) then
-                    hrec.strategy_success_fail = false
-
-                    table.insert(auto_strategy_success_list(false), hrec.nstrategy)
-                end
-
-                -- NOTE: hrec.fails is intentionally NOT reset here. A fresh
-                -- helper OK clears helper_fails (its own counter), but local
-                -- packet evidence must survive across interleaved healthy
-                -- packets or retrans counts could never reach the threshold.
-                -- Staleness is bounded by the time window in auto_check_fails.
-                hrec.helper_fails = nil;
-
-                return verdict
-            end
-
-            -- Local error evidence. ERR spam to port 10000 is by design;
-            -- the helper dedups it. Switching here uses only the local
-            -- fails counter, so traffic volume alone cannot force a switch
-            -- while we wait for the helper verdict.
+            -- Local error evidence. Every failure asks the helper for a fresh
+            -- CHECK (pump) when the host is known, so new packets keep the
+            -- counter filling without user traffic; switching uses only the
+            -- local fails counter (ERR spam to port 10000 is deduped by the
+            -- helper). Retransmission: a frozen flow keeps retransmitting
+            -- unacked data.
             if desync.outgoing and is_retransmission(desync) then
                 auto_reset_connection(desync, arg, name, host_or_ip, dport)
-                auto_fail_helper_strategy(name, host_name)
+                auto_request_check(host_name)
 
                 if auto_check_fails(hrec, arg) then
+                    auto_fail_helper_strategy(name, host_name)
                     auto_do_switch(hrec, auto_strategy_success_list(false), "is_retransmission", host_or_ip, dport, true)
                 end
 
                 return auto_strategy_plan(desync, hrec, verdict)
             end
 
-            -- No hostname: pure IP, the helper cannot check it.
-            -- Packet-level zapret logic only, helper is not involved.
-            if not host_name then
-                local seq = pos_get(desync, 's')
-                if bitand(desync.dis.tcp.th_flags, TH_RST) ~= 0 and seq >= 1 and seq <= 8192 then
-                    auto_reset_connection(desync, arg, name, host_or_ip, dport)
+            -- RST early in the handshake (seq 1..8192) — DPI cut the
+            -- connection. Runs for host and pure IP alike.
+            local seq = pos_get(desync, 's')
+            if bitand(desync.dis.tcp.th_flags, TH_RST) ~= 0 and seq >= 1 and seq <= 8192 then
+                auto_reset_connection(desync, arg, name, host_or_ip, dport)
+                auto_request_check(host_name)
+                auto_fail_helper_strategy(name, host_name)
 
-                    if auto_check_fails(hrec, arg) then
-                        auto_do_switch(hrec, auto_strategy_success_list(false), "RST", host_or_ip, dport, true)
-                    end
-
-                    return auto_strategy_plan(desync, hrec, verdict)
+                if auto_check_fails(hrec, arg) then
+                    auto_do_switch(hrec, auto_strategy_success_list(false), "RST", host_or_ip, dport, true)
                 end
 
-                local payload = desync.reasm_data or desync.dis.payload
-                local plen = payload and #payload or 0
-                if plen >= 16000 then
-                    auto_reset_connection(desync, arg, name, host_or_ip, dport)
+                return auto_strategy_plan(desync, hrec, verdict)
+            end
 
-                    if auto_check_fails(hrec, arg) then
-                        auto_do_switch(hrec, auto_strategy_success_list(false), "DPI16KB", host_or_ip, dport, true)
-                    end
+            -- Large downstream burst (DPI16KB) — classic DPI payload cut.
+            local payload = desync.reasm_data or desync.dis.payload
+            local plen = payload and #payload or 0
+            if plen >= 16000 then
+                auto_reset_connection(desync, arg, name, host_or_ip, dport)
+                auto_request_check(host_name)
+                auto_fail_helper_strategy(name, host_name)
 
-                    return auto_strategy_plan(desync, hrec, verdict)
+                if auto_check_fails(hrec, arg) then
+                    auto_do_switch(hrec, auto_strategy_success_list(false), "DPI16KB", host_or_ip, dport, true)
                 end
 
-                if desync.l7payload == "http_reply" and desync.track and desync.track.hostname then
-                    local hdis = http_dissect_reply(desync.dis.payload)
-                    if hdis and (hdis.code == 302 or hdis.code == 307) then
-                        local idx_loc = array_field_search(hdis.headers, "header_low", "location")
-                        if idx_loc and is_dpi_redirect(desync.track.hostname, hdis.headers[idx_loc].value) then
-                            auto_reset_connection(desync, arg, name, host_or_ip, dport)
+                return auto_strategy_plan(desync, hrec, verdict)
+            end
 
-                            if auto_check_fails(hrec, arg) then
-                                auto_do_switch(hrec, auto_strategy_success_list(false), "DPI_redirect", host_or_ip, dport, true)
-                            end
+            -- DPI redirect: the reply points at a foreign host. Runs for every
+            -- connection whose request carried a hostname.
+            if desync.l7payload == "http_reply" and desync.track and desync.track.hostname then
+                local hdis = http_dissect_reply(desync.dis.payload)
+                if hdis and (hdis.code == 302 or hdis.code == 307) then
+                    local idx_loc = array_field_search(hdis.headers, "header_low", "location")
+                    if idx_loc and is_dpi_redirect(desync.track.hostname, hdis.headers[idx_loc].value) then
+                        auto_reset_connection(desync, arg, name, host_or_ip, dport)
+                        auto_request_check(host_name)
+                        auto_fail_helper_strategy(name, host_name)
 
-                            return auto_strategy_plan(desync, hrec, verdict)
+                        if auto_check_fails(hrec, arg) then
+                            auto_do_switch(hrec, auto_strategy_success_list(false), "DPI_redirect", host_or_ip, dport,
+                                true)
                         end
+
+                        return auto_strategy_plan(desync, hrec, verdict)
                     end
                 end
             end
 
-            -- Helper verdict consumption (edge-triggered, not level):
-            -- zcheck sets helper_check=false on every fresh OK/FAIL, we set
-            -- it to true once the FAIL is counted. Repeated packets with the
-            -- same hanging FAIL never switch, no matter how many arrive.
-            -- A single transient FAIL is filtered by helper_fails (default 2).
-            if host_name then
-                if _G.zapret_ipc[host_name] == false then
-                    if _G.helper_check[host_name] == false then
-                        _G.helper_check[host_name] = true
+            -- Throttle verdict last: a healthy window is the positive verdict.
+            -- Thin but alive downstream while the connection stands: arm the
+            -- silence watchdog (if packets stop entirely only the timer can
+            -- react), pump a CHECK, count the evidence. A healthy window
+            -- confirms the strategy and sends VALID to the helper.
+            local rate = auto_throttle_rate(crec, arg, now)
+            local window = tonumber(arg.throttle_window) or 8
+            local watch = auto_throttle_watch_name(askey, host_name or host_or_ip, dport)
+            if rate then
+                if rate < (tonumber(arg.throttle_min_bps) or 500) then
+                    -- Re-arming replaces the previous timer. pcall: a timer
+                    -- failure must never break the packet path.
+                    pcall(timer_set, watch, "auto_throttle_watchdog", 2 * window * 1000, true, {
+                        hrec = hrec,
+                        host_name = host_name,
+                        peer = host_or_ip,
+                        dport = dport,
+                        window = window,
+                        arg = arg
+                    })
+                    auto_reset_connection(desync, arg, name, host_or_ip, dport)
+                    auto_request_check(host_name)
+                    auto_fail_helper_strategy(name, host_name)
 
-                        if auto_check_helper_fails(hrec, arg) then
-                            auto_do_switch(hrec, auto_strategy_success_list(false), "HELPER FAIL", host_or_ip, dport, true)
-                            -- Symmetric: a helper-driven switch consumes the
-                            -- local evidence of the abandoned episode; fresh
-                            -- retransmissions re-accumulate from zero.
-                            hrec.fails = nil
-                        end
+                    if auto_check_fails(hrec, arg) then
+                        auto_do_switch(hrec, auto_strategy_success_list(false), "THROTTLE", host_or_ip, dport, true)
                     end
 
                     return auto_strategy_plan(desync, hrec, verdict)
-                else
-                    send_signal("VALID", host_name, name, 10000)
                 end
+
+                -- Healthy window: flow recovered, drop the watchdog and
+                -- confirm the current strategy from packet evidence.
+                pcall(timer_del, watch)
+
+                if hrec.nstrategy ~= 0 and auto_check_valid_strategy(hrec, auto_strategy_success_list(false)) then
+                    hrec.strategy_success_fail = false
+
+                    table.insert(auto_strategy_success_list(false), hrec.nstrategy)
+                end
+            end
+
+            -- Confirm once per connection: the server answered and the
+            -- failure branches above did not fire. Repeated packets must not
+            -- spam VALID/CONFIRMED for the whole life of the connection.
+            if host_name and crec.server_responded and not crec.valid_sent then
+                crec.valid_sent = true
+                send_signal("VALID", host_name, name, 10000)
+                ULOG("OK", "zapret:auto_strategy: CONFIRMED TCP " .. name .. "->" .. host_or_ip .. ":" .. dport)
             end
         end
 
@@ -713,8 +657,7 @@ function auto_strategy(ctx, desync)
                 if not crec.udp_success then
                     crec.udp_success = true
 
-                    ULOG("OK", "zapret:auto_strategy: CONFIRMED UDP " .. name .. "->" .. host_or_ip ..
-                        ":" .. dport)
+                    ULOG("OK", "zapret:auto_strategy: CONFIRMED UDP " .. name .. "->" .. host_or_ip .. ":" .. dport)
 
                     local list = auto_strategy_success_list(true)
                     if hrec.nstrategy ~= 0 and auto_check_valid_strategy(hrec, list) then
@@ -736,8 +679,9 @@ function auto_strategy(ctx, desync)
             if desync.outgoing and pos_client >= arg.udp_out and (pos_client - judged_client) >= arg.udp_out then
                 crec.udp_judged_client = pos_client
 
-                ULOG("WARNING", "zapret:auto_strategy: FAIL UDP " .. name .. "->" .. host_or_ip ..
-                    ":" .. dport .. " out=" .. pos_client .. " in=" .. pos_server)
+                ULOG("WARNING",
+                    "zapret:auto_strategy: FAIL UDP " .. name .. "->" .. host_or_ip .. ":" .. dport .. " out=" ..
+                        pos_client .. " in=" .. pos_server)
 
                 if crec.udp_success then
                     crec.udp_success = nil
@@ -759,17 +703,24 @@ end
 function args_defaults(arg)
     return {
         fails = tonumber(arg.fails) or 3,
-        helper_fails = tonumber(arg.helper_fails) or 2,
         maxseq = tonumber(arg.maxseq) or 32768,
         udp_in = tonumber(arg.udp_in) or 1,
         udp_out = tonumber(arg.udp_out) or 4,
         throttle_window = tonumber(arg.throttle_window) or 8,
         throttle_min_bps = tonumber(arg.throttle_min_bps) or 500,
         reset = arg.reset ~= nil or false,
-        time = arg.time or 300,
-        helper_time = arg.helper_time or arg.time or 300
+        time = arg.time or 300
     }
 end
 
+-- Heartbeat to the helper: "zapret is running". The helper stays dormant
+-- (no worker pool, no probes, no snapshots) until the first beat, so it can
+-- never probe a host through a strategy that is not filtering yet. Beats
+-- repeat while winws2 lives; the helper suspends host work after a minute of
+-- silence. Timers run only inside the packet loop, i.e. after interception
+-- is armed, so the first beat is an honest readiness signal.
+function auto_ready_beat(name, data)
+    send_signal("READY", "zapret", nil, 10000)
+end
 
-
+timer_set("auto_ready_beat", "auto_ready_beat", 5000, false, {})

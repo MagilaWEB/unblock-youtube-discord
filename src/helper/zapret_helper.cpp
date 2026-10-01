@@ -39,10 +39,6 @@ HelperConfig ZapretHelper::currentConfig() const
 	cfg.recheck_interval_min = static_cast<u32>(_recheck_interval.count());
 	cfg.errors_progress_min	 = static_cast<u32>(_errors_progress_interval.count());
 	cfg.errors_recheck_sec	 = static_cast<u32>(_errors_recheck_interval.count());
-	// Curl timeouts live in CurlClient; the merge base keeps current values
-	// for keys the CONFIG: payload does not carry. Read them back is not
-	// possible, so keep configured copies here is overkill: parsePayload()
-	// merges over defaults, then applyConfig() overwrites everything.
 	return cfg;
 }
 
@@ -55,8 +51,6 @@ void ZapretHelper::applyConfig(const HelperConfig& cfg)
 	_recheck_interval		  = std::chrono::minutes{ norm.recheck_interval_min };
 	_errors_progress_interval = std::chrono::minutes{ norm.errors_progress_min };
 	_errors_recheck_interval  = std::chrono::seconds{ norm.errors_recheck_sec };
-
-	CurlClient::configure(norm.check_timeout_sec, norm.connect_timeout_sec, norm.max_redirects);
 
 	if (!_pool.empty() && _pool.size() != _pool_size)
 	{
@@ -138,16 +132,6 @@ std::string ZapretHelper::_makeStatsSignal(size_t queued, size_t in_check, size_
 	return std::format("LATEST:helper_stats:{}|{}|{}", queued, in_check, known);
 }
 
-std::string ZapretHelper::_makeOk(std::string_view host)
-{
-	return std::format("OK:{}", host);
-}
-
-std::string ZapretHelper::_makeFail(std::string_view host)
-{
-	return std::format("FAIL:{}", host);
-}
-
 void ZapretHelper::_addHost(std::string_view host)
 {
 	if (!_isValidHost(host))
@@ -177,8 +161,29 @@ void ZapretHelper::_handleMessage(std::string_view message)
 	{
 		std::lock_guard lock(_mutex);
 		const auto		rest = message.substr(6);
-		_addHost(splitOnce(rest, ':').first);
+		const auto		host = splitOnce(rest, ':').first;
+		// Do not re-enqueue a host already being checked: the pump must not
+		// drive duplicates.
+		if (!_in_check.contains(std::string{ host }))
+			_addHost(host);
 		_cv.notify_one();	 // single host: one worker is enough
+	}
+	else if (message.starts_with("READY:"))
+	{
+		// Zapret heartbeat. The first beat wakes the dormant helper: workers
+		// are spawned here, so no probe can race the strategy's startup.
+		// Later beats only refresh the liveness stamp.
+		_last_ready = std::chrono::steady_clock::now();
+		if (!_zapret_ready.exchange(true))
+		{
+			if (!_workers_started)
+			{
+				std::lock_guard lock(_mutex);
+				_workers_started = true;
+				_startWorkers(_pool_size);
+			}
+			_log("zapret ready: helper awake");
+		}
 	}
 	else if (message.starts_with("VALID:"))
 	{
@@ -193,6 +198,9 @@ void ZapretHelper::_handleMessage(std::string_view message)
 			// Packet-level recovery: lua confirms a working strategy, so a
 			// stale fully-tried mark must go.
 			_exhausted_hosts.erase(host);
+			// A verdict exists now: drop the unjudged/probe marks.
+			_unjudged_hosts.erase(host);
+			_probed_at.erase(host);
 
 			if (!_known_hosts.contains(host))
 				_known_hosts.insert(host);
@@ -204,6 +212,13 @@ void ZapretHelper::_handleMessage(std::string_view message)
 		const auto		rest		= message.substr(4);
 		const auto [host_sv, strat] = splitOnce(rest, ':');
 		const auto host				= std::string{ host_sv };
+		// Any ERR is a verdict: drop the unjudged/probe marks even when the
+		// host is already terminal (exhausted).
+		if (_isValidHost(host))
+		{
+			_unjudged_hosts.erase(host);
+			_probed_at.erase(host);
+		}
 		// A fully-tried host stays terminal until VALID; a later packet-level
 		// ERR must not drag it back into the error bucket (that refusal is
 		// what let autopick never settle).
@@ -260,6 +275,9 @@ void ZapretHelper::_handleMessage(std::string_view message)
 			// lives in exactly one terminal bucket and is rechecked on the
 			// stale-error interval instead of the aggressive error loop.
 			_error_hosts.erase(host);
+			// A verdict exists now: drop the unjudged/probe marks.
+			_unjudged_hosts.erase(host);
+			_probed_at.erase(host);
 
 			if (!_known_hosts.contains(host))
 				_known_hosts.insert(host);
@@ -287,14 +305,20 @@ void ZapretHelper::_checkHost(std::string_view host)
 	const auto result = voice ? CurlClient::checkVoiceHost(std::string{ host }) : CurlClient::checkHost(std::string{ host });
 	_send(_makeDoneSignal(host), c_ipc_port);
 
+	// Stamp the probe. If lua never delivers a verdict for this host, the
+	// stale stamp promotes it into the unjudged bucket in _refreshUnjudged.
+	{
+		std::lock_guard lock(_mutex);
+		_probed_at[std::string{ host }] = std::chrono::steady_clock::now();
+	}
+
 	if (result)
 	{
 		// Recovery is confirmed by lua's VALID, not by the probe itself: the
 		// fully-tried mark is cleared only when the host lands in the valid
-		// list, so the dead set stays terminal until then. The OK still goes
-		// to lua, which raises that VALID on the next confirmation.
+		// list, so the dead set stays terminal until then. The probe only
+		// pumps traffic; lua raises that VALID on the next confirmation.
 		_log(std::format("ok {} http={}", host, result.value()));
-		_send(_makeOk(host), c_receive_port);
 	}
 	else
 	{
@@ -336,7 +360,6 @@ void ZapretHelper::_checkHost(std::string_view host)
 		{
 			_log(std::format("fail {} curl={}", host, result.error()));
 		}
-		_send(_makeFail(host), c_receive_port);
 	}
 }
 
@@ -439,6 +462,53 @@ void ZapretHelper::_stopPool()
 	_stopWorkers();
 }
 
+void ZapretHelper::_checkZapretLiveness()
+{
+	if (!_zapret_ready.load())
+		return;
+
+	if (std::chrono::steady_clock::now() - _last_ready <= c_zapret_timeout)
+		return;
+
+	// Zapret went quiet: stop feeding the queue. Workers stay alive and idle
+	// (a join here could block the loop for a whole probe), so the next READY
+	// simply resumes work.
+	_zapret_ready = false;
+	{
+		std::lock_guard lock(_mutex);
+		_queue.clear();
+	}
+	_log("zapret heartbeat lost: host work suspended");
+}
+
+void ZapretHelper::_refreshUnjudged()
+{
+	// Caller holds _mutex. A probe that finished but never got a lua verdict
+	// (no VALID/ERR/EXHAUSTED) is promoted into the unjudged bucket once the
+	// stale-error interval passed. Sticky: it is only removed by a verdict.
+	const auto now = std::chrono::steady_clock::now();
+	for (const auto& [host, probed] : _probed_at)
+	{
+		if (_valid_hosts.contains(host) || _error_hosts.contains(host) || _exhausted_hosts.contains(host))
+			continue;
+
+		if (_unjudged_hosts.contains(host))
+			continue;
+
+		if (_queue.contains(host) || _in_check.contains(host))
+			continue;
+
+		if ((now - probed) < _errors_recheck_interval)
+			continue;
+
+		ErrorInfo info;
+		info.first	  = now;
+		info.last	  = now;
+		info.strategy = "no-verdict";
+		_unjudged_hosts.emplace(host, std::move(info));
+	}
+}
+
 void ZapretHelper::_idleStep()
 {
 	const auto now = std::chrono::steady_clock::now();
@@ -446,7 +516,7 @@ void ZapretHelper::_idleStep()
 	bool					 grew		   = false;
 	bool					 send_snapshot = false;
 	std::vector<std::string> seen;
-	std::vector<std::string> valid_lines, error_lines, exhausted_lines;
+	std::vector<std::string> valid_lines, error_lines, exhausted_lines, unjudged_lines;
 	size_t					 stat_queued = 0, stat_in_check = 0, stat_known = 0;
 	{
 		std::lock_guard lock(_mutex);
@@ -463,6 +533,8 @@ void ZapretHelper::_idleStep()
 			_last_recheck = now;
 		}
 
+		_refreshUnjudged();
+
 		// Throttled broadcast: snapshot under lock, send after unlock.
 		// The receiver keeps the last list, no need to resend the full
 		// set every 100ms loop iteration.
@@ -474,6 +546,8 @@ void ZapretHelper::_idleStep()
 			error_lines		= _error_hosts | std::views::transform([](const auto& kv) { return kv.first + "=" + kv.second.strategy; })
 							| std::ranges::to<std::vector<std::string>>();
 			exhausted_lines = _exhausted_hosts | std::views::transform([](const auto& kv) { return kv.first + "=" + kv.second.strategy; })
+							| std::ranges::to<std::vector<std::string>>();
+			unjudged_lines	= _unjudged_hosts | std::views::transform([](const auto& kv) { return kv.first + "=" + kv.second.strategy; })
 							| std::ranges::to<std::vector<std::string>>();
 			stat_queued		= _queue.size();
 			stat_in_check	= _in_check.size();
@@ -519,6 +593,22 @@ void ZapretHelper::_idleStep()
 				grew = true;
 			}
 		}
+
+		// Unjudged hosts are re-probed on the same slow cadence: a new probe
+		// may finally produce a verdict, and the mark is dropped by that
+		// verdict (VALID/ERR/EXHAUSTED), never by the recheck itself.
+		for (auto& [host, info] : _unjudged_hosts)
+		{
+			if (_queue.contains(host) || _in_check.contains(host))
+				continue;
+
+			if ((now - info.last) > _errors_recheck_interval)
+			{
+				info.last = now;
+				_queue.insert(host);
+				grew = true;
+			}
+		}
 	}
 
 	auto join_lines = [](const std::vector<std::string>& lines)
@@ -545,6 +635,7 @@ void ZapretHelper::_idleStep()
 		_sendSnapshot("helper_valid", join_lines(valid_lines));
 		_sendSnapshot("helper_error", join_lines(error_lines));
 		_sendSnapshot("helper_exhausted", join_lines(exhausted_lines));
+		_sendSnapshot("helper_unjudged", join_lines(unjudged_lines));
 	}
 
 	// Wake workers only when new work actually arrived. An unconditional
@@ -574,7 +665,10 @@ int ZapretHelper::run()
 
 	while (_running)
 	{
-		_idleStep();
+		_checkZapretLiveness();
+
+		if (_zapret_ready.load())
+			_idleStep();
 
 		sockaddr_in from{};
 		const int	n = _socket.recvFrom(_buffer.data(), static_cast<int>(_buffer.size()) - 1, from);

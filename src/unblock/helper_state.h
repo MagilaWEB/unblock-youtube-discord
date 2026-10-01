@@ -129,6 +129,7 @@ class HelperState final
 public:
 	std::vector<std::string>						 checkingHosts();
 	std::vector<std::string>						 seenHosts();
+	std::vector<std::string>						 unjudgedHosts();
 	std::vector<std::pair<std::string, std::string>> errorHosts();
 	std::vector<std::pair<std::string, std::string>> validHosts();
 	/** Fully-tried hosts: every strategy failed, nothing left to attempt. */
@@ -161,6 +162,7 @@ private:
 	// host lives in exactly one of them (seen stays out of the sync).
 	HelperCheckingTracker						 _checking;
 	std::unordered_set<std::string>				 _seen;
+	std::unordered_set<std::string>				 _unjudged;
 	std::unordered_map<std::string, std::string> _errors;
 	std::unordered_map<std::string, std::string> _valid;
 	std::unordered_map<std::string, std::string> _exhausted;

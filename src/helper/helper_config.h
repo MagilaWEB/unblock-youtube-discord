@@ -22,9 +22,6 @@
 struct HelperConfig
 {
 	u32 pool_size{ 20 };			   // worker threads, 1..64
-	u32 check_timeout_sec{ 6 };		   // curl overall timeout, 1..60
-	u32 connect_timeout_sec{ 5 };	   // curl connect timeout, 1..30
-	u32 max_redirects{ 5 };			   // curl follow redirects, 0..10
 	u32 recheck_interval_min{ 30 };	   // full recheck of known hosts, 5..180
 	u32 errors_progress_min{ 3 };	   // aggressive recheck phase after first error, 1..30
 	u32 errors_recheck_sec{ 30 };	   // stale-error recheck interval, 5..300

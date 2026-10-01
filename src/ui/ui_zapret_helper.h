@@ -30,14 +30,15 @@ class UiZapretHelper
 	UL_LIST(_list_helper_exhausted);
 	std::vector<std::pair<std::string, std::string>> _last_helper_exhausted;
 
+	// Hosts the helper tried, but Lua never judged (no valid/error/exhausted)
+	UL_LIST(_list_helper_unjudged);
+	std::vector<std::string> _last_helper_unjudged;
+
 	// Helper runtime settings ([HELPER] section). The on-disk file is stale
 	// while unblock runs, so Apply writes userConfig (memory) + pushes UDP
 	// CONFIG: to the running helper + stores the message in Unblock for the
 	// next startService() push.
 	INPUT(_helper_pool);
-	INPUT(_helper_check_timeout);
-	INPUT(_helper_connect_timeout);
-	INPUT(_helper_max_redirects);
 	INPUT(_helper_recheck_min);
 	INPUT(_helper_errors_progress_min);
 	INPUT(_helper_errors_recheck_sec);
@@ -73,6 +74,7 @@ public:
 	void updateValid();
 	void updateError();
 	void updateExhausted();
+	void updateUnjudged();
 
 private:
 	std::string _sel(std::string_view tail) const { return _root + std::string{ tail }; }
@@ -82,6 +84,7 @@ private:
 	void _initHelperValid();
 	void _initHelperError();
 	void _initHelperExhausted();
+	void _initHelperUnjudged();
 
 	void _initHelperSettings();
 	void _applyHelperSettings();

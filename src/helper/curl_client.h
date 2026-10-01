@@ -35,14 +35,10 @@ public:
 class CurlClient
 {
 public:
-	/** Apply runtime timeouts (from HelperConfig / UDP CONFIG:). Values are clamped. */
-	static void configure(u32 check_timeout_sec, u32 connect_timeout_sec, u32 max_redirects);
-
 	/**
-	 * Check host availability. HEAD first (cheap alive test), then a ranged
-	 * GET of the first kilobyte with a low-speed guard: OK requires the
-	 * body to actually flow, so throttling-after-handshake counts as FAIL.
-	 * Falls back to plain GET when HEAD itself fails.
+	 * Check host availability with a plain GET of https://<host>. The body
+	 * is read through the write callback and discarded: the request must
+	 * actually flow, so a throttled or dead path fails.
 	 * @return HTTP response code, or curl error code on failure.
 	 */
 	static std::expected<long, int> checkHost(const std::string& host);
@@ -67,8 +63,8 @@ public:
 	static std::expected<long, int> checkVoiceHost(const std::string& host);
 
 private:
-	/** Perform a single request (head or get). */
-	static std::expected<long, int> _fetch(const std::string& url, bool head);
+	/** Perform a single GET request. */
+	static std::expected<long, int> _fetch(const std::string& url);
 	/** Response body sink (discarded, not stored). */
 	static size_t					_writeCallback(char*, size_t size, size_t count, void*);
 	/** Request headers close to a browser's. */

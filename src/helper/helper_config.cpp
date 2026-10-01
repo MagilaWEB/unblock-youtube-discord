@@ -40,12 +40,6 @@ namespace
 	{
 		if (key == "pool_size")
 			cfg.pool_size = parseClamped(value, cfg.pool_size, 1, 64);
-		else if (key == "check_timeout_sec" || key == "check_timeout")
-			cfg.check_timeout_sec = parseClamped(value, cfg.check_timeout_sec, 1, 60);
-		else if (key == "connect_timeout_sec" || key == "connect_timeout")
-			cfg.connect_timeout_sec = parseClamped(value, cfg.connect_timeout_sec, 1, 30);
-		else if (key == "max_redirects")
-			cfg.max_redirects = parseClamped(value, cfg.max_redirects, 0, 10);
 		else if (key == "recheck_interval_min" || key == "recheck_min")
 			cfg.recheck_interval_min = parseClamped(value, cfg.recheck_interval_min, 5, 180);
 		else if (key == "errors_progress_min" || key == "errors_progress_recheck_min")
@@ -91,9 +85,6 @@ namespace
 void HelperConfig::normalize()
 {
 	pool_size			 = std::clamp(pool_size, 1u, 64u);
-	check_timeout_sec	 = std::clamp(check_timeout_sec, 1u, 60u);
-	connect_timeout_sec	 = std::clamp(connect_timeout_sec, 1u, 30u);
-	max_redirects		 = std::clamp(max_redirects, 0u, 10u);
 	recheck_interval_min = std::clamp(recheck_interval_min, 5u, 180u);
 	errors_progress_min	 = std::clamp(errors_progress_min, 1u, 30u);
 	errors_recheck_sec	 = std::clamp(errors_recheck_sec, 5u, 300u);
@@ -169,12 +160,8 @@ std::string HelperConfig::makeMessage() const
 	snprintf(
 		buf,
 		sizeof(buf),
-		"CONFIG:pool_size=%u;check_timeout_sec=%u;connect_timeout_sec=%u;max_redirects=%u;recheck_interval_min=%u;errors_progress_min=%u;errors_"
-		"recheck_sec=%u",
+		"CONFIG:pool_size=%u;recheck_interval_min=%u;errors_progress_min=%u;errors_recheck_sec=%u",
 		pool_size,
-		check_timeout_sec,
-		connect_timeout_sec,
-		max_redirects,
 		recheck_interval_min,
 		errors_progress_min,
 		errors_recheck_sec
