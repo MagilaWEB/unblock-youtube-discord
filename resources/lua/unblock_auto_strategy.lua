@@ -20,12 +20,21 @@
 --      или http_reply выставляет server_responded, и только тогда шлём VALID
 --      хелперу. Исходящий ClientHello не подтверждает (DPI пропускает запрос
 --      и режет ответ). Throttle-after-handshake: здоровое окно
---      (rate >= throttle_min_bps) подтверждает стратегию и кладёт её в
---      success-list. Тоньше порога — evidence в общий
+--      (rate >= throttle_min_bps) — признак восстановления. Тоньше порога —
+--      evidence в общий
 --      счётчик fails (THROTTLE), плюс взводится одноразовый watchdog-таймер:
 --      если пакеты встанут вообще (ни капель для вердикта, нечего
 --      ретранслировать — пакетный путь глух по построению), срабатывает
 --      таймер (THROTTLE-SILENCE). Здоровое окно снимает watchdog.
+--   3b. Рейтинг стратегий (в пределах прогона winws2): +1 к счётчику успехов
+--      стратегии, когда сервер реально ответил (гейт CONFIRMED для TCP,
+--      ответ сервера для UDP). При переключении кандидаты берутся в порядке:
+--      успешные (по числу успехов убыв., ничьи — по номеру), затем
+--      неотмеченные 1..N. Хост, который уже срабатывал (had_success),
+--      ротируется по успешным, но после c_success_cycles (2) полных кругов
+--      без успеха выходит в полный перебор (сначала неотмеченные), и если и
+--      там всё исчерпано — помечается EXHAUSTED. Счётчик кругов сбрасывается
+--      на успехе, как и счётчик fails.
 --   4. host_name неизвестен (чистый IP helper проверить не может): та же
 --      пакетная логика (RST, 16KB, redirect, retrans) по счётчику fails, но
 --      насос CHECK не шлётся.
@@ -41,14 +50,15 @@
 --      потоки (голос Discord, WireGuard) перебирают стратегии без
 --      переподключения.
 --   6. Все стратегии перебраны (exhausted) → прямой трафик + сигнал EXHAUSTED
---      хелперу (он владеет мёртвыми хостами и докладывает в unblock сам)
+--      хелперу (он владеет мёртвыми хостами и докладывает в unblock сам).
+--      Хосты с had_success доходят сюда только после c_success_cycles
+--      неудачных кругов по успешным и полного перебора.
 --   7. Таймеры — единственный источник выполнения без пакетов:
 --      timer_set/timer_del, колбэк по имени.
 --
--- Перебор: 1, 2, 3, 4, ..., N (последовательно)
+-- Перебор: успешные по рейтингу (число успехов убыв.), затем неотмеченные 1..N
 -- Параметры (через --lua-desync=auto_strategy:fails=4:...):
 --   fails=N        — локальных ошибок до переключения (по умолч. 3)
---   time=N         — время через которое произойдет сброс ошибок (по умолч. 300 сек)
 --   maxseq=N       — макс. seq для проверок (по умолч. 32768)
 --   throttle_window=N — окно замера скорости даунстрима в сек (по умолч. 8)
 --   throttle_min_bps=N — ниже этой скорости за окно — throttling (по умолч. 500)
@@ -162,21 +172,17 @@ function auto_strategy_name(rec)
     return "strategy_" .. rec.nstrategy
 end
 
--- Per-record fails counter queue. Each protocol keeps its own counter;
--- counting is reset when the previous failure is older than arg.time.
+-- Per-record fails counter. Each protocol keeps its own counter. The counter
+-- is not reset by time: it accumulates until it reaches the threshold (then
+-- it fires and clears) or until the host is confirmed working (VALID /
+-- CONFIRMED), which clears it in the success branches.
 function auto_check_fails(rec, arg)
     if arg.fails then
-        local now = os.time()
-        if rec.last_fail_time and now - rec.last_fail_time > (tonumber(arg.time) or 60) then
-            rec.fails = nil
-        end
-
         if not rec.fails then
             rec.fails = 0
         end
 
         rec.fails = rec.fails + 1
-        rec.last_fail_time = now
 
         if rec.fails >= arg.fails then
             rec.fails = nil
@@ -186,15 +192,59 @@ function auto_check_fails(rec, arg)
     return false
 end
 
--- true when rec.nstrategy is not in the confirmed success queue yet.
-function auto_check_valid_strategy(rec, success_list)
-    for _, nstrategy in ipairs(success_list or {}) do
-        if nstrategy == rec.nstrategy then
-            return false
+-- How many full passes a known-good host may make over the successful set
+-- (with no success) before it is allowed to fall back to strategies that
+-- never succeeded. Reset on every success, like the fails counter.
+local c_success_cycles = 2
+
+-- Ordered candidates for the host's next strategy. Successful strategies are
+-- ranked by success count (desc, ties by number asc); never-successful ones
+-- follow ascending. Only numbers present in THIS plan are considered
+-- (successes may come from another profile). Already-tried numbers (rec.tried)
+-- are skipped. A host that has succeeded before stays on the successful set
+-- (rec.had_success) until it burns c_success_cycles full passes with no
+-- success; then rec.full_enum makes it try the never-successful strategies
+-- first (the proven ones only as a last resort).
+function auto_strategy_candidates(rec, rating)
+    local proven  = {}
+    local unknown = {}
+    for n = 1, rec.ctstrategy do
+        if rec.strategy_set and rec.strategy_set[n] and not (rec.tried and rec.tried[n]) then
+            if (rating[n] or 0) > 0 then
+                proven[#proven + 1] = n
+            else
+                unknown[#unknown + 1] = n
+            end
         end
     end
 
-    return true
+    table.sort(proven, function(a, b)
+        if rating[a] ~= rating[b] then
+            return rating[a] > rating[b]
+        end
+        return a < b
+    end)
+
+    if rec.had_success and not rec.full_enum then
+        return proven
+    end
+
+    local first, second
+    if rec.full_enum then
+        first, second = unknown, proven
+    else
+        first, second = proven, unknown
+    end
+
+    local out = {}
+    for _, n in ipairs(first) do
+        out[#out + 1] = n
+    end
+    for _, n in ipairs(second) do
+        out[#out + 1] = n
+    end
+
+    return out
 end
 
 -- Rotate to the next strategy for the record of the current protocol.
@@ -203,62 +253,54 @@ end
 -- dead-host state and relays it to unblock; there is deliberately no
 -- direct signal to unblock. UDP never sends it: UDP exhaustion says
 -- nothing about TCP reachability of the host.
-function auto_do_switch(rec, success_list, reason, peer, dport, send_exhausted)
+function auto_do_switch(rec, rating, reason, peer, dport, send_exhausted)
     ULOG("WARNING",
         "zapret:auto_strategy: FAIL " .. auto_strategy_name(rec) .. " " .. reason .. "->" .. peer .. ":" .. dport)
 
-    if rec.strategy_success_fail then
-        if rec.nstrategy < rec.ctstrategy then
-            rec.nstrategy = rec.nstrategy + 1
+    if not rec.tried then
+        rec.tried = {}
+    end
+    if rec.nstrategy and rec.nstrategy ~= 0 then
+        rec.tried[rec.nstrategy] = true
+    end
 
-            -- climb stays inside this plan's numbers: a number above
-            -- ctstrategy belongs to another profile and executes nothing
-            while rec.nstrategy < rec.ctstrategy and not auto_check_valid_strategy(rec, success_list) do
-                rec.nstrategy = rec.nstrategy + 1
+    local candidates = auto_strategy_candidates(rec, rating)
+
+    if #candidates == 0 then
+        if rec.had_success and not rec.full_enum then
+            -- Known-good host: one full pass over the successful set done
+            -- with no success. After c_success_cycles such passes, stop
+            -- restricting to the successful set and try every strategy.
+            rec.success_cycles = (rec.success_cycles or 0) + 1
+            rec.tried = {}
+            if rec.success_cycles >= c_success_cycles then
+                rec.full_enum = true
             end
-        else
+            candidates = auto_strategy_candidates(rec, rating)
+        end
+
+        if #candidates == 0 then
+            -- Every strategy in the plan tried (full enumeration): the host
+            -- has no working strategy.
             if send_exhausted then
                 send_signal("EXHAUSTED", peer, auto_strategy_name(rec), 10000)
             end
             rec.nstrategy = 0
-            rec.sstrategy = 1
-            rec.strategy_success_fail = false
+            rec.tried = {}
+            rec.full_enum = nil
+            rec.success_cycles = nil
+            return
         end
-
-        return
     end
 
-    if not rec.sstrategy then
-        rec.sstrategy = 1
-    end
-
-    -- Apply only strategy numbers that exist in THIS plan's strategy set:
-    -- success entries were confirmed by possibly another profile (broad TLS
-    -- vs voice TCP), and applying a foreign number here would execute no
-    -- instances at all.
-    while rec.sstrategy <= #success_list do
-        local n = success_list[rec.sstrategy] or 0
-        if rec.strategy_set and rec.strategy_set[n] then
-            break
-        end
-        rec.sstrategy = rec.sstrategy + 1
-    end
-
-    local count_strategy_success = #success_list
-    if (count_strategy_success == 0) or (count_strategy_success < rec.sstrategy) then
-        rec.strategy_success_fail = true
-        rec.sstrategy = 1
-        rec.nstrategy = 1
-        return
-    end
-
-    rec.nstrategy = success_list[rec.sstrategy]
-    rec.sstrategy = rec.sstrategy + 1
+    rec.nstrategy = candidates[1]
 end
 
--- Per-protocol queue of strategies confirmed to work: TCP fills it from
--- healthy throttle windows, UDP from connections with a server reply.
-function auto_strategy_success_list(is_udp)
+-- Per-protocol rating of strategies: number -> success count. A success is
+-- counted when the server actually answers (the CONFIRMED gate for TCP, the
+-- server-reply branch for UDP), once per connection. In-run only: a winws2
+-- restart clears it.
+function auto_strategy_rating(is_udp)
     if is_udp then
         _G.udp_strategy_success = _G.udp_strategy_success or {}
         return _G.udp_strategy_success
@@ -406,8 +448,8 @@ function auto_throttle_watchdog(name, data)
 
     if auto_check_fails(hrec, data.arg or {}) then
         auto_fail_helper_strategy(strat_name, data.host_name)
-        auto_do_switch(hrec, auto_strategy_success_list(false), "THROTTLE-SILENCE", tostring(data.peer),
-            tostring(data.dport), true)
+        auto_do_switch(hrec, auto_strategy_rating(false), "THROTTLE-SILENCE", tostring(data.peer), tostring(data.dport),
+            true)
     end
 end
 
@@ -506,39 +548,39 @@ function auto_strategy(ctx, desync)
             -- out and kills the reply), so only an incoming handshake/HTTP
             -- reply may confirm the strategy.
             local from_server = (not desync.outgoing) and
-                (desync.l7payload == "tls_server_hello" or desync.l7payload == "http_reply")
+                                    (desync.l7payload == "tls_server_hello" or desync.l7payload == "http_reply")
             if from_server then
                 crec.server_responded = true
             end
 
-            -- Local error evidence. Every failure asks the helper for a fresh
-            -- CHECK (pump) when the host is known, so new packets keep the
-            -- counter filling without user traffic; switching uses only the
-            -- local fails counter (ERR spam to port 10000 is deduped by the
-            -- helper). Retransmission: a frozen flow keeps retransmitting
-            -- unacked data.
-            if desync.outgoing and is_retransmission(desync) then
+            -- Local error evidence. Retransmission: a frozen handshake keeps
+            -- retransmitting unacked data. Once the server has answered on
+            -- this connection, retransmissions are ordinary loss, not a DPI
+            -- block, so they must not fail the strategy.
+            if desync.outgoing and is_retransmission(desync) and not crec.server_responded then
                 auto_reset_connection(desync, arg, name, host_or_ip, dport)
                 auto_request_check(host_name)
 
                 if auto_check_fails(hrec, arg) then
                     auto_fail_helper_strategy(name, host_name)
-                    auto_do_switch(hrec, auto_strategy_success_list(false), "is_retransmission", host_or_ip, dport, true)
+                    auto_do_switch(hrec, auto_strategy_rating(false), "is_retransmission", host_or_ip, dport, true)
                 end
 
                 return auto_strategy_plan(desync, hrec, verdict)
             end
 
             -- RST early in the handshake (seq 1..8192) — DPI cut the
-            -- connection. Runs for host and pure IP alike.
+            -- connection. Only when the server never answered: a close RST
+            -- after a real response is normal, not a cut.
             local seq = pos_get(desync, 's')
-            if bitand(desync.dis.tcp.th_flags, TH_RST) ~= 0 and seq >= 1 and seq <= 8192 then
+            if bitand(desync.dis.tcp.th_flags, TH_RST) ~= 0 and seq >= 1 and seq <= 8192
+                and not crec.server_responded then
                 auto_reset_connection(desync, arg, name, host_or_ip, dport)
-                auto_request_check(host_name)
+                -- auto_request_check(host_name)
                 auto_fail_helper_strategy(name, host_name)
 
                 if auto_check_fails(hrec, arg) then
-                    auto_do_switch(hrec, auto_strategy_success_list(false), "RST", host_or_ip, dport, true)
+                    auto_do_switch(hrec, auto_strategy_rating(false), "RST", host_or_ip, dport, true)
                 end
 
                 return auto_strategy_plan(desync, hrec, verdict)
@@ -549,11 +591,11 @@ function auto_strategy(ctx, desync)
             local plen = payload and #payload or 0
             if plen >= 16000 then
                 auto_reset_connection(desync, arg, name, host_or_ip, dport)
-                auto_request_check(host_name)
+                -- auto_request_check(host_name)
                 auto_fail_helper_strategy(name, host_name)
 
                 if auto_check_fails(hrec, arg) then
-                    auto_do_switch(hrec, auto_strategy_success_list(false), "DPI16KB", host_or_ip, dport, true)
+                    auto_do_switch(hrec, auto_strategy_rating(false), "DPI16KB", host_or_ip, dport, true)
                 end
 
                 return auto_strategy_plan(desync, hrec, verdict)
@@ -567,12 +609,11 @@ function auto_strategy(ctx, desync)
                     local idx_loc = array_field_search(hdis.headers, "header_low", "location")
                     if idx_loc and is_dpi_redirect(desync.track.hostname, hdis.headers[idx_loc].value) then
                         auto_reset_connection(desync, arg, name, host_or_ip, dport)
-                        auto_request_check(host_name)
+                        -- auto_request_check(host_name)
                         auto_fail_helper_strategy(name, host_name)
 
                         if auto_check_fails(hrec, arg) then
-                            auto_do_switch(hrec, auto_strategy_success_list(false), "DPI_redirect", host_or_ip, dport,
-                                true)
+                            auto_do_switch(hrec, auto_strategy_rating(false), "DPI_redirect", host_or_ip, dport, true)
                         end
 
                         return auto_strategy_plan(desync, hrec, verdict)
@@ -601,11 +642,11 @@ function auto_strategy(ctx, desync)
                         arg = arg
                     })
                     auto_reset_connection(desync, arg, name, host_or_ip, dport)
-                    auto_request_check(host_name)
+                    -- auto_request_check(host_name)
                     auto_fail_helper_strategy(name, host_name)
 
                     if auto_check_fails(hrec, arg) then
-                        auto_do_switch(hrec, auto_strategy_success_list(false), "THROTTLE", host_or_ip, dport, true)
+                        auto_do_switch(hrec, auto_strategy_rating(false), "THROTTLE", host_or_ip, dport, true)
                     end
 
                     return auto_strategy_plan(desync, hrec, verdict)
@@ -615,20 +656,37 @@ function auto_strategy(ctx, desync)
                 -- confirm the current strategy from packet evidence.
                 pcall(timer_del, watch)
 
-                if hrec.nstrategy ~= 0 and auto_check_valid_strategy(hrec, auto_strategy_success_list(false)) then
-                    hrec.strategy_success_fail = false
-
-                    table.insert(auto_strategy_success_list(false), hrec.nstrategy)
-                end
+                -- The healthy window no longer feeds the rating: a success is
+                -- counted at the server-response gate below (once per
+                -- connection), so the rating reflects real answers rather
+                -- than a single healthy throughput window.
             end
 
             -- Confirm once per connection: the server answered and the
             -- failure branches above did not fire. Repeated packets must not
             -- spam VALID/CONFIRMED for the whole life of the connection.
-            if host_name and crec.server_responded and not crec.valid_sent then
-                crec.valid_sent = true
-                send_signal("VALID", host_name, name, 10000)
-                ULOG("OK", "zapret:auto_strategy: CONFIRMED TCP " .. name .. "->" .. host_or_ip .. ":" .. dport)
+            if host_name and crec.server_responded then
+                if not crec.valid_sent then
+                    crec.valid_sent = true
+                    send_signal("VALID", host_name, name, 10000)
+                    ULOG("OK", "zapret:auto_strategy: CONFIRMED TCP " .. name .. "->" .. host_or_ip .. ":" .. dport)
+
+                    -- Rating: the server answered through this strategy, so it
+                    -- counts as a success (once per connection). The host is now
+                    -- known-good and stays inside the successful set.
+                    if hrec.nstrategy ~= 0 then
+                        local rating = auto_strategy_rating(false)
+                        rating[hrec.nstrategy] = (rating[hrec.nstrategy] or 0) + 1
+                    end
+                    hrec.had_success = true
+                end
+
+                -- Working verdict: the failure episode is over, so both the
+                -- fails counter and the successful-cycle counter start from
+                -- zero next time (no time-based reset).
+                hrec.fails = nil
+                hrec.success_cycles = nil
+                hrec.full_enum = nil
             end
         end
 
@@ -659,14 +717,15 @@ function auto_strategy(ctx, desync)
 
                     ULOG("OK", "zapret:auto_strategy: CONFIRMED UDP " .. name .. "->" .. host_or_ip .. ":" .. dport)
 
-                    local list = auto_strategy_success_list(true)
-                    if hrec.nstrategy ~= 0 and auto_check_valid_strategy(hrec, list) then
-                        hrec.strategy_success_fail = false
-
-                        table.insert(list, hrec.nstrategy)
+                    if hrec.nstrategy ~= 0 then
+                        local rating = auto_strategy_rating(true)
+                        rating[hrec.nstrategy] = (rating[hrec.nstrategy] or 0) + 1
                     end
+                    hrec.had_success = true
 
                     hrec.fails = nil
+                    hrec.success_cycles = nil
+                    hrec.full_enum = nil
                 end
 
                 return auto_strategy_plan(desync, hrec, verdict)
@@ -688,7 +747,7 @@ function auto_strategy(ctx, desync)
                 end
 
                 if auto_check_fails(hrec, arg) then
-                    auto_do_switch(hrec, auto_strategy_success_list(true), "UDP", host_or_ip, dport, false)
+                    auto_do_switch(hrec, auto_strategy_rating(true), "UDP", host_or_ip, dport, false)
                 end
             end
 
@@ -708,8 +767,7 @@ function args_defaults(arg)
         udp_out = tonumber(arg.udp_out) or 4,
         throttle_window = tonumber(arg.throttle_window) or 8,
         throttle_min_bps = tonumber(arg.throttle_min_bps) or 500,
-        reset = arg.reset ~= nil or false,
-        time = arg.time or 300
+        reset = arg.reset ~= nil or false
     }
 end
 
