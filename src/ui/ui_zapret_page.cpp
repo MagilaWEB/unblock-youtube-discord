@@ -4,10 +4,35 @@
 #include "../unblock/unblock.h"
 #include "../unblock/auto_strategy_runner.h"
 #include "../core/input_console.h"
+#include "../core/timer.h"
 
 #include <chrono>
 #include <thread>
 #include <unordered_set>
+
+namespace
+{
+	std::string formatRate(float bps)
+	{
+		if (bps < 0.F)
+			bps = 0.F;
+
+		static constexpr const char* c_units[]{ "B/s", "KB/s", "MB/s", "GB/s" };
+		constexpr size_t			 c_units_count{ sizeof(c_units) / sizeof(c_units[0]) };
+
+		size_t unit{ 0 };
+		while (bps >= 1024.F && unit + 1 < c_units_count)
+		{
+			bps /= 1024.F;
+			++unit;
+		}
+
+		if (unit == 0)
+			return utils::format("{} {}", static_cast<int>(bps), c_units[unit]);
+
+		return utils::format("{:.1f} {}", bps, c_units[unit]);
+	}
+}	 // namespace
 
 UiZapretPage::UiZapretPage(std::shared_ptr<Ui> ui) : _ui(std::move(ui))
 {
@@ -585,20 +610,34 @@ void UiZapretPage::_updateStatus(std::optional<Technology> active)
 	if (!active.has_value())
 		_status_engine->setInactive(Localization::Str{ "str_status_engine_stopped" }());
 	else
-		_status_engine->setActive(utils::format(Localization::Str{ "str_status_engine_running" }(), _technologyName(active.value())));
+	{
+		const auto rate = _ui->_unblock->zapretRateBps();
+		_status_engine->setActive(utils::format(
+			Localization::Str{ "str_status_engine_running_rate" }(),
+			_technologyName(active.value()),
+			formatRate(rate.down),
+			formatRate(rate.up)
+		));
+	}
 }
 
 void UiZapretPage::updateState()
 {
 	const bool running = _ui->_unblock->isRun(_technology);
 	const auto active  = _ui->_unblock->runningTechnology();
-	if (running == _last_running && active == _last_active)
-		return;
 
-	_last_running = running;
-	_last_active  = active;
-	_buttonUpdate();
-	_updateStatus(active);
+	if (running != _last_running || active != _last_active)
+	{
+		_last_running = running;
+		_last_active  = active;
+		_buttonUpdate();
+		_updateStatus(active);
+	}
+
+	// Live throughput in the status line: the rate rides the IPC once a
+	// second, so refresh the text on that cadence while the engine runs.
+	if (running)
+		LIMIT_UPDATE(EngineRate, 1.F, { _updateStatus(active); });
 }
 
 bool UiZapretPage::_hasBypassTargets() const

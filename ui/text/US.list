@@ -426,6 +426,7 @@ str_select_engine_description=Zapret2 is the main engine with adaptive rotation 
 
 // Engine status line
 str_status_engine_running=▶ Running: {}
+str_status_engine_running_rate=▶ Running: {} · ↓ {} · ↑ {}
 str_status_engine_stopped=⏹ Engine stopped
 
 // Setting strategy version

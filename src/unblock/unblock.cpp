@@ -11,6 +11,7 @@
 #include <shellapi.h>
 #include <winreg.h>
 
+#include <charconv>
 #include <filesystem>
 #include <string>
 
@@ -259,6 +260,36 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperExhaustedHosts()
 HelperStats Unblock::helperStats()
 {
 	return _helper.stats();
+}
+
+namespace
+{
+	float parseRate(std::string_view text)
+	{
+		float	   value{};
+		const auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), value);
+		if (ec != std::errc{} || ptr != text.data() + text.size())
+			return 0.F;
+
+		return value;
+	}
+}	 // namespace
+
+ZapretRate Unblock::zapretRateBps()
+{
+	auto raw = IPCSignals::get().getLatest("zapret_rate");
+	if (!raw)
+		return {};
+
+	const auto sep = raw->find('|');
+	if (sep == std::string::npos)
+		return {};
+
+	const std::string_view text{ *raw };
+	ZapretRate			   out{};
+	out.down = parseRate(text.substr(0, sep));
+	out.up	 = parseRate(text.substr(sep + 1));
+	return out;
 }
 
 std::vector<std::string> Unblock::testHostNames()

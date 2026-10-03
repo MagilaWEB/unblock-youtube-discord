@@ -25,6 +25,13 @@ class Zapret2Engine;
 class DomainTesting;
 class DNSHost;
 
+/** Engine throughput split by direction, bytes/sec. */
+struct ZapretRate
+{
+	float down{ 0.F };
+	float up{ 0.F };
+};
+
 /** Passive autopick round (Zapret2): pure rules over helper verdict sets.
  *  No curl here — verdicts arrive from live traffic (helper probes every
  *  LIST host through the running desync, lua marks fully-tried hosts
@@ -182,6 +189,10 @@ public:
 
 	/** Last helper pool load snapshot (zeros when the helper is silent). */
 	HelperStats helperStats();
+
+	/** Last reported throughput of the traffic passing through the applied
+	 *  strategies, split by direction, bytes/sec (zeros when silent). */
+	ZapretRate zapretRateBps();
 
 	/** Bare hostnames of the current domain_test lists (what LIST: carries).
 	 *  Filtered to helper-verdictable names. */

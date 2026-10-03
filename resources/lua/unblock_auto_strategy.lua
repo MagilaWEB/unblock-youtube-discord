@@ -459,6 +459,18 @@ function auto_strategy(ctx, desync)
         return
     end
 
+    -- Live throughput of the traffic the applied strategies actually process,
+    -- split by direction: every packet auto_strategy sees is one a desync
+    -- profile handled. Raw per-packet payload (not reasm_data) so a
+    -- multi-segment message is not counted once per segment. auto_rate_beat
+    -- flushes both counters once a second.
+    local plen = #(desync.dis.payload or "")
+    if desync.outgoing then
+        _G.zapret_rate_up = (_G.zapret_rate_up or 0) + plen
+    else
+        _G.zapret_rate_down = (_G.zapret_rate_down or 0) + plen
+    end
+
     -- TCP and UDP run in different winws2 profiles with different strategy
     -- numbering, so the host record (and all queues) is per protocol.
     -- Profiles with different plans (e.g. broad TLS vs voice TCP) are further
@@ -782,3 +794,16 @@ function auto_ready_beat(name, data)
 end
 
 timer_set("auto_ready_beat", "auto_ready_beat", 5000, false, {})
+
+-- Throughput meter: auto_strategy sums the payload of every packet it sees
+-- (the desynced traffic), split into download/upload. This timer flushes both
+-- once a second as "zapret_rate" (download|upload bytes/s) over the IPC to
+-- unblock's UI, then resets the counters so the value is the last-second rate.
+function auto_rate_beat(name, data)
+    send_signal("LATEST", "zapret_rate", tostring(_G.zapret_rate_down or 0) .. "|" .. tostring(_G.zapret_rate_up or 0),
+        9999)
+    _G.zapret_rate_down = 0
+    _G.zapret_rate_up = 0
+end
+
+timer_set("auto_rate_beat", "auto_rate_beat", 1000, false, {})
