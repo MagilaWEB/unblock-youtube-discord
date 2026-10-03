@@ -10,6 +10,7 @@ UiZapretHelper::UiZapretHelper(std::shared_ptr<Ui> ui, std::string_view root) : 
 void UiZapretHelper::initialize()
 {
 	_initHelperSettings();
+	_initHelperSummary();
 	_initHelperChecking();
 	_initHelperSeen();
 	_initHelperValid();
@@ -40,10 +41,16 @@ void UiZapretHelper::setVisible(bool visible)
 	toggle(_list_helper_error);
 	toggle(_list_helper_exhausted);
 	toggle(_list_helper_unjudged);
+	toggle(_helper_summary);
 	toggle(_helper_pool);
 	toggle(_helper_recheck_min);
 	toggle(_helper_errors_progress_min);
 	toggle(_helper_errors_recheck_sec);
+}
+
+void UiZapretHelper::_initHelperSummary()
+{
+	_helper_summary->create(_sel(" .common"));
 }
 
 void UiZapretHelper::_initHelperChecking()
@@ -266,6 +273,25 @@ void UiZapretHelper::updateUnjudged()
 	_list_helper_unjudged->clear();
 	for (auto& host : hosts)
 		_list_helper_unjudged->createLi(Localization::Str{ host });
+}
+
+void UiZapretHelper::updateSummary()
+{
+	if (!_helper_summary->isCreate())
+		return;
+
+	// Effectiveness = share of judged hosts that work: valid / (valid + error
+	// + exhausted). unjudged is pending, so it is shown but not in the ratio.
+	LIMIT_UPDATE(HelperSummary, 1.F, {
+		const auto valid	 = _ui->_unblock->helperValidHosts().size();
+		const auto error	 = _ui->_unblock->helperErrorHosts().size();
+		const auto exhausted = _ui->_unblock->helperExhaustedHosts().size();
+		const auto unjudged	 = _ui->_unblock->helperUnjudgedHosts().size();
+		const auto judged	 = valid + error + exhausted;
+		const auto percent	 = judged != 0 ? static_cast<unsigned>((valid * 100 + judged / 2) / judged) : 0U;
+
+		_helper_summary->setText(utils::format(Localization::Str{ "str_zapret_helper_summary" }(), percent, valid, error, exhausted, unjudged));
+	})
 }
 
 u32 UiZapretHelper::_helperSettingU32(std::string_view key, u32 fallback) const

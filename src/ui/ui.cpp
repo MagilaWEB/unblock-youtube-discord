@@ -174,6 +174,7 @@ void Ui::update()
 	_ui_zapret_helper->updateError();
 	_ui_zapret_helper->updateExhausted();
 	_ui_zapret_helper->updateUnjudged();
+	_ui_zapret_helper->updateSummary();
 	_ui_zapret->updateState();
 	_ui_zapret->updateServices();
 	_ui_zapret_helper->setVisible(_ui_zapret->technology() == Technology::Zapret2);

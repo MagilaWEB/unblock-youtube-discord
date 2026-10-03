@@ -239,6 +239,7 @@ str_zapret_helper_valid_item={} - {}
 str_zapret_helper_exhausted_title=🪦 Hosts with no working strategy ({}):
 str_zapret_helper_exhausted_item={} - {}
 str_zapret_helper_unjudged_title=🦔 Hosts without a Zapret verdict ({}):
+str_zapret_helper_summary=Effectiveness: {}% · ✅ {} · ⚠️ {} · 🪦 {} · 🦔 {}
 
 // Helper runtime settings ([HELPER])
 str_helper_pool_title=🧵 Helper thread pool

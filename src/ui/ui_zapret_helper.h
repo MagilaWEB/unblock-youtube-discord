@@ -1,6 +1,7 @@
 #pragma once
 #include "ui_input.h"
 #include "ui_list_ul.h"
+#include "ui_text.h"
 
 class Ui;
 
@@ -33,6 +34,10 @@ class UiZapretHelper
 	// Hosts the helper tried, but Lua never judged (no valid/error/exhausted)
 	UL_LIST(_list_helper_unjudged);
 	std::vector<std::string> _last_helper_unjudged;
+
+	// Live effectiveness line at the bottom of the general settings block:
+	// valid / (valid+error+exhausted)
+	TEXT_LABEL(_helper_summary);
 
 	// Helper runtime settings ([HELPER] section). The on-disk file is stale
 	// while unblock runs, so Apply writes userConfig (memory) + pushes UDP
@@ -75,6 +80,7 @@ public:
 	void updateError();
 	void updateExhausted();
 	void updateUnjudged();
+	void updateSummary();
 
 private:
 	std::string _sel(std::string_view tail) const { return _root + std::string{ tail }; }
@@ -85,6 +91,7 @@ private:
 	void _initHelperError();
 	void _initHelperExhausted();
 	void _initHelperUnjudged();
+	void _initHelperSummary();
 
 	void _initHelperSettings();
 	void _applyHelperSettings();

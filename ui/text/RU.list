@@ -239,6 +239,7 @@ str_zapret_helper_valid_item={} - {}
 str_zapret_helper_exhausted_title=🪦 Хосты без рабочей стратегии ({}):
 str_zapret_helper_exhausted_item={} - {}
 str_zapret_helper_unjudged_title=🦔 Хосты без вердикта Zapret ({}):
+str_zapret_helper_summary=Эффективность: {}% · ✅ {} · ⚠️ {} · 🪦 {} · 🦔 {}
 
 // Настройки хелпера ([HELPER])
 str_helper_pool_title=🧵 Пул потоков хелпера

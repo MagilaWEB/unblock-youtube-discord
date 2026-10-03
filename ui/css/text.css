@@ -1,0 +1,46 @@
+.text_line {
+    display: none;
+    align-items: center;
+    width: 100%;
+    margin: 0 0 0.8em 0;
+    padding: 0.4vw 0.6vw;
+    border-radius: 6px;
+    background-color: rgba(32, 35, 50, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.text_line.show {
+    display: flex;
+}
+
+.text_line_value {
+    display: inline-block;
+    color: #e8e8e8;
+    font-size: 1.3vw;
+    text-shadow: 0 0 6px rgba(255, 255, 255, 0.25);
+}
+
+.text_line_flash_a,
+.text_line_flash_b {
+    animation: textLineFlash 0.6s ease;
+}
+
+@keyframes textLineFlash {
+    0% {
+        transform: scale(1);
+        color: #e8e8e8;
+        text-shadow: 0 0 6px rgba(255, 255, 255, 0.25);
+    }
+
+    35% {
+        transform: scale(1.06);
+        color: #8ff0b0;
+        text-shadow: 0 0 12px rgba(120, 255, 170, 0.85);
+    }
+
+    100% {
+        transform: scale(1);
+        color: #e8e8e8;
+        text-shadow: 0 0 6px rgba(255, 255, 255, 0.25);
+    }
+}
