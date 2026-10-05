@@ -21,10 +21,10 @@
  */
 struct HelperConfig
 {
-	u32 pool_size{ 20 };			   // worker threads, 1..64
-	u32 recheck_interval_min{ 30 };	   // full recheck of known hosts, 5..180
-	u32 errors_progress_min{ 3 };	   // aggressive recheck phase after first error, 1..30
-	u32 errors_recheck_sec{ 30 };	   // stale-error recheck interval, 5..300
+	u32 pool_size{ 10 };			   // worker threads, 1..64
+	u32 recheck_interval_min{ 10 };	   // full recheck of known hosts, 5..180
+	u32 errors_progress_min{ 2 };	   // aggressive recheck phase after first error, 1..30
+	u32 errors_recheck_sec{ 15 };	   // stale-error recheck interval, 5..300
 
 	/** Compiled-in defaults. */
 	static HelperConfig defaults() { return HelperConfig{}; }

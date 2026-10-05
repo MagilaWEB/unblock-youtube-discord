@@ -677,16 +677,16 @@ namespace
 TEST_CASE("HelperConfig defaults match legacy constexpr", "[helper][config]")
 {
 	const auto cfg = HelperConfig::defaults();
-	CHECK(cfg.pool_size == 20);
-	CHECK(cfg.recheck_interval_min == 30);
-	CHECK(cfg.errors_progress_min == 3);
-	CHECK(cfg.errors_recheck_sec == 30);
+	CHECK(cfg.pool_size == 10);
+	CHECK(cfg.recheck_interval_min == 10);
+	CHECK(cfg.errors_progress_min == 2);
+	CHECK(cfg.errors_recheck_sec == 15);
 }
 
 TEST_CASE("HelperConfig missing file -> defaults", "[helper][config]")
 {
 	const auto cfg = HelperConfig::loadFrom("Z:/no/such/dir/setting.config");
-	CHECK(cfg.pool_size == 20);
+	CHECK(cfg.pool_size == 10);
 }
 
 TEST_CASE("HelperConfig reads only [HELPER]", "[helper][config]")
@@ -733,7 +733,7 @@ TEST_CASE("HelperConfig CONFIG: payload round trip", "[helper][config]")
 TEST_CASE("CONFIG: message updates runtime without restart", "[helper][config]")
 {
 	ZapretHelperTest t;
-	CHECK(t.poolSize() == 20);
+	CHECK(t.poolSize() == 10);
 	t.handleMessage("CONFIG:pool_size=4;recheck_interval_min=45;errors_recheck_sec=60");
 	CHECK(t.poolSize() == 4);
 	// Pool is empty in tests (workers start on the first READY), so no thread churn.
