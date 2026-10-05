@@ -661,7 +661,9 @@ int ZapretHelper::run()
 	// the default kernel buffers and verdicts never reached unblock.
 	_socket.setBufferSize(1 << 20);
 
-	_startWorkers(_pool_size);
+	// Workers are NOT started here. They are spawned once on the first READY
+	// (zapret heartbeat), so no probe can race the strategy startup. Starting
+	// them here as well spawned a second pool (2x pool_size).
 
 	while (_running)
 	{
