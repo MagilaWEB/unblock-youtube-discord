@@ -74,8 +74,7 @@ void Engine::initialize()
 #ifdef DEBUG
 	showConsole();
 #else
-	auto result = _file_user_setting->parameterSection<bool>("SYSTEM", "show_console");
-	if (result && result.value())
+	if (const auto result = _file_user_setting->parameterSection<bool>("SYSTEM", "show_console"); result && result.value())
 		showConsole();
 #endif
 
@@ -176,8 +175,7 @@ coco::stray Engine::_start(saucer::application* app)
 	// "keep_physical_size" config key.
 	{
 		const auto hwnd = _window->native().hwnd;
-		const auto keep = _file_user_setting->parameterSection<bool>("WINDOW", "keep_physical_size");
-		if (!keep || keep.value())
+		if (const auto keep = _file_user_setting->parameterSection<bool>("WINDOW", "keep_physical_size"); !keep || keep.value())
 			SetPropW(hwnd, L"UnblockKeepPhysicalSize", reinterpret_cast<HANDLE>(1));
 		else
 			RemovePropW(hwnd, L"UnblockKeepPhysicalSize");
@@ -285,10 +283,7 @@ void Engine::_setupScheme(saucer::smartview& view)
 
 			// path() returns the path with a leading '/' (root-directory) which drops the base.
 			if (file_path.has_root_directory() && file_path.has_relative_path())
-			{
-				saucer::fs::path rel{ file_path.relative_path() };
-				file_path = ui_root / rel;
-			}
+				file_path = ui_root / file_path.relative_path();
 
 			if (file_path.extension().empty())
 				file_path += ".html";
@@ -585,6 +580,7 @@ void Engine::_flushWindowGeometry()
 	{
 		if (!_window || !_file_user_setting)
 			return;
+
 		// Minimized windows report a degenerate size; never persist that.
 		if (_window->minimized())
 			return;

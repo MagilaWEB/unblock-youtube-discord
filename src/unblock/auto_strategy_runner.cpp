@@ -161,8 +161,6 @@ bool AutoStrategyRunner::_runPassiveRound(Technology technology, std::string_vie
 			if (expected.contains(host))
 				error_set.insert(host);
 
-		auto checking = _unblock.helperCheckingHosts();
-
 		valid_count = valid_set.size();
 		dead_count	= exhausted_set.size() + unjudged_set.size();
 		error_count = error_set.size();
@@ -174,7 +172,7 @@ bool AutoStrategyRunner::_runPassiveRound(Technology technology, std::string_vie
 						+ utils::format(
 							  Localization::Str{ "str_window_auto_start_wait_live" }(),
 							  valid_count,
-							  checking.size(),
+							  _unblock.helperCheckingHosts().size(),
 							  error_count,
 							  exhausted_set.size()
 						);

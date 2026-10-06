@@ -21,6 +21,7 @@ namespace
 				out.emplace_back(text.substr(pos, end - pos));
 			pos = end + 1;
 		}
+
 		return out;
 	}
 
@@ -77,8 +78,7 @@ namespace
 
 bool HelperState::_dropExpired()
 {
-	const auto age = IPCSignals::get().latestAge("helper_seen");
-	if (age && *age <= c_signal_ttl)
+	if (const auto age = IPCSignals::get().latestAge("helper_seen"); age && *age <= c_signal_ttl)
 		return false;
 
 	_checking.clear();
@@ -88,6 +88,7 @@ bool HelperState::_dropExpired()
 	_valid.clear();
 	_exhausted.clear();
 	_stats = {};
+
 	return true;
 }
 
@@ -103,11 +104,12 @@ std::vector<std::string> HelperState::checkingHosts()
 	// arrives later, and removing the host immediately blinks the list.
 	while (auto host = ipc.getString("helper_checking"))
 	{
-		std::string name = std::move(*host);
 		// A fully-tried host is terminal: a recheck edge must not pull it
 		// out of the exhausted list (that flicker broke autopick settle).
-		if (_exhausted.contains(name))
+		if (_exhausted.contains(*host))
 			continue;
+
+		std::string name = std::move(*host);
 		_errors.erase(name);
 		_valid.erase(name);
 		_unjudged.erase(name);
@@ -115,10 +117,7 @@ std::vector<std::string> HelperState::checkingHosts()
 	}
 
 	while (auto host = ipc.getString("helper_done"))
-	{
-		const bool terminal = _errors.contains(*host) || _valid.contains(*host) || _exhausted.contains(*host);
-		_checking.doneEdge(*host, terminal, now);
-	}
+		_checking.doneEdge(*host, _errors.contains(*host) || _valid.contains(*host) || _exhausted.contains(*host), now);
 
 	if (_dropExpired())
 		return {};
@@ -181,12 +180,7 @@ std::vector<std::pair<std::string, std::string>> HelperState::errorHosts()
 	if (_dropExpired())
 		return {};
 
-	std::vector<std::pair<std::string, std::string>> result;
-	result.reserve(_errors.size());
-	for (const auto& [host, strategy] : _errors)
-		result.emplace_back(host, strategy);
-
-	return result;
+	return { _errors.begin(), _errors.end() };
 }
 
 std::vector<std::pair<std::string, std::string>> HelperState::validHosts()
@@ -206,12 +200,7 @@ std::vector<std::pair<std::string, std::string>> HelperState::validHosts()
 	if (_dropExpired())
 		return {};
 
-	std::vector<std::pair<std::string, std::string>> result;
-	result.reserve(_valid.size());
-	for (const auto& [host, strategy] : _valid)
-		result.emplace_back(host, strategy);
-
-	return result;
+	return { _valid.begin(), _valid.end() };
 }
 
 std::vector<std::pair<std::string, std::string>> HelperState::exhaustedHosts()
@@ -231,12 +220,7 @@ std::vector<std::pair<std::string, std::string>> HelperState::exhaustedHosts()
 	if (_dropExpired())
 		return {};
 
-	std::vector<std::pair<std::string, std::string>> result;
-	result.reserve(_exhausted.size());
-	for (const auto& [host, strategy] : _exhausted)
-		result.emplace_back(host, strategy);
-
-	return result;
+	return { _exhausted.begin(), _exhausted.end() };
 }
 
 HelperStats HelperState::stats()

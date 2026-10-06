@@ -1,5 +1,6 @@
 #include "curl_client.h"
 
+#include <charconv>
 #include <chrono>
 #include <format>
 #include <memory>
@@ -89,12 +90,12 @@ std::expected<long, int> CurlClient::_fetch(const std::string& url)
 	curl_easy_setopt(curl.get(), CURLOPT_NOPROGRESS, 0L);
 	curl_easy_setopt(curl.get(), CURLOPT_WRITEFUNCTION, &CurlClient::_writeCallback);
 
-	CURLcode res = curl_easy_perform(curl.get());
-	if (res != CURLE_OK)
+	if (const CURLcode res = curl_easy_perform(curl.get()); res != CURLE_OK)
 		return std::unexpected(static_cast<int>(res));
 
 	long code{ 0 };
 	curl_easy_getinfo(curl.get(), CURLINFO_RESPONSE_CODE, &code);
+
 	return code;
 }
 
@@ -172,7 +173,12 @@ std::expected<long, int> CurlClient::checkVoiceHost(const std::string& host)
 			if (const auto body = response.find("\r\n\r\n"); body != std::string::npos)
 			{
 				if (const auto space = response.find(' '); space != std::string::npos)
-					code = std::atol(response.c_str() + space + 1);
+				{
+					const char* first = response.data() + space + 1;
+					long		parsed{};
+					if (std::from_chars(first, response.data() + response.size(), parsed).ec == std::errc{})
+						code = parsed;
+				}
 				break;
 			}
 			continue;

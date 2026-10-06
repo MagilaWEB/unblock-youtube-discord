@@ -70,6 +70,7 @@ namespace
 		if (QueryFullProcessImageNameW(process, 0, buffer, &size))
 			result = buffer;
 		CloseHandle(process);
+
 		return result;
 	}
 
@@ -118,6 +119,7 @@ namespace
 
 		if (found)
 			log(log_path, L"[wait] engine.exe still running (" + details + L")");
+
 		return !found;
 	}
 
@@ -213,6 +215,7 @@ namespace
 			Sleep(500);
 		}
 		std::error_code ec;
+
 		return !fs::exists(target, ec);
 	}
 
@@ -229,6 +232,7 @@ namespace
 
 		CloseHandle(process.hThread);
 		CloseHandle(process.hProcess);
+
 		return true;
 	}
 
@@ -398,14 +402,14 @@ namespace
 
 		cleanupUpdateRoot(update_root, self, log_path);
 
-		const fs::path engine = app_root / L"bin" / L"engine.exe";
-		if (!runProcess(engine, app_root / L"bin"))
+		if (!runProcess(app_root / L"bin" / L"engine.exe", app_root / L"bin"))
 		{
 			log(log_path, L"[update] failed to start engine");
 			return 1;
 		}
 
 		log(log_path, L"[update] done");
+
 		return 0;
 	}
 
@@ -420,6 +424,7 @@ namespace
 			log(log_path, L"[remove] error: " + std::to_wstring(ec.value()));
 			return 1;
 		}
+
 		return 0;
 	}
 }	 // namespace
@@ -441,6 +446,7 @@ int wmain(int argc, wchar_t* argv[])
 	{
 		if (argc < 5)
 			return 1;
+
 		return updateMode(app_root, engine_pid, argv[4], log_path);
 	}
 
@@ -448,5 +454,6 @@ int wmain(int argc, wchar_t* argv[])
 		return removeMode(app_root, engine_pid, log_path);
 
 	log(log_path, L"[start] unknown mode: " + mode);
+
 	return 1;
 }

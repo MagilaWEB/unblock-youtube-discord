@@ -98,6 +98,7 @@ int main(int argc, char** argv)
 			std::cerr << "Bad --bootstrap: " << bootstrap_value << "\n";
 			return 2;
 		}
+
 		test_bootstrap = std::move(*parsed);
 	}
 
@@ -127,6 +128,7 @@ int main(int argc, char** argv)
 			std::cerr << "--repair needs --backup\n";
 			return 2;
 		}
+
 		dns::openLog(dns::exeDir() / "unblock_dns_repair.log");
 		return dns::repairAdapters(ag, backup_path, ipv6);
 	}
@@ -143,10 +145,7 @@ int main(int argc, char** argv)
 			if (begin == std::string::npos)
 				value.clear();
 			else
-			{
-				const size_t end = value.find_last_not_of(" \t\r\n");
-				value			 = value.substr(begin, end - begin + 1);
-			}
+				value = value.substr(begin, value.find_last_not_of(" \t\r\n") - begin + 1);
 		}
 
 		auto [code, text] = dns::runTestUpstream(ag, value, test_bootstrap);
@@ -235,5 +234,6 @@ int main(int argc, char** argv)
 	ag.deinit(proxy);
 
 	dns::logLine("Stopped");
+
 	return 0;
 }

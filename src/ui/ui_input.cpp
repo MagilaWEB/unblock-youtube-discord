@@ -4,6 +4,8 @@
 
 #include <coco/utils/utils.hpp>
 
+#include <cmath>
+
 std::pair<Input::Types, pcstr> Input::convert_types[]{
 	{		  Input::Types::text,	"text" },
 	{		Input::Types::number, "number" },
@@ -197,8 +199,7 @@ namespace
 		if (target < 0.0)
 			return min_value;
 
-		u32 result = static_cast<u32>(target + 0.5);
-		return std::clamp(result, min_value, max_value);
+		return std::clamp(static_cast<u32>(std::lround(target)), min_value, max_value);
 	}
 }	 // namespace
 

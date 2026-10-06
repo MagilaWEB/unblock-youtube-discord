@@ -29,10 +29,8 @@ namespace
 
 	std::string readLogTailLines(size_t tail_lines)
 	{
-		auto dir_logs = Core::get().currentPath() / "logs";
-
 		File log_file;
-		log_file.open(dir_logs / "log", ".txt", true);
+		log_file.open(Core::get().currentPath() / "logs" / "log", ".txt", true);
 		if (!log_file.isOpen())
 			return "(log file not found)";
 
@@ -185,10 +183,10 @@ namespace
 		// so the crash message + stack trace appear once as the last log entry.
 		Debug::fatalErrorMessage(msg);
 
-		const std::string log_tail = Debug::readLogTail(150);
-
-		const std::string title = utils::format(langStr("str_issue_crash_title"), utils::format("0x{:08X}", error_code));
-		Debug::openGitHubIssue(title, Debug::buildCrashIssueBody(log_tail));
+		Debug::openGitHubIssue(
+			utils::format(langStr("str_issue_crash_title"), utils::format("0x{:08X}", error_code)),
+			Debug::buildCrashIssueBody(Debug::readLogTail(150))
+		);
 
 		Debug::s_log.close();
 
@@ -210,8 +208,7 @@ static LONG WINAPI seh_unhandled_filter(_EXCEPTION_POINTERS* pExceptionInfo)
 	if (pExceptionInfo->ExceptionRecord->ExceptionCode == 0xE0'6D'73'63)
 		return EXCEPTION_CONTINUE_SEARCH;
 
-	const std::string msg = buildCrashMessage(pExceptionInfo->ExceptionRecord);
-	handleCrash(msg, pExceptionInfo->ExceptionRecord->ExceptionCode);
+	handleCrash(buildCrashMessage(pExceptionInfo->ExceptionRecord), pExceptionInfo->ExceptionRecord->ExceptionCode);
 
 	// Unreachable (handleCrash terminates the process).
 	return EXCEPTION_EXECUTE_HANDLER;
@@ -235,8 +232,7 @@ static LONG CALLBACK vectored_exception_handler(PEXCEPTION_POINTERS pExceptionIn
 	if (pExceptionInfo->ExceptionRecord->ExceptionCode == 0xE0'6D'73'63)
 		return EXCEPTION_CONTINUE_SEARCH;
 
-	const std::string msg = buildCrashMessage(pExceptionInfo->ExceptionRecord);
-	handleCrash(msg, pExceptionInfo->ExceptionRecord->ExceptionCode);
+	handleCrash(buildCrashMessage(pExceptionInfo->ExceptionRecord), pExceptionInfo->ExceptionRecord->ExceptionCode);
 
 	// Unreachable (handleCrash terminates the process).
 	return EXCEPTION_CONTINUE_SEARCH;
@@ -377,10 +373,7 @@ std::string Debug::prettyStacktrace()
 
 			std::string location;
 			if (!file.empty())
-			{
-				std::filesystem::path p(file);
-				location = std::format("{}:{}", p.filename().string(), line);
-			}
+				location = std::format("{}:{}", std::filesystem::path(file).filename().string(), line);
 			else
 				location = std::format("{:016x}", reinterpret_cast<uintptr_t>(frame.native_handle()));
 

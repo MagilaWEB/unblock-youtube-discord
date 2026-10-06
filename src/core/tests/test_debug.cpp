@@ -227,8 +227,7 @@ TEST_CASE("Debug log file contains written messages", "[debug][log]")
 	CHECK(content.find("log info test") != std::string::npos);
 	CHECK(content.find("log warning test") != std::string::npos);
 
-	auto line_count = std::count(content.begin(), content.end(), '\n');
-	CHECK(line_count == 4);
+	CHECK(std::count(content.begin(), content.end(), '\n') == 4);
 }
 
 // ─── Version ─────────────────────────────────────────────────
@@ -284,16 +283,14 @@ TEST_CASE("Debug::readLogTail all lines when tail exceeds size", "[debug][logtai
 		ofs << "only_line\n";
 	}
 
-	auto tail = Debug::readLogTail(100);
-	CHECK(tail.find("only_line") != std::string::npos);
+	CHECK(Debug::readLogTail(100).find("only_line") != std::string::npos);
 }
 
 TEST_CASE("Debug::readLogTail missing file returns message", "[debug][logtail]")
 {
 	DebugFixture fx;
 
-	auto tail = Debug::readLogTail(10);
-	CHECK(tail.find("not found") != std::string::npos);
+	CHECK(Debug::readLogTail(10).find("not found") != std::string::npos);
 }
 
 // ─── Issue body templates ────────────────────────────────────
@@ -303,10 +300,8 @@ TEST_CASE("Debug::buildReportIssueBody contains version and user template", "[de
 	IssueTemplateFixture fx;
 	Debug::setVersion("1.2.3");
 
-	auto hdr = Localization::Str{ "str_issue_report_header" }();
-	auto ver = utils::format(Localization::Str{ "str_issue_version" }(), Debug::version());
-	REQUIRE_FALSE(hdr.empty());
-	REQUIRE_FALSE(ver.empty());
+	REQUIRE_FALSE(Localization::Str{ "str_issue_report_header" }().empty());
+	REQUIRE_FALSE(utils::format(Localization::Str{ "str_issue_version" }(), Debug::version()).empty());
 
 	auto body = Debug::buildReportIssueBody();
 

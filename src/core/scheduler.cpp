@@ -52,8 +52,7 @@ void Scheduler::loop()
 			continue;
 		}
 
-		const auto now = std::chrono::steady_clock::now();
-		if (_queue.top().at > now)
+		if (_queue.top().at > std::chrono::steady_clock::now())
 		{
 			_cv.wait_until(lk, _queue.top().at);
 			continue;

@@ -115,16 +115,13 @@ void UiBackgroundTasks::_syncRows(const std::vector<SnapshotItem>& items)
 
 	// Remove rows of finished tasks.
 	for (auto it = _rows.begin(); it != _rows.end();)
-	{
-		const bool alive = std::ranges::any_of(items, [&](const SnapshotItem& item) { return item.id == it->first; });
-		if (!alive)
+		if (!std::ranges::any_of(items, [&](const SnapshotItem& item) { return item.id == it->first; }))
 		{
 			it->second.row.remove();
 			it = _rows.erase(it);
 		}
 		else
 			++it;
-	}
 
 	for (const auto& item : items)
 	{
@@ -161,8 +158,7 @@ void UiBackgroundTasks::_syncRows(const std::vector<SnapshotItem>& items)
 		else
 		{
 			widgets.fill.removeClass("tasks_indeterminate");
-			const float clamped = std::clamp(item.progress, 0.f, 100.f);
-			widgets.fill.style("width", utils::format("{}%", clamped));
+			widgets.fill.style("width", utils::format("{}%", std::clamp(item.progress, 0.f, 100.f)));
 		}
 	}
 }

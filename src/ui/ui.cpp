@@ -271,9 +271,9 @@ void Ui::_checkConflictService()
 				names_services.append(service.getName()).append(",");
 			names_services.pop_back();
 
-			auto description = Localization::Str{ "str_window_warning_conflict_service" }();
-
-			self->_window_warning_conflict_service->setDescription(utils::format(description, names_services));
+			self->_window_warning_conflict_service->setDescription(
+				utils::format(Localization::Str{ "str_window_warning_conflict_service" }(), names_services)
+			);
 			self->_window_warning_conflict_service->show();
 
 			// The list is move-only (Service holds a lock), so it is kept alive

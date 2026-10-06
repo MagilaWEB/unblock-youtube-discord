@@ -105,8 +105,7 @@ void UiDnsProxy::initialize()
 	if (auto cfg = _ui->userConfig()->parameterSection<std::string>("DNS", "timeout"))
 		try
 		{
-			const int parsed = std::stoi(trimConfigLine(cfg.value()));
-			if (parsed >= 1 && parsed <= 120)
+			if (const int parsed = std::stoi(trimConfigLine(cfg.value())); parsed >= 1 && parsed <= 120)
 				timeout_sec = static_cast<uint32_t>(parsed);
 		}
 		catch (...)

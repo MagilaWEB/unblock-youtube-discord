@@ -53,8 +53,8 @@ namespace ui::dom
 		if (!v || _h < 0 || blockedOnUiThread("hasClass"))
 			return false;
 
-		const auto r = coco::await(v->evaluate<std::string>("__dom[{}] ? (__dom[{}].classList.contains({}) ? '1' : '0') : '0'", _h, _h, cls));
-		return r.value_or("0") == "1";
+		return coco::await(v->evaluate<std::string>("__dom[{}] ? (__dom[{}].classList.contains({}) ? '1' : '0') : '0'", _h, _h, cls)).value_or("0")
+			== "1";
 	}
 
 	// --- Visibility ----------------------------------------------------
@@ -70,6 +70,7 @@ namespace ui::dom
 			}
 			v->execute("__dom_show({}, {})", _h, epoch);
 		}
+
 		return *this;
 	}
 
@@ -84,6 +85,7 @@ namespace ui::dom
 			}
 			v->execute("__dom_hide({}, {})", _h, epoch);
 		}
+
 		return *this;
 	}
 

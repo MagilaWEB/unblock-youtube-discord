@@ -21,8 +21,7 @@ namespace ui::dom::tour
 		double pleft, ptop;
 		if (space_left >= pw || space_right >= pw)
 		{
-			const bool on_right = target.left + target.width / 2 > vw / 2;
-			if (on_right)
+			if (target.left + target.width / 2 > vw / 2)
 			{
 				pleft = target.left - pw - gap;
 				if (pleft < margin)

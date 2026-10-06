@@ -195,13 +195,7 @@ size_t InputConsole::selectFromList(const std::list<std::string>& list, std::fun
 			u32 it{ 0 };
 			for (const std::string& element : list)
 			{
-				std::string str{};
-				if (select == it)
-					str = ">> ";
-				else
-					str = "   ";
-
-				str_all.append(std::format("{}{}: {}\n", str, it, element));
+				str_all.append(std::format("{}{}: {}\n", select == it ? ">> " : "   ", it, element));
 
 				it++;
 			}

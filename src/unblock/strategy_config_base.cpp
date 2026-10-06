@@ -115,8 +115,7 @@ void StrategyConfigBase::_uploadFromGenerator()
 
 	std::vector<std::pair<u32, std::list<std::string>>> sort_service_filters{};
 
-	auto& map = _generator.mapFilters();
-	for (auto& [key, list] : map)
+	for (auto& [key, list] : _generator.mapFilters())
 	{
 		if (list.empty())
 			continue;

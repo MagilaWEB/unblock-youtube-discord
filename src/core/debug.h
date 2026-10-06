@@ -60,8 +60,7 @@ private:
 
 		s_log.writeText(std::to_string(_console_line) + ". " + _stripAnsi(str));
 
-		auto log_str = std::format("{}. {}{}", ++_console_line, _getPrefix(type), str);
-		(error_state ? std::cerr : std::cout) << log_str.c_str() << std::endl;
+		(error_state ? std::cerr : std::cout) << std::format("{}. {}{}", ++_console_line, _getPrefix(type), str).c_str() << std::endl;
 
 		if (type == MessageTypes::Fatal || (type == MessageTypes::Error && s_error_fatal))
 			throw(exception(str.c_str()));
@@ -101,11 +100,11 @@ private:
 		// so the crash message + stack trace appear once as the last log entry.
 		Debug::fatalErrorMessage(msg.c_str());
 
-		const std::string log_tail = readLogTail(150);
-
 		// Automatically open a GitHub issue with a crash report.
-		const std::string title = utils::format(Localization::Str{ "str_issue_crash_title" }(), utils::format("0x{:08X}", 0u));
-		openGitHubIssue(title, buildCrashIssueBody(log_tail));
+		openGitHubIssue(
+			utils::format(Localization::Str{ "str_issue_crash_title" }(), utils::format("0x{:08X}", 0u)),
+			buildCrashIssueBody(readLogTail(150))
+		);
 
 		Debug::s_log.close();
 		std::abort();
@@ -142,17 +141,15 @@ public:
 	template<typename... Args>
 	static void winApiWindowShow(pcstr title, pcstr desc, Args&&... args)
 	{
-		Localization::Str text_lang_title{ title };
-		Localization::Str text_lang_desc{ desc };
-		auto			  desc_format = text_lang_desc();
-		std::string		  format;
+		auto		desc_format = Localization::Str{ desc }();
+		std::string format;
 
 		if (desc != desc_format)
 			format = utils::format(desc_format, args...);
 		else
 			format = desc_format;
 
-		MessageBoxA(nullptr, utils::utf8ToCp1251(format.c_str()).c_str(), utils::utf8ToCp1251(text_lang_title()).c_str(), MB_OK);
+		MessageBoxA(nullptr, utils::utf8ToCp1251(format.c_str()).c_str(), utils::utf8ToCp1251(Localization::Str{ title }()).c_str(), MB_OK);
 	}
 
 	template<typename Fn, typename... Args>

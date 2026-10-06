@@ -173,8 +173,7 @@ void SecondaryWindow::setDescription(Localization::Str description)
 	if (!_created)
 		return;
 
-	auto p_desc = _content.query(".description");
-	if (p_desc.valid())
+	if (auto p_desc = _content.query(".description"); p_desc.valid())
 		p_desc.text(description());
 }
 

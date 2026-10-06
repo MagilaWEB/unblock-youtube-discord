@@ -47,8 +47,7 @@ public:
 	}
 	void setErrorTimes(const std::string& host, std::chrono::steady_clock::time_point firstSeen, std::chrono::steady_clock::time_point lastQueued)
 	{
-		auto it = helper._error_hosts.find(host);
-		if (it != helper._error_hosts.end())
+		if (const auto it = helper._error_hosts.find(host); it != helper._error_hosts.end())
 		{
 			it->second.first = firstSeen;
 			it->second.last	 = lastQueued;
@@ -56,8 +55,7 @@ public:
 	}
 	void setExhaustedTimes(const std::string& host, std::chrono::steady_clock::time_point firstSeen, std::chrono::steady_clock::time_point lastQueued)
 	{
-		auto it = helper._exhausted_hosts.find(host);
-		if (it != helper._exhausted_hosts.end())
+		if (const auto it = helper._exhausted_hosts.find(host); it != helper._exhausted_hosts.end())
 		{
 			it->second.first = firstSeen;
 			it->second.last	 = lastQueued;

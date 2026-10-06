@@ -76,8 +76,7 @@ TEST_CASE("utils::utf8ToUtf16 empty", "[utils][utf16]")
 
 TEST_CASE("utils::utf8ToUtf16 ASCII", "[utils][utf16]")
 {
-	auto result = utils::utf8ToUtf16("Hello");
-	CHECK(result == L"Hello");
+	CHECK(utils::utf8ToUtf16("Hello") == L"Hello");
 }
 
 TEST_CASE("utils::utf8ToUtf16 Russian", "[utils][utf16]")

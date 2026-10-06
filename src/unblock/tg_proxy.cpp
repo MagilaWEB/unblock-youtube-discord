@@ -85,8 +85,7 @@ void TgProxy::linkRun()
 
 void TgProxy::copyLink() const
 {
-	const std::string tg = link();
-	if (utils::copyToClipboard(tg))
+	if (utils::copyToClipboard(link()))
 		Debug::ok("tg proxy: link copied to clipboard");
 	else
 		Debug::error("tg proxy: failed to copy link to clipboard");

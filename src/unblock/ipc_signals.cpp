@@ -165,9 +165,8 @@ void IPCSignals::_listen()
 		fd_set fds;
 		FD_ZERO(&fds);
 		FD_SET(_sock->fd, &fds);
-		timeval			tv{};
-		struct timeval* ptv = &tv;
-		int				sel = select(0, &fds, nullptr, nullptr, ptv);
+		timeval tv{};
+		int		sel = select(0, &fds, nullptr, nullptr, &tv);
 
 		if (sel <= 0)
 		{

@@ -39,6 +39,7 @@ HelperConfig ZapretHelper::currentConfig() const
 	cfg.recheck_interval_min = static_cast<u32>(_recheck_interval.count());
 	cfg.errors_progress_min	 = static_cast<u32>(_errors_progress_interval.count());
 	cfg.errors_recheck_sec	 = static_cast<u32>(_errors_recheck_interval.count());
+
 	return cfg;
 }
 
@@ -160,8 +161,7 @@ void ZapretHelper::_handleMessage(std::string_view message)
 	else if (message.starts_with("CHECK:"))
 	{
 		std::lock_guard lock(_mutex);
-		const auto		rest = message.substr(6);
-		const auto		host = splitOnce(rest, ':').first;
+		const auto		host = splitOnce(message.substr(6), ':').first;
 		// Do not re-enqueue a host already being checked: the pump must not
 		// drive duplicates.
 		if (!_in_check.contains(std::string{ host }))
@@ -188,8 +188,7 @@ void ZapretHelper::_handleMessage(std::string_view message)
 	else if (message.starts_with("VALID:"))
 	{
 		std::lock_guard lock(_mutex);
-		const auto		rest		= message.substr(6);
-		const auto [host_sv, strat] = splitOnce(rest, ':');
+		const auto [host_sv, strat] = splitOnce(message.substr(6), ':');
 		const auto host				= std::string{ host_sv };
 		if (_isValidHost(host) && !strat.empty())
 		{
@@ -209,8 +208,7 @@ void ZapretHelper::_handleMessage(std::string_view message)
 	else if (message.starts_with("ERR:"))
 	{
 		std::lock_guard lock(_mutex);
-		const auto		rest		= message.substr(4);
-		const auto [host_sv, strat] = splitOnce(rest, ':');
+		const auto [host_sv, strat] = splitOnce(message.substr(4), ':');
 		const auto host				= std::string{ host_sv };
 		// Any ERR is a verdict: drop the unjudged/probe marks even when the
 		// host is already terminal (exhausted).
@@ -248,8 +246,7 @@ void ZapretHelper::_handleMessage(std::string_view message)
 	else if (message.starts_with("EXHAUSTED:"))
 	{
 		std::lock_guard lock(_mutex);
-		const auto		rest		= message.substr(10);
-		const auto [host_sv, strat] = splitOnce(rest, ':');
+		const auto [host_sv, strat] = splitOnce(message.substr(10), ':');
 		const auto host				= std::string{ host_sv };
 		if (_isValidHost(host) && !strat.empty())
 		{
@@ -349,10 +346,11 @@ void ZapretHelper::_checkHost(std::string_view host)
 
 			// Fast-path snapshot so unblock can fast-fail the host without
 			// waiting for the next 500ms tick.
-			const std::string exhausted_payload = _exhausted_hosts
-												| std::views::transform([](const auto& kv) { return kv.first + "=" + kv.second.strategy; })
-												| std::views::join_with('\n') | std::ranges::to<std::string>();
-			_sendSnapshot("helper_exhausted", exhausted_payload);
+			_sendSnapshot(
+				"helper_exhausted",
+				_exhausted_hosts | std::views::transform([](const auto& kv) { return kv.first + "=" + kv.second.strategy; })
+					| std::views::join_with('\n') | std::ranges::to<std::string>()
+			);
 
 			_log(std::format("dns-dead {} (terminal)", host));
 		}

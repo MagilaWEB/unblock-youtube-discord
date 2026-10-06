@@ -37,9 +37,8 @@ DomainTesting::DomainTesting()
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, nullptr);
 		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
 
-		double	 total_time = 0;
-		CURLcode res		= curl_easy_perform(curl);
-		if (res == CURLE_OK)
+		double total_time = 0;
+		if (curl_easy_perform(curl) == CURLE_OK)
 		{
 			curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &total_time);
 			const u32 time_sec = static_cast<u32>(total_time * 10) + 3;

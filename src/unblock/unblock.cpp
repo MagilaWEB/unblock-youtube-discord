@@ -84,8 +84,7 @@ std::string Unblock::fakeBinKey(Technology technology)
 
 void Unblock::addOptionalStrategies(std::string_view name)
 {
-	auto it = std::ranges::find(_section_opt_service_names, name);
-	if (it != _section_opt_service_names.end())
+	if (std::ranges::find(_section_opt_service_names, name) != _section_opt_service_names.end())
 		return;
 
 	_section_opt_service_names.emplace_back(name);
@@ -266,7 +265,7 @@ namespace
 {
 	float parseRate(std::string_view text)
 	{
-		float	   value{};
+		float value{};
 		const auto [ptr, ec] = std::from_chars(text.data(), text.data() + text.size(), value);
 		if (ec != std::errc{} || ptr != text.data() + text.size())
 			return 0.F;
@@ -400,9 +399,8 @@ void Unblock::startService(Technology technology)
 
 	_zapret_helper.remove();
 
-	auto& eng  = engine(technology);
-	auto& list = eng.strategies();
-	if (list.empty())
+	auto& eng = engine(technology);
+	if (eng.strategies().empty())
 		return;
 
 	// The helper only understands the zapret2 protocol (Lua auto_strategy

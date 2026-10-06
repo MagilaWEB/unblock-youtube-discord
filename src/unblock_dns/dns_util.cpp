@@ -18,6 +18,7 @@ namespace dns
 
 		std::ostringstream ss;
 		ss << in.rdbuf();
+
 		return ss.str();
 	}
 
@@ -28,6 +29,7 @@ namespace dns
 			std::ofstream out{ tmp, std::ios::binary | std::ios::trunc };
 			if (!out)
 				return false;
+
 			out << content;
 		}
 

@@ -239,11 +239,9 @@ void Service::start()
 		argv.push_back(arg.c_str());
 
 	_time_limit.start();
-	bool started = false;
 	while (true)
 	{
-		started = StartService(_sc.get(), static_cast<DWORD>(argv.size()), argv.data());
-		if (started)
+		if (StartService(_sc.get(), static_cast<DWORD>(argv.size()), argv.data()))
 			break;
 
 		if (_time_limit.getElapsedSec() > 5.0F)

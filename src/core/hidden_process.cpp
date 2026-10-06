@@ -39,8 +39,7 @@ bool runHiddenProcess(const std::vector<std::string>& args, uint32_t timeout_ms)
 	if (!CreateProcessW(nullptr, wide_cmd.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi))
 		return false;
 
-	const DWORD wait = WaitForSingleObject(pi.hProcess, timeout_ms);
-	if (wait == WAIT_TIMEOUT)
+	if (WaitForSingleObject(pi.hProcess, timeout_ms) == WAIT_TIMEOUT)
 		TerminateProcess(pi.hProcess, 1);
 
 	DWORD code = 1;

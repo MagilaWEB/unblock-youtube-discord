@@ -80,8 +80,7 @@ namespace ui::dom
 		if (!v || _h < 0 || blockedOnUiThread("getAttr"))
 			return {};
 
-		const auto r = coco::await(v->evaluate<std::string>("__dom_getAttr({}, {})", _h, attr));
-		return r.value_or("");
+		return coco::await(v->evaluate<std::string>("__dom_getAttr({}, {})", _h, attr)).value_or("");
 	}
 
 	bool Element::hasAttr(std::string_view attr) const
@@ -90,8 +89,7 @@ namespace ui::dom
 		if (!v || _h < 0 || blockedOnUiThread("hasAttr"))
 			return false;
 
-		const auto r = coco::await(v->evaluate<std::string>("__dom[{}] ? (__dom[{}].hasAttribute({}) ? '1' : '0') : '0'", _h, _h, attr));
-		return r.value_or("0") == "1";
+		return coco::await(v->evaluate<std::string>("__dom[{}] ? (__dom[{}].hasAttribute({}) ? '1' : '0') : '0'", _h, _h, attr)).value_or("0") == "1";
 	}
 
 	Element& Element::removeAttr(std::string_view attr)
@@ -118,8 +116,7 @@ namespace ui::dom
 		if (!v || _h < 0 || blockedOnUiThread("valueStr"))
 			return {};
 
-		const auto r = coco::await(v->evaluate<std::string>("(__dom[{}] && __dom[{}].value) || ''", _h, _h));
-		return r.value_or("");
+		return coco::await(v->evaluate<std::string>("(__dom[{}] && __dom[{}].value) || ''", _h, _h)).value_or("");
 	}
 
 	Element& Element::checked(bool state)
@@ -136,7 +133,6 @@ namespace ui::dom
 		if (!v || _h < 0 || blockedOnUiThread("isChecked"))
 			return false;
 
-		const auto r = coco::await(v->evaluate<std::string>("__dom[{}] ? (__dom[{}].checked ? '1' : '0') : '0'", _h, _h));
-		return r.value_or("0") == "1";
+		return coco::await(v->evaluate<std::string>("__dom[{}] ? (__dom[{}].checked ? '1' : '0') : '0'", _h, _h)).value_or("0") == "1";
 	}
 }

@@ -113,7 +113,6 @@ namespace
 			if (close == std::string_view::npos)
 				return std::nullopt;
 
-			std::string_view host = input.substr(1, close - 1);
 			std::string_view port;
 			if (close + 1 < input.size())
 			{
@@ -123,7 +122,7 @@ namespace
 				port = input.substr(close + 2);
 			}
 
-			return std::make_pair(host, port);
+			return std::make_pair(input.substr(1, close - 1), port);
 		}
 
 		size_t colon = input.rfind(':');
@@ -181,8 +180,6 @@ namespace
 		if (double_colon != address.rfind("::"))
 			return false;
 
-		const bool has_double = double_colon != std::string_view::npos;
-
 		auto is_hex_group = [](std::string_view group)
 		{
 			if (group.empty() || group.size() > 4)
@@ -203,10 +200,9 @@ namespace
 			auto start = part.begin();
 			while (true)
 			{
-				auto			 it = std::ranges::find(start, part.end(), ':');
-				std::string_view group{ start, it };
+				auto it = std::ranges::find(start, part.end(), ':');
 
-				if (!is_hex_group(group))
+				if (!is_hex_group(std::string_view{ start, it }))
 					return -1;
 
 				count++;
@@ -219,7 +215,7 @@ namespace
 			return count;
 		};
 
-		if (has_double)
+		if (double_colon != std::string_view::npos)
 		{
 			const int left	= count_groups(address.substr(0, double_colon));
 			const int right = count_groups(address.substr(double_colon + 2));
@@ -282,10 +278,7 @@ bool utils::isValidHostNamePort(std::string_view host)
 		return false;
 
 	if (host_part.front() == '[' && host_part.back() == ']')
-	{
-		std::string_view ipv6 = host_part.substr(1, host_part.size() - 2);
-		return isValidIpv6(ipv6);
-	}
+		return isValidIpv6(host_part.substr(1, host_part.size() - 2));
 	else if (host_part.contains(':'))
 		return isValidIpv6(host_part);
 	else if (host_part.contains('.') && isValidIpv4(host_part))

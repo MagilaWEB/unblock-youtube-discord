@@ -28,8 +28,7 @@ void Localization::set(std::string_view lang_id)
 			if (str.empty() || str.starts_with("//"))
 				return false;
 
-			const size_t pos = str.find_first_of('=');
-			if (pos != std::string::npos)
+			if (const size_t pos = str.find_first_of('='); pos != std::string::npos)
 			{
 				key = str.substr(0, pos);
 				utils::trim(key);
@@ -50,8 +49,7 @@ std::string Localization::translate(std::string_view str_id)
 {
 	FAST_LOCK_SHARED(_lock);
 
-	auto it = _string_list.find(str_id);
-	if (it != _string_list.end())
+	if (auto it = _string_list.find(str_id); it != _string_list.end())
 		return it->second;
 
 	return std::string{ str_id };

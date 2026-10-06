@@ -30,8 +30,7 @@ static std::string trimSpaces(std::string_view s)
 	if (begin == std::string_view::npos)
 		return {};
 
-	const size_t end = s.find_last_not_of(" \t\r\n");
-	return std::string{ s.substr(begin, end - begin + 1) };
+	return std::string{ s.substr(begin, s.find_last_not_of(" \t\r\n") - begin + 1) };
 }
 
 std::optional<std::pair<std::string, std::string>> parseDnsPin(const std::string& line)
@@ -365,9 +364,8 @@ std::string DNSHost::_regionUrl() const
 bool DNSHost::regionAvailable(std::string_view region) const
 {
 	const std::string reg = region.empty() ? "ru" : std::string{ region };
-	const std::string url = (reg == "ru") ? "https://" + _base_url + "/hosts" : "https://" + _base_url + "/" + reg + "/hosts";
 
-	HttpsLoad load{ url };
+	HttpsLoad load{ (reg == "ru") ? "https://" + _base_url + "/hosts" : "https://" + _base_url + "/" + reg + "/hosts" };
 	load.run();
 	return load.codeResult() == 200;
 }
@@ -376,10 +374,7 @@ std::string DNSHost::_pathHostDir()
 {
 	static constexpr char XOR_KEY{ 0x5A };
 
-	std::string result =
-		data_vec() | std::views::transform([](unsigned char code) { return static_cast<char>(code ^ XOR_KEY); }) | std::ranges::to<std::string>();
-
-	return result;
+	return data_vec() | std::views::transform([](unsigned char code) { return static_cast<char>(code ^ XOR_KEY); }) | std::ranges::to<std::string>();
 }
 
 void DNSHost::_loadInfo()
@@ -411,8 +406,7 @@ void DNSHost::_loadInfo()
 		if (name.empty() || std::regex_match(name, ipv4_regex))
 			continue;
 
-		const bool has_non_ascii = std::ranges::any_of(name, [](unsigned char ch) { return ch >= 0x80; });
-		if (has_non_ascii)
+		if (std::ranges::any_of(name, [](unsigned char ch) { return ch >= 0x80; }))
 			continue;
 
 		_list_dns_hosts_file_name.push_back(name);

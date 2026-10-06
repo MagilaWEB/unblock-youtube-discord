@@ -62,8 +62,7 @@ bool AppUpdater::run()
 	if (!load->runToFile(archive))
 		return false;
 
-	const u32 code = load->codeResult();
-	if (code != 200)
+	if (load->codeResult() != 200)
 		return false;
 
 	try

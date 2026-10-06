@@ -25,10 +25,10 @@ namespace
 	{
 		if (text.empty())
 			return fallback;
+
 		try
 		{
-			unsigned long v = std::stoul(std::string{ text });
-			return std::clamp(static_cast<u32>(v), lo, hi);
+			return std::clamp(static_cast<u32>(std::stoul(std::string{ text })), lo, hi);
 		}
 		catch (...)
 		{
@@ -93,9 +93,8 @@ void HelperConfig::normalize()
 std::filesystem::path HelperConfig::resolvePath()
 {
 #ifdef _WIN32
-	wchar_t		buf[MAX_PATH]{};
-	const DWORD n = GetModuleFileNameW(nullptr, buf, MAX_PATH);
-	if (n > 0)
+	wchar_t buf[MAX_PATH]{};
+	if (const DWORD n = GetModuleFileNameW(nullptr, buf, MAX_PATH); n > 0)
 	{
 		std::filesystem::path exe{
 			std::wstring{ buf, n }
@@ -125,6 +124,7 @@ HelperConfig HelperConfig::loadFrom(const std::filesystem::path& path)
 
 	parseLines(in, cfg);
 	cfg.normalize();
+
 	return cfg;
 }
 
@@ -151,6 +151,7 @@ HelperConfig HelperConfig::parsePayload(std::string_view payload, const HelperCo
 	}
 
 	cfg.normalize();
+
 	return cfg;
 }
 
@@ -166,5 +167,6 @@ std::string HelperConfig::makeMessage() const
 		errors_progress_min,
 		errors_recheck_sec
 	);
+
 	return std::string{ buf };
 }

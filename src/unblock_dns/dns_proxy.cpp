@@ -202,6 +202,7 @@ namespace dns
 
 		CertCloseStore(store, 0);
 		CertFreeCertificateContext(leaf);
+
 		return result;
 	}
 
@@ -228,6 +229,7 @@ namespace dns
 
 		std::string text = std::string{ "FAIL: " } + error;
 		ag.str_free(error);
+
 		return { 1, std::move(text) };
 	}
 }	 // namespace dns

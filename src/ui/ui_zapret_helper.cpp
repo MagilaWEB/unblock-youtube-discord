@@ -23,12 +23,14 @@ void UiZapretHelper::setVisible(bool visible)
 {
 	if (visible == _visible)
 		return;
+
 	_visible = visible;
 
 	auto toggle = [visible](auto& widget)
 	{
 		if (!widget->isCreate())
 			return;
+
 		if (visible)
 			widget->show();
 		else
@@ -307,6 +309,7 @@ u32 UiZapretHelper::_helperSettingU32(std::string_view key, u32 fallback) const
 			return fallback;
 		}
 	}
+
 	return fallback;
 }
 

@@ -273,8 +273,7 @@ void UiDnsHosts::_applyBaseUrl(const std::string& url)
 
 void UiDnsHosts::_enableDnsHostsUpdate()
 {
-	auto result = _ui->userConfig()->parameterSection<bool>("SYSTEM", "enable_dns_hosts");
-	if (result)
+	if (auto result = _ui->userConfig()->parameterSection<bool>("SYSTEM", "enable_dns_hosts"))
 	{
 		const bool state = result.value();
 		_enable_dns_hosts->setState(state);

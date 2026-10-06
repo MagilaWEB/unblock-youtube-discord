@@ -93,17 +93,16 @@ void ThreadPool::onDrain(std::function<void()>&& cb)
 	if (!cb)
 		return;
 
-	bool runNow = false;
 	{
 		std::lock_guard lk{ _mutex };
-		if (_queue.empty() && _active.empty())
-			runNow = true;
-		else
+		if (!_queue.empty() || !_active.empty())
+		{
 			_waitersForAll.emplace_back(std::move(cb));
+			return;
+		}
 	}
 
-	if (runNow)
-		enqueue(std::move(cb));
+	enqueue(std::move(cb));
 }
 
 bool ThreadPool::isIdle() const

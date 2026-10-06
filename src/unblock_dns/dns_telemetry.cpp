@@ -25,7 +25,7 @@ namespace dns
 			{
 				// Cap the log: start fresh past 1MB.
 				std::error_code ec;
-				if (std::filesystem::file_size(path, ec) > 1'024 * 1'024)
+				if (std::filesystem::file_size(path, ec) > 1'024ull * 1'024ull)
 					std::filesystem::resize_file(path, 0, ec);
 
 				file.open(path, std::ios::app);

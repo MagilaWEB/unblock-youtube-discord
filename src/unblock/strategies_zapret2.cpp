@@ -38,8 +38,7 @@ void StrategiesZapret2::_saveStrategies(std::string_view str)
 
 	StrategyConfigBase::_saveStrategies(str);
 
-	auto& string_back = _strategy_dpi.back();
-	_getAllPorts(string_back);
+	_getAllPorts(_strategy_dpi.back());
 }
 
 void StrategiesZapret2::_init_lua_to_zapret()

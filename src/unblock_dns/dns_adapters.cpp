@@ -162,6 +162,7 @@ namespace dns
 
 			std::string out{ raw };
 			ag.str_free(raw);
+
 			return out;
 		}
 
@@ -178,8 +179,7 @@ namespace dns
 				s_tried = true;
 				if (HMODULE dnsapi = LoadLibraryW(L"dnsapi.dll"))
 				{
-					FARPROC proc = GetProcAddress(dnsapi, "DnsFlushResolverCache");
-					if (proc)
+					if (FARPROC proc = GetProcAddress(dnsapi, "DnsFlushResolverCache"))
 						std::memcpy(&s_flush, &proc, sizeof(proc));
 				}
 			}
@@ -202,6 +202,7 @@ namespace dns
 
 		const bool ok = bind(s, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != SOCKET_ERROR;
 		closesocket(s);
+
 		return ok;
 	}
 
@@ -268,6 +269,7 @@ namespace dns
 
 		writeBackup(backup_path, adapters, config.listen);
 		flushResolverCache();
+
 		return !adapters.empty();
 	}
 
