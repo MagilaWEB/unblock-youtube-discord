@@ -317,6 +317,20 @@ DNSHost& Unblock::dnsHosts()
 	return *_dns_hosts;
 }
 
+void Unblock::setDnsEnabled(bool state)
+{
+	if (state)
+	{
+		_dns_hosts->update();
+		_dns_hosts->enable();
+		_dns_proxy.run(true);
+		return;
+	}
+
+	_dns_proxy.run(false);
+	_dns_hosts->disable();
+}
+
 namespace
 {
 	// RFC 1323 timestamps live in Tcp1323Opts bit 0x2. The value is absent on

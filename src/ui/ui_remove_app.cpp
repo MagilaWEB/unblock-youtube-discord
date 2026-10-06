@@ -1,5 +1,4 @@
 #include "ui.h"
-#include "../unblock/dns_host.h"
 
 #include <windows.h>
 
@@ -8,7 +7,7 @@
 void Ui::_removeApp()
 {
 	_remove_app->create("#unblock section .common", "str_button_remove");
-	_remove_app->addTutorialStep("str_tour_remove_app_title", "str_tour_remove_app_description", 31);
+	_remove_app->addTutorialStep("str_tour_remove_app_title", "str_tour_remove_app_description", 27);
 	_remove_app->addEventClick(
 		[ui_self = self](JSArgs)
 		{
@@ -42,7 +41,6 @@ void Ui::_removeAppRun()
 		{
 			self->_ui_unblock->stopAllServices();
 
-			self->_unblock->dnsHosts().disable();
 			self->console(false);
 
 			// Uninstall is delegated to the standalone unblock_update.exe. We

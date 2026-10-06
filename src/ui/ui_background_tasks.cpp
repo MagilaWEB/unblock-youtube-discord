@@ -7,7 +7,7 @@ void UiBackgroundTasks::initialize()
 	_indicator->create("footer", Localization::Str{ "str_tasks_indicator_title" });
 	auto anchor = BaseElement::element(_indicator->name());
 	anchor.addClass("tasks_indicator");
-	_indicator->addTutorialStep("str_tour_tasks_title", "str_tour_tasks_description", 32);
+	_indicator->addTutorialStep("str_tour_tasks_title", "str_tour_tasks_description", 28);
 	_indicator->addEventClick(
 		[this](JSArgs)
 		{

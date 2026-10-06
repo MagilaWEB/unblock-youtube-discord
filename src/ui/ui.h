@@ -5,7 +5,6 @@
 #include "ui_button.h"
 #include "ui_check_box.h"
 #include "../unblock/unblock.h"
-#include "ui_dns_hosts.h"
 #include "ui_dns_proxy.h"
 #include "ui_proxy_tg.h"
 #include "ui_zapret_page.h"
@@ -22,6 +21,7 @@ class Ui final : public utils::DefaultInit,
 	friend class UiUnblock;
 	friend class UiZapretPage;
 	friend class UiZapretHelper;
+	friend class UiDnsProxy;
 	IEngineAPI* _engine;
 
 	std::shared_ptr<Unblock> _unblock;
@@ -36,7 +36,6 @@ class Ui final : public utils::DefaultInit,
 	BUTTON(_remove_app);
 	SECONDARY_WINDOW(_window_remove_app);
 
-	std::unique_ptr<UiDnsHosts>		   _ui_dns_hosts;
 	std::unique_ptr<UiDnsProxy>		   _ui_dns_proxy;
 	std::unique_ptr<UiProxyTg>		   _ui_proxy_tg;
 	std::unique_ptr<UiZapretPage>	   _ui_zapret;

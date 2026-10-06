@@ -14,7 +14,6 @@ void Ui::postConstruct()
 {
 	self = shared_from_this();
 
-	_ui_dns_hosts		 = std::make_unique<UiDnsHosts>(self, _unblock->dnsHosts());
 	_ui_dns_proxy		 = std::make_unique<UiDnsProxy>(self, _unblock->dnsProxy());
 	_ui_proxy_tg		 = std::make_unique<UiProxyTg>(self, _unblock->tgProxy());
 	_ui_zapret			 = std::make_unique<UiZapretPage>(self);
@@ -117,7 +116,6 @@ void Ui::_initComponents()
 {
 	_ui_unblock->initialize();
 	_ui_dns_proxy->initialize();
-	_ui_dns_hosts->initialize();
 	_ui_proxy_tg->initialize();
 
 	if (_ui_zapret)
@@ -166,7 +164,6 @@ void Ui::update()
 	if (!_init)
 		return;
 
-	_ui_dns_hosts->updateInfoWindow();
 	_ui_dns_proxy->updateInfoWindow();
 	_ui_zapret_helper->updateChecking();
 	_ui_zapret_helper->updateSeen();

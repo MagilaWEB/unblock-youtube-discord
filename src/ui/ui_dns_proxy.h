@@ -24,6 +24,7 @@ private:
 	BUTTON(_test_button);
 
 	SECONDARY_WINDOW(_window_test_result);
+	SECONDARY_WINDOW(_window_enable_dns_proxy);
 
 	std::string _last_status;
 
@@ -33,8 +34,15 @@ public:
 	void initialize();
 	void updateInfoWindow();
 
+	/** Persists DNS/enable, syncs the checkbox and applies the whole DNS
+	 *  feature (proxy service + own hosts pins) in a background task. */
+	void setEnabled(bool state);
+
+	const Ptr<CheckBox>& getCheckBoxDnsProxy() const { return _enable_dns_proxy; }
+
 private:
 	void _collectUpstreams();
 	void _applyUpstreams();
 	void _refreshStatus();
+	void _applyState(bool state);
 };

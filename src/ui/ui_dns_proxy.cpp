@@ -23,23 +23,26 @@ void UiDnsProxy::initialize()
 		}
 	);
 
+	// First-run consent: a missing DNS/enable key means the user has never
+	// decided about the DNS feature, so ask before touching the hosts file.
+	_window_enable_dns_proxy->create(Localization::Str{ "str_warning" }, "str_window_enable_dns_proxy_description");
+	_window_enable_dns_proxy->setType(SecondaryWindow::Type::YesNo);
+	_window_enable_dns_proxy->addEventYesNo(
+		[this](JSArgs args)
+		{
+			_window_enable_dns_proxy->hide();
+			setEnabled(jsToCpp<bool>(args[0]));
+			return false;
+		}
+	);
+
 	_enable_dns_proxy
 		->create("#dns section .common", "str_checkbox_enable_dns_proxy_title", Localization::Str{ "str_checkbox_enable_dns_proxy_description" });
-	_enable_dns_proxy->addTutorialStep("str_tour_dns_proxy_title", "str_tour_dns_proxy_description", 21);
+	_enable_dns_proxy->addTutorialStep("str_tour_dns_proxy_title", "str_tour_dns_proxy_description", 17);
 	_enable_dns_proxy->addEventClick(
 		[this](JSArgs args)
 		{
-			const bool state = jsToCpp<bool>(args[0]);
-			_ui->userConfig()->writeSectionParameter("DNS", "enable", state ? "true" : "false");
-
-			_ui->backgroundTasks()->start("dns_proxy_apply", "str_task_dns_proxy_title");
-			Core::get().addTask(
-				[this, state]
-				{
-					_dns_proxy.run(state);
-					_ui->backgroundTasks()->finish("dns_proxy_apply");
-				}
-			);
+			setEnabled(jsToCpp<bool>(args[0]));
 			return false;
 		}
 	);
@@ -57,7 +60,7 @@ void UiDnsProxy::initialize()
 		Localization::Str{ "str_dns_proxy_servers_description" }(),
 		Localization::Str{ "str_input_dns_proxy_custom_placeholder" }()
 	);
-	_upstreams->addTutorialStep("str_tour_dns_servers_title", "str_tour_dns_servers_description", 22);
+	_upstreams->addTutorialStep("str_tour_dns_servers_title", "str_tour_dns_servers_description", 18);
 	_upstreams->setValidator([](const std::string& value) { return isValidUpstreamAddress(trimConfigLine(value)); });
 	_upstreams->addEventChange(
 		[this](JSArgs)
@@ -87,7 +90,7 @@ void UiDnsProxy::initialize()
 		Localization::Str{ "str_dns_proxy_bootstrap_title" },
 		Localization::Str{ "str_dns_proxy_bootstrap_description" }
 	);
-	_bootstrap->addTutorialStep("str_tour_dns_bootstrap_title", "str_tour_dns_bootstrap_description", 23);
+	_bootstrap->addTutorialStep("str_tour_dns_bootstrap_title", "str_tour_dns_bootstrap_description", 19);
 	_bootstrap->setValidator([](const std::string& value) { return parseBootstrapList(trimConfigLine(value)).has_value(); });
 	_bootstrap->addEventSubmit(
 		[this](JSArgs args)
@@ -124,7 +127,7 @@ void UiDnsProxy::initialize()
 		Localization::Str{ "str_dns_proxy_timeout_description" },
 		Input::Options{ 1, 120, "sec" }
 	);
-	_timeout->addTutorialStep("str_tour_dns_timeout_title", "str_tour_dns_timeout_description", 24);
+	_timeout->addTutorialStep("str_tour_dns_timeout_title", "str_tour_dns_timeout_description", 20);
 	_timeout->addEventSubmit(
 		[this](JSArgs args)
 		{
@@ -154,7 +157,7 @@ void UiDnsProxy::initialize()
 	_test_input->setValidator([](const std::string& value) { return isValidUpstreamAddress(trimConfigLine(value)); });
 
 	_test_button->create("#dns section .common", "str_button_test_upstream_title");
-	_test_button->addTutorialStep("str_tour_dns_test_title", "str_tour_dns_test_description", 25);
+	_test_button->addTutorialStep("str_tour_dns_test_title", "str_tour_dns_test_description", 21);
 	_test_button->addEventClick(
 		[this](JSArgs)
 		{
@@ -200,17 +203,36 @@ void UiDnsProxy::initialize()
 	// Seed the proxy and persist the list.
 	_collectUpstreams();
 
-	const bool enabled = _ui->userConfig()->parameterSection<bool>("DNS", "enable").value_or(false);
-	_enable_dns_proxy->setState(enabled);
-	_refreshStatus();
+	// Reconcile with the persisted setting; on the very first run there is
+	// none, so ask for consent to enable the DNS feature instead.
+	if (auto cfg = _ui->userConfig()->parameterSection<bool>("DNS", "enable"))
+	{
+		_enable_dns_proxy->setState(cfg.value());
+		_refreshStatus();
+		_applyState(cfg.value());
+	}
+	else
+	{
+		_enable_dns_proxy->setState(false);
+		_refreshStatus();
+		Core::get().addTask([this] { _window_enable_dns_proxy->show(); });
+	}
+}
 
-	// Reconcile the service with the persisted setting: start it when enabled,
-	// and kill a leftover service from a previous run when disabled.
+void UiDnsProxy::setEnabled(bool state)
+{
+	_ui->userConfig()->writeSectionParameter("DNS", "enable", state ? "true" : "false");
+	_enable_dns_proxy->setState(state);
+	_applyState(state);
+}
+
+void UiDnsProxy::_applyState(bool state)
+{
 	_ui->backgroundTasks()->start("dns_proxy_apply", "str_task_dns_proxy_title");
 	Core::get().addTask(
-		[this, enabled]
+		[this, state]
 		{
-			_dns_proxy.run(enabled);
+			_ui->_unblock->setDnsEnabled(state);
 			_ui->backgroundTasks()->finish("dns_proxy_apply");
 		}
 	);

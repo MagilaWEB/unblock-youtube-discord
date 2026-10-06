@@ -8,7 +8,6 @@ add_executable(test_unblock
     ../strategy_config_base.cpp
     ../strategy_generator.cpp
     ../dns_host.cpp
-    ../http_load_content.cpp
 )
 target_link_libraries(test_unblock PRIVATE Catch2::Catch2 core CURL::libcurl ws2_32)
 target_include_directories(test_unblock PRIVATE ..)

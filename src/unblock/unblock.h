@@ -210,11 +210,15 @@ public:
 
 	std::vector<std::string> listVersionStrategy(Technology technology);
 
-	/** DNS hosts (GeoHide) subsystem. Consumers talk to it directly. */
+	/** Own-hosts-pins subsystem. Consumers talk to it directly. */
 	DNSHost& dnsHosts();
 
 	/** DNS proxy subsystem (unblock_dns.exe). Consumers talk to it directly. */
 	DnsProxy& dnsProxy() { return _dns_proxy; }
+
+	/** Enables/disables the whole DNS feature: the unblock_dns proxy service
+	 *  plus Unblock's own domain->IP pins in the system hosts file. */
+	void setDnsEnabled(bool state);
 
 	/** Local Telegram WS proxy subsystem. Consumers talk to it directly. */
 	TgProxy& tgProxy() { return _tg_proxy; }
