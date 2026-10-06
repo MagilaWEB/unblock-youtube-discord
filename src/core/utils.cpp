@@ -1,5 +1,6 @@
 #include "utils.h"
 
+#include <cstring>
 #include <span>
 
 bool utils::isUtf8(std::string_view string)
@@ -329,4 +330,39 @@ bool utils::isValidNetwork(std::string_view network)
 	}
 
 	return is_ipv6 ? isValidIpv6(address) : isValidIpv4(address);
+}
+
+bool utils::copyToClipboard(std::string_view utf8_str)
+{
+	const std::wstring wide = utf8ToUtf16(utf8_str);
+
+	if (!OpenClipboard(nullptr))
+		return false;
+
+	EmptyClipboard();
+
+	const size_t bytes	= (wide.size() + 1) * sizeof(wchar_t);
+	HGLOBAL		 global = GlobalAlloc(GMEM_MOVEABLE, bytes);
+	if (!global)
+	{
+		CloseClipboard();
+		return false;
+	}
+
+	if (void* data = GlobalLock(global))
+	{
+		std::memcpy(data, wide.c_str(), bytes);
+		GlobalUnlock(global);
+	}
+
+	// Ownership of the block passes to the clipboard on success.
+	if (!SetClipboardData(CF_UNICODETEXT, global))
+	{
+		GlobalFree(global);
+		CloseClipboard();
+		return false;
+	}
+
+	CloseClipboard();
+	return true;
 }

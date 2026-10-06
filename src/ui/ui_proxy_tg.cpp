@@ -61,6 +61,18 @@ void UiProxyTg::_enableProxyLinkTg()
 			return false;
 		}
 	);
+
+	// Fallback for setups where the tg:// handoff does not open Telegram
+	// (for example a Store build, or no registered handler): copy the link so
+	// the user can paste it into Telegram's Saved Messages and tap it.
+	_proxy_link_tg_copy->create("#tg_ws_proxy section .common", "str_button_proxy_copy_link_tg_title");
+	_proxy_link_tg_copy->addEventClick(
+		[this](JSArgs)
+		{
+			_tg_proxy.copyLink();
+			return false;
+		}
+	);
 }
 
 std::string UiProxyTg::_settingValue(std::string_view key, std::string_view default_value)

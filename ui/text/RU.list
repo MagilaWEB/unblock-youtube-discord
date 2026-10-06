@@ -343,6 +343,7 @@ str_checkbox_enable_proxy_tg_title=📱 Прокси для Telegram
 str_checkbox_enable_proxy_tg_description=🔒 Локальный прокси для Telegram
 Создаёт прокси-сервер на вашем устройстве. Это адаптированный под Unblock софт TgWsProxy. Он не подключается к сторонним серверам и работает только локально для обхода блокировок.
 str_button_proxy_link_tg_title=🔗 Подключить прокси к Telegram
+str_button_proxy_copy_link_tg_title=📋 Скопировать ссылку
 str_b_proxy_tg_apply=💾 Применить настройки
 
 // Setting tg ws proxy

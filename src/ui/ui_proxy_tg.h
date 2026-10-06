@@ -14,6 +14,7 @@ private:
 
 	CHECK_BOX(_proxy_tg_enable);
 	BUTTON(_proxy_link_tg);
+	BUTTON(_proxy_link_tg_copy);
 
 	INPUT(_proxy_tg_host);
 	INPUT(_proxy_tg_port);

@@ -21,7 +21,15 @@ public:
 
 	void run(bool state = true);
 	bool isRun();
+
+	/** tg:// proxy link built from the current host/port/secret. */
+	[[nodiscard]] std::string link() const;
+
+	/** Opens the link in Telegram. Launched de-elevated (see linkRun). */
 	void linkRun();
+
+	/** Copies the link to the clipboard (fallback for the manual setup). */
+	void copyLink() const;
 
 	void setParams(std::string_view host, std::string_view port, std::array<std::string, 4> dc_ip, std::string_view cfproxy_domain);
 

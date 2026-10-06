@@ -33,4 +33,7 @@ namespace utils
 
 	/** Returns true when the string is a valid IP address or subnet (IPv4/IPv6, optional /N prefix). */
 	bool isValidNetwork(std::string_view network);
+
+	/** Copies UTF-8 text to the Windows clipboard. Returns false on failure. */
+	bool copyToClipboard(std::string_view utf8_str);
 }
