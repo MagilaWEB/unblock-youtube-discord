@@ -49,9 +49,8 @@ void StrategyConfigBase::changeDirVersion(std::string_view dir_version)
 	{
 		auto& path = entry.path();
 
-		if (std::filesystem::is_regular_file(path) && path.has_extension())
-			if (path.extension() == ".config")
-				_strategy_files_list.push_back(path.filename().string());
+		if (std::filesystem::is_regular_file(path) && path.has_extension() && path.extension() == ".config")
+			_strategy_files_list.push_back(path.filename().string());
 	}
 
 	_sortFiles();

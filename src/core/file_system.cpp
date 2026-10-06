@@ -463,7 +463,7 @@ void File::_normalize()
 			auto close	= header.find(']');
 			auto name	= (close == std::string::npos) ? header : header.substr(1, close - 1);
 
-			if (sections.find(name) == sections.end())
+			if (!sections.contains(name))
 			{
 				order.push_back(name);
 				sections[name].in_file = true;

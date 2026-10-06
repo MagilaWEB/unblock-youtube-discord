@@ -74,10 +74,9 @@ DNSHost::DNSHost()
 
 	_user_host_complete.store(!_file_hosts_user.empty());
 
-	if ((!_file_hosts_backup.isOpen()) || _file_hosts_backup.empty())
-		if (!_file_hosts.empty())
-			for (auto& line : _file_hosts)
-				_file_hosts_backup.writeText(line);
+	if ((!_file_hosts_backup.isOpen() || _file_hosts_backup.empty()) && !_file_hosts.empty())
+		for (auto& line : _file_hosts)
+			_file_hosts_backup.writeText(line);
 
 	_dir_dns_hosts = Core::get().configsPath() / "dns_hosts";
 	_geohide_cache = Core::get().configsPath() / "hosts_geohide.cache";
@@ -236,7 +235,7 @@ void DNSHost::update()
 	// Layer 2: manual hosts lines. Comments, blanks and non-IPv4 lines
 	// (e.g. IPv6) pass through untouched.
 	for (auto& line :
-		 [&]() -> std::vector<std::string>
+		 [&] -> std::vector<std::string>
 		 {
 			 File manual{ false };
 			 manual.open(_manual_hosts, "");

@@ -92,10 +92,10 @@ TEST_CASE("dimmerCss: four strips around the box with 1px overlap", "[tour]")
 	// Box [100..300]x[200..400]: each strip overlaps the spotlight by 1px,
 	// so rounding gaps are impossible (see dom_tour.hpp).
 	const auto css = dimmerCss(1'000, 800, 100, 200, 300, 400);
-	CHECK(css.top.find("height:201px") != std::string::npos);
-	CHECK(css.bottom.find("top:399px") != std::string::npos);
-	CHECK(css.left.find("width:101px") != std::string::npos);
-	CHECK(css.left.find("top:199px") != std::string::npos);
-	CHECK(css.right.find("left:299px") != std::string::npos);
-	CHECK(css.right.find("top:199px") != std::string::npos);
+	CHECK(css.top.contains("height:201px"));
+	CHECK(css.bottom.contains("top:399px"));
+	CHECK(css.left.contains("width:101px"));
+	CHECK(css.left.contains("top:199px"));
+	CHECK(css.right.contains("left:299px"));
+	CHECK(css.right.contains("top:199px"));
 }

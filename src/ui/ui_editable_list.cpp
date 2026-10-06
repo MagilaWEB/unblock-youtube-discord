@@ -56,7 +56,7 @@ void EditableList::create(std::string_view selector, Localization::Str title, st
 				_input.addClass("input_error_validator");
 
 				using namespace std::chrono_literals;
-				Scheduler::get().after(1'100ms, [this]() mutable { _input.removeClass("input_error_validator"); });
+				Scheduler::get().after(1'100ms, [this] mutable { _input.removeClass("input_error_validator"); });
 				return false;
 			}
 

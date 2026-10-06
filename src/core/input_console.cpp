@@ -111,13 +111,10 @@ u32 InputConsole::sendNum(std::list<u8> nums)
 		{
 			for (auto& send_num : nums)
 			{
-				if (send_num == num)
+				if (send_num == num && KEY<bool>(key, false))
 				{
-					if (KEY<bool>(key, false))
-					{
-						clear();
-						return num;
-					}
+					clear();
+					return num;
 				}
 			}
 		}

@@ -43,10 +43,10 @@ void Ui::setup(saucer::smartview* view)
 	view->parent().on<saucer::window::event::resize>([this](int, int) { _engine->markWindowGeometryDirty(); });
 
 	// Window close — full UI reset (the engine shuts itself down on the last closed window).
-	view->parent().on<saucer::window::event::closed>([this]() { _closeWindow(); });
+	view->parent().on<saucer::window::event::closed>([this] { _closeWindow(); });
 
 	// DOM ready — build the widget tree.
-	view->once<saucer::webview::event::dom_ready>([this]() { _domReady(); });
+	view->once<saucer::webview::event::dom_ready>([this] { _domReady(); });
 }
 
 void Ui::_closeWindow()

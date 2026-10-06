@@ -297,7 +297,7 @@ std::vector<std::string> Unblock::testHostNames()
 	for (auto& line : _domain_testing->listHost())
 	{
 		std::smatch m;
-		if (!(std::regex_search(line, m, std::regex{ R"(://([^/?#]+))" }) && m.size() > 1))
+		if (!std::regex_search(line, m, std::regex{ R"(://([^/?#]+))" }) || m.size() <= 1)
 			continue;
 
 		std::string host = m[1].str();

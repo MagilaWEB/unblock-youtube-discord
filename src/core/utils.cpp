@@ -279,9 +279,9 @@ bool utils::isValidHostNamePort(std::string_view host)
 
 	if (host_part.front() == '[' && host_part.back() == ']')
 		return isValidIpv6(host_part.substr(1, host_part.size() - 2));
-	else if (host_part.contains(':'))
+	if (host_part.contains(':'))
 		return isValidIpv6(host_part);
-	else if (host_part.contains('.') && isValidIpv4(host_part))
+	if (host_part.contains('.') && isValidIpv4(host_part))
 		return true;
 
 	return isValidHostName(host_part);

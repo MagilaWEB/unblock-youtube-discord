@@ -635,7 +635,7 @@ void Engine::_startUpdateTicker(saucer::application* app)
 
 				// Post to the main thread (msg loop) — the same thread that owns JS/WebView2.
 				app->post(
-					[this]()
+					[this]
 					{
 						if (!_update_ticker_run)
 							return;

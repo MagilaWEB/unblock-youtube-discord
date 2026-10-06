@@ -227,7 +227,7 @@ void Tutorial::endTour()
 
 	auto old_overlay = _overlay;
 	using namespace std::chrono_literals;
-	Scheduler::get().after(250ms, [old_overlay]() mutable { old_overlay.remove(); });
+	Scheduler::get().after(250ms, [old_overlay] mutable { old_overlay.remove(); });
 	_overlay   = {};
 	_spotlight = {};
 	_dimmers.clear();
@@ -304,7 +304,7 @@ void Tutorial::resetOverlayVisual(int gen)
 	using namespace std::chrono_literals;
 	Scheduler::get().after(
 		250ms,
-		[gen, dims]() mutable
+		[gen, dims] mutable
 		{
 			if (stale(gen))
 				return;
@@ -349,7 +349,7 @@ void Tutorial::scheduleLayout(int gen, Step step, ui::dom::Element target)
 	using namespace std::chrono_literals;
 	Scheduler::get().after(
 		900ms,
-		[gen, step = std::move(step), target]() mutable
+		[gen, step = std::move(step), target] mutable
 		{
 			if (stale(gen))
 				return;

@@ -236,7 +236,7 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 		if (obj && obj->isCancelTesting())
 			break;
 
-		auto get_host = [&]() -> std::string
+		auto get_host = [&] -> std::string
 		{
 			std::smatch m;
 			return std::regex_search(domain.url, m, std::regex{ R"(://([^/?#]+))" }) && m.size() > 1 ? m[1].str() : "";
