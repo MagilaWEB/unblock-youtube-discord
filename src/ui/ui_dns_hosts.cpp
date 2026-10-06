@@ -46,7 +46,7 @@ void UiDnsHosts::_enableDnsHosts()
 
 	_enable_dns_hosts
 		->create("#dns section .common", "str_checkbox_enable_dns_hosts_title", Localization::Str{ "str_checkbox_enable_dns_hosts_description" });
-	_enable_dns_hosts->addTutorialStep("str_tour_dns_hosts_title", "str_tour_dns_hosts_description", 10);
+	_enable_dns_hosts->addTutorialStep("str_tour_dns_hosts_title", "str_tour_dns_hosts_description", 17);
 	_enable_dns_hosts->addEventClick(
 		[this](JSArgs args)
 		{
@@ -63,7 +63,7 @@ void UiDnsHosts::_enableDnsHosts()
 	);
 
 	_start_update_dns_hosts->create("#dns section .common", "str_button_start_dns_hosts_update_title");
-	_start_update_dns_hosts->addTutorialStep("str_tour_update_dns_title", "str_tour_update_dns_description", 11);
+	_start_update_dns_hosts->addTutorialStep("str_tour_update_dns_title", "str_tour_update_dns_description", 18);
 
 	_start_update_dns_hosts->addEventClick(
 		[this](JSArgs)
@@ -75,7 +75,7 @@ void UiDnsHosts::_enableDnsHosts()
 
 	_select_region
 		->create("#dns section .common", "str_select_dns_hosts_region_title", Localization::Str{ "str_select_dns_hosts_region_description" });
-	_select_region->addTutorialStep("str_tour_dns_active_region_title", "str_tour_dns_active_region_description", 12);
+	_select_region->addTutorialStep("str_tour_dns_active_region_title", "str_tour_dns_active_region_description", 19);
 	_select_region->addEventChange(
 		[this](JSArgs args)
 		{
@@ -110,7 +110,7 @@ void UiDnsHosts::_enableDnsHosts()
 		Localization::Str{ "str_dns_hosts_regions_description" }(),
 		Localization::Str{ "str_input_dns_hosts_region_placeholder" }()
 	);
-	_region_list->addTutorialStep("str_tour_dns_region_list_title", "str_tour_dns_region_list_description", 13);
+	_region_list->addTutorialStep("str_tour_dns_region_list_title", "str_tour_dns_region_list_description", 20);
 	_region_list->setValidator(
 		[this](const std::string& value)
 		{

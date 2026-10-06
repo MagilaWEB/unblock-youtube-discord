@@ -25,6 +25,7 @@ void UiDnsProxy::initialize()
 
 	_enable_dns_proxy
 		->create("#dns section .common", "str_checkbox_enable_dns_proxy_title", Localization::Str{ "str_checkbox_enable_dns_proxy_description" });
+	_enable_dns_proxy->addTutorialStep("str_tour_dns_proxy_title", "str_tour_dns_proxy_description", 21);
 	_enable_dns_proxy->addEventClick(
 		[this](JSArgs args)
 		{
@@ -56,6 +57,7 @@ void UiDnsProxy::initialize()
 		Localization::Str{ "str_dns_proxy_servers_description" }(),
 		Localization::Str{ "str_input_dns_proxy_custom_placeholder" }()
 	);
+	_upstreams->addTutorialStep("str_tour_dns_servers_title", "str_tour_dns_servers_description", 22);
 	_upstreams->setValidator([](const std::string& value) { return isValidUpstreamAddress(trimConfigLine(value)); });
 	_upstreams->addEventChange(
 		[this](JSArgs)
@@ -85,6 +87,7 @@ void UiDnsProxy::initialize()
 		Localization::Str{ "str_dns_proxy_bootstrap_title" },
 		Localization::Str{ "str_dns_proxy_bootstrap_description" }
 	);
+	_bootstrap->addTutorialStep("str_tour_dns_bootstrap_title", "str_tour_dns_bootstrap_description", 23);
 	_bootstrap->setValidator([](const std::string& value) { return parseBootstrapList(trimConfigLine(value)).has_value(); });
 	_bootstrap->addEventSubmit(
 		[this](JSArgs args)
@@ -121,6 +124,7 @@ void UiDnsProxy::initialize()
 		Localization::Str{ "str_dns_proxy_timeout_description" },
 		Input::Options{ 1, 120, "sec" }
 	);
+	_timeout->addTutorialStep("str_tour_dns_timeout_title", "str_tour_dns_timeout_description", 24);
 	_timeout->addEventSubmit(
 		[this](JSArgs args)
 		{
@@ -150,6 +154,7 @@ void UiDnsProxy::initialize()
 	_test_input->setValidator([](const std::string& value) { return isValidUpstreamAddress(trimConfigLine(value)); });
 
 	_test_button->create("#dns section .common", "str_button_test_upstream_title");
+	_test_button->addTutorialStep("str_tour_dns_test_title", "str_tour_dns_test_description", 25);
 	_test_button->addEventClick(
 		[this](JSArgs)
 		{

@@ -21,7 +21,7 @@ void UiProxyTg::_enableProxyTg()
 		"str_checkbox_enable_proxy_tg_title",
 		Localization::Str{ "str_checkbox_enable_proxy_tg_description" }
 	);
-	_proxy_tg_enable->addTutorialStep("str_tour_proxy_tg_title", "str_tour_proxy_tg_description", 14);
+	_proxy_tg_enable->addTutorialStep("str_tour_proxy_tg_title", "str_tour_proxy_tg_description", 26);
 	_proxy_tg_enable->setState(_tg_proxy.isRun());
 	_proxy_tg_enable->addEventClick(
 		[this](JSArgs args)
@@ -52,7 +52,7 @@ void UiProxyTg::_enableProxyTg()
 void UiProxyTg::_enableProxyLinkTg()
 {
 	_proxy_link_tg->create("#tg_ws_proxy section .common", "str_button_proxy_link_tg_title");
-	_proxy_link_tg->addTutorialStep("str_tour_proxy_link_title", "str_tour_proxy_link_description", 15);
+	_proxy_link_tg->addTutorialStep("str_tour_proxy_link_title", "str_tour_proxy_link_description", 27);
 
 	_proxy_link_tg->addEventClick(
 		[this](JSArgs)
@@ -66,6 +66,7 @@ void UiProxyTg::_enableProxyLinkTg()
 	// (for example a Store build, or no registered handler): copy the link so
 	// the user can paste it into Telegram's Saved Messages and tap it.
 	_proxy_link_tg_copy->create("#tg_ws_proxy section .common", "str_button_proxy_copy_link_tg_title");
+	_proxy_link_tg_copy->addTutorialStep("str_tour_proxy_copy_title", "str_tour_proxy_copy_description", 28);
 	_proxy_link_tg_copy->addEventClick(
 		[this](JSArgs)
 		{
@@ -101,6 +102,7 @@ void UiProxyTg::_proxySettings()
 		Localization::Str{ "str_proxy_tg_host_title" },
 		Localization::Str{ "str_proxy_tg_host_description" }
 	);
+	_proxy_tg_host->addTutorialStep("str_tour_proxy_settings_title", "str_tour_proxy_settings_description", 29);
 	_proxy_tg_port->create(
 		"#tg_ws_proxy section .common",
 		Input::Types::port,
@@ -147,7 +149,7 @@ void UiProxyTg::_proxySettings()
 	_tg_proxy.setParams(host, port, dc_settings, cfproxy);
 
 	_proxy_tg_apply->create("#tg_ws_proxy section .common", "str_b_proxy_tg_apply");
-	_proxy_tg_apply->addTutorialStep("str_tour_proxy_apply_title", "str_tour_proxy_apply_description", 16);
+	_proxy_tg_apply->addTutorialStep("str_tour_proxy_apply_title", "str_tour_proxy_apply_description", 30);
 	_proxy_tg_apply->addEventClick(
 		[this](JSArgs)
 		{

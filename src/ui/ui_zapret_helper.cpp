@@ -53,6 +53,7 @@ void UiZapretHelper::setVisible(bool visible)
 void UiZapretHelper::_initHelperSummary()
 {
 	_helper_summary->create(_sel(" .common"));
+	_helper_summary->addTutorialStep("str_tour_helper_summary_title", "str_tour_helper_summary_description", 11);
 }
 
 void UiZapretHelper::_initHelperChecking()
@@ -110,6 +111,8 @@ void UiZapretHelper::_initHelperSettings()
 		);
 		widget->addEventSubmit(submit);
 	}
+
+	_helper_pool->addTutorialStep("str_tour_helper_settings_title", "str_tour_helper_settings_description", 12);
 
 	_pushHelperSettings();
 }

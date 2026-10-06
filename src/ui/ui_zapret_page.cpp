@@ -275,6 +275,8 @@ void UiZapretPage::_initCustomLists()
 			widget->setItems(std::move(cfg.value()));
 	}
 
+	_list_custom_hosts->addTutorialStep("str_tour_custom_lists_title", "str_tour_custom_lists_description", 10);
+
 	_saveCustomLists();
 }
 
@@ -416,6 +418,7 @@ void UiZapretPage::_selectFakeBin()
 	if (!_select_fake_bin->isCreate())
 	{
 		_select_fake_bin->create("#zapret .common", "str_select_fake_bin_title", Localization::Str{ "str_select_fake_bin_description" });
+		_select_fake_bin->addTutorialStep("str_tour_fake_bin_title", "str_tour_fake_bin_description", 7);
 		_select_fake_bin->addEventChange(
 			[this](JSArgs args)
 			{
@@ -493,6 +496,7 @@ void UiZapretPage::_syncFakeProfile()
 void UiZapretPage::_initMainControls()
 {
 	_status_engine->create("#zapret .common");
+	_status_engine->addTutorialStep("str_tour_engine_rate_title", "str_tour_engine_rate_description", 9);
 	_status_engine->setInactive(Localization::Str{ "str_status_engine_stopped" }());
 
 	_start_button->create("#zapret .common", "str_b_start_zapret");
@@ -548,6 +552,7 @@ void UiZapretPage::_initMainControls()
 	_window_warning_technology_busy->setType(SecondaryWindow::Type::YesNo);
 
 	_stop_zapret->create("#zapret .common", "str_b_stop_zapret");
+	_stop_zapret->addTutorialStep("str_tour_stop_title", "str_tour_stop_description", 8);
 	_stop_zapret->addEventClick(
 		[this](JSArgs)
 		{
@@ -612,12 +617,14 @@ void UiZapretPage::_updateStatus(std::optional<Technology> active)
 	else
 	{
 		const auto rate = _ui->_unblock->zapretRateBps();
-		_status_engine->setActive(utils::format(
-			Localization::Str{ "str_status_engine_running_rate" }(),
-			_technologyName(active.value()),
-			formatRate(rate.down),
-			formatRate(rate.up)
-		));
+		_status_engine->setActive(
+			utils::format(
+				Localization::Str{ "str_status_engine_running_rate" }(),
+				_technologyName(active.value()),
+				formatRate(rate.down),
+				formatRate(rate.up)
+			)
+		);
 	}
 }
 
