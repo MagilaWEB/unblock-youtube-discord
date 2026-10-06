@@ -23,54 +23,72 @@ namespace
 
 TEST_CASE("judgeAutoRound empty never wins", "[auto][judge]")
 {
-	CHECK_FALSE(judgeAutoRound(0, 0));
+	CHECK_FALSE(judgeAutoRound(0, 0, 0));
 }
 
 TEST_CASE("judgeAutoRound all alive wins", "[auto][judge]")
 {
-	CHECK(judgeAutoRound(0, 10));
+	CHECK(judgeAutoRound(10, 0, 0));
 }
 
 TEST_CASE("judgeAutoRound 10 percent dead wins", "[auto][judge]")
 {
-	CHECK(judgeAutoRound(1, 10));
-	CHECK(judgeAutoRound(2, 20));
+	CHECK(judgeAutoRound(9, 1, 0));
+	CHECK(judgeAutoRound(18, 2, 0));
 }
 
 TEST_CASE("judgeAutoRound over 10 percent dead fails", "[auto][judge]")
 {
-	CHECK_FALSE(judgeAutoRound(2, 10));
-	CHECK_FALSE(judgeAutoRound(1, 5));
-	CHECK_FALSE(judgeAutoRound(3, 20));
+	CHECK_FALSE(judgeAutoRound(8, 2, 0));
+	CHECK_FALSE(judgeAutoRound(4, 1, 0));
+	CHECK_FALSE(judgeAutoRound(17, 3, 0));
+}
+
+TEST_CASE("judgeAutoRound errors count against confirmation", "[auto][judge]")
+{
+	// 90% of (valid + dead + errors) must be valid.
+	CHECK(judgeAutoRound(9, 0, 1));
+	CHECK(judgeAutoRound(90, 5, 5));
+	CHECK_FALSE(judgeAutoRound(8, 1, 1));
+	CHECK_FALSE(judgeAutoRound(8, 0, 2));
+}
+
+TEST_CASE("autoRoundDeadExceeded fail-fast", "[auto][judge]")
+{
+	CHECK_FALSE(autoRoundDeadExceeded(0, 0, 0));
+	CHECK(autoRoundDeadExceeded(0, 1, 0));
+	CHECK(autoRoundDeadExceeded(8, 2, 0));
+	CHECK_FALSE(autoRoundDeadExceeded(9, 1, 0));
 }
 
 TEST_CASE("autoRoundSettled empty never settles", "[auto][settle]")
 {
-	CHECK_FALSE(autoRoundSettled({}, makeSet({ "a.com" }), {}, {}));
+	CHECK_FALSE(autoRoundSettled({}, makeSet({ "a.com" }), {}, {}, {}));
 }
 
 TEST_CASE("autoRoundSettled waits for every host", "[auto][settle]")
 {
 	const auto expected = makeSet({ "a.com", "b.com" });
-	CHECK_FALSE(autoRoundSettled(expected, makeSet({ "a.com" }), {}, {}));
-	CHECK_FALSE(autoRoundSettled(expected, {}, makeSet({ "a.com" }), {}));
-	CHECK_FALSE(autoRoundSettled(expected, {}, {}, makeSet({ "a.com" })));
-	CHECK(autoRoundSettled(expected, makeSet({ "a.com" }), makeSet({ "b.com" }), {}));
-	CHECK(autoRoundSettled(expected, makeSet({ "a.com", "b.com" }), {}, {}));
+	CHECK_FALSE(autoRoundSettled(expected, makeSet({ "a.com" }), {}, {}, {}));
+	CHECK_FALSE(autoRoundSettled(expected, {}, makeSet({ "a.com" }), {}, {}));
+	CHECK_FALSE(autoRoundSettled(expected, {}, {}, makeSet({ "a.com" }), {}));
+	CHECK(autoRoundSettled(expected, makeSet({ "a.com" }), makeSet({ "b.com" }), {}, {}));
+	CHECK(autoRoundSettled(expected, makeSet({ "a.com", "b.com" }), {}, {}, {}));
 }
 
 TEST_CASE("autoRoundSettled unjudged host counts as terminal", "[auto][settle]")
 {
 	const auto expected = makeSet({ "a.com", "b.com" });
-	CHECK_FALSE(autoRoundSettled(expected, {}, {}, makeSet({ "a.com" })));
-	CHECK(autoRoundSettled(expected, {}, {}, makeSet({ "a.com", "b.com" })));
+	CHECK_FALSE(autoRoundSettled(expected, {}, {}, makeSet({ "a.com" }), {}));
+	CHECK(autoRoundSettled(expected, {}, {}, makeSet({ "a.com", "b.com" }), {}));
 }
 
-TEST_CASE("autoRoundSettled error without exhausted is not terminal", "[auto][settle]")
+TEST_CASE("autoRoundSettled error host counts as terminal", "[auto][settle]")
 {
-	// Error hosts are not consulted at all: hunting in progress.
-	const auto expected = makeSet({ "a.com" });
-	CHECK_FALSE(autoRoundSettled(expected, {}, {}, {}));
+	const auto expected = makeSet({ "a.com", "b.com" });
+	CHECK_FALSE(autoRoundSettled(expected, {}, {}, {}, makeSet({ "a.com" })));
+	CHECK(autoRoundSettled(expected, makeSet({ "a.com" }), {}, {}, makeSet({ "b.com" })));
+	CHECK(autoRoundSettled(expected, {}, {}, {}, makeSet({ "a.com", "b.com" })));
 }
 
 TEST_CASE("isHelperHostName mirrors helper filter", "[auto][hostname]")

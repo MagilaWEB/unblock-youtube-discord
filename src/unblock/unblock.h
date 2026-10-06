@@ -38,21 +38,31 @@ struct ZapretRate
  *  exhausted). Header-inline so unit tests link without the engine. */
 inline bool autoRoundSettled(
 	const std::unordered_set<std::string>& expected, const std::unordered_set<std::string>& valid, const std::unordered_set<std::string>& exhausted,
-	const std::unordered_set<std::string>& unjudged
+	const std::unordered_set<std::string>& unjudged, const std::unordered_set<std::string>& errors
 )
 {
 	if (expected.empty())
 		return false;
 	for (const auto& h : expected)
-		if (!valid.contains(h) && !exhausted.contains(h) && !unjudged.contains(h))
+		if (!valid.contains(h) && !exhausted.contains(h) && !unjudged.contains(h) && !errors.contains(h))
 			return false;
 	return true;
 }
 
-/** Win when at most ~10% of expected hosts are dead. Empty set never wins. */
-inline bool judgeAutoRound(size_t dead, size_t total)
+/** Confirmed effective when at least 90% of the judged hosts (valid + dead +
+ *  errors) are valid. Empty set never wins. */
+inline bool judgeAutoRound(size_t valid, size_t dead, size_t errors)
 {
-	return total > 0 && dead * 10 <= total;
+	const size_t base = valid + dead + errors;
+	return base > 0 && valid * 10 >= base * 9;
+}
+
+/** Fail-fast: too many dead hosts among the judged ones — switch the config
+ *  immediately instead of waiting for the whole list. */
+inline bool autoRoundDeadExceeded(size_t valid, size_t dead, size_t errors)
+{
+	const size_t base = valid + dead + errors;
+	return base > 0 && dead * 10 > base;
 }
 
 /** Hostnames the helper can verdict (mirrors helper _isValidHost). */

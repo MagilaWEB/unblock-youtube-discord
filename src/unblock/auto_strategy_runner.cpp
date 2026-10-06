@@ -45,9 +45,7 @@ void AutoStrategyRunner::run(Technology technology, std::string_view start_versi
 		if (callbacks.progress)
 			callbacks.progress(text_desc);
 
-		const bool won = technology == Technology::Zapret2 ? _runPassiveRound(technology, text_desc, callbacks) : _runTestingRound(callbacks);
-
-		if (won)
+		if (technology == Technology::Zapret2 ? _runPassiveRound(technology, text_desc, callbacks) : _runTestingRound(callbacks))
 		{
 			AutoStrategyResult result{};
 			result.won		= true;
@@ -57,6 +55,7 @@ void AutoStrategyRunner::run(Technology technology, std::string_view start_versi
 
 			if (callbacks.finished)
 				callbacks.finished(result);
+
 			return;
 		}
 	}
@@ -77,6 +76,7 @@ bool AutoStrategyRunner::_tryNext(Technology technology, const Callbacks& callba
 	{
 		if (callbacks.iteration)
 			callbacks.iteration(_current_version, false);
+
 		return true;
 	}
 
@@ -84,22 +84,27 @@ bool AutoStrategyRunner::_tryNext(Technology technology, const Callbacks& callba
 	if (strategy_dirs.empty())
 		return false;
 
-	const auto it = std::ranges::find(strategy_dirs, _current_version);
+	const auto it	   = std::ranges::find(strategy_dirs, _current_version);
+	const auto it_next = it + 1;
 
-	if (it != strategy_dirs.end() && it + 1 != strategy_dirs.end())
+	if (it != strategy_dirs.end() && it_next != strategy_dirs.end())
 	{
-		_current_version = *(it + 1);
+		_current_version = *it_next;
 		_unblock.changeDirVersionStrategy(technology, _current_version);
+
 		if (callbacks.iteration)
 			callbacks.iteration(_current_version, true);
+
 		return true;
 	}
 
 	// Wrapped around: reset to the first version and stop the search.
 	_current_version = strategy_dirs.front();
 	_unblock.changeDirVersionStrategy(technology, _current_version);
+
 	if (callbacks.iteration)
 		callbacks.iteration(_current_version, true);
+
 	return false;
 }
 
@@ -118,8 +123,13 @@ bool AutoStrategyRunner::_runPassiveRound(Technology technology, std::string_vie
 
 	// Passive round: no curl testing here at all. The helper probes every LIST
 	// host through the running desync, lua marks fully-tried hosts exhausted.
-	// The round ends when every expected host is valid, exhausted or unjudged.
+	// Verdict rule over valid/dead/errors: fail fast once dead exceeds 10%,
+	// confirm once valid reaches 90%, otherwise wait until every expected host
+	// is terminal (valid/exhausted/unjudged/error).
 	bool		settled = expected.empty();
+	size_t		valid_count{ 0 };
+	size_t		dead_count{ 0 };
+	size_t		error_count{ 0 };
 	std::string last_live;
 	auto		last_live_at = std::chrono::steady_clock::now() - std::chrono::seconds(10);
 
@@ -127,20 +137,35 @@ bool AutoStrategyRunner::_runPassiveRound(Technology technology, std::string_vie
 	{
 		if (callbacks.cancelled && callbacks.cancelled())
 			return false;
+
 		if (!_unblock.isRun(technology))
 			return false;
 
 		std::unordered_set<std::string> valid_set;
 		for (auto& [host, _] : _unblock.helperValidHosts())
-			valid_set.insert(host);
+			if (expected.contains(host))
+				valid_set.insert(host);
+
 		std::unordered_set<std::string> exhausted_set;
 		for (auto& [host, _] : _unblock.helperExhaustedHosts())
-			exhausted_set.insert(host);
+			if (expected.contains(host))
+				exhausted_set.insert(host);
+
 		std::unordered_set<std::string> unjudged_set;
 		for (auto& host : _unblock.helperUnjudgedHosts())
-			unjudged_set.insert(host);
+			if (expected.contains(host))
+				unjudged_set.insert(host);
+
+		std::unordered_set<std::string> error_set;
+		for (auto& [host, _] : _unblock.helperErrorHosts())
+			if (expected.contains(host))
+				error_set.insert(host);
+
 		auto checking = _unblock.helperCheckingHosts();
-		auto errors	  = _unblock.helperErrorHosts();
+
+		valid_count = valid_set.size();
+		dead_count	= exhausted_set.size() + unjudged_set.size();
+		error_count = error_set.size();
 
 		// DOM bridge from the worker: at most every 2s and only on change,
 		// never a blind 2Hz hammer.
@@ -148,38 +173,37 @@ bool AutoStrategyRunner::_runPassiveRound(Technology technology, std::string_vie
 		auto	   live = std::string{ header } + "\n"
 						+ utils::format(
 							  Localization::Str{ "str_window_auto_start_wait_live" }(),
-							  valid_set.size(),
+							  valid_count,
 							  checking.size(),
-							  errors.size(),
+							  error_count,
 							  exhausted_set.size()
 						);
+
 		if (live != last_live && now - last_live_at >= std::chrono::seconds(2))
 		{
 			last_live	 = std::move(live);
 			last_live_at = now;
+
 			if (callbacks.progress)
 				callbacks.progress(last_live);
 		}
 
-		settled = autoRoundSettled(expected, valid_set, exhausted_set, unjudged_set);
-		if (!settled)
+		// Fail-fast: too many dead hosts among the judged ones — switch the
+		// config now instead of waiting for the whole list.
+		if (autoRoundDeadExceeded(valid_count, dead_count, error_count))
+			return false;
+
+		if (!(settled = autoRoundSettled(expected, valid_set, exhausted_set, unjudged_set, error_set)))
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 	}
 
 	if (callbacks.cancelled && callbacks.cancelled())
 		return false;
+
 	if (!_unblock.isRun(technology))
 		return false;
 
-	std::unordered_set<std::string> dead_hosts;
-	for (auto& [host, _] : _unblock.helperExhaustedHosts())
-		if (expected.contains(host))
-			dead_hosts.insert(host);
-	for (auto& host : _unblock.helperUnjudgedHosts())
-		if (expected.contains(host))
-			dead_hosts.insert(host);
-
-	return judgeAutoRound(dead_hosts.size(), expected.size());
+	return judgeAutoRound(valid_count, dead_count, error_count);
 }
 
 bool AutoStrategyRunner::_runTestingRound(const Callbacks& callbacks)
