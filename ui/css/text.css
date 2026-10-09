@@ -20,6 +20,11 @@
     text-shadow: 0 0 6px rgba(255, 255, 255, 0.25);
 }
 
+.about_version {
+    color: #aab2c8;
+    font-size: 1.3vw;
+}
+
 .text_line_flash_a,
 .text_line_flash_b {
     animation: textLineFlash 0.6s ease;

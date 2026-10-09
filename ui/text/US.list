@@ -5,8 +5,14 @@ str_h2_zapret1=Zapret (classic)
 str_h2_unblock=Unblock
 str_h2_dns=DNS
 str_h2_tg_ws_proxy=Telegram Proxy
+str_h2_about=About
 
-// Footer BUTTON
+// About tab
+str_about_description=Unblock bypasses DPI blocking of YouTube, Discord and other services on Windows.
+It runs local bypass engines (Zapret), an encrypted DNS proxy and a local Telegram proxy — no external servers involved.
+The project is open source; questions, ideas and bug reports are welcome via the links below.
+
+// About BUTTON
 str_link_to_github=↗ GitHub
 str_link_to_telegram=↗ Telegram
 str_link_report_issue=🐞 Report a problem
@@ -478,6 +484,10 @@ After enabling it, click «🔗 Connect proxy to Telegram» — the proxy will b
 If the automatic setup did not open Telegram, click «📋 Copy link» — the proxy link goes to the clipboard: paste it into Telegram's Saved Messages and tap it.
 «🌐 Host», «🔌 Port» and Telegram datacenter IPs; «💾 Apply settings» restarts the proxy with the new parameters.
 
+str_tutorial_tab_about_title=ℹ️ About tab
+str_tutorial_tab_about_description=What Unblock is, its version and support links.
+Here you can open the project on GitHub, join Telegram, report a problem or check for updates.
+
 str_tutorial_troubleshoot_title=🛠️ If something is not working
 str_tutorial_troubleshoot_description=Check in order:
 
@@ -493,7 +503,7 @@ str_tutorial_maintenance_title=🧹 Maintenance
 str_tutorial_maintenance_description=• «🔄 Check for updates at startup» — automatic check for new Unblock versions.
 • «🔍 Check for updates» — manual update check.
 • «🗑 Uninstall Unblock» — full removal of the application: stops services, restores system settings and resets parameters.
-• The «GitHub» and «Telegram» links in the footer — project support and feedback.
+• The «About» tab — support and feedback links, version and update check.
 
 // Tutorial tour
 str_tutorial_tour_start_title=🎓 Interactive tutorial

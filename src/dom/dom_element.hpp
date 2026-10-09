@@ -206,6 +206,5 @@ namespace ui::dom
 	// Predefined references.
 	Element body();
 	Element main();
-	Element footer();
 	Element nav();
 }

@@ -5,8 +5,14 @@ str_h2_zapret1=Zapret (классический)
 str_h2_unblock=Unblock
 str_h2_dns=DNS
 str_h2_tg_ws_proxy=Telegram прокси
+str_h2_about=О программе
 
-// Footer BUTTON
+// About tab
+str_about_description=Unblock обходит DPI-блокировки YouTube, Discord и других сервисов в Windows.
+Внутри — локальные движки обхода (Zapret), шифрованный DNS-прокси и локальный прокси для Telegram; внешние серверы не используются.
+Проект открытый: вопросы, идеи и баг-репорты — по ссылкам ниже.
+
+// About BUTTON
 str_link_to_github=↗ GitHub
 str_link_to_telegram=↗ Telegram
 str_link_report_issue=🐞 Сообщить о проблеме
@@ -478,6 +484,10 @@ str_tutorial_tab_tg_description=Локальный прокси-сервер д�
 Если автоподключение не открыло Telegram, нажмите «📋 Копировать ссылку» — ссылка прокси попадёт в буфер обмена: вставьте её в «Избранное» Telegram и нажмите.
 «🌐 Хост», «🔌 Порт» и IP дата-центров Telegram; «💾 Применить настройки» перезапускает прокси с новыми параметрами.
 
+str_tutorial_tab_about_title=ℹ️ Вкладка «О программе»
+str_tutorial_tab_about_description=Что такое Unblock, его версия и ссылки поддержки.
+Здесь можно открыть проект на GitHub, вступить в Telegram, сообщить о проблеме или проверить обновления.
+
 str_tutorial_troubleshoot_title=🛠️ Если что-то не работает
 str_tutorial_troubleshoot_description=Проверьте по порядку:
 
@@ -493,7 +503,7 @@ str_tutorial_maintenance_title=🧹 Обслуживание
 str_tutorial_maintenance_description=• «🔄 Проверять обновления при запуске» — автоматическая проверка новых версий Unblock.
 • «🔍 Проверить обновления» — ручная проверка обновлений.
 • «🗑 Удалить Unblock» — полное удаление приложения: остановка служб, восстановление системных настроек и сброс параметров.
-• Ссылки «GitHub» и «Telegram» в футере — поддержка проекта и обратная связь.
+• Вкладка «О программе» — ссылки поддержки и обратной связи, версия и проверка обновлений.
 
 // Tutorial tour
 str_tutorial_tour_start_title=🎓 Интерактивное обучение

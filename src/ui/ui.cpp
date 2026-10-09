@@ -126,12 +126,6 @@ void Ui::_initComponents()
 		_ui_zapret_helper->setVisible(_ui_zapret->technology() == Technology::Zapret2);
 }
 
-void Ui::_initializeFooter()
-{
-	_footerElements();
-	_removeApp();
-}
-
 void Ui::_initializeWindowBase() const
 {
 	_window_wait_start_service->create(Localization::Str{ "str_please_wait" }, "str_window_service_start_wait_description");
@@ -148,7 +142,8 @@ void Ui::initialize()
 	_ui_background_tasks->initialize();
 	_initializeAppState();
 	_initComponents();
-	_initializeFooter();
+	_about();
+	_removeApp();
 
 	_init = true;
 }
@@ -187,9 +182,9 @@ namespace
 	}
 }	 // namespace
 
-void Ui::_footerElements()
+void Ui::_about()
 {
-	_link_to_github->create("footer", "str_link_to_github");
+	_link_to_github->create("#about section .common", "str_link_to_github");
 	_link_to_github->addEventClick(
 		[](JSArgs)
 		{
@@ -200,7 +195,7 @@ void Ui::_footerElements()
 		}
 	);
 
-	_link_to_telegram->create("footer", "str_link_to_telegram");
+	_link_to_telegram->create("#about section .common", "str_link_to_telegram");
 	_link_to_telegram->addEventClick(
 		[](JSArgs)
 		{
@@ -209,7 +204,7 @@ void Ui::_footerElements()
 		}
 	);
 
-	_link_report_issue->create("footer", "str_link_report_issue");
+	_link_report_issue->create("#about section .common", "str_link_report_issue");
 	_link_report_issue->addEventClick(
 		[](JSArgs)
 		{

@@ -4,7 +4,7 @@ UiBackgroundTasks::UiBackgroundTasks() = default;
 
 void UiBackgroundTasks::initialize()
 {
-	_indicator->create("footer", Localization::Str{ "str_tasks_indicator_title" });
+	_indicator->create("body", Localization::Str{ "str_tasks_indicator_title" });
 	auto anchor = BaseElement::element(_indicator->name());
 	anchor.addClass("tasks_indicator");
 	_indicator->addTutorialStep("str_tour_tasks_title", "str_tour_tasks_description", 28);
@@ -21,9 +21,7 @@ void UiBackgroundTasks::initialize()
 	);
 	_indicator->hide();
 
-	// Panel docks to the indicator itself, so it always floats right above
-	// it — footer sliding in/out moves both together, and hovering the
-	// indicator never touches the footer box (no unwanted slide-out).
+	// Panel docks to the indicator itself, so it always floats right above it.
 	_panel = ui::dom::create("div");
 	_panel.addClass("tasks_panel");
 	anchor.append(_panel);

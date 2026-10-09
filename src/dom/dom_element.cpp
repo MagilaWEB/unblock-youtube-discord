@@ -231,11 +231,6 @@ namespace ui::dom
 		return querySelector("main");
 	}
 
-	Element footer()
-	{
-		return querySelector("footer");
-	}
-
 	Element nav()
 	{
 		return querySelector(".nav");

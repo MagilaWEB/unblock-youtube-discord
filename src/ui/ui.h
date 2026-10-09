@@ -58,7 +58,7 @@ class Ui final : public utils::DefaultInit,
 	SECONDARY_WINDOW(_window_warning_no_internet);
 	SECONDARY_WINDOW(_window_wait_start_service);
 
-	// Footer
+	// About
 	BUTTON(_link_to_github);
 	BUTTON(_link_to_telegram);
 	BUTTON(_link_report_issue);
@@ -100,7 +100,7 @@ private:
 
 	void _initializeAppState();
 	void _initComponents();
-	void _initializeFooter();
+	void _about();
 	void _initializeWindowBase() const;
 
 	void _checkConflictService();
@@ -117,7 +117,4 @@ private:
 	void _checkAppUpdate();
 	void _updateAppWindow();
 	void _updateAppProgressWindowInfo();
-
-	// Base footer
-	void _footerElements();
 };

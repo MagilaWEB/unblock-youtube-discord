@@ -26,7 +26,7 @@ void Ui::_updateApp()
 	if (_enable_check_update_startup->getState())
 		_checkAppUpdate();
 
-	_start_check_update_app->create("#unblock section .common", "str_bottom_check_update_app_startup_title");
+	_start_check_update_app->create("#about section .common", "str_bottom_check_update_app_startup_title");
 
 	_start_check_update_app->addEventClick(
 		[self = self](JSArgs)

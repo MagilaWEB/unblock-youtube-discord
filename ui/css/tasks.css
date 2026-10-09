@@ -1,37 +1,23 @@
-footer .button.tasks_indicator.show {
-    position: absolute;
-    bottom: 100%;
+.button.tasks_indicator.show {
+    position: fixed;
+    bottom: 1vw;
     right: 1vw;
-    margin-bottom: 0;
+    margin: 0;
     width: auto;
     min-width: 4vw;
     height: auto;
     opacity: 1;
     visibility: visible;
     transform: none;
-    /* Above footer::after (the full-width "..." strip): it paints last and
-       would otherwise steal the hover and slide the footer out. */
-    z-index: 2;
+    z-index: 20;
 }
 
-footer .button.tasks_indicator.show button {
+.button.tasks_indicator.show button {
     font-size: 1.2vw;
     padding: 0.4vw 0.8vw;
     border-radius: 20px;
     width: auto;
     height: auto;
-}
-
-/* Invisible hit-area: overlaps a chunk of the footer strip below (and a bit
-   to the sides), so near-misses still land on the button — and thanks to the
-   :has() guard the footer stays shut. Clicks pass through to the button. */
-footer .button.tasks_indicator.show::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: -1vw;
-    right: -1vw;
-    height: 3em;
 }
 
 .tasks_panel {
