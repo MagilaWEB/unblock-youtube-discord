@@ -225,7 +225,13 @@ function auto_strategy_candidates(rec, rating)
         return a < b
     end)
 
-    if rec.had_success and not rec.full_enum then
+    -- A host whose only success was on 'direct' has no rated strategy (the
+    -- rating is never recorded for nstrategy 0), so the successful set is
+    -- empty. Falling through to the normal enumeration keeps such a host
+    -- rotating: returning the empty set would trap it on direct forever,
+    -- because the no-candidates branch below resets the success-cycle ladder
+    -- on every call and full_enum can never complete.
+    if rec.had_success and not rec.full_enum and #proven > 0 then
         return proven
     end
 
