@@ -35,11 +35,11 @@
 
 ## Style
 
-- Личные правила общения и работы — см. глобальный скил `dev-communication`.
+- Личные правила общения и работы — `~/.config/opencode/rules/persona.md` и `delegation.md` (глобальные, подключены через `instructions`).
 
 ## MCP / Navigation (opencode)
 
-- Навигация по C++: не выдумывай API — сигнатуры, типы и связи проверяй по коду (`rg`/`grep`/`read`) и через LSP-диагностику (clangd); сомнительные места подтверждай сборкой.
+- Навигация по C++: не выдумывай API — сигнатуры, типы и связи проверяй по коду (`rg`/`grep`/`read`); сомнительные места подтверждай сборкой. В opencode2 LSP (clangd) не работает — диагностика только компилятором (`build-ai.ps1`) и `clang-tidy` (`tidy-ai.ps1`).
 - Примеры извне: `gh_grep`, доки по либам: `context7`.
 - После правки: `pwsh -NoProfile -File build-ai.ps1`, потом `ctest --test-dir _build_ai --output-on-failure`. Lua правится в `resources/lua/` + сборка (копия в `binaries/lua/`).
 - Не индексируй мусор: `_build_ai/`, `_build/`, `_deps/`, `bin/`.

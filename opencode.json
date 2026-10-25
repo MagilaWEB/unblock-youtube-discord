@@ -5,48 +5,39 @@
   // КАК ВСЁ ПОДНЯТЬ НОВОМУ РАЗРАБОТЧИКУ (или модели, которая его онбордит):
   // 1. Поставь Node.js >= 18 и добавь его в PATH. Если лень — просто запускай
   //    через run_opencode.bat: он сам подхватит %ProgramFiles%\nodejs в PATH.
-  // 2. Поставь LLVM (нужен clangd.exe) и добавь его bin/ в PATH — встроенный LSP
-  //    opencode поднимает clangd для C/C++ (см. блок lsp ниже).
-  // 3. Сконфигурируй сборку, чтобы лежал _build_ai/compile_commands.json:
+  // 2. Сконфигурируй сборку, чтобы лежал _build_ai/compile_commands.json:
   //    configure-ninja-ai.bat, затем сборка через build-ai.ps1.
-  //    Без compile_commands.json диагностика будет сыпать ложными «file not found».
-  // 4. Запускай opencode через run_opencode.bat из корня репо: он чинит PATH.
+  // 3. Запускай opencode через run_opencode.bat из корня репо: он чинит PATH.
   // ДИАГНОСТИКА: `run_opencode.bat mcp list` — gh_grep/github должны быть `connected`.
+  //
+  // ВАЖНО: конфиг в нативном формате opencode2. V2 НЕ поднимает LSP: серверы
+  // языка и диагностика недоступны в принципе, поэтому V1-блок `lsp` (clangd) не
+  // перенесён и LLVM в онбординге больше не нужен. Источник диагностики C/C++ —
+  // сборка (build-ai.ps1) и clang-tidy (tidy-ai.ps1).
   "formatter": {
     "clang-format": {}
   },
-  // Встроенный clangd. Команду задаём явно, чтобы opencode не тянул авто-скачанный
-  // clangd, и указываем compile_commands из _build_ai — иначе индекс протухает и на
-  // переехавшие заголовки летят ложные ошибки. --pch-storage=disk снижает память.
-  "lsp": {
-    "clangd": {
-      "command": [
-        "clangd",
-        "--background-index",
-        "--compile-commands-dir=_build_ai",
-        "--header-insertion=never",
-        "--pch-storage=disk"
-      ],
-      "extensions": [".c", ".cpp", ".cc", ".cxx", ".c++", ".h", ".hpp", ".hh", ".hxx", ".h++"]
-    }
-  },
+  // V2: MCP-серверы живут под mcp.servers.<имя>. Флаг включения инвертирован —
+  // в V1 был `enabled: true`, в V2 сервер включён, пока нет `disabled: true`.
   "mcp": {
-    "gh_grep": {
-      "type": "remote",
-      "url": "https://mcp.grep.app",
-      "enabled": true
+    "servers": {
+      "gh_grep": {
+        "type": "remote",
+        "url": "https://mcp.grep.app"
+      }
     }
   },
-  "agent": {
+  // V2: `agent` → `agents`. V1-поле `tools` (карта вкл/выкл по имени тула) в V2
+  // не поддерживается — доступ к тулам выражается правилами permissions.
+  "agents": {
     "build": {
       "description": "C++ builder for unblock (Ninja+clang, _build_ai)",
-      "tools": {
-        "gh_grep*": true
-      }
+      "permissions": [
+        { "action": "gh_grep*", "resource": "*", "effect": "allow" }
+      ]
     }
   },
   "watcher": {
     "ignore": ["_build_ai/**", "_build/**", "**/_deps/**", "bin/**", ".git/**"]
-  },
-  "plugin": ["opencode-morph-fast-apply", "opencode-shell-strategy"]
+  }
 }
