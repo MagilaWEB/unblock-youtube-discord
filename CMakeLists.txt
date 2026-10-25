@@ -128,17 +128,20 @@ FetchContent_Declare(
 
 FetchContent_Declare(
   Zapret2
-  URL https://github.com/bol-van/zapret2/releases/download/v1.0.5.2/zapret2-v1.0.5.2.zip
+  URL https://github.com/bol-van/zapret2/releases/download/v1.0.6/zapret2-v1.0.6.zip
   SOURCE_DIR zapret2
 )
 
 # Classic zapret (winws.exe) for the Zapret1 technology. The win-bundle repo
 # has no releases, so it is fetched as a shallow git checkout pinned to a
 # known commit; only zapret-winws/winws.exe is used from it.
+# Upstream republishes the bundle as a fresh orphan commit, which leaves the
+# previous pin unreachable (clone + checkout then fails) - bump the hash when
+# it rots. Alternative: mirror winws.exe as an asset of our own release.
 FetchContent_Declare(
   Zapret1
   GIT_REPOSITORY https://github.com/bol-van/zapret-win-bundle
-  GIT_TAG 6eb463a6758fb48cd101bc55dfd057e6e9d98af1
+  GIT_TAG de9795d71287fdb21cf8c20b8af1a09d0eb10ab2
   GIT_SHALLOW TRUE
   SOURCE_DIR zapret1
 )
