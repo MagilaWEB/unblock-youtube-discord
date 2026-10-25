@@ -2,6 +2,7 @@
 
 #include "../engine/version.hpp"
 #include "http_load_content.h"
+#include "update_version.h"
 
 #include <bit7z/bitfileextractor.hpp>
 #include <filesystem>
@@ -16,25 +17,22 @@ std::optional<std::string> AppUpdater::check() const
 	if (version.codeResult() != 200)
 		return {};
 
-	for (auto& line : lines)
-	{
-		constexpr static std::string_view version_mask{ "/MagilaWEB/unblock-youtube-discord/tree/v" };
-		size_t							  pos = line.find(version_mask);
-		if (pos != std::string::npos)
-		{
-			constexpr static std::string_view mask_end{ "\" data-tab-item=\"i0code-tab\"" };
-			size_t							  pos_end = line.find(mask_end);
-			if (pos_end != std::string::npos)
-			{
-				auto start_str = pos + version_mask.length();
-				auto str	   = line.substr(start_str, pos_end - start_str);
-				if (Core::get().isVersionNewer(str, VERSION_STR))
-					return str;
+	// GitHub answers /releases/latest with a redirect to the release tag, so the
+	// version comes from the final URL. The page HTML stays as a fallback: the
+	// markup the previous parser keyed on is no longer on the release page, which
+	// silently disabled the whole update check.
+	auto newer = parseUpdateVersionFromUrl(version.effectiveUrl());
 
-				return {};
+	if (!newer)
+		for (auto& line : lines)
+			if (auto from_html = parseUpdateVersionFromHtml(line))
+			{
+				newer = from_html;
+				break;
 			}
-		}
-	}
+
+	if (newer && Core::get().isVersionNewer(*newer, VERSION_STR))
+		return newer;
 
 	return {};
 }

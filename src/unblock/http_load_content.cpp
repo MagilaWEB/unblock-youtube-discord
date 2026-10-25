@@ -38,6 +38,7 @@ std::vector<std::string> HttpsLoad::run()
 
 	// Reset per-request state: a reused handle must not report stale data.
 	_string_buffer.clear();
+	_effective_url.clear();
 	_code_result = 0;
 	_progress	 = 0.f;
 
@@ -57,6 +58,10 @@ std::vector<std::string> HttpsLoad::run()
 	}
 
 	curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code_result);
+
+	char* effective_url{ nullptr };
+	if (curl_easy_getinfo(_curl, CURLINFO_EFFECTIVE_URL, &effective_url) == CURLE_OK && effective_url)
+		_effective_url = effective_url;
 
 	std::vector<std::string> _line_content{};
 
@@ -141,6 +146,11 @@ bool HttpsLoad::runToFile(std::filesystem::path path)
 u32 HttpsLoad::codeResult() const
 {
 	return _code_result;
+}
+
+std::string HttpsLoad::effectiveUrl() const
+{
+	return _effective_url;
 }
 
 float HttpsLoad::progress() const
