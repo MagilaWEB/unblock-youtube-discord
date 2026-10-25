@@ -4,6 +4,7 @@
 ![GitHub Releases](https://img.shields.io/github/downloads/MagilaWEB/unblock-youtube-discord/total?style=for-the-badge&logo=github&color=blue)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
 ![Windows Version](https://img.shields.io/badge/Windows-10%2F11-0078D6?style=for-the-badge&logo=windows&logoColor=white)
+[![Telegram](https://img.shields.io/badge/Telegram-%D1%81%D0%BE%D0%BE%D0%B1%D1%89%D0%B5%D1%81%D1%82%D0%B2%D0%BE-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/+OqRXcWFw4kpmMTcy)
 
 **Unblock** — программа для Windows, которая обходит DPI-блокировки и региональные ограничения. Разблокирует YouTube, Discord, Instagram, X и другие сервисы, заблокированные провайдером или РКН. Работает на двух технологиях обхода: движке **zapret2** с собственными модифицированными алгоритмами (адаптивный перебор стратегий, фоновый помощник `zapret-helper`, специальная поддержка голосовых каналов Discord) и **классическом Zapret** (winws) со статичными стратегиями и профилями фейковых пакетов.
 
@@ -219,6 +220,7 @@ Unblock использует движок **zapret2**, но с **модифиц�
 > Unblock создан для образовательных целей и изучения сетевых технологий. Ответственность за использование лежит на пользователе. Не используйте для обхода законных ограничений.
 
 ### ❓ Нужна помощь?
+- [Telegram-сообщество](https://t.me/+OqRXcWFw4kpmMTcy) – живая помощь и обмен опытом
 - [Обсуждения](https://github.com/MagilaWEB/unblock-youtube-discord/discussions) – вопросы и проблемы
 - [Конфигурации](https://github.com/MagilaWEB/unblock-youtube-discord/discussions/categories/конфигурации) – обмен настройками
 - Указывайте провайдера и регион для лучшей помощи
@@ -292,4 +294,4 @@ Unblock использует движок **zapret2**, но с **модифиц�
 </div>
 
 ---
-*Последнее обновление: Сентябрь 2026*
+*Последнее обновление: Октябрь 2026*
