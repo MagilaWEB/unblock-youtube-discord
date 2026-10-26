@@ -5,7 +5,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$exts = @('.cpp', '.h', '.hpp', '.c', '.cc', '.cxx', '.cu', '.cuh')
+$exts = @('.cpp', '.h', '.hpp', '.c', '.cc', '.cxx', '.cu', '.cuh', '.cppm')
 
 if ($All) {
     $files = Get-ChildItem -Recurse -File |

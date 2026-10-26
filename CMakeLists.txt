@@ -65,6 +65,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Sources are scanned for module dependencies (CMP0155 is NEW only from
+# cmake_minimum_required(VERSION 3.28) on). Needed for `import` in plain .cpp.
+set(CMAKE_CXX_SCAN_FOR_MODULES ON)
+
 # Set global output directories for all binaries
 set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)  # .exe/.dll
@@ -321,6 +325,31 @@ set(PROJECT_WARNING_FLAGS -Wall -Wextra -Wpedantic -Werror
     -Wno-exit-time-destructors
     -Wno-unsafe-buffer-usage
     -Wno-missing-designated-field-initializers
+    -Wno-c++98-compat-pedantic
+    -Wno-c++20-compat-pedantic
+    -Wno-switch-enum
+    -Wno-covered-switch-default
+    -Wno-invalid-token-paste
+    -Wno-header-hygiene
+)
+
+# The standard library as a module (`import std`). CMake's own support for it
+# knows only libc++/libstdc++ and refuses clang + MSVC STL, so MSVC's std.ixx is
+# built here as an ordinary module interface unit, patched for clang. The ABI
+# stays MSVC's, so prebuilt dependencies (bit7z, AdguardDns64.dll) keep working.
+# No project warning flags: the STL headers are noisy under -Werror.
+set(UB_MSVC_STD_MODULE_OUT "${CMAKE_BINARY_DIR}/ub_std/std.ixx")
+include(MsvcStdModule)
+set_source_files_properties("${UB_MSVC_STD_MODULE_OUT}" PROPERTIES GENERATED TRUE)
+
+add_library(ub_std STATIC)
+target_sources(ub_std
+  PUBLIC
+    FILE_SET CXX_MODULES FILES "${UB_MSVC_STD_MODULE_OUT}"
+)
+target_compile_options(ub_std PRIVATE
+    -Wno-reserved-module-identifier
+    -Wno-include-angled-in-module-purview
 )
 
 # Add submodules
