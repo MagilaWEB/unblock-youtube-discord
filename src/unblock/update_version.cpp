@@ -1,4 +1,6 @@
-#include "update_version.h"
+module unblock.update_version;
+
+import std;
 
 namespace
 {

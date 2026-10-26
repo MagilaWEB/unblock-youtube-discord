@@ -1,10 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <cstring>
-#include <string>
-#include <string_view>
+#include <winsock2.h>
 
-#include "../net.h"
+import std;
+import helper.net;
+import helper.types;
 
 TEST_CASE("UdpSocket create/bind/nonBlocking on loopback", "[net][loopback]")
 {

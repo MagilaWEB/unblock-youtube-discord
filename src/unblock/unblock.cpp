@@ -1,19 +1,27 @@
-#include "unblock.h"
-#include "domain_testing.h"
-#include "dns_host.h"
-#include "ipc_signals.h"
-#include "zapret1_engine.h"
-#include "zapret2_engine.h"
-#include <curl/curl.h>
+module;
 
-#include "../core/hidden_process.h"
-
+#include <windows.h>
 #include <shellapi.h>
 #include <winreg.h>
 
-#include <charconv>
-#include <filesystem>
-#include <string>
+module unblock;
+
+import std;
+import core;
+import core.file_system;
+import core.hidden_process;
+import core.localization;
+import core.service;
+import ext.curl;
+import unblock.constants;
+import unblock.dns_host;
+import unblock.dns_proxy;
+import unblock.domain_testing;
+import unblock.helper_state;
+import unblock.ipc_signals;
+import unblock.zapret1_engine;
+import unblock.zapret2_engine;
+import unblock.zapret_engine;
 
 Unblock::Unblock()
 {

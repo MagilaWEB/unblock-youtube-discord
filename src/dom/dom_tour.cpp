@@ -1,7 +1,7 @@
-#include "dom_tour.hpp"
+module dom.dom_tour;
 
-#include <algorithm>
-#include <format>
+import std;
+import dom.dom_element;
 
 namespace ui::dom::tour
 {

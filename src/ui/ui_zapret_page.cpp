@@ -1,14 +1,27 @@
-#include "ui_zapret_page.h"
+module;
 
-#include "ui.h"
-#include "../unblock/unblock.h"
-#include "../unblock/auto_strategy_runner.h"
-#include "../core/input_console.h"
-#include "../core/timer.h"
+#include "../core/macros.hpp"
 
-#include <chrono>
-#include <thread>
-#include <unordered_set>
+module ui;
+
+import std;
+import core;
+import core.debug;
+import core.file_system;
+import core.localization;
+import core.timer;
+import core.utils;
+import dom.utils_saucer;
+import ui.ui_button;
+import ui.ui_check_box;
+import ui.ui_editable_list;
+import ui.ui_input;
+import ui.ui_list_ul;
+import ui.ui_secondary_window;
+import ui.ui_select_list;
+import ui.ui_status;
+import unblock;
+import unblock.auto_strategy_runner;
 
 namespace
 {
@@ -38,7 +51,7 @@ UiZapretPage::UiZapretPage(std::shared_ptr<Ui> ui) : _ui(std::move(ui))
 {
 	_file_service_list = std::make_shared<File>();
 	_file_service_list->open({ Core::get().configsPath() / "service_setting" }, ".config", true);
-	_ui->_unblock->serviceConfigFile(_file_service_list);
+	_ui->unblock()->serviceConfigFile(_file_service_list);
 
 	// Initialize services list from config
 	_file_service_list->forLineParametersSection(
@@ -126,7 +139,7 @@ void UiZapretPage::_requestTechnologySwitch(Technology technology)
 
 	// Switching the view is free, but the running bypass cannot stay up:
 	// two engines never run at once, so confirm stopping it first.
-	if (!_ui->_unblock->isRun(other))
+	if (!_ui->unblock()->isRun(other))
 	{
 		_applyTechnology(technology);
 		return;
@@ -153,7 +166,7 @@ void UiZapretPage::_requestTechnologySwitch(Technology technology)
 			Core::get().addTask(
 				[technology, this]
 				{
-					_ui->_unblock->stopService();
+					_ui->unblock()->stopService();
 					_applyTechnology(technology);
 					_ui->getUiUnblock()->getWindowWaitStopService()->hide();
 				}
@@ -222,9 +235,9 @@ void UiZapretPage::_applyServiceState(const std::string& name, const std::shared
 	check_box->setState(want);
 
 	if (want)
-		_ui->_unblock->addOptionalStrategies(name);
+		_ui->unblock()->addOptionalStrategies(name);
 	else
-		_ui->_unblock->removeOptionalStrategies(name);
+		_ui->unblock()->removeOptionalStrategies(name);
 }
 
 std::span<const UiZapretPage::CustomListDef> UiZapretPage::customListDefs()
@@ -285,7 +298,7 @@ void UiZapretPage::_saveCustomLists()
 	for (const auto& def : customListDefs())
 		_ui->userConfig()->writeSectionParameterVector("ZAPRET", std::string{ def.config_key }, (this->*def.widget)->items());
 
-	_ui->_unblock->setCustomLists(
+	_ui->unblock()->setCustomLists(
 		_list_custom_hosts->items(),
 		_list_custom_ip_set->items(),
 		_list_custom_domains_exclude->items(),
@@ -319,7 +332,7 @@ void UiZapretPage::_selectStrategyVersionUpdate()
 
 	_select_version_strategy->show();
 
-	auto strategy_dirs = _ui->_unblock->listVersionStrategy(_technology);
+	auto strategy_dirs = _ui->unblock()->listVersionStrategy(_technology);
 	if (strategy_dirs.empty())
 		return;
 
@@ -336,7 +349,7 @@ void UiZapretPage::_selectStrategyVersionUpdate()
 
 	_select_version_strategy->setSelectedOptionValue(active_version);
 	_ui->userConfig()->writeSectionParameter(_rememberSection(), "version_strategy", active_version);
-	_ui->_unblock->changeDirVersionStrategy(_technology, active_version);
+	_ui->unblock()->changeDirVersionStrategy(_technology, active_version);
 
 	_selectConfigUpdate();
 }
@@ -363,7 +376,7 @@ void UiZapretPage::_selectConfigUpdate()
 
 	_select_config->clear();
 
-	auto& strategies_list = _ui->_unblock->getStrategiesList(_technology);
+	auto& strategies_list = _ui->unblock()->getStrategiesList(_technology);
 
 	if (strategies_list.empty())
 		return;
@@ -384,7 +397,7 @@ void UiZapretPage::_selectConfigUpdate()
 	_select_config->setSelectedOptionValue(active_config);
 
 	_buttonUpdate();
-	_ui->_unblock->changeStrategy(_technology, jsToCpp(_select_config->getSelectedOptionValue()));
+	_ui->unblock()->changeStrategy(_technology, jsToCpp(_select_config->getSelectedOptionValue()));
 }
 
 void UiZapretPage::_initFakeKey()
@@ -394,7 +407,7 @@ void UiZapretPage::_initFakeKey()
 
 	// The fake profile must be selected before any changeStrategy() call:
 	// %FAKE_*% placeholders expand at upload time.
-	auto keys = _ui->_unblock->fakeBinKeys(_technology);
+	auto keys = _ui->unblock()->fakeBinKeys(_technology);
 	if (keys.empty())
 		return;
 
@@ -404,7 +417,7 @@ void UiZapretPage::_initFakeKey()
 			active = saved.value();
 
 	_ui->userConfig()->writeSectionParameter(_rememberSection(), "fake_bin", active);
-	_ui->_unblock->changeFakeKey(_technology, active);
+	_ui->unblock()->changeFakeKey(_technology, active);
 }
 
 void UiZapretPage::_selectFakeBin()
@@ -445,7 +458,7 @@ void UiZapretPage::_selectFakeBinUpdate()
 
 	_select_fake_bin->clear();
 
-	auto keys = _ui->_unblock->fakeBinKeys(_technology);
+	auto keys = _ui->unblock()->fakeBinKeys(_technology);
 	if (keys.empty())
 		return;
 
@@ -465,17 +478,17 @@ void UiZapretPage::_selectFakeBinUpdate()
 	// The key is already applied during init (_initFakeKey); re-upload the
 	// current config only when the user actually picked another profile,
 	// otherwise every startup logs the strategy selection twice.
-	if (_ui->_unblock->fakeBinKey(_technology) == active)
+	if (_ui->unblock()->fakeBinKey(_technology) == active)
 		return;
 
-	_ui->_unblock->changeFakeKey(_technology, active);
+	_ui->unblock()->changeFakeKey(_technology, active);
 
 	// Re-upload the current config so the profile takes effect immediately.
 	if (auto config = _ui->userConfig()->parameterSection<std::string>(_rememberSection(), "config"))
 	{
-		auto& strategies_list = _ui->_unblock->getStrategiesList(_technology);
+		auto& strategies_list = _ui->unblock()->getStrategiesList(_technology);
 		if (std::ranges::find(strategies_list, config.value()) != strategies_list.end())
-			_ui->_unblock->changeStrategy(_technology, config.value());
+			_ui->unblock()->changeStrategy(_technology, config.value());
 	}
 }
 
@@ -484,7 +497,7 @@ void UiZapretPage::_syncFakeProfile()
 	if (_technology != Technology::Zapret1 || !_select_fake_bin->isCreate())
 		return;
 
-	const auto active = _ui->_unblock->fakeBinKey(_technology);
+	const auto active = _ui->unblock()->fakeBinKey(_technology);
 	if (active.empty())
 		return;
 
@@ -516,7 +529,7 @@ void UiZapretPage::_initMainControls()
 		[this](JSArgs)
 		{
 			_automatically_strategy_cancel.store(true);
-			_ui->_unblock->testingDomainCancel();
+			_ui->unblock()->testingDomainCancel();
 			return false;
 		}
 	);
@@ -560,7 +573,7 @@ void UiZapretPage::_initMainControls()
 			Core::get().addTask(
 				[this]
 				{
-					_ui->_unblock->removeService();
+					_ui->unblock()->removeService();
 					_ui->getUiUnblock()->getWindowWaitStopService()->hide();
 					_buttonUpdate();
 				}
@@ -588,7 +601,7 @@ void UiZapretPage::_testingInit()
 	_start_testing_zapret->addEventClick(
 		[this](JSArgs)
 		{
-			if (_ui->_unblock->runTest())
+			if (_ui->unblock()->runTest())
 				return false;
 
 			_testingServiceDomains();
@@ -601,7 +614,7 @@ void UiZapretPage::_testingInit()
 
 void UiZapretPage::_buttonUpdate()
 {
-	if (_ui->_unblock->isRun(_technology))
+	if (_ui->unblock()->isRun(_technology))
 		_start_button->setTitle("str_b_restart_unblock");
 	else
 		_start_button->setTitle("str_b_start_zapret");
@@ -616,7 +629,7 @@ void UiZapretPage::_updateStatus(std::optional<Technology> active)
 		_status_engine->setInactive(Localization::Str{ "str_status_engine_stopped" }());
 	else
 	{
-		const auto rate = _ui->_unblock->zapretRateBps();
+		const auto rate = _ui->unblock()->zapretRateBps();
 		_status_engine->setActive(
 			utils::format(
 				Localization::Str{ "str_status_engine_running_rate" }(),
@@ -630,8 +643,8 @@ void UiZapretPage::_updateStatus(std::optional<Technology> active)
 
 void UiZapretPage::updateState()
 {
-	const bool running = _ui->_unblock->isRun(_technology);
-	const auto active  = _ui->_unblock->runningTechnology();
+	const bool running = _ui->unblock()->isRun(_technology);
+	const auto active  = _ui->unblock()->runningTechnology();
 
 	if (running != _last_running || active != _last_active)
 	{
@@ -649,7 +662,7 @@ void UiZapretPage::updateState()
 
 bool UiZapretPage::_hasBypassTargets() const
 {
-	return _ui->_unblock->hasOptionalStrategies() || !_list_custom_hosts->items().empty() || !_list_custom_ip_set->items().empty();
+	return _ui->unblock()->hasOptionalStrategies() || !_list_custom_hosts->items().empty() || !_list_custom_ip_set->items().empty();
 }
 
 bool UiZapretPage::_requireBypassTargets()
@@ -665,7 +678,7 @@ void UiZapretPage::_startWithTechnologyCheck(std::function<void()>&& proceed)
 {
 	const Technology other = _technology == Technology::Zapret1 ? Technology::Zapret2 : Technology::Zapret1;
 
-	if (!_ui->_unblock->isRun(other))
+	if (!_ui->unblock()->isRun(other))
 	{
 		proceed();
 		return;
@@ -695,7 +708,7 @@ void UiZapretPage::_clickStartService()
 
 	if (auto config = _ui->userConfig()->parameterSection<std::string>(_rememberSection(), "config"))
 	{
-		auto& strategy_list = _ui->_unblock->getStrategiesList(_technology);
+		auto& strategy_list = _ui->unblock()->getStrategiesList(_technology);
 		if (!std::ranges::contains(strategy_list, config.value()))
 		{
 			Debug::warning("config[{}] The specified strategy does not exist from the user's settings!", config.value());
@@ -725,7 +738,7 @@ void UiZapretPage::_autoStart()
 
 					const auto start_version = jsToCpp<std::string>(_select_version_strategy->getSelectedOptionValue());
 
-					AutoStrategyRunner runner{ *_ui->_unblock };
+					AutoStrategyRunner runner{ *_ui->unblock() };
 
 					AutoStrategyRunner::Callbacks callbacks{};
 
@@ -780,7 +793,7 @@ void UiZapretPage::_autoStart()
 									Core::get().addTask(
 										[this]
 										{
-											_ui->_unblock->removeService();
+											_ui->unblock()->removeService();
 											_ui->getUiUnblock()->getWindowWaitStopService()->hide();
 										}
 									);
@@ -809,9 +822,9 @@ void UiZapretPage::_startServiceFromConfig()
 		{
 			_ui->getWindowWaitStartService()->show();
 
-			_ui->_unblock->changeStrategy(_technology, jsToCpp(_select_config->getSelectedOptionValue()));
+			_ui->unblock()->changeStrategy(_technology, jsToCpp(_select_config->getSelectedOptionValue()));
 
-			_ui->_unblock->startService(_technology);
+			_ui->unblock()->startService(_technology);
 			_buttonUpdate();
 			_ui->getWindowWaitStartService()->hide();
 		}
@@ -828,7 +841,7 @@ void UiZapretPage::_initTestingWindow()
 	_window_wait_testing->addEventCancel(
 		[this](JSArgs)
 		{
-			_ui->_unblock->testingDomainCancel();
+			_ui->unblock()->testingDomainCancel();
 			_domain_testing_cancel.store(true);
 			return false;
 		}
@@ -856,7 +869,7 @@ void UiZapretPage::_testingServiceDomains()
 	const Core::TaskId testTask = Core::get().addTask(
 		[this]
 		{
-			_ui->_unblock->testingDomain(
+			_ui->unblock()->testingDomain(
 				[this](std::string_view url, bool state)
 				{
 					_list_host->createLiSuccess(url, state);
@@ -876,7 +889,7 @@ void UiZapretPage::_testingServiceDomains()
 
 			if (!_domain_testing_cancel.load())
 			{
-				_list_host_info->setTitle(utils::format(Localization::Str{ "str_window_title_info_result" }(), _ui->_unblock->domainSuccessRate()));
+				_list_host_info->setTitle(utils::format(Localization::Str{ "str_window_title_info_result" }(), _ui->unblock()->domainSuccessRate()));
 
 				_window_info_testing->show();
 				return;

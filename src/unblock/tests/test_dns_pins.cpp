@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include "../dns_host.h"
+import std;
+import unblock.dns_host;
 
 TEST_CASE("parseDnsPin accepts domain->IP", "[dns][pins]")
 {

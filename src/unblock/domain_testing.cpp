@@ -1,7 +1,15 @@
-#include "domain_testing.h"
-#include "curl/curl.h"
-#include "ipc_signals.h"
-#include "../core/input_console.h"
+module unblock.domain_testing;
+
+import std;
+import core;
+import core.debug;
+import core.file_system;
+import core.input_console;
+import core.localization;
+import core.types;
+import ext.curl;
+import unblock.constants;
+import unblock.ipc_signals;
 
 static size_t progressCallback(void* clientp, curl_off_t /*dltotal*/, curl_off_t /*dlnow*/, curl_off_t /*ultotal*/, curl_off_t /*ulnow*/)
 {

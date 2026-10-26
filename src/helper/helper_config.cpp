@@ -1,16 +1,12 @@
-#include "helper_config.h"
+module;
 
-#include <algorithm>
-#include <cctype>
-#include <fstream>
-#include <ranges>
+#include <stdio.h>
+#include <windows.h>
 
-#ifdef _WIN32
-	#ifndef WIN32_LEAN_AND_MEAN
-		#define WIN32_LEAN_AND_MEAN
-	#endif
-	#include <windows.h>
-#endif
+module helper.helper_config;
+
+import std;
+import helper.types;
 
 namespace
 {

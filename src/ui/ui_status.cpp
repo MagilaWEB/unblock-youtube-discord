@@ -1,5 +1,14 @@
-#include <saucer/smartview.hpp>
-#include "ui_status.h"
+module;
+
+#include "../core/macros.hpp"
+
+module ui.ui_status;
+
+import std;
+import core.debug;
+import core.localization;
+import dom;
+import ui.ui_base_element;
 
 StatusIndicator::StatusIndicator(std::string_view name) : BaseElement(name)
 {

@@ -1,15 +1,12 @@
+#include "test_forwards.h"
+
 #include <catch2/catch_test_macros.hpp>
 
-#include <algorithm>
-#include <list>
-#include <memory>
-#include <optional>
-#include <string>
-#include <string_view>
-#include <vector>
-
-#include "../strategies_zapret1.h"
-#include "../strategies_zapret2.h"
+import std;
+import core;
+import core.file_system;
+import unblock.strategies_zapret1;
+import unblock.strategies_zapret2;
 
 // Test harness with friend access to StrategiesZapret1 internals.
 // NOTE: needs the repository root as the working directory (ctest
@@ -20,9 +17,9 @@ class StrategiesZapret1Test
 public:
 	StrategiesZapret1 strategies;
 
-	void							setFakeKey(const std::string& key) { strategies._fake_bind_key = key; }
-	void							clearFakeParams() { strategies._fake_bin_params.clear(); }
-	void							addFakeParam(const std::string& key) { strategies._fake_bin_params[key] = StrategiesZapret1::FakeBinParam{ .init = true }; }
+	void setFakeKey(const std::string& key) { strategies._fake_bind_key = key; }
+	void clearFakeParams() { strategies._fake_bin_params.clear(); }
+	void addFakeParam(const std::string& key) { strategies._fake_bin_params[key] = StrategiesZapret1::FakeBinParam{ .init = true }; }
 	std::optional<std::string>		getFake(std::string_view line) { return strategies._getFake(line); }
 	void							normalize(std::string& line) const { strategies._normalizeStrategyString(line); }
 	bool							ignoring(std::string_view line) const { return strategies._ignoringLineStrategy(line); }

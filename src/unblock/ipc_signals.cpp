@@ -1,5 +1,13 @@
-#include "ipc_signals.h"
+module;
+
+#include <winsock2.h>
+
 #pragma comment(lib, "ws2_32.lib")
+
+module unblock.ipc_signals;
+
+import std;
+import core.debug;
 
 IPCSignals& IPCSignals::get()
 {
@@ -280,9 +288,9 @@ void IPCSignals::_handleSnap(std::string_view key, std::string_view val)
 		return;
 	}
 
-	uint64_t seq{};
-	uint32_t idx{};
-	uint32_t total{};
+	std::uint64_t seq{};
+	std::uint32_t idx{};
+	std::uint32_t total{};
 	{
 		auto [e1, ec1] = std::from_chars(val.data(), val.data() + p1, seq);
 		auto [e2, ec2] = std::from_chars(val.data() + p1 + 1, val.data() + p2, idx);
@@ -312,7 +320,7 @@ void IPCSignals::_handleSnap(std::string_view key, std::string_view val)
 		return;
 
 	std::string payload;
-	for (uint32_t i = 0; i < building.total; ++i)
+	for (std::uint32_t i = 0; i < building.total; ++i)
 	{
 		auto it = building.chunks.find(i);
 		if (it == building.chunks.end())
@@ -353,7 +361,7 @@ std::optional<float> IPCSignals::getFloat(std::string_view name)
 	return val;
 }
 
-std::optional<uint32_t> IPCSignals::getU32(std::string_view name)
+std::optional<std::uint32_t> IPCSignals::getU32(std::string_view name)
 {
 	auto raw = _take(name);
 	if (!raw)
@@ -364,12 +372,12 @@ std::optional<uint32_t> IPCSignals::getU32(std::string_view name)
 	if (ec != std::errc{} || ptr != raw->data() + raw->size())
 		return std::nullopt;
 
-	if (val > UINT32_MAX)
+	if (val > std::numeric_limits<std::uint32_t>::max())
 	{
 		Debug::warning("IPC: value [{}] exceeds u32, truncated", *raw);
-		return static_cast<uint32_t>(val);
+		return static_cast<std::uint32_t>(val);
 	}
-	return static_cast<uint32_t>(val);
+	return static_cast<std::uint32_t>(val);
 }
 
 std::optional<std::string> IPCSignals::getLatest(std::string_view name)
@@ -381,7 +389,7 @@ std::optional<std::string> IPCSignals::getLatest(std::string_view name)
 	return it->second.value;
 }
 
-std::optional<uint32_t> IPCSignals::getLatestU32(std::string_view name)
+std::optional<std::uint32_t> IPCSignals::getLatestU32(std::string_view name)
 {
 	auto raw = getLatest(name);
 	if (!raw)
@@ -392,9 +400,9 @@ std::optional<uint32_t> IPCSignals::getLatestU32(std::string_view name)
 	if (ec != std::errc{} || ptr != raw->data() + raw->size())
 		return std::nullopt;
 
-	if (val > UINT32_MAX)
-		return UINT32_MAX;
-	return static_cast<uint32_t>(val);
+	if (val > std::numeric_limits<std::uint32_t>::max())
+		return std::numeric_limits<std::uint32_t>::max();
+	return static_cast<std::uint32_t>(val);
 }
 
 std::optional<std::chrono::steady_clock::duration> IPCSignals::latestAge(std::string_view name)

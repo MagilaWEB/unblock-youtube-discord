@@ -1,5 +1,14 @@
-#include <saucer/smartview.hpp>
-#include "tutorial.h"
+module ui.tutorial;
+
+import std;
+import core.localization;
+import core.scheduler;
+import core.utils;
+import dom;
+import dom.dom_tour;
+import dom.utils_saucer;
+import ext.saucer;
+import ui.ui_base_element;
 
 // -----------------------------------------------------------------------
 // Registries / step data

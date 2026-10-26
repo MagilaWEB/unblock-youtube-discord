@@ -1,4 +1,13 @@
-#include "zapret2_engine.h"
+module unblock.zapret2_engine;
+
+import std;
+import core;
+import core.localization;
+import core.service;
+import core.types;
+import unblock.strategies_zapret2;
+import unblock.strategy_config_base;
+import unblock.zapret_engine;
 
 Zapret2Engine::Zapret2Engine()
 {

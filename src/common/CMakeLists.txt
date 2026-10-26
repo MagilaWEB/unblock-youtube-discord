@@ -1,9 +1,17 @@
 set(NAME common)
 
-file(GLOB src_h "*.h")
-file(GLOB src_hpp "*.hpp")
+add_library(${NAME} STATIC)
 
-# Header-only module shared across executables (ui, unblock_dns, ...).
-add_library(${NAME} INTERFACE)
-target_sources(${NAME} INTERFACE ${src_h} ${src_hpp})
-target_include_directories(${NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_sources(${NAME}
+  PUBLIC
+    FILE_SET CXX_MODULES FILES
+      dns_config.cppm
+)
+
+# Link
+
+target_link_libraries(${NAME} PUBLIC ub_std)
+
+target_compile_options(${NAME} PRIVATE ${PROJECT_WARNING_FLAGS})
+
+target_compile_definitions(${NAME} PRIVATE ${ALL_MACRO_CPP})

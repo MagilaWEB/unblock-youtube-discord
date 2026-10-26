@@ -1,11 +1,8 @@
-#include "curl_client.h"
+module helper.curl_client;
 
-#include <charconv>
-#include <chrono>
-#include <format>
-#include <memory>
-#include <string_view>
-#include <thread>
+import std;
+import ext.curl;
+import helper.types;
 
 namespace
 {

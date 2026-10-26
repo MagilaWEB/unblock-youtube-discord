@@ -1,16 +1,13 @@
+#include "test_forwards.h"
+
 #include <catch2/catch_test_macros.hpp>
 
-#include <cstdio>
-#include <filesystem>
-#include <format>
-#include <fstream>
-#include <string>
-#include <string_view>
-#include <unordered_map>
-#include <unordered_set>
-
-#include "../helper_config.h"
-#include "../zapret_helper.h"
+import std;
+import ext.curl;
+import helper.curl_client;
+import helper.helper_config;
+import helper.types;
+import helper.zapret_helper;
 
 /** Test harness with friend access to ZapretHelper internals. */
 class ZapretHelperTest
@@ -90,7 +87,7 @@ public:
 	std::string makeLog(std::string_view text) const { return ZapretHelper::_makeLog(text); }
 	std::string makeDoneSignal(std::string_view h) const { return ZapretHelper::_makeDoneSignal(h); }
 	std::string makeCheckingSignal(std::string_view h) const { return ZapretHelper::_makeCheckingSignal(h); }
-	std::string makeSnapshotChunk(std::string_view k, uint64_t seq, size_t i, size_t n, std::string_view d) const
+	std::string makeSnapshotChunk(std::string_view k, std::uint64_t seq, size_t i, size_t n, std::string_view d) const
 	{
 		return ZapretHelper::_makeSnapshotChunk(k, seq, i, n, d);
 	}
@@ -664,7 +661,7 @@ namespace
 {
 	std::filesystem::path writeTempConfig(const std::string& body)
 	{
-		auto		  path = std::filesystem::temp_directory_path() / std::format("helper_cfg_{}.ini", ::rand());
+		auto		  path = std::filesystem::temp_directory_path() / std::format("helper_cfg_{}.ini", std::rand());
 		std::ofstream out(path);
 		out << body;
 		out.close();

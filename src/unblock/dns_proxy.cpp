@@ -1,14 +1,11 @@
-#include "dns_proxy.h"
+module unblock.dns_proxy;
 
-#include "ipc_signals.h"
-
-#include "../core/core.h"
-#include "../core/debug.h"
-#include "../core/file_system.h"
-#include "../core/hidden_process.h"
-
-#include <fstream>
-#include <sstream>
+import std;
+import core;
+import core.debug;
+import core.file_system;
+import core.hidden_process;
+import unblock.ipc_signals;
 
 std::vector<std::string> DnsProxy::defaultUpstreams()
 {
@@ -41,7 +38,7 @@ std::vector<std::string> DnsProxy::defaultBootstrap()
 	return { "1.1.1.1", "8.8.8.8", "9.9.9.9", "77.88.8.8" };
 }
 
-uint32_t DnsProxy::defaultTimeout()
+std::uint32_t DnsProxy::defaultTimeout()
 {
 	// A private resolver (GeoHide) stalls from time to time; a generous
 	// default avoids spurious SERVFAILs. Editable in the UI.
@@ -68,7 +65,7 @@ std::filesystem::path DnsProxy::_logPath() const
 	return Core::get().userPath() / "dns_proxy.log";
 }
 
-void DnsProxy::_writeConfig(const std::vector<std::string>& upstreams, const std::vector<std::string>& bootstrap, uint32_t timeout_ms)
+void DnsProxy::_writeConfig(const std::vector<std::string>& upstreams, const std::vector<std::string>& bootstrap, std::uint32_t timeout_ms)
 {
 	File conf{ false };
 	conf.open(_configPath(), "", true);
@@ -153,12 +150,12 @@ const std::vector<std::string>& DnsProxy::bootstrap() const
 	return _bootstrap;
 }
 
-void DnsProxy::setTimeout(uint32_t timeout_ms)
+void DnsProxy::setTimeout(std::uint32_t timeout_ms)
 {
 	_timeout_ms = timeout_ms;
 }
 
-uint32_t DnsProxy::timeout() const
+std::uint32_t DnsProxy::timeout() const
 {
 	return _timeout_ms;
 }

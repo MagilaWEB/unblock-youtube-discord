@@ -1,11 +1,24 @@
-#include "ui_dns_proxy.h"
+module;
 
-#include "ui.h"
-#include "../unblock/dns_proxy.h"
-#include "dns_config.h"
+#include "../core/macros.hpp"
 
-#include <algorithm>
-#include <ranges>
+module ui;
+
+import std;
+import common.dns_config;
+import core;
+import core.localization;
+import core.timer;
+import core.utils;
+import dom.utils_saucer;
+import ui.ui_background_tasks;
+import ui.ui_button;
+import ui.ui_check_box;
+import ui.ui_editable_list;
+import ui.ui_input;
+import ui.ui_secondary_window;
+import ui.ui_status;
+import unblock.dns_proxy;
 
 UiDnsProxy::UiDnsProxy(std::shared_ptr<Ui> ui, DnsProxy& dns_proxy) : _ui(std::move(ui)), _dns_proxy(dns_proxy)
 {
@@ -107,12 +120,12 @@ void UiDnsProxy::initialize()
 
 	// Upstream exchange timeout (seconds). Private resolvers stall now and
 	// then, so it is tunable without rebuilding.
-	uint32_t timeout_sec = DnsProxy::defaultTimeout() / 1'000;
+	std::uint32_t timeout_sec = DnsProxy::defaultTimeout() / 1'000;
 	if (auto cfg = _ui->userConfig()->parameterSection<std::string>("DNS", "timeout"))
 		try
 		{
 			if (const int parsed = std::stoi(trimConfigLine(cfg.value())); parsed >= 1 && parsed <= 120)
-				timeout_sec = static_cast<uint32_t>(parsed);
+				timeout_sec = static_cast<std::uint32_t>(parsed);
 		}
 		catch (...)
 		{
@@ -135,7 +148,7 @@ void UiDnsProxy::initialize()
 			{
 				int seconds = std::stoi(trimConfigLine(jsToCpp<std::string>(args[0])));
 				seconds		= std::clamp(seconds, 1, 120);
-				_dns_proxy.setTimeout(static_cast<uint32_t>(seconds) * 1'000);
+				_dns_proxy.setTimeout(static_cast<std::uint32_t>(seconds) * 1'000);
 				_collectUpstreams();
 				_applyUpstreams();
 			}
@@ -232,7 +245,7 @@ void UiDnsProxy::_applyState(bool state)
 	Core::get().addTask(
 		[this, state]
 		{
-			_ui->_unblock->setDnsEnabled(state);
+			_ui->unblock()->setDnsEnabled(state);
 			_ui->backgroundTasks()->finish("dns_proxy_apply");
 		}
 	);

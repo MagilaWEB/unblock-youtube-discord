@@ -1,20 +1,28 @@
-#include "engine.h"
-#include "version.hpp"
+module;
 
-#include "../ui/ui.h"
-
-#include <saucer/modules/stable/webview2.hpp>
-
-#include <cwctype>
-#include <algorithm>
-#include <cmath>
-#include <fstream>
+#include <windows.h>
 
 #include <dwmapi.h>
 #include <shellapi.h>
 #include <shellscalingapi.h>
 
-#include <filesystem>
+#include <stdio.h>
+
+#include "../core/macros.hpp"
+
+module engine;
+
+import std;
+import core;
+import core.debug;
+import core.file_system;
+import core.localization;
+import core.types;
+import engine.version;
+import engine.window_geometry;
+import ext.coco;
+import ext.saucer;
+import ui;
 
 Engine::Engine()
 {
@@ -279,7 +287,7 @@ void Engine::_setupScheme(saucer::smartview& view)
 		// NOLINTNEXTLINE(bugprone-exception-escape)
 		[ui_root](const saucer::scheme::request& request, saucer::scheme::executor exec)
 		{
-			saucer::fs::path file_path = ui_root / request.url().path();
+			std::filesystem::path file_path = ui_root / request.url().path();
 
 			// path() returns the path with a leading '/' (root-directory) which drops the base.
 			if (file_path.has_root_directory() && file_path.has_relative_path())

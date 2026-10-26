@@ -1,9 +1,15 @@
-#include "tg_proxy.h"
+module;
 
-#include "../core/core.h"
-#include "../core/utils.h"
-
+#include <windows.h>
 #include <shellapi.h>
+
+module unblock.tg_proxy;
+
+import std;
+import core;
+import core.debug;
+import core.service;
+import core.utils;
 
 constexpr static std::string_view c_proxy_secret{ "dd92bc05d4dc4f4bef9cb4b7bf5628c5" };
 

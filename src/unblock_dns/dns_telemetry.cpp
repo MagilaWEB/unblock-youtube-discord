@@ -1,16 +1,16 @@
-#include "dns_telemetry.h"
+module;
+
+#include "ag_dns.h"
 
 #include <winsock2.h>
 #include <windows.h>
 
-#include <atomic>
-#include <chrono>
-#include <cstdio>
-#include <ctime>
-#include <fstream>
-#include <mutex>
-#include <string>
-#include <string_view>
+#include <string.h>
+#include <time.h>
+
+module unblock_dns.dns_telemetry;
+
+import std;
 
 namespace dns
 {

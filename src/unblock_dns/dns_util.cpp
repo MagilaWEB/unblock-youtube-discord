@@ -1,9 +1,10 @@
-#include "dns_util.h"
+module;
 
 #include <windows.h>
 
-#include <fstream>
-#include <sstream>
+module unblock_dns.dns_util;
+
+import std;
 
 namespace dns
 {

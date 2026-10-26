@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include "../update_version.h"
+import std;
+import unblock.update_version;
 
 TEST_CASE("update version comes from the release redirect", "[update][version]")
 {

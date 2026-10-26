@@ -1,9 +1,5 @@
 set(NAME engine)
 
-file(GLOB src_cpp "*.cpp")
-file(GLOB src_h "*.h")
-file(GLOB src_hpp "*.hpp")
-
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(CUPY_LIBS_DLL_TO_BIN)
@@ -26,24 +22,39 @@ if(CUPY_LIBS_DLL_TO_BIN)
     )
 endif()
 
-add_executable(${NAME} ${src_h} ${src_hpp} ${src_cpp} engine.rc)
+# The version module lives in its own library: version.hpp is generated during
+# the build (target unblock_version), so the module interface includes it
+# textually, and ui/unblock/engine import the module from here. An executable
+# cannot hand out module files, hence a static library.
+add_library(ub_version STATIC)
 
-target_precompile_headers(${NAME} PRIVATE pch.h)
+target_sources(ub_version
+  PUBLIC
+    FILE_SET CXX_MODULES FILES version.cppm
+)
+
+target_link_libraries(ub_version PUBLIC ub_std)
+target_compile_options(ub_version PRIVATE ${PROJECT_WARNING_FLAGS})
+add_dependencies(ub_version unblock_version)
+
+add_executable(${NAME} main.cpp engine.cpp engine.rc)
+
+target_sources(${NAME}
+  PUBLIC
+    FILE_SET CXX_MODULES FILES
+      engine.cppm
+      window_geometry.cppm
+)
 
 target_compile_options(${NAME} PRIVATE ${PROJECT_WARNING_FLAGS})
-# WebView2.h has an enum value that does not fit into int
-target_compile_options(${NAME} PRIVATE -Wno-microsoft-enum-value)
-
-# WebView2 headers (saucer/modules/stable/webview2.hpp pulls in WebView2.h)
-if(WEBVIEW2_INCLUDE_DIRS)
-    target_include_directories(${NAME} PRIVATE ${WEBVIEW2_INCLUDE_DIRS})
-endif()
 
 # Link
 target_link_libraries(${NAME} PRIVATE
         core
         ui
         unblock
+        ext
+        ub_version
         saucer::saucer
         dwmapi.lib
         shcore.lib

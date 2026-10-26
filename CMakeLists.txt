@@ -353,6 +353,7 @@ target_compile_options(ub_std PRIVATE
 )
 
 # Add submodules
+add_subdirectory(src/ext)
 add_subdirectory(src/common)
 add_subdirectory(src/engine)
 add_subdirectory(src/core)

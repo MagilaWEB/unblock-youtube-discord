@@ -1,5 +1,9 @@
-#include "http_load_content.h"
-#include "curl/curl.h"
+module unblock.http_load_content;
+
+import std;
+import core.debug;
+import core.types;
+import ext.curl;
 
 HttpsLoad::HttpsLoad(std::string_view url)
 {

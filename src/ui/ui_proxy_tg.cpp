@@ -1,7 +1,14 @@
-#include "ui_proxy_tg.h"
+module ui;
 
-#include "ui.h"
-#include "../unblock/tg_proxy.h"
+import std;
+import core;
+import core.localization;
+import core.utils;
+import dom.utils_saucer;
+import ui.ui_button;
+import ui.ui_check_box;
+import ui.ui_input;
+import unblock.tg_proxy;
 
 UiProxyTg::UiProxyTg(std::shared_ptr<Ui> ui, TgProxy& tg_proxy) : _ui(std::move(ui)), _tg_proxy(tg_proxy)
 {

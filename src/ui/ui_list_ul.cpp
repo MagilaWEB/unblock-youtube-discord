@@ -1,4 +1,15 @@
-#include "ui_list_ul.h"
+module;
+
+#include "../core/macros.hpp"
+
+module ui.ui_list_ul;
+
+import std;
+import core.debug;
+import core.localization;
+import dom;
+import dom.utils_saucer;
+import ui.ui_base_element;
 
 ListUl::ListUl(std::string_view name) : BaseElement(name)
 {

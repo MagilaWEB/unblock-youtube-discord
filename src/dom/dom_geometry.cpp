@@ -1,10 +1,8 @@
-#include "dom_element.hpp"
+module dom.dom_element;
 
-#include <coco/utils/utils.hpp>
-
-#include <charconv>
-#include <span>
-#include <string_view>
+import std;
+import dom.dom_view;
+import ext.coco;
 
 namespace ui::dom
 {

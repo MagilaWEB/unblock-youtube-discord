@@ -1,8 +1,16 @@
-#include "ui.h"
+module;
 
 #include <windows.h>
 
-#include <filesystem>
+module ui;
+
+import std;
+import core;
+import core.debug;
+import core.localization;
+import dom.utils_saucer;
+import ui.ui_button;
+import ui.ui_secondary_window;
 
 void Ui::_removeApp()
 {

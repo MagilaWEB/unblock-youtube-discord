@@ -1,7 +1,15 @@
-#include <saucer/smartview.hpp>
-#include "ui_secondary_window.h"
+module;
 
-#include <cmath>
+#include "../core/macros.hpp"
+
+module ui.ui_secondary_window;
+
+import std;
+import core.debug;
+import core.localization;
+import dom;
+import dom.utils_saucer;
+import ui.ui_base_element;
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wglobal-constructors"

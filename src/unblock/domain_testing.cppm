@@ -1,0 +1,66 @@
+export module unblock.domain_testing;
+
+import std;
+import core.file_system;
+import core.types;
+import ext.curl;
+
+export class DomainTesting final
+{
+public:
+	struct CurlDomain
+	{
+		CURL*		curl{ nullptr };
+		std::string url{};
+
+		double result_time_sec{ 0.0 };
+	};
+
+public:
+	DomainTesting();
+	~DomainTesting();
+
+	void loadDomain();
+
+	void test(bool base_test, std::function<void(std::string url, bool state)>&& callback = [](std::string, bool) {}, bool reset_test = false);
+
+	void changeProxy(std::string_view ip, u32 port);
+	void changeOptionalServices(std::list<std::string> list_services);
+
+	void cancelTesting();
+
+	inline bool isTesting() { return _is_testing.load(); }
+	inline bool isCancelTesting() { return _cancel_testing.load(); }
+	inline bool isResetConect() { return _reset_test.load(); }
+
+	u32	 successRate() const;
+	u32	 errorRate() const;
+	void printTestInfo() const;
+
+	static bool isConnectionUrl(DomainTesting* obj, CurlDomain& domain);
+
+	std::vector<std::string> listHost(bool all = false);
+
+private:
+	bool _loadFile(std::filesystem::path file);
+	void _genericUrls(std::string base_name = "");
+	void _appendAllServiceUrls();
+	void _appendUrls();
+	void _clearUrls();
+
+private:
+	inline static std::atomic_uint s_max_wait_testing{ 0 };
+
+	File				   _file_test_host{ false };
+	std::list<CurlDomain>  _list_host{};
+	std::list<std::string> _section_opt_service_names{};
+
+	std::string _proxy_ip{ "127.0.0.1" };
+	u32			_proxy_port{ 1'080 };
+
+	std::atomic_uint _domain_ok{ 0 };
+	std::atomic_uint _domain_error{ 0 };
+	std::atomic_bool _is_testing{ false };
+	std::atomic_bool _cancel_testing{ false };
+	std::atomic_bool _reset_test{ false };
+};

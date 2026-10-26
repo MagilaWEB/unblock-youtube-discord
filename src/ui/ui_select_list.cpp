@@ -1,7 +1,15 @@
-#include <saucer/smartview.hpp>
-#include "ui_select_list.h"
+module;
 
-#include <algorithm>
+#include "../core/macros.hpp"
+
+module ui.ui_select_list;
+
+import std;
+import core.debug;
+import core.localization;
+import dom;
+import dom.utils_saucer;
+import ui.ui_base_element;
 
 SelectList::SelectList(std::string_view name) : BaseElement(name)
 {

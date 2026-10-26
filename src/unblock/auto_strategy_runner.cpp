@@ -1,5 +1,9 @@
-#include "auto_strategy_runner.h"
-#include "../core/input_console.h"
+module unblock.auto_strategy_runner;
+
+import std;
+import core.input_console;
+import core.localization;
+import core.utils;
 
 AutoStrategyRunner::AutoStrategyRunner(Unblock& unblock) : _unblock(unblock)
 {

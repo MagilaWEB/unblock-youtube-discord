@@ -1,10 +1,16 @@
-#include <saucer/smartview.hpp>
-#include "ui_input.h"
-#include "ui_button.h"
+module;
 
-#include <coco/utils/utils.hpp>
+#include "../core/macros.hpp"
 
-#include <cmath>
+module ui.ui_input;
+
+import std;
+import core.debug;
+import core.localization;
+import core.types;
+import dom;
+import dom.utils_saucer;
+import ui.ui_base_element;
 
 std::pair<Input::Types, pcstr> Input::convert_types[]{
 	{		  Input::Types::text,	"text" },

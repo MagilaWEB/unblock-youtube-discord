@@ -1,7 +1,18 @@
-#include "ui_zapret_helper.h"
+module;
 
-#include "ui.h"
-#include "../unblock/unblock.h"
+#include "../core/macros.hpp"
+
+module ui;
+
+import std;
+import core;
+import core.localization;
+import core.timer;
+import core.utils;
+import dom.utils_saucer;
+import ui.ui_input;
+import ui.ui_list_ul;
+import ui.ui_text;
 
 UiZapretHelper::UiZapretHelper(std::shared_ptr<Ui> ui, std::string_view root) : _ui(std::move(ui)), _root(root)
 {
@@ -129,13 +140,13 @@ void UiZapretHelper::updateChecking()
 	// list strobe (and reset its scroll). Match the snapshot cadence: the
 	// list still reads edges, but only repaints twice a second.
 	LIMIT_UPDATE(HelperChecking, .5f, {
-		auto hosts = _ui->_unblock->helperCheckingHosts();
+		auto hosts = _ui->unblock()->helperCheckingHosts();
 		std::ranges::sort(hosts);
 
 		// Pool load snapshot from the helper (authoritative counts): per-host
 		// edges below stay truthful now that verdict snapshots no longer spam
 		// O(N) datagrams per lua packet and drown them on loopback.
-		const auto stats	= _ui->_unblock->helperStats();
+		const auto stats	= _ui->unblock()->helperStats();
 		const bool snapshot = stats.in_check != 0 || stats.queued != 0 || stats.known != 0 || hosts.empty();
 		const auto title	= utils::format(
 			Localization::Str{ "str_zapret_helper_checking_title" }(),
@@ -170,7 +181,7 @@ void UiZapretHelper::updateSeen()
 	if (!_list_helper_seen->isCreate())
 		return;
 
-	auto hosts = _ui->_unblock->helperSeenHosts();
+	auto hosts = _ui->unblock()->helperSeenHosts();
 	std::ranges::sort(hosts);
 
 	if (hosts == _last_helper_seen)
@@ -194,7 +205,7 @@ void UiZapretHelper::updateValid()
 	if (!_list_helper_valid->isCreate())
 		return;
 
-	auto entries = _ui->_unblock->helperValidHosts();
+	auto entries = _ui->unblock()->helperValidHosts();
 	std::ranges::sort(entries);
 
 	if (entries == _last_helper_valid)
@@ -218,7 +229,7 @@ void UiZapretHelper::updateError()
 	if (!_list_helper_error->isCreate())
 		return;
 
-	auto entries = _ui->_unblock->helperErrorHosts();
+	auto entries = _ui->unblock()->helperErrorHosts();
 	std::ranges::sort(entries);
 
 	if (entries == _last_helper_error)
@@ -242,7 +253,7 @@ void UiZapretHelper::updateExhausted()
 	if (!_list_helper_exhausted->isCreate())
 		return;
 
-	auto entries = _ui->_unblock->helperExhaustedHosts();
+	auto entries = _ui->unblock()->helperExhaustedHosts();
 	std::ranges::sort(entries);
 
 	if (entries == _last_helper_exhausted)
@@ -266,7 +277,7 @@ void UiZapretHelper::updateUnjudged()
 	if (!_list_helper_unjudged->isCreate())
 		return;
 
-	auto hosts = _ui->_unblock->helperUnjudgedHosts();
+	auto hosts = _ui->unblock()->helperUnjudgedHosts();
 	std::ranges::sort(hosts);
 
 	if (hosts == _last_helper_unjudged)
@@ -288,10 +299,10 @@ void UiZapretHelper::updateSummary()
 	// Effectiveness = share of judged hosts that work: valid / (valid + error
 	// + exhausted). unjudged is pending, so it is shown but not in the ratio.
 	LIMIT_UPDATE(HelperSummary, 1.F, {
-		const auto valid	 = _ui->_unblock->helperValidHosts().size();
-		const auto error	 = _ui->_unblock->helperErrorHosts().size();
-		const auto exhausted = _ui->_unblock->helperExhaustedHosts().size();
-		const auto unjudged	 = _ui->_unblock->helperUnjudgedHosts().size();
+		const auto valid	 = _ui->unblock()->helperValidHosts().size();
+		const auto error	 = _ui->unblock()->helperErrorHosts().size();
+		const auto exhausted = _ui->unblock()->helperExhaustedHosts().size();
+		const auto unjudged	 = _ui->unblock()->helperUnjudgedHosts().size();
 		const auto judged	 = valid + error + exhausted;
 		const auto percent	 = judged != 0 ? static_cast<unsigned>((valid * 100 + judged / 2) / judged) : 0U;
 
@@ -347,10 +358,10 @@ void UiZapretHelper::_pushHelperSettings() const
 		message += std::string{ def.key } + "=" + std::to_string(_helperSettingU32(def.key, def.fallback));
 	}
 
-	_ui->_unblock->setHelperConfigMessage(std::move(message));
+	_ui->unblock()->setHelperConfigMessage(std::move(message));
 
 	// Live push when the helper is already running; startService() repeats
 	// the same message right after launch (bind-race retries inside).
-	if (_ui->_unblock->activeService())
-		_ui->_unblock->pushHelperConfig();
+	if (_ui->unblock()->activeService())
+		_ui->unblock()->pushHelperConfig();
 }

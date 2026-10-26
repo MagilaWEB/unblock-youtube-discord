@@ -1,4 +1,16 @@
-#include "ui_base_element.h"
+module;
+
+#include "../core/macros.hpp"
+
+module ui.ui_base_element;
+
+import std;
+import core.debug;
+import core.localization;
+import core.types;
+import dom;
+import dom.utils_saucer;
+import ext.saucer;
 
 saucer::smartview* BaseElement::_view;
 #pragma clang diagnostic push

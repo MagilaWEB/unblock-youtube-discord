@@ -26,12 +26,7 @@
 
 #include <tlhelp32.h>
 
-#include <algorithm>
-#include <cwctype>
-#include <filesystem>
-#include <fstream>
-#include <string>
-#include <vector>
+import std;
 
 namespace fs = std::filesystem;
 

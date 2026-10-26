@@ -1,10 +1,12 @@
-#include "helper_state.h"
+module;
 
-#include "ipc_signals.h"
+#include <winsock2.h>
 
-#include <format>
-#include <ranges>
-#include <thread>
+module unblock.helper_state;
+
+import std;
+import core.types;
+import unblock.ipc_signals;
 
 namespace
 {

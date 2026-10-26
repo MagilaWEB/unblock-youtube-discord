@@ -1,9 +1,29 @@
-#include <saucer/smartview.hpp>
-#include "ui.h"
-#include "tutorial.h"
-#include "../engine/version.hpp"
+module;
 
+#include <windows.h>
 #include <shellapi.h>
+
+module ui;
+
+import std;
+import core;
+import core.debug;
+import core.file_system;
+import core.localization;
+import core.service;
+import core.utils;
+import dom;
+import dom.utils_saucer;
+import engine.version;
+import ext.saucer;
+import ui.engine_api;
+import ui.tutorial;
+import ui.ui_background_tasks;
+import ui.ui_base_element;
+import ui.ui_button;
+import ui.ui_check_box;
+import ui.ui_secondary_window;
+import unblock;
 
 Ui::Ui(IEngineAPI* engine) : _engine(engine)
 {

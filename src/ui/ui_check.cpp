@@ -1,4 +1,11 @@
-#include "ui.h"
+module ui;
+
+import std;
+import core;
+import core.localization;
+import core.utils;
+import dom.utils_saucer;
+import ui.ui_secondary_window;
 
 void Ui::_checkValidRootDirectory()
 {

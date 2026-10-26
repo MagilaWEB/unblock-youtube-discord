@@ -1,18 +1,32 @@
 set(NAME dom)
 
-file(GLOB src_cpp "*.cpp")
-file(GLOB src_h "*.h")
-file(GLOB src_hpp "*.hpp")
+add_library(${NAME} STATIC)
 
-add_library(${NAME} STATIC ${src_h} ${src_hpp} ${src_cpp})
+target_sources(${NAME}
+  PRIVATE
+    dom_element.cpp
+    dom_events.cpp
+    dom_geometry.cpp
+    dom_props.cpp
+    dom_tour.cpp
+    dom_view.cpp
+)
 
-target_precompile_headers(${NAME} PRIVATE pch.h)
+target_sources(${NAME}
+  PUBLIC
+    FILE_SET CXX_MODULES FILES
+      dom.cppm
+      dom_element.cppm
+      dom_tour.cppm
+      dom_view.cppm
+      utils_saucer.cppm
+)
 
 target_compile_options(${NAME} PRIVATE ${PROJECT_WARNING_FLAGS})
 
-# saucer PUBLIC: smartview* leaks into headers (dom_view/dom_element).
-# core PUBLIC: utils_saucer.hpp (js::Value/JSToCPP) uses s64/concepts/Debug.
-target_link_libraries(${NAME} PUBLIC saucer::saucer core)
+# ext PUBLIC: saucer::smartview* leaks into the module interface (dom_view).
+# core PUBLIC: utils_saucer (js::Value/jsToCpp) uses s64/concepts/Debug.
+target_link_libraries(${NAME} PUBLIC ext core)
 
 target_compile_definitions(${NAME} PRIVATE ${ALL_MACRO_CPP})
 

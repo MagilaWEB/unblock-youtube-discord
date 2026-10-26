@@ -1,8 +1,8 @@
-#include "dom_view.hpp"
+module dom.dom_view;
 
-#include "../core/debug.h"
-
-#include <thread>
+import std;
+import core.debug;
+import ext.saucer;
 
 namespace ui::dom
 {
@@ -15,7 +15,7 @@ namespace ui::dom
 		// before any getter can run, read from containers/other threads.
 		std::thread::id s_ui_thread{};
 
-		// Exposed-name registry (see dom_view.hpp): saucer cannot enumerate
+		// Exposed-name registry (see dom.dom_view): saucer cannot enumerate
 		// its functions map, so dom tracks cppNames per node handle itself.
 		std::mutex								s_exposed_mutex;
 		std::map<int, std::vector<std::string>> s_exposed;

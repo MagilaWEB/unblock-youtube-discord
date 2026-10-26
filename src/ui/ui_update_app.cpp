@@ -1,4 +1,20 @@
-#include "ui.h"
+module;
+
+#include "../core/macros.hpp"
+
+module ui;
+
+import std;
+import core;
+import core.localization;
+import core.timer;
+import core.utils;
+import dom.utils_saucer;
+import ui.ui_background_tasks;
+import ui.ui_button;
+import ui.ui_check_box;
+import ui.ui_secondary_window;
+import unblock;
 
 #pragma clang diagnostic ignored "-Wshadow-uncaptured-local"
 

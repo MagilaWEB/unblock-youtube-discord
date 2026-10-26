@@ -1,19 +1,18 @@
-#include "dns_adapters.h"
+module;
 
-#include "dns_telemetry.h"
-#include "dns_util.h"
+#include "ag_bind.h"
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
 #include <iphlpapi.h>
 
-#include <algorithm>
-#include <cstring>
-#include <ranges>
-#include <set>
-#include <string>
-#include <vector>
+module unblock_dns.dns_adapters;
+
+import std;
+import common.dns_config;
+import unblock_dns.dns_telemetry;
+import unblock_dns.dns_util;
 
 namespace dns
 {

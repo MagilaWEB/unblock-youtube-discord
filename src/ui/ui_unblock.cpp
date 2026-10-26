@@ -1,7 +1,13 @@
-#include "ui_unblock.h"
+module ui;
 
-#include "ui.h"
-#include "../unblock/dns_host.h"
+import std;
+import core;
+import core.localization;
+import dom.utils_saucer;
+import ui.ui_button;
+import ui.ui_check_box;
+import ui.ui_secondary_window;
+import unblock.tg_proxy;
 
 #pragma clang diagnostic ignored "-Wshadow-uncaptured-local"
 
@@ -107,8 +113,8 @@ void UiUnblock::_stopService()
 
 void UiUnblock::stopAllServices() const
 {
-	_ui->_unblock->removeService();
-	_ui->_unblock->tgProxy().run(false);
-	_ui->_ui_dns_proxy->setEnabled(false);
-	_ui->_ui_proxy_tg->getCheckBoxProxyTg()->setState(false);
+	_ui->unblock()->removeService();
+	_ui->unblock()->tgProxy().run(false);
+	_ui->uiDnsProxy()->setEnabled(false);
+	_ui->uiProxyTg()->getCheckBoxProxyTg()->setState(false);
 }

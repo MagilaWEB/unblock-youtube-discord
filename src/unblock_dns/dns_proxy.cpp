@@ -1,11 +1,14 @@
-#include "dns_proxy.h"
+module;
+
+#include "ag_bind.h"
 
 #include <windows.h>
 #include <wincrypt.h>
 
-#include <ranges>
-#include <string>
-#include <vector>
+module unblock_dns.dns_proxy;
+
+import std;
+import common.dns_config;
 
 namespace dns
 {

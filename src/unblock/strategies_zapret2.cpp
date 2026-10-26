@@ -1,4 +1,13 @@
-#include "strategies_zapret2.h"
+module;
+
+#include "../core/macros.hpp"
+
+module unblock.strategies_zapret2;
+
+import std;
+import core;
+import core.debug;
+import core.types;
 
 StrategiesZapret2::StrategiesZapret2()
 {

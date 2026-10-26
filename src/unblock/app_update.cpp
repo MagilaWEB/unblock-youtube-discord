@@ -1,12 +1,17 @@
-#include "app_update.h"
+module;
 
-#include "../engine/version.hpp"
-#include "http_load_content.h"
-#include "update_version.h"
+#include <windows.h>
 
-#include <bit7z/bitfileextractor.hpp>
-#include <filesystem>
-#include <string>
+module unblock.app_update;
+
+import std;
+import core;
+import core.debug;
+import core.types;
+import engine.version;
+import ext.bit7z;
+import unblock.http_load_content;
+import unblock.update_version;
 
 std::optional<std::string> AppUpdater::check() const
 {

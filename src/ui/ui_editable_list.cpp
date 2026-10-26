@@ -1,6 +1,16 @@
-#include "ui_editable_list.h"
+module;
 
-#include <charconv>
+#include "../core/macros.hpp"
+
+module ui.ui_editable_list;
+
+import std;
+import core.debug;
+import core.localization;
+import core.scheduler;
+import dom;
+import dom.utils_saucer;
+import ui.ui_base_element;
 
 EditableList::EditableList(std::string_view name) : BaseElement(name)
 {

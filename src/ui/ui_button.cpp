@@ -1,5 +1,15 @@
-#include <saucer/smartview.hpp>
-#include "ui_button.h"
+module;
+
+#include "../core/macros.hpp"
+
+module ui.ui_button;
+
+import std;
+import core.debug;
+import core.localization;
+import dom;
+import dom.utils_saucer;
+import ui.ui_base_element;
 
 Button::Button(std::string_view name) : BaseElement(name)
 {

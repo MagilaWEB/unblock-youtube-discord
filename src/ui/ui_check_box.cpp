@@ -1,5 +1,15 @@
-#include <saucer/smartview.hpp>
-#include "ui_check_box.h"
+module;
+
+#include "../core/macros.hpp"
+
+module ui.ui_check_box;
+
+import std;
+import core.debug;
+import core.localization;
+import dom;
+import dom.utils_saucer;
+import ui.ui_base_element;
 
 CheckBox::CheckBox(std::string_view name) : BaseElement(name)
 {

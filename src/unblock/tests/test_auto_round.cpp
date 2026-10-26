@@ -1,14 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <chrono>
-#include <string>
-#include <unordered_set>
-
-// unblock.h (via ipc_signals.h) needs SOCKET; the app TU gets it through
-// the service headers, the test TU includes it directly.
-#include <winsock2.h>
-
-#include "../unblock.h"
+import std;
+import unblock;
+import unblock.helper_state;
 
 namespace
 {

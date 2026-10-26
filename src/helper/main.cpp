@@ -1,6 +1,7 @@
-#include "curl_client.h"
-#include "net.h"
-#include "zapret_helper.h"
+import std;
+import helper.curl_client;
+import helper.net;
+import helper.zapret_helper;
 
 // NOLINTNEXTLINE(bugprone-exception-escape) - helper crash is handled by the service manager restart
 int main()

@@ -1,9 +1,9 @@
-#include "dns_host.h"
+module unblock.dns_host;
 
-#include <algorithm>
-#include <map>
-#include <regex>
-#include <sstream>
+import std;
+import core;
+import core.debug;
+import core.file_system;
 
 const std::regex& reg_ipv4_pattern()
 {

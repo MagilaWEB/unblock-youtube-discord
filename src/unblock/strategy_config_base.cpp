@@ -1,5 +1,17 @@
-#include "strategy_config_base.h"
-#include "../core/input_console.h"
+module;
+
+#include "../core/macros.hpp"
+
+module unblock.strategy_config_base;
+
+import std;
+import core;
+import core.debug;
+import core.file_system;
+import core.input_console;
+import core.localization;
+import core.types;
+import unblock.strategy_generator;
 
 StrategyConfigBase::StrategyConfigBase()
 {

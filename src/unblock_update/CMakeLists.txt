@@ -1,7 +1,7 @@
 set(NAME unblock_update)
 
-file(GLOB src_cpp "*.cpp")
+add_executable(${NAME} main.cpp)
 
-add_executable(${NAME} ${src_cpp})
+target_link_libraries(${NAME} PRIVATE ub_std)
 
 target_compile_options(${NAME} PRIVATE ${PROJECT_WARNING_FLAGS})

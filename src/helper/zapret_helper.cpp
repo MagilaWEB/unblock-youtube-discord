@@ -1,10 +1,16 @@
-#include "zapret_helper.h"
+module;
 
-#include <algorithm>
-#include <cctype>
-#include <format>
-#include <ranges>
-#include <vector>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
+
+module helper.zapret_helper;
+
+import std;
+import helper.curl_client;
+import helper.helper_config;
+import helper.net;
+import helper.types;
 
 namespace
 {
@@ -97,8 +103,8 @@ void ZapretHelper::_log(std::string_view text) const
 
 void ZapretHelper::_sendSnapshot(std::string_view key, std::string_view payload) const
 {
-	const uint64_t seq	 = _snap_seq.fetch_add(1) + 1;
-	const size_t   total = payload.empty() ? 1 : (payload.size() + c_snapshot_chunk - 1) / c_snapshot_chunk;
+	const std::uint64_t seq	  = _snap_seq.fetch_add(1) + 1;
+	const size_t		total = payload.empty() ? 1 : (payload.size() + c_snapshot_chunk - 1) / c_snapshot_chunk;
 
 	for (size_t i = 0; i < total; ++i)
 	{
@@ -123,7 +129,7 @@ std::string ZapretHelper::_makeCheckingSignal(std::string_view host)
 	return std::format("STRING:helper_checking:{}", host);
 }
 
-std::string ZapretHelper::_makeSnapshotChunk(std::string_view key, uint64_t seq, size_t idx, size_t total, std::string_view data)
+std::string ZapretHelper::_makeSnapshotChunk(std::string_view key, std::uint64_t seq, size_t idx, size_t total, std::string_view data)
 {
 	return std::format("SNAP:{}:{}|{}|{}|{}", key, seq, idx, total, data);
 }

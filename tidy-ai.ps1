@@ -14,7 +14,7 @@ $env:LIB = $null
 $env:LIBPATH = $null
 $env:Path = "C:\Program Files\LLVM\bin;" + $env:Path
 
-$exts = @('.cpp', '.c')
+$exts = @('.cpp', '.c', '.cppm')
 
 if ($All) {
     $files = Get-ChildItem -Recurse -File -Path src |

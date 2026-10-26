@@ -1,4 +1,8 @@
-#include "dom_element.hpp"
+module dom.dom_element;
+
+import std;
+import dom.dom_view;
+import dom.utils_saucer;
 
 namespace ui::dom
 {

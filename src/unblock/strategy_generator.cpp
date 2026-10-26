@@ -1,4 +1,13 @@
-#include "strategy_generator.h"
+module;
+
+#include "../core/macros.hpp"
+
+module unblock.strategy_generator;
+
+import std;
+import core;
+import core.debug;
+import core.file_system;
 
 const std::filesystem::path& StrategyGenerator::_base_blacklist()
 {

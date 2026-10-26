@@ -9,22 +9,16 @@
 // 5 proxy init failed.
 
 #include "ag_bind.h"
-#include "dns_adapters.h"
-#include "dns_config.h"
-#include "dns_proxy.h"
-#include "dns_telemetry.h"
-#include "dns_util.h"
 
 #include <winsock2.h>
 #include <windows.h>
 
-#include <atomic>
-#include <chrono>
-#include <filesystem>
-#include <iostream>
-#include <string>
-#include <string_view>
-#include <vector>
+import std;
+import common.dns_config;
+import unblock_dns.dns_adapters;
+import unblock_dns.dns_proxy;
+import unblock_dns.dns_telemetry;
+import unblock_dns.dns_util;
 
 namespace
 {

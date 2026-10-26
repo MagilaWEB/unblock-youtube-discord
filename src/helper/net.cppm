@@ -1,0 +1,50 @@
+module;
+
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
+
+export module helper.net;
+
+import std;
+import helper.types;
+
+/** Winsock init/cleanup RAII. */
+export class Winsock
+{
+	WSADATA _data{};
+
+public:
+	Winsock();
+	~Winsock();
+	Winsock(const Winsock&)			   = delete;
+	Winsock& operator=(const Winsock&) = delete;
+};
+
+/** UDP socket with RAII lifecycle management. */
+export class UdpSocket
+{
+	SOCKET _fd{ INVALID_SOCKET };
+
+public:
+	UdpSocket() = default;
+	~UdpSocket();
+	UdpSocket(const UdpSocket&)			   = delete;
+	UdpSocket& operator=(const UdpSocket&) = delete;
+
+	/** Create the socket. */
+	bool create();
+	/** Bind the socket to a port on INADDR_ANY. */
+	bool bind(u32 port) const;
+	/** Switch the socket to non-blocking mode. */
+	bool nonBlocking() const;
+	/** Grow kernel send/receive buffers (loopback storms of tiny helper
+	 *  datagrams overflowed the defaults and the UI undercounted). */
+	bool setBufferSize(int bytes) const;
+	/** Bound local port (htons order), 0 if not bound. */
+	u32	 localPort() const;
+	/** Send a datagram to the given address. */
+	void sendTo(std::string_view message, u32 ip, u32 port) const;
+	/** Receive a datagram, returns its length (<=0 - no data). */
+	int	 recvFrom(char* buffer, int buffer_size, sockaddr_in& from) const;
+};

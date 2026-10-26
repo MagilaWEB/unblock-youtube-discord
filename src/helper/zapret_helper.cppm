@@ -1,0 +1,186 @@
+module;
+
+#ifdef HELPER_TESTS
+	#include "tests/test_forwards.h"
+#endif
+
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
+
+export module helper.zapret_helper;
+
+import std;
+import helper.curl_client;
+import helper.helper_config;
+import helper.net;
+import helper.types;
+
+/**
+ * Background zapret helper: receives host lists over UDP (10000),
+ * checks their availability via curl and reports the result back.
+ */
+export class ZapretHelper
+{
+	inline static constexpr u32	   c_receive_port{ 10'000 };
+	inline static constexpr u32	   c_ipc_port{ 9'999 };
+	inline static constexpr size_t c_receive_buffer_size{ 65'536 };
+	inline static constexpr auto   c_sleep_short{ std::chrono::milliseconds(100) };
+	// Seen-list broadcast throttle: the full host list is re-sent at most
+	// this often. Unthrottled it flooded loopback UDP (~10Hz x N hosts) and
+	// drowned one-shot CHECKING/DONE signals, so the UI under-reported busy
+	// workers.
+	inline static constexpr auto   c_seen_interval{ std::chrono::milliseconds(500) };
+	// Snapshot payload chunk size. Must stay well below the receiver's
+	// datagram buffer (IPCSignals reads up to 64KB).
+	inline static constexpr size_t c_snapshot_chunk{ 8 * 1'024 };
+	// Zapret liveness: the helper stays dormant until lua sends READY and
+	// suspends host work after this much silence.
+	inline static constexpr auto   c_zapret_timeout{ std::chrono::seconds(60) };
+
+	struct ErrorInfo
+	{
+		std::chrono::steady_clock::time_point first{};
+		std::chrono::steady_clock::time_point last{};
+		std::string							  strategy{};
+	};
+
+	std::mutex															   _mutex;
+	std::condition_variable												   _cv;
+	mutable std::mutex													   _send_mutex;
+	std::unordered_set<std::string>										   _queue;
+	std::unordered_set<std::string>										   _known_hosts;
+	std::unordered_set<std::string>										   _in_check;
+	std::unordered_map<std::string, ErrorInfo>							   _error_hosts;
+	std::unordered_map<std::string, std::string>						   _valid_hosts;
+	// Fully-tried hosts (lua wrapped a whole plan and went for the second
+	// lap through direct). Owned here, relayed to unblock; slow rechecks
+	// continue so a recovered host leaves the set on the next OK.
+	std::unordered_map<std::string, ErrorInfo>							   _exhausted_hosts;
+	// Probed-but-unjudged hosts: a probe finished (done signal sent) but lua
+	// never produced a verdict (e.g. the connection died before ClientHello,
+	// so the winws2 tls_client_hello/http_req filter never matched and the
+	// host stayed invisible to lua). Sticky: rechecked on the stale-error
+	// interval, cleared by any real verdict (VALID/ERR/EXHAUSTED).
+	std::unordered_map<std::string, std::chrono::steady_clock::time_point> _probed_at;
+	std::unordered_map<std::string, ErrorInfo>							   _unjudged_hosts;
+	// Snapshots to unblock (port 9999) go out at most every c_seen_interval,
+	// chunked into a handful of datagrams (never O(N) per host) and stored
+	// latest-only on the receiver, so an incomplete/lost snapshot self-heals
+	// on the next tick.
+	// Snapshot sequence numbers are wall-clock seeded so they keep growing
+	// across helper restarts; a per-process counter starting at 0 would look
+	// stale to the receiver (which still holds a building snapshot from the
+	// previous run) and be ignored forever.
+	mutable std::atomic<std::uint64_t>		_snap_seq{ static_cast<std::uint64_t>(std::chrono::system_clock::now().time_since_epoch().count()) };
+	UdpSocket								_socket;
+	std::array<char, c_receive_buffer_size> _buffer{};
+	std::vector<std::thread>				_pool;
+	// Pool generation: bumped on live resize so the old generation exits
+	// even though _running stays true (joining threads that wait on
+	// !_running would deadlock the main loop).
+	std::atomic<u32>						_pool_epoch{ 0 };
+	u32										_target_ip{ htonl(INADDR_LOOPBACK) };
+	std::atomic<bool>						_running{ true };
+	std::chrono::steady_clock::time_point	_last_recheck{};
+	std::chrono::steady_clock::time_point	_last_seen_send{};
+
+	// Zapret heartbeat gate: no workers, probes or snapshots until the first
+	// READY from lua; host work suspends after c_zapret_timeout of silence.
+	// Workers stay alive (idle) across a suspension, so the main loop never
+	// blocks on a join; they are spawned once, on the first READY.
+	std::atomic<bool>					  _zapret_ready{ false };
+	bool								  _workers_started{ false };
+	std::chrono::steady_clock::time_point _last_ready{};
+
+	// Runtime settings: file fallback at startup (cold start / PC reboot),
+	// fresh values always arrive via UDP CONFIG: pushed by Unblock.
+	u32					 _pool_size{ HelperConfig::defaults().pool_size };
+	std::chrono::minutes _recheck_interval{ HelperConfig::defaults().recheck_interval_min };
+	std::chrono::minutes _errors_progress_interval{ HelperConfig::defaults().errors_progress_min };
+	std::chrono::seconds _errors_recheck_interval{ HelperConfig::defaults().errors_recheck_sec };
+
+#ifdef HELPER_TESTS
+	friend class ZapretHelperTest;
+#endif
+
+public:
+	ZapretHelper() = default;
+	~ZapretHelper();
+
+	/** Main loop: receive UDP messages and drive the check queue. */
+	int run();
+
+	/** Apply settings: curl timeouts immediately, intervals on next idle
+	 *  step, pool is resized live when workers are already running. */
+	void		 applyConfig(const HelperConfig& cfg);
+	/** Current settings snapshot (for CONFIG: merge base). */
+	HelperConfig currentConfig() const;
+
+private:
+	/** Host is valid (not empty and contains at least one letter). */
+	static bool _isValidHost(std::string_view host);
+
+	/** Voice media endpoint (c-<region>-<hash>.discord.media): not an HTTP
+	 *  site, curl cannot validate it. Such hosts are skipped so their
+	 *
+	 * verdicts never poison auto_strategy. */
+	static bool _isVoiceMediaHost(std::string_view host);
+
+	/** Send a UDP message to target_ip and the given port. */
+	void					   _send(std::string_view message, u32 port) const;
+	/** Send a log entry to unblock (port 9999). */
+	void					   _log(std::string_view text) const;
+	/** Split a ':'-separated host string and enqueue the hosts. */
+	void					   _addHost(std::string_view hosts);
+	/** Handle an incoming message (LIST or CHECK). */
+	void					   _handleMessage(std::string_view message);
+	/** Check a host via curl: pump traffic and relay the done signal. */
+	void					   _checkHost(std::string_view host);
+	/** Pop the next host (from queue, then error hosts) under mutex. */
+	std::optional<std::string> _popHost();
+	/** True if any host is waiting and not currently being checked. */
+	bool					   _hasPendingHost() const;
+	/** Background worker: waits for hosts and checks them one by one.
+	 *  Epoch is passed at creation, never re-read: a worker started late
+	 *
+	 * must belong to the generation that created it, not the current one. */
+	void					   _workerRoutine(u32 epoch);
+	/** Spawn n workers (run() startup path). */
+	void					   _startWorkers(u32 count);
+	/** Live pool resize while the helper keeps running (Apply button path).
+	 *  Unlike _stopWorkers (shutdown path, _running==false), this
+	 * retires
+	 *  the current generation via _pool_epoch and starts a new one. */
+	void					   _restartWorkers(u32 count);
+	/** Join all workers, keep _running untouched (live pool resize). */
+	void					   _stopWorkers();
+	/** Stop workers and join the pool. */
+	void					   _stopPool();
+	/** Handle UDP CONFIG: payload (Unblock push). */
+	void					   _handleConfigMessage(std::string_view payload);
+
+	// Message formatters (pure, no I/O) — unit-testable.
+	static std::string _makeLog(std::string_view text);
+	static std::string _makeDoneSignal(std::string_view host);
+	static std::string _makeCheckingSignal(std::string_view host);
+	/** One chunk of a chunked snapshot: "SNAP:key:seq|idx|total|data". */
+	static std::string _makeSnapshotChunk(std::string_view key, std::uint64_t seq, size_t idx, size_t total, std::string_view data);
+	static std::string _makeStatsSignal(size_t queued, size_t in_check, size_t known);
+
+	/** Split payload into <=c_snapshot_chunk chunks and send "key" snapshot
+	 *  with a fresh sequence number. Latest-only on the receiver: a
+	 * newer
+	 *  seq discards an incomplete older one, so a lost chunk self-heals. */
+	void _sendSnapshot(std::string_view key, std::string_view payload) const;
+
+	/** Re-check due (interval passed) or report seen hosts. Called when queue is empty. */
+	void _idleStep();
+
+	/** Move stale probes that produced no verdict into the unjudged bucket.
+	 *  Called from _idleStep under _mutex. */
+	void _refreshUnjudged();
+
+	/** Suspend host work when zapret stopped sending READY (heartbeat lost). */
+	void _checkZapretLiveness();
+};

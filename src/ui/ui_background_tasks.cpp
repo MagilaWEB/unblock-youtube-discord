@@ -1,4 +1,12 @@
-#include "ui_background_tasks.h"
+module ui.ui_background_tasks;
+
+import std;
+import core.localization;
+import core.utils;
+import dom;
+import dom.utils_saucer;
+import ui.ui_base_element;
+import ui.ui_button;
 
 UiBackgroundTasks::UiBackgroundTasks() = default;
 

@@ -1,4 +1,11 @@
-﻿#include "engine.h"
+﻿#include <windows.h>
+
+#include <shellapi.h>
+
+import std;
+import core;
+import core.debug;
+import engine;
 
 using namespace std;
 
