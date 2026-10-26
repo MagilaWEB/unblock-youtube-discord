@@ -1,4 +1,16 @@
-#include "debug.h"
+module;
+
+#include <windows.h>
+#include "macros.hpp"
+
+module core.debug;
+
+import std;
+import core;
+import core.file_system;
+import core.localization;
+import core.types;
+import core.utils;
 
 namespace
 {

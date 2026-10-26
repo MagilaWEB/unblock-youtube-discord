@@ -1,10 +1,16 @@
-#pragma once
-#include "timer.h"
-#include "winsvc.h"
+module;
 
-#include <atomic>
+#include <windows.h>
+#include <winsvc.h>
 
-class Service final
+export module core.service;
+
+import std;
+import core.lock_thread;
+import core.timer;
+import core.types;
+
+export class Service final
 {
 public:
 	struct Config

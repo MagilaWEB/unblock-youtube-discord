@@ -1,6 +1,9 @@
-#pragma once
+export module core.concepts;
 
-namespace concepts
+import std;
+import core.types;
+
+export namespace concepts
 {
 	template<typename T>
 	concept ValidIntegerUnsigned = std::same_as<T, u32> || std::same_as<T, u64> || std::same_as<T, u16> || std::same_as<T, u8>;

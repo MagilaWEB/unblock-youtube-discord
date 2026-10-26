@@ -1,10 +1,7 @@
 #include <catch2/catch_session.hpp>
-#include <iostream>
-#include <string>
-#include <string_view>
 
-#include "../pch.h"
-#include "../debug.h"
+import std;
+import core.debug;
 
 class ColorFilter : public std::streambuf
 {

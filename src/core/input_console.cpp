@@ -1,4 +1,16 @@
-#include "input_console.h"
+module;
+
+#include <stdlib.h>
+#include "macros.hpp"
+
+module core.input_console;
+
+import std;
+import core.debug;
+import core.lock_thread;
+import core.localization;
+import core.types;
+import core.virtual_key_codes;
 
 using namespace std::chrono;
 

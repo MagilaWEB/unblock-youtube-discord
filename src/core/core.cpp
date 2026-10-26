@@ -1,4 +1,12 @@
-﻿#include <charconv>
+﻿module;
+
+#include <stdio.h>
+
+module core;
+
+import std;
+import core.debug;
+import core.types;
 
 Core::Core()
 {

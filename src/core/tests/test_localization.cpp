@@ -1,9 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include "../pch.h"
-#include "../localization.h"
-
-#include <fstream>
+import std;
+import core.localization;
 
 namespace fs = std::filesystem;
 

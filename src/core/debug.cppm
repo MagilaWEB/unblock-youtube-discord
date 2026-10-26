@@ -1,11 +1,18 @@
-﻿#pragma once
+﻿module;
 
-#include <iostream>
-#include <stacktrace>
-#include <atomic>
-#include "file_system.h"
+#include <windows.h>
 
-class Debug
+export module core.debug;
+
+import std;
+import core.file_system;
+import core.localization;
+import core.lock_thread;
+import core.macro;
+import core.types;
+import core.utils;
+
+export class Debug
 {
 	enum class MessageTypes
 	{
@@ -220,6 +227,7 @@ public:
 	[[noreturn]] static void fatal(std::string_view message, Args&&... args)
 	{
 		_msg(MessageTypes::Fatal, message, args...);
+		std::unreachable();
 	}
 
 	/** Check condition and throw warning if it fails */
@@ -248,34 +256,3 @@ public:
 
 	static std::string prettyStacktrace();
 };
-
-#define VERIFY(expr)                                                                            \
-	Debug::verify(                                                                              \
-		!!(expr),                                                                               \
-		"VERIFICATION FAILED!\n\tExpression: \t{}\n\tFile: \t{}\n\tLine: {}\n\tFunction: \t{}", \
-		#expr,                                                                                  \
-		__FILE__,                                                                               \
-		__LINE__,                                                                               \
-		__FUNCTION__                                                                            \
-	)
-
-#define ASSERT(expr)                                                                           \
-	Debug::assertion(                                                                          \
-		!!(expr),                                                                              \
-		"ASSERTION FAILED!\n\tExpression: \t{}\n\tFile: \t{}\n\tLine: \t{}\n\tFunction: \t{}", \
-		#expr,                                                                                 \
-		__FILE__,                                                                              \
-		__LINE__,                                                                              \
-		__FUNCTION__                                                                           \
-	)
-
-#define ASSERT_ARGS(expr, msg, ...)                                                                                             \
-	Debug::assertion(                                                                                                           \
-		!!(expr),                                                                                                               \
-		std::string{ "ASSERTION FAILED!\n\tExpression: \t{}\n\tFile: \t{}\n\tLine: \t{}\n\tFunction: \t{}\n\n\t" }.append(msg), \
-		#expr,                                                                                                                  \
-		__FILE__,                                                                                                               \
-		__LINE__,                                                                                                               \
-		__FUNCTION__,                                                                                                           \
-		__VA_ARGS__                                                                                                             \
-	)

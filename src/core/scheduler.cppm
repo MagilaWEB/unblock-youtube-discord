@@ -1,13 +1,7 @@
-#pragma once
+export module core.scheduler;
 
-#include <atomic>
-#include <chrono>
-#include <condition_variable>
-#include <functional>
-#include <mutex>
-#include <queue>
-#include <thread>
-#include <unordered_set>
+import std;
+import core.types;
 
 // -----------------------------------------------------------------------
 // Scheduler — manager of deferred tasks. Callbacks run on the single
@@ -29,7 +23,7 @@
 // (dom::execute / evaluate + await), same as from Core tasks.
 // -----------------------------------------------------------------------
 
-class Scheduler final
+export class Scheduler final
 {
 public:
 	using Token = u64;

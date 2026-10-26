@@ -1,4 +1,13 @@
-#include "localization.h"
+module;
+
+#include "macros.hpp"
+
+module core.localization;
+
+import std;
+import core.file_system;
+import core.lock_thread;
+import core.utils;
 
 Localization::~Localization()
 {

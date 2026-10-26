@@ -1,8 +1,10 @@
-#pragma once
+export module core;
 
-#include "thread_pool.h"
+import std;
+import core.thread_pool;
+import core.types;
 
-class Core final
+export class Core final
 {
 	ThreadPool _pool;
 

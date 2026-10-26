@@ -1,8 +1,12 @@
-#pragma once
+export module core.localization;
 
-#include "file_system.h"
+import std;
+import core.file_system;
+import core.lock_thread;
+import core.ptr;
+import core.types;
 
-class Localization final
+export class Localization final
 {
 	FastLock										_lock;
 	Ptr<File>										_lang_file_string{ false };

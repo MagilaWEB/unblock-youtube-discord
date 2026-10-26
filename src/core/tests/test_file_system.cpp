@@ -1,12 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 
-// Include the project's precompiled header to get all types, macros, and API definitions
-#include "../pch.h"
-
-#include "../file_system.h"
-#include <fstream>
-#include <sstream>
+import std;
+import core.file_system;
+import core.types;
 
 namespace fs = std::filesystem;
 
@@ -579,8 +576,8 @@ TEST_CASE("File parameterSection with empty value", "[file][edge]")
 static std::vector<std::string> fileLines(const fs::path& p)
 {
 	std::vector<std::string> lines;
-	std::ifstream ifs(p);
-	std::string  line;
+	std::ifstream			 ifs(p);
+	std::string				 line;
 	while (std::getline(ifs, line))
 		lines.push_back(line);
 	return lines;
@@ -791,8 +788,7 @@ TEST_CASE("regression: section order follows creation, not alphabetical", "[file
 TEST_CASE("regression: sanitizer cleans polluted file on reopen", "[file][regression]")
 {
 	// On-disk file already polluted (empty params/sections) from an old version.
-	auto path = createFile("reg_polluted.ini",
-		"[ZAPRET]\ncustom_hosts=\ncustom_ip_set=\n\n[SYSTEM]\nenable_dns_hosts=false\nshow_console=\n");
+	auto path = createFile("reg_polluted.ini", "[ZAPRET]\ncustom_hosts=\ncustom_ip_set=\n\n[SYSTEM]\nenable_dns_hosts=false\nshow_console=\n");
 	File f;
 	f.open(path, "", true);
 

@@ -1,8 +1,8 @@
-#pragma once
+export module core.ptr;
 
-#include <memory>
+import std;
 
-template<typename T>
+export template<typename T>
 class Ptr : public std::unique_ptr<T>
 {
 	using inherited = std::unique_ptr<T>;
@@ -12,5 +12,5 @@ public:
 	explicit Ptr(Args&&... args) : inherited(std::make_unique<T>(std::forward<Args>(args)...))
 	{
 	}
-	explicit Ptr(nullptr_t) : inherited(nullptr) {}
+	explicit Ptr(std::nullptr_t) : inherited(nullptr) {}
 };

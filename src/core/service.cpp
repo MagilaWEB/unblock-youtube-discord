@@ -1,5 +1,18 @@
-#include "service.h"
-#include "input_console.h"
+module;
+
+#include <windows.h>
+#include <winsvc.h>
+#include <stdlib.h>
+#include "macros.hpp"
+
+module core.service;
+
+import std;
+import core;
+import core.debug;
+import core.input_console;
+import core.localization;
+import core.utils;
 
 using namespace std::chrono_literals;
 

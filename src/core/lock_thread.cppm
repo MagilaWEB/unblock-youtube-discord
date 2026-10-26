@@ -1,6 +1,10 @@
-#pragma once
+module;
 
-class CriticalSection
+#include <windows.h>
+
+export module core.lock_thread;
+
+export class CriticalSection
 {
 	CRITICAL_SECTION _pmutex;
 
@@ -24,7 +28,7 @@ public:
 };
 
 // Non recursive
-class FastLock
+export class FastLock
 {
 	SRWLOCK _srw;
 
@@ -53,20 +57,3 @@ public:
 
 	void* getHandle();
 };
-
-#define CRITICAL_SECTION_RAII(_lock, ...)  \
-	CriticalSection::Raii mt_##__VA_ARGS__ \
-	{                                      \
-		_lock                              \
-	}
-
-#define FAST_LOCK(_lock, ...)       \
-	FastLock::Raii mt_##__VA_ARGS__ \
-	{                               \
-		_lock                       \
-	}
-#define FAST_LOCK_SHARED(_lock, ...) \
-	FastLock::Raii mt_##__VA_ARGS__  \
-	{                                \
-		_lock, true                  \
-	}

@@ -1,5 +1,8 @@
-#pragma once
-namespace utils
+export module core.utils;
+
+import std;
+
+export namespace utils
 {
 	struct DefaultInit
 	{

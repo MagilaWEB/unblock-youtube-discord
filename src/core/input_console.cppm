@@ -1,7 +1,14 @@
-#pragma once
-#include "virtual_key_codes.hpp"
+export module core.input_console;
 
-class InputConsole final
+import std;
+import core.debug;
+import core.lock_thread;
+import core.localization;
+import core.types;
+import core.utils;
+import core.virtual_key_codes;
+
+export class InputConsole final
 {
 	inline static CriticalSection _lock;
 	enum class ColorType : u16

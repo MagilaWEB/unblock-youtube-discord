@@ -1,4 +1,12 @@
-#include "pch.h"
+module;
+
+#include <windows.h>
+#include "macros.hpp"
+
+module core.lock_thread;
+
+import std;
+import core.debug;
 
 CriticalSection::CriticalSection()
 {

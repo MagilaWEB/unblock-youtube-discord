@@ -1,15 +1,6 @@
-#pragma once
+export module core.thread_pool;
 
-#include <atomic>
-#include <condition_variable>
-#include <cstdint>
-#include <deque>
-#include <functional>
-#include <mutex>
-#include <thread>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+import std;
 
 // -----------------------------------------------------------------------
 // ThreadPool — fixed-size pool of workers that drain queued tasks.
@@ -29,7 +20,7 @@
 // task still counts as finished so its completions fire.
 // -----------------------------------------------------------------------
 
-class ThreadPool final
+export class ThreadPool final
 {
 public:
 	using TaskId = std::uint64_t;

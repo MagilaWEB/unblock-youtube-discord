@@ -1,8 +1,7 @@
-#include "pch.h"
-#include "thread_pool.h"
-#include "debug.h"
+module core.thread_pool;
 
-#include <algorithm>
+import std;
+import core.debug;
 
 ThreadPool::Count ThreadPool::defaultThreadCount()
 {

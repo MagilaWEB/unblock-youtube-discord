@@ -1,9 +1,15 @@
-#pragma once
-#include <conio.h>
+module;
+
+#include <windows.h>
+
+export module core.virtual_key_codes;
+
+import std;
+import core.types;
 
 // Taken here https://gist.github.com/lyf-is-coding/2f3806f68d2c2b66f687216e01667a36
 
-enum class VK : u32
+export enum class VK : u32
 {
 	LBUTTON = 0x01,	   // Left mouse button
 	RBUTTON = 0x02,	   // Right mouse button
@@ -196,9 +202,9 @@ enum class VK : u32
 	PA1	   = 0xFD	  // PA1 key
 };
 
-template<typename TResult = void>
+export template<typename TResult = void>
 	requires std::is_same_v<TResult, void> || std::is_same_v<TResult, bool>
-inline static TResult KEY(VK key_num, bool wait_key_click)
+inline TResult KEY(VK key_num, bool wait_key_click)
 {
 	static_assert(std::is_same_v<TResult, void> || std::is_same_v<TResult, bool>, "The KEY function supports only void or bool as a return result.");
 

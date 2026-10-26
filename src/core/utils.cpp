@@ -1,7 +1,12 @@
-#include "utils.h"
+module;
 
-#include <cstring>
-#include <span>
+#include <windows.h>
+
+module core.utils;
+
+import std;
+import core.debug;
+import core.types;
 
 bool utils::isUtf8(std::string_view string)
 {

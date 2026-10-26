@@ -1,5 +1,7 @@
-#include "scheduler.h"
-#include "debug.h"
+module core.scheduler;
+
+import std;
+import core.debug;
 
 Scheduler& Scheduler::get()
 {

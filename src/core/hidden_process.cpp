@@ -1,8 +1,13 @@
-#include "hidden_process.h"
+module;
 
-#include "utils.h"
+#include <windows.h>
 
-bool runHiddenProcess(const std::vector<std::string>& args, uint32_t timeout_ms)
+module core.hidden_process;
+
+import std;
+import core.utils;
+
+bool runHiddenProcess(const std::vector<std::string>& args, std::uint32_t timeout_ms)
 {
 	if (args.empty())
 		return false;

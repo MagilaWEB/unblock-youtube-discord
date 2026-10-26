@@ -1,4 +1,15 @@
-#include "file_system.h"
+module;
+
+#include "macros.hpp"
+
+module core.file_system;
+
+import std;
+import core;
+import core.concepts;
+import core.debug;
+import core.types;
+import core.utils;
 
 static const std::regex& r_section_name()
 {

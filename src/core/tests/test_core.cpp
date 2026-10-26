@@ -1,11 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
-#include "../pch.h"
-#include "../core.h"
 
-#include <atomic>
-#include <chrono>
-#include <fstream>
-#include <thread>
+import std;
+import core;
 
 namespace fs = std::filesystem;
 

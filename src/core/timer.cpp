@@ -1,4 +1,6 @@
-#include "timer.h"
+module core.timer;
+
+import std;
 
 using namespace std::chrono;
 

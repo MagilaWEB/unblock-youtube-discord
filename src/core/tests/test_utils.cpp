@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
-#include "../pch.h"
-#include "../utils.h"
+
+import std;
+import core.utils;
 
 TEST_CASE("utils::isUtf8 empty string", "[utils][utf8]")
 {

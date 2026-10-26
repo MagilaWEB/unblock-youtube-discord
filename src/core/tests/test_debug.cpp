@@ -1,10 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include "../pch.h"
-#include "../debug.h"
-
-#include <algorithm>
-#include <fstream>
+import std;
+import core.debug;
+import core.file_system;
+import core.localization;
+import core.utils;
 
 namespace fs = std::filesystem;
 

@@ -1,8 +1,11 @@
-#pragma once
+export module core.file_system;
 
-#include "../core/concepts.h"
+import std;
+import core.concepts;
+import core.lock_thread;
+import core.types;
 
-class File final
+export class File final
 {
 	CriticalSection _lock;
 

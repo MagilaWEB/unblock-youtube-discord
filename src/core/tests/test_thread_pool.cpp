@@ -1,10 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include "../pch.h"
-#include "../thread_pool.h"
-
-#include <atomic>
-#include <chrono>
+import std;
+import core.thread_pool;
 
 using namespace std::chrono_literals;
 

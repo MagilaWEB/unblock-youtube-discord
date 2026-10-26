@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include "../pch.h"
+import std;
+import core.scheduler;
 
 using namespace std::chrono_literals;
 
