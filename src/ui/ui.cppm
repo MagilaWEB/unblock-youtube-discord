@@ -11,17 +11,17 @@ import core.ptr;
 import core.types;
 import dom.utils_saucer;
 import ext.saucer;
-import ui.engine_api;
-import ui.ui_background_tasks;
-import ui.ui_button;
-import ui.ui_check_box;
-import ui.ui_editable_list;
-import ui.ui_input;
-import ui.ui_list_ul;
-import ui.ui_secondary_window;
-import ui.ui_select_list;
-import ui.ui_status;
-import ui.ui_text;
+import engine.api;
+import ui.widget_background_tasks;
+import ui.widget_button;
+import ui.widget_check_box;
+import ui.widget_editable_list;
+import ui.widget_input;
+import ui.widget_list_ul;
+import ui.widget_secondary_window;
+import ui.widget_select_list;
+import ui.widget_status;
+import ui.widget_text;
 import unblock;
 import unblock.dns_proxy;
 import unblock.tg_proxy;
@@ -30,18 +30,18 @@ import unblock.zapret_engine;
 export import core.utils;
 export import unblock;
 
-export import ui.engine_api;
-export import ui.ui_background_tasks;
-export import ui.ui_base_element;
-export import ui.ui_button;
-export import ui.ui_check_box;
-export import ui.ui_editable_list;
-export import ui.ui_input;
-export import ui.ui_list_ul;
-export import ui.ui_secondary_window;
-export import ui.ui_select_list;
-export import ui.ui_status;
-export import ui.ui_text;
+export import engine.api;
+export import ui.widget_background_tasks;
+export import ui.widget_base_element;
+export import ui.widget_button;
+export import ui.widget_check_box;
+export import ui.widget_editable_list;
+export import ui.widget_input;
+export import ui.widget_list_ul;
+export import ui.widget_secondary_window;
+export import ui.widget_select_list;
+export import ui.widget_status;
+export import ui.widget_text;
 
 // The page components below hold a shared_ptr<Ui> and are the only consumers
 // of Ui's private state. They live in this module (Ui's module): a class
@@ -266,7 +266,7 @@ export class UiZapretPage
 	// Select list for the fake profile (Zapret1 only)
 	SELECT_LIST(_select_fake_bin);
 	// Map of service enable checkboxes
-	std::map<std::string, std::shared_ptr<CheckBox>> _list_enable_services{};
+	std::map<std::string, std::shared_ptr<CheckBox>> _list_enable_services;
 
 	// Shared custom lists: hosts, ip-set and exclusions
 	EDITABLE_LIST(_list_custom_hosts);
@@ -313,7 +313,7 @@ export class UiZapretPage
 
 	// Last known states, to touch the DOM only on change (Ui::update ticks).
 	bool					  _last_running{ false };
-	std::optional<Technology> _last_active{};
+	std::optional<Technology> _last_active;
 
 public:
 	explicit UiZapretPage(std::shared_ptr<Ui> ui);

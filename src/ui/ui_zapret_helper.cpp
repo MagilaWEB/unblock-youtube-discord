@@ -10,9 +10,9 @@ import core.localization;
 import core.timer;
 import core.utils;
 import dom.utils_saucer;
-import ui.ui_input;
-import ui.ui_list_ul;
-import ui.ui_text;
+import ui.widget_input;
+import ui.widget_list_ul;
+import ui.widget_text;
 
 UiZapretHelper::UiZapretHelper(std::shared_ptr<Ui> ui, std::string_view root) : _ui(std::move(ui)), _root(root)
 {
@@ -74,7 +74,7 @@ void UiZapretHelper::_initHelperChecking()
 
 std::span<const UiZapretHelper::HelperSettingDef> UiZapretHelper::helperSettingDefs()
 {
-	// Defaults mirror HelperConfig::defaults() (src/helper/helper_config.h).
+	// Defaults mirror HelperConfig::defaults() (src/helper/config.cppm).
 	// Kept as literals: ui target does not link the helper parser.
 	static const HelperSettingDef defs[]{
 		{			 "pool_size",Input::Types::count,10, 1,64,	  "","str_helper_pool_title",				   "str_helper_pool_description",&UiZapretHelper::_helper_pool						 },

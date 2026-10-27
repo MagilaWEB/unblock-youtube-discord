@@ -5,7 +5,7 @@
 import std;
 import ext.curl;
 import helper.curl_client;
-import helper.helper_config;
+import helper.config;
 import helper.types;
 import helper.zapret_helper;
 

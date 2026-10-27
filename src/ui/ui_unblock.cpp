@@ -4,9 +4,9 @@ import std;
 import core;
 import core.localization;
 import dom.utils_saucer;
-import ui.ui_button;
-import ui.ui_check_box;
-import ui.ui_secondary_window;
+import ui.widget_button;
+import ui.widget_check_box;
+import ui.widget_secondary_window;
 import unblock.tg_proxy;
 
 #pragma clang diagnostic ignored "-Wshadow-uncaptured-local"

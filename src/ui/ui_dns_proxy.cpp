@@ -11,13 +11,13 @@ import core.localization;
 import core.timer;
 import core.utils;
 import dom.utils_saucer;
-import ui.ui_background_tasks;
-import ui.ui_button;
-import ui.ui_check_box;
-import ui.ui_editable_list;
-import ui.ui_input;
-import ui.ui_secondary_window;
-import ui.ui_status;
+import ui.widget_background_tasks;
+import ui.widget_button;
+import ui.widget_check_box;
+import ui.widget_editable_list;
+import ui.widget_input;
+import ui.widget_secondary_window;
+import ui.widget_status;
 import unblock.dns_proxy;
 
 UiDnsProxy::UiDnsProxy(std::shared_ptr<Ui> ui, DnsProxy& dns_proxy) : _ui(std::move(ui)), _dns_proxy(dns_proxy)

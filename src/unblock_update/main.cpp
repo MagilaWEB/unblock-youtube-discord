@@ -22,11 +22,7 @@
 // std::filesystem only — to stay self-contained and reliable. Its progress is
 // recorded in %TEMP%\unblock_update.log.
 
-#include <windows.h>
-
-#include <tlhelp32.h>
-
-import std;
+import ext.windows;
 
 namespace fs = std::filesystem;
 
@@ -47,7 +43,7 @@ namespace
 
 	std::wstring lower(std::wstring value)
 	{
-		std::ranges::transform(value, value.begin(), [](wchar_t c) { return static_cast<wchar_t>(::towlower(c)); });
+		std::ranges::transform(value, value.begin(), [](wchar_t c) { return static_cast<wchar_t>(std::towlower(c)); });
 		return value;
 	}
 

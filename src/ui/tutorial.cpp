@@ -5,10 +5,10 @@ import core.localization;
 import core.scheduler;
 import core.utils;
 import dom;
-import dom.dom_tour;
+import dom.tour;
 import dom.utils_saucer;
 import ext.saucer;
-import ui.ui_base_element;
+import ui.widget_base_element;
 
 // -----------------------------------------------------------------------
 // Registries / step data

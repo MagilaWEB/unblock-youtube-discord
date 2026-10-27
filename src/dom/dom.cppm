@@ -21,6 +21,6 @@ export module dom;
 // only this module.
 // -----------------------------------------------------------------------
 
-export import dom.dom_view;
-export import dom.dom_element;
-export import dom.dom_tour;
+export import dom.view;
+export import dom.element;
+export import dom.tour;

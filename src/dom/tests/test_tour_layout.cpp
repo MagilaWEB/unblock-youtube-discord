@@ -2,8 +2,8 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 import std;
-import dom.dom_element;
-import dom.dom_tour;
+import dom.element;
+import dom.tour;
 
 using ui::dom::Rect;
 using ui::dom::Size;
@@ -92,7 +92,7 @@ TEST_CASE("centerPanel: intro strictly centered", "[tour]")
 TEST_CASE("dimmerCss: four strips around the box with 1px overlap", "[tour]")
 {
 	// Box [100..300]x[200..400]: each strip overlaps the spotlight by 1px,
-	// so rounding gaps are impossible (see dom.dom_tour).
+	// so rounding gaps are impossible (see dom.tour).
 	const auto css = dimmerCss(1'000, 800, 100, 200, 300, 400);
 	CHECK(css.top.contains("height:201px"));
 	CHECK(css.bottom.contains("top:399px"));

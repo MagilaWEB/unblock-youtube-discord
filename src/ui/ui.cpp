@@ -1,11 +1,6 @@
-module;
-
-#include <windows.h>
-#include <shellapi.h>
-
 module ui;
 
-import std;
+import ext.windows;
 import core;
 import core.debug;
 import core.file_system;
@@ -16,13 +11,13 @@ import dom;
 import dom.utils_saucer;
 import engine.version;
 import ext.saucer;
-import ui.engine_api;
+import engine.api;
 import ui.tutorial;
-import ui.ui_background_tasks;
-import ui.ui_base_element;
-import ui.ui_button;
-import ui.ui_check_box;
-import ui.ui_secondary_window;
+import ui.widget_background_tasks;
+import ui.widget_base_element;
+import ui.widget_button;
+import ui.widget_check_box;
+import ui.widget_secondary_window;
 import unblock;
 
 Ui::Ui(IEngineAPI* engine) : _engine(engine)

@@ -3,9 +3,9 @@ export module ui.tutorial;
 import std;
 import core.types;
 import dom;
-import dom.dom_tour;
+import dom.tour;
 import ext.saucer;
-import ui.ui_base_element;
+import ui.widget_base_element;
 
 // -----------------------------------------------------------------------
 // Tutorial — interactive on-boarding tour of the interface.
@@ -20,7 +20,7 @@ import ui.ui_base_element;
 // bridge (measurements rect()/viewport()/offsetSize(), positioning via
 // setBox()/moveTo()/cssText(), tab switching via querySelector + click());
 // the shim knows nothing about the tour. The pure panel-position math lives
-// in dom_tour::placePanel/centerPanel and is covered by tests without a browser.
+// in ui::dom::tour::placePanel/centerPanel and is covered by tests without a browser.
 // -----------------------------------------------------------------------
 export class Tutorial final
 {

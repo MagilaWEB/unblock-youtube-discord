@@ -4,15 +4,11 @@ module;
 	#include "tests/test_forwards.h"
 #endif
 
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <windows.h>
-
 export module helper.zapret_helper;
 
-import std;
+import ext.windows;
 import helper.curl_client;
-import helper.helper_config;
+import helper.config;
 import helper.net;
 import helper.types;
 

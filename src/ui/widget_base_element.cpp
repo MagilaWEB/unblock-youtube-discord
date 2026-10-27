@@ -1,0 +1,139 @@
+module;
+
+#include "../core/macros.hpp"
+
+module ui.widget_base_element;
+
+import std;
+import core.debug;
+import core.localization;
+import core.types;
+import dom;
+import dom.utils_saucer;
+import ext.saucer;
+
+saucer::smartview* BaseElement::_view;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wglobal-constructors"
+std::map<std::string, BaseElement*>	   BaseElement::_all_element;		// NOLINT - global element registry
+std::vector<BaseElement::TutorialStep> BaseElement::_tutorial_steps;	// NOLINT - global tutorial registry
+BaseElement::MapEvent				   BaseElement::_event_click;		// NOLINT - global event registry
+#pragma clang diagnostic pop
+
+BaseElement::BaseElement(std::string_view name) : _name(name)
+{
+	const auto find_element = std::ranges::find_if(_all_element, [this](const auto& pair) { return pair.first == _name; });
+
+	ASSERT_ARGS(
+		find_element == _all_element.end(),
+		"You can't create different independent elements with the same name, it will break the logic of the name:[{}] is already occupied!",
+		this->name()
+	);
+
+	_all_element[_name] = this;
+}
+
+// NOLINTNEXTLINE(bugprone-exception-escape) - registry erasure on plain map, no throwing code
+BaseElement::~BaseElement()
+{
+	_all_element[_name] = nullptr;
+}
+
+void BaseElement::initializeAll(saucer::smartview* view)
+{
+	if (_view)
+		return;
+
+	_view = view;
+	ui::dom::bind(view);
+
+	for (const auto& [name, element] : _all_element)
+		if (element)
+			element->initialize();
+}
+
+void BaseElement::release()
+{
+	_view = nullptr;
+	ui::dom::release();
+}
+
+saucer::smartview* BaseElement::view()
+{
+	// View is owned by the dom lib (see dom.view); here a thin forward
+	// to avoid a ui <-> dom dependency cycle.
+	if (auto* v = ui::dom::view())
+		return v;
+
+	return _view;
+}
+
+void BaseElement::remove()
+{
+	if (!_created)
+		return;
+
+	_created = false;
+	_root.remove();
+	_event_click[_name].clear();
+}
+
+void BaseElement::show()
+{
+	if (!_created)
+		return;
+
+	_is_show = true;
+	_root.show();
+}
+
+void BaseElement::hide()
+{
+	if (!_created)
+		return;
+
+	_is_show = false;
+	_root.hide();
+}
+
+bool BaseElement::isCreate() const
+{
+	return _created;
+}
+
+bool BaseElement::isShow() const
+{
+	return _is_show;
+}
+
+void BaseElement::addTutorialStep(Localization::Str title, Localization::Str description, u32 priority)
+{
+	_tutorial_steps.push_back(TutorialStep{ _name, _tutorial_type, title.str_id, description.str_id, priority });
+}
+
+const std::vector<BaseElement::TutorialStep>& BaseElement::tutorialSteps()
+{
+	return _tutorial_steps;
+}
+
+ui::dom::Element BaseElement::element(std::string_view name)
+{
+	const auto it = _all_element.find(std::string(name));
+	if (it == _all_element.end() || !it->second)
+		return {};
+
+	return it->second->_root;
+}
+
+bool BaseElement::eventCPP(const JSArgs& args, MapEvent& map_event)
+{
+	auto& events = map_event[jsToCpp<std::string>(args[0])];
+	if (events.empty())
+		return true;
+
+	JSArgs new_args{ args.begin() + 1, args.end() };
+
+	std::erase_if(events, [new_args](const auto& callback) { return callback(new_args); });
+
+	return events.empty();
+}
