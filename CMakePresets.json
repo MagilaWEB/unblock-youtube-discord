@@ -53,5 +53,39 @@
         "BUILD_TESTS": "OFF"
       }
     }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "jobs": 12
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "jobs": 12
+    },
+    {
+      "name": "debug-min",
+      "configurePreset": "debug-min",
+      "jobs": 12
+    },
+    {
+      "name": "release-min",
+      "configurePreset": "release-min",
+      "jobs": 12
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "output": { "outputOnFailure": true }
+    }
   ]
 }

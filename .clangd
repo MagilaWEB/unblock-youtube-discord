@@ -1,2 +1,2 @@
 CompileFlags:
-  CompilationDatabase: _build_ai
+  CompilationDatabase: _build/debug
