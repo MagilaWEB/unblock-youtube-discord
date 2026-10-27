@@ -10,6 +10,22 @@ set(NAME ext)
 
 add_library(${NAME} STATIC)
 
+# The Windows system headers get the same wrapper treatment as the third-party
+# ones, but in a target of their own: nearly every target needs them, and they
+# must not drag saucer/curl/bit7z (PUBLIC deps of `ext`) along.
+add_library(win32 STATIC)
+
+target_sources(win32
+  PUBLIC
+    FILE_SET CXX_MODULES FILES
+      windows.cppm
+)
+
+target_link_libraries(win32 PUBLIC ub_std)
+
+target_compile_options(win32 PRIVATE ${PROJECT_WARNING_FLAGS})
+
+
 target_sources(${NAME}
   PUBLIC
     FILE_SET CXX_MODULES FILES

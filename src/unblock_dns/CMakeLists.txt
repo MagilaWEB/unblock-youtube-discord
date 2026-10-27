@@ -1,24 +1,19 @@
 set(NAME unblock_dns)
 
-add_executable(${NAME}
-    unblock_dns.cpp
-    dns_adapters.cpp
-    dns_proxy.cpp
-    dns_telemetry.cpp
-    dns_util.cpp
-)
+# Sources are globbed, not listed: a new .cpp/.cppm in this directory is picked
+# up on the next build (CONFIGURE_DEPENDS re-globs at build time).
+file(GLOB src_cpp CONFIGURE_DEPENDS "*.cpp")
+file(GLOB src_cppm CONFIGURE_DEPENDS "*.cppm")
+
+add_executable(${NAME} ${src_cpp})
 
 target_sources(${NAME}
   PUBLIC
-    FILE_SET CXX_MODULES FILES
-      dns_adapters.cppm
-      dns_proxy.cppm
-      dns_telemetry.cppm
-      dns_util.cppm
+    FILE_SET CXX_MODULES FILES ${src_cppm}
 )
 
 # common is a module (dns_config); ub_std is the std module.
-target_link_libraries(${NAME} PRIVATE common ub_std ws2_32 iphlpapi crypt32)
+target_link_libraries(${NAME} PRIVATE common ub_std ws2_32 iphlpapi crypt32 win32)
 
 target_compile_definitions(${NAME} PRIVATE CONSOLE WIN32_LEAN_AND_MEAN)
 

@@ -1,48 +1,20 @@
 set(NAME core)
 
-add_library(${NAME} STATIC)
+# Sources are globbed, not listed: a new .cpp/.cppm in this directory is picked
+# up on the next build (CONFIGURE_DEPENDS re-globs at build time).
+file(GLOB src_cpp CONFIGURE_DEPENDS "*.cpp")
+file(GLOB src_cppm CONFIGURE_DEPENDS "*.cppm")
 
-target_sources(${NAME}
-  PRIVATE
-    core.cpp
-    debug.cpp
-    file_system.cpp
-    hidden_process.cpp
-    input_console.cpp
-    localization.cpp
-    lock_thread.cpp
-    scheduler.cpp
-    service.cpp
-    thread_pool.cpp
-    timer.cpp
-    utils.cpp
-)
+add_library(${NAME} STATIC ${src_cpp})
 
 target_sources(${NAME}
   PUBLIC
-    FILE_SET CXX_MODULES FILES
-      concepts.cppm
-      core.cppm
-      debug.cppm
-      file_system.cppm
-      hidden_process.cppm
-      input_console.cppm
-      localization.cppm
-      lock_thread.cppm
-      macro.cppm
-      ptr.cppm
-      scheduler.cppm
-      service.cppm
-      thread_pool.cppm
-      timer.cppm
-      types.cppm
-      utils.cppm
-      virtual_key_codes.cppm
+    FILE_SET CXX_MODULES FILES ${src_cppm}
 )
 
 # Link
 
-target_link_libraries(${NAME} PUBLIC ub_std)
+target_link_libraries(${NAME} PUBLIC ub_std win32)
 
 target_compile_options(${NAME} PRIVATE ${PROJECT_WARNING_FLAGS})
 

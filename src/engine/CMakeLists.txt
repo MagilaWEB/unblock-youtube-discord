@@ -37,7 +37,28 @@ target_link_libraries(ub_version PUBLIC ub_std)
 target_compile_options(ub_version PRIVATE ${PROJECT_WARNING_FLAGS})
 add_dependencies(ub_version unblock_version)
 
-add_executable(${NAME} main.cpp engine.cpp engine.rc)
+# The engine interface (IEngineAPI) is implemented by the engine and consumed by
+# ui. `engine` is an executable, and an executable cannot hand out module files,
+# so the interface lives in its own library - same reason as the version module
+# above.
+add_library(ub_engine_api STATIC)
+
+target_sources(ub_engine_api
+  PUBLIC
+    FILE_SET CXX_MODULES FILES api.cppm
+)
+
+# ext/core PUBLIC: saucer::smartview, saucer::window and File appear in the
+# exported declarations.
+target_link_libraries(ub_engine_api PUBLIC ub_std ext core)
+target_compile_options(ub_engine_api PRIVATE ${PROJECT_WARNING_FLAGS})
+
+# The .cpp files are globbed, but the module files are not: this directory holds
+# the interface units of three targets (ub_version, ub_engine_api and the engine
+# itself), and a glob cannot tell which unit belongs to which target.
+file(GLOB src_cpp CONFIGURE_DEPENDS "*.cpp")
+
+add_executable(${NAME} ${src_cpp} engine.rc)
 
 target_sources(${NAME}
   PUBLIC
@@ -55,7 +76,9 @@ target_link_libraries(${NAME} PRIVATE
         unblock
         ext
         ub_version
+        ub_engine_api
         saucer::saucer
+        win32
         dwmapi.lib
         shcore.lib
 )

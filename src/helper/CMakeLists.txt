@@ -1,27 +1,22 @@
 set(NAME helper)
 
-add_library(${NAME} STATIC)
+# Sources are globbed, not listed: a new .cpp/.cppm in this directory is picked
+# up on the next build (CONFIGURE_DEPENDS re-globs at build time).
+file(GLOB src_cpp CONFIGURE_DEPENDS "*.cpp")
+file(GLOB src_cppm CONFIGURE_DEPENDS "*.cppm")
 
-target_sources(${NAME}
-  PRIVATE
-    curl_client.cpp
-    helper_config.cpp
-    net.cpp
-    zapret_helper.cpp
-)
+# main.cpp belongs to the zapret_helper executable, not to the library.
+list(FILTER src_cpp EXCLUDE REGEX "/main\\.cpp$")
+
+add_library(${NAME} STATIC ${src_cpp})
 
 target_sources(${NAME}
   PUBLIC
-    FILE_SET CXX_MODULES FILES
-      curl_client.cppm
-      helper_config.cppm
-      net.cppm
-      types.cppm
-      zapret_helper.cppm
+    FILE_SET CXX_MODULES FILES ${src_cppm}
 )
 
 # ext PUBLIC: curl comes from the ext.curl wrapper; ub_std is the std module.
-target_link_libraries(${NAME} PUBLIC ub_std ext ws2_32)
+target_link_libraries(${NAME} PUBLIC ub_std ext ws2_32 win32)
 
 target_compile_definitions(${NAME} PRIVATE CONSOLE WIN32_LEAN_AND_MEAN)
 
