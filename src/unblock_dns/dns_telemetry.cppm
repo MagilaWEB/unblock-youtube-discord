@@ -1,10 +1,6 @@
-module;
-
-#include "ag_dns.h"
-
 export module unblock_dns.dns_telemetry;
 
-import std;
+import unblock_dns.ag_bind;
 
 export namespace dns
 {

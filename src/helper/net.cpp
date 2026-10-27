@@ -1,13 +1,11 @@
-module;
-
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <windows.h>
-
 module helper.net;
 
-import std;
+import ext.windows;
 import helper.types;
+
+// s_addr is a member-name macro in <winsock2.h> that a module cannot carry;
+// redefine it locally (same expansion) so the field access reads as before.
+#define s_addr S_un.S_addr
 
 Winsock::Winsock()
 {

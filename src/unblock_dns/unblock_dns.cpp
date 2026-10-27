@@ -8,17 +8,19 @@
 // Exit codes: 0 ok, 2 bad args/config, 3 DLL missing, 4 export missing,
 // 5 proxy init failed.
 
-#include "ag_bind.h"
-
-#include <winsock2.h>
-#include <windows.h>
-
-import std;
+import ext.windows;
+import unblock_dns.ag_bind;
 import common.dns_config;
 import unblock_dns.dns_adapters;
 import unblock_dns.dns_proxy;
 import unblock_dns.dns_telemetry;
 import unblock_dns.dns_util;
+
+// WINAPI is a calling-convention macro from <windows.h>; a macro cannot cross a
+// module boundary, so the handler below defines it here.
+#ifndef WINAPI
+	#define WINAPI __stdcall
+#endif
 
 namespace
 {

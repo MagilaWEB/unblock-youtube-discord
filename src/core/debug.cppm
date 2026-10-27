@@ -1,10 +1,6 @@
-﻿module;
+﻿export module core.debug;
 
-#include <windows.h>
-
-export module core.debug;
-
-import std;
+import ext.windows;
 import core.file_system;
 import core.localization;
 import core.lock_thread;
@@ -14,7 +10,7 @@ import core.utils;
 
 export class Debug
 {
-	enum class MessageTypes
+	enum class MessageTypes : u8
 	{
 		Print,
 		Ok,
@@ -22,7 +18,7 @@ export class Debug
 		Warning,
 		Please,
 		Error,
-		Fatal
+		Fatal,
 	};
 
 	inline static std::string	   _command_line{};
@@ -37,7 +33,6 @@ public:
 	inline static File s_log;
 	inline static File s_log_backup;
 
-public:
 	Debug()		   = delete;
 	~Debug()	   = delete;
 	Debug(Debug&&) = delete;
@@ -180,7 +175,7 @@ public:
 	}
 
 	template<typename... Args>
-	inline static std::unexpected<std::string> strUnexpected(std::string_view fmt, Args&&... args)
+	static std::unexpected<std::string> strUnexpected(std::string_view fmt, Args&&... args)
 	{
 		return std::unexpected(utils::format(fmt, args...));
 	}

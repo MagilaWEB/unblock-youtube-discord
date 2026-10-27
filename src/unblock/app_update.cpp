@@ -1,10 +1,6 @@
-module;
-
-#include <windows.h>
-
 module unblock.app_update;
 
-import std;
+import ext.windows;
 import core;
 import core.debug;
 import core.types;

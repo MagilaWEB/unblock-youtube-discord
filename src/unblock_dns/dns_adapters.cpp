@@ -1,18 +1,16 @@
-module;
-
-#include "ag_bind.h"
-
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <windows.h>
-#include <iphlpapi.h>
-
 module unblock_dns.dns_adapters;
 
-import std;
+import ext.windows;
+import unblock_dns.ag_bind;
 import common.dns_config;
 import unblock_dns.dns_telemetry;
 import unblock_dns.dns_util;
+
+// WINAPI is a calling-convention macro from <windows.h>; a macro cannot cross a
+// module boundary, so it is defined here.
+#ifndef WINAPI
+	#define WINAPI __stdcall
+#endif
 
 namespace dns
 {

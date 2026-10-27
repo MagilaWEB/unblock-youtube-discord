@@ -1,10 +1,6 @@
-module;
-
-#include <windows.h>
-
 module core.utils;
 
-import std;
+import ext.windows;
 import core.debug;
 import core.types;
 

@@ -1,15 +1,18 @@
-module;
-
-#include <windows.h>
-
 export module engine;
 
-import std;
+import ext.windows;
 import core.file_system;
+import engine.api;
 import engine.window_geometry;
 import ext.coco;
 import ext.saucer;
 import ui;
+
+// CALLBACK is a calling-convention macro from <windows.h>; a macro cannot cross
+// a module boundary, so the window hook below defines it here.
+#ifndef CALLBACK
+	#define CALLBACK __stdcall
+#endif
 
 export class Engine final : public IEngineAPI
 {

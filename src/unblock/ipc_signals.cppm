@@ -1,10 +1,6 @@
-module;
-
-#include <winsock2.h>
-
 export module unblock.ipc_signals;
 
-import std;
+import ext.windows;
 
 /*
  * IPCSignals — UDP-based IPC from Lua (zapret) to C++ (unblock).

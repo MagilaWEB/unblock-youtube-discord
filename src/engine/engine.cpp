@@ -1,18 +1,10 @@
 module;
 
-#include <windows.h>
-
-#include <dwmapi.h>
-#include <shellapi.h>
-#include <shellscalingapi.h>
-
-#include <stdio.h>
-
 #include "../core/macros.hpp"
 
 module engine;
 
-import std;
+import ext.windows;
 import core;
 import core.debug;
 import core.file_system;
@@ -108,7 +100,7 @@ namespace
 {
 	// saucer's screens() returns raw rcMonitor with x/y swapped, so work areas
 	// are enumerated directly via Win32 (rcWork excludes the taskbar).
-	BOOL CALLBACK collectWorkArea(HMONITOR monitor, HDC, LPRECT, LPARAM user_data)
+	BOOL __stdcall collectWorkArea(HMONITOR monitor, HDC, LPRECT, LPARAM user_data)
 	{
 		auto* out = reinterpret_cast<std::vector<window_geometry::Area>*>(user_data);
 
@@ -431,7 +423,7 @@ void Engine::_installMoveHook()
 }
 
 // NOLINTNEXTLINE(bugprone-exception-escape) - Win32 proc; exceptions must not cross it, and the body below does not throw.
-LRESULT CALLBACK Engine::_windowHookProc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
+LRESULT __stdcall Engine::_windowHookProc(HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param)
 {
 	Engine& self = Engine::get();
 

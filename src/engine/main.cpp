@@ -1,8 +1,4 @@
-﻿#include <windows.h>
-
-#include <shellapi.h>
-
-import std;
+﻿import ext.windows;
 import core;
 import core.debug;
 import engine;

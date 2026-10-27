@@ -1,10 +1,6 @@
-module;
-
-#include <windows.h>
-
 export module core.virtual_key_codes;
 
-import std;
+import ext.windows;
 import core.types;
 
 // Taken here https://gist.github.com/lyf-is-coding/2f3806f68d2c2b66f687216e01667a36

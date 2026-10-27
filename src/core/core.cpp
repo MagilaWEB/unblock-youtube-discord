@@ -1,12 +1,9 @@
-﻿module;
-
-#include <stdio.h>
-
-module core;
+﻿module core;
 
 import std;
 import core.debug;
 import core.types;
+import ext.windows;
 
 Core::Core()
 {
@@ -93,12 +90,12 @@ std::filesystem::path Core::tempPath() const
 
 std::vector<std::string> Core::exec(std::string cmd)
 {
-	if (std::unique_ptr<FILE, decltype(&_pclose)> pipe{ _popen(cmd.c_str(), "r"), _pclose })
+	if (std::unique_ptr<std::FILE, decltype(&_pclose)> pipe{ _popen(cmd.c_str(), "r"), _pclose })
 	{
 		std::array<char, 1'024>	 buffer{};
 		std::vector<std::string> result{};
 
-		while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr)
+		while (std::fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr)
 			result.emplace_back(buffer.data());
 		return result;
 	}
@@ -111,11 +108,11 @@ void Core::execParallel(std::string cmd, std::function<bool(std::string)>&& call
 	std::jthread(
 		[cmd, callback]
 		{
-			if (std::unique_ptr<FILE, decltype(&_pclose)> pipe{ _popen(cmd.c_str(), "r"), _pclose })
+			if (std::unique_ptr<std::FILE, decltype(&_pclose)> pipe{ _popen(cmd.c_str(), "r"), _pclose })
 			{
 				std::array<char, 1'024> buffer{};
 
-				while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr)
+				while (std::fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) != nullptr)
 				{
 					auto data = buffer.data();
 					if (callback(data))

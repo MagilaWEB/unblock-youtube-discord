@@ -1,13 +1,10 @@
 module;
 
-#include <windows.h>
-#include <winsvc.h>
-#include <stdlib.h>
 #include "macros.hpp"
 
 module core.service;
 
-import std;
+import ext.windows;
 import core;
 import core.debug;
 import core.input_console;
@@ -308,8 +305,8 @@ void Service::update()
 	_refreshCachedRunning();
 
 	needed = 0;
-	std::unique_ptr<QUERY_SERVICE_CONFIGA, decltype(&free)> configBuf{ nullptr, &free };
-	DWORD													bufSize = 0;
+	std::unique_ptr<QUERY_SERVICE_CONFIGA, decltype(&std::free)> configBuf{ nullptr, &std::free };
+	DWORD														 bufSize = 0;
 	while (true)
 	{
 		QUERY_SERVICE_CONFIGA* ptr = reinterpret_cast<QUERY_SERVICE_CONFIGA*>(configBuf.get());
@@ -333,7 +330,7 @@ void Service::update()
 			break;
 
 		bufSize += needed;
-		configBuf.reset(reinterpret_cast<QUERY_SERVICE_CONFIGA*>(malloc(bufSize)));
+		configBuf.reset(reinterpret_cast<QUERY_SERVICE_CONFIGA*>(std::malloc(bufSize)));
 
 		if (!configBuf)
 			break;
@@ -406,9 +403,9 @@ void Service::allService(std::function<void(std::string)>&& callback)
 	if (!scManager)
 		return;
 
-	DWORD												   needed = 0, returned = 0;
-	std::unique_ptr<ENUM_SERVICE_STATUSA, decltype(&free)> buf{ nullptr, &free };
-	DWORD												   bufSize = 0;
+	DWORD														needed = 0, returned = 0;
+	std::unique_ptr<ENUM_SERVICE_STATUSA, decltype(&std::free)> buf{ nullptr, &std::free };
+	DWORD														bufSize = 0;
 	while (true)
 	{
 		if (EnumServicesStatusA(scManager.get(), SERVICE_WIN32, SERVICE_STATE_ALL, buf.get(), bufSize, &needed, &returned, nullptr))
@@ -429,7 +426,7 @@ void Service::allService(std::function<void(std::string)>&& callback)
 			break;
 
 		bufSize += needed;
-		buf.reset(reinterpret_cast<ENUM_SERVICE_STATUSA*>(malloc(bufSize)));
+		buf.reset(reinterpret_cast<ENUM_SERVICE_STATUSA*>(std::malloc(bufSize)));
 
 		if (!buf)
 			break;

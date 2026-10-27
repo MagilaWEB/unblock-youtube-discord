@@ -1,16 +1,24 @@
 module;
 
-#include <windows.h>
 #include "macros.hpp"
 
 module core.debug;
 
-import std;
+import ext.windows;
 import core;
 import core.file_system;
 import core.localization;
 import core.types;
 import core.utils;
+
+// WINAPI and CALLBACK are calling-convention macros from <windows.h>; a macro
+// cannot cross a module boundary, so the two callbacks below define them here.
+#ifndef WINAPI
+	#define WINAPI __stdcall
+#endif
+#ifndef CALLBACK
+	#define CALLBACK __stdcall
+#endif
 
 namespace
 {
@@ -387,7 +395,7 @@ std::string Debug::prettyStacktrace()
 			if (!file.empty())
 				location = std::format("{}:{}", std::filesystem::path(file).filename().string(), line);
 			else
-				location = std::format("{:016x}", reinterpret_cast<uintptr_t>(frame.native_handle()));
+				location = std::format("{:016x}", reinterpret_cast<std::uintptr_t>(frame.native_handle()));
 
 			const int func_width = 86;
 			if (func.length() > func_width)

@@ -1,11 +1,10 @@
 module;
 
-#include <windows.h>
 #include "macros.hpp"
 
 module core.lock_thread;
 
-import std;
+import ext.windows;
 import core.debug;
 
 CriticalSection::CriticalSection()

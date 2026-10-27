@@ -1,12 +1,6 @@
-module;
-
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <windows.h>
-
 export module helper.net;
 
-import std;
+import ext.windows;
 import helper.types;
 
 /** Winsock init/cleanup RAII. */

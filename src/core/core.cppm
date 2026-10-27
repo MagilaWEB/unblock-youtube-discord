@@ -23,7 +23,6 @@ public:
 
 	using TaskId = ThreadPool::TaskId;
 
-public:
 	static Core& get();
 
 	void parallelRun();

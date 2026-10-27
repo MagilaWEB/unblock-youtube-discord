@@ -1,11 +1,6 @@
-module;
-
-#include <windows.h>
-#include <shellapi.h>
-
 module unblock.tg_proxy;
 
-import std;
+import ext.windows;
 import core;
 import core.debug;
 import core.service;

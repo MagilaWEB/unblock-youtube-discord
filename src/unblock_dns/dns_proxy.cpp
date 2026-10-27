@@ -1,13 +1,7 @@
-module;
-
-#include "ag_bind.h"
-
-#include <windows.h>
-#include <wincrypt.h>
-
 module unblock_dns.dns_proxy;
 
-import std;
+import ext.windows;
+import unblock_dns.ag_bind;
 import common.dns_config;
 
 namespace dns

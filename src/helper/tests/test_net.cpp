@@ -1,8 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <winsock2.h>
-
-import std;
+import ext.windows;
 import helper.net;
 import helper.types;
 

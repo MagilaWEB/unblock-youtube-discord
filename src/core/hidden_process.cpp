@@ -1,10 +1,6 @@
-module;
-
-#include <windows.h>
-
 module core.hidden_process;
 
-import std;
+import ext.windows;
 import core.utils;
 
 bool runHiddenProcess(const std::vector<std::string>& args, std::uint32_t timeout_ms)

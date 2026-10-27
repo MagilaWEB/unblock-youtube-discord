@@ -1,12 +1,6 @@
-module;
-
-#include <windows.h>
-#include <shellapi.h>
-#include <winreg.h>
-
 module unblock;
 
-import std;
+import ext.windows;
 import core;
 import core.file_system;
 import core.hidden_process;

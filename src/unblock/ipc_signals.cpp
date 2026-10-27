@@ -1,13 +1,15 @@
 module;
 
-#include <winsock2.h>
-
 #pragma comment(lib, "ws2_32.lib")
 
 module unblock.ipc_signals;
 
-import std;
+import ext.windows;
 import core.debug;
+
+// s_addr is a member-name macro in <winsock2.h> that a module cannot carry;
+// redefine it locally (same expansion) so the field access reads as before.
+#define s_addr S_un.S_addr
 
 IPCSignals& IPCSignals::get()
 {
@@ -170,9 +172,11 @@ void IPCSignals::_listen()
 
 	while (!_stop.load())
 	{
+		// FD_ZERO/FD_SET are macros in <winsock2.h> (and FD_SET there is also a
+		// typedef), so the single-entry set is filled in directly.
 		fd_set fds;
-		FD_ZERO(&fds);
-		FD_SET(_sock->fd, &fds);
+		fds.fd_count	= 1;
+		fds.fd_array[0] = _sock->fd;
 		timeval tv{};
 		int		sel = select(0, &fds, nullptr, nullptr, &tv);
 

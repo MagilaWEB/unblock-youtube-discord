@@ -1,6 +1,5 @@
 module;
 
-#include <stdlib.h>
 #include "macros.hpp"
 
 module core.input_console;
@@ -280,9 +279,9 @@ void InputConsole::clear()
 {
 	CriticalSection::Raii mt{ _lock };
 #if defined _WIN32
-	system("cls");
+	std::system("cls");
 #elif defined(__LINUX__) || defined(__gnu_linux__) || defined(__linux__)
-	system("clear");
+	std::system("clear");
 #endif
 }
 

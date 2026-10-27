@@ -1,11 +1,6 @@
-module;
-
-#include <windows.h>
-#include <winsvc.h>
-
 export module core.service;
 
-import std;
+import ext.windows;
 import core.lock_thread;
 import core.timer;
 import core.types;

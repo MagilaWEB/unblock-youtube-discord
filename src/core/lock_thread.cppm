@@ -1,8 +1,6 @@
-module;
-
-#include <windows.h>
-
 export module core.lock_thread;
+
+import ext.windows;
 
 export class CriticalSection
 {

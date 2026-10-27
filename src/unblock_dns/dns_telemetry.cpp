@@ -1,16 +1,11 @@
-module;
-
-#include "ag_dns.h"
-
-#include <winsock2.h>
-#include <windows.h>
-
-#include <string.h>
-#include <time.h>
-
 module unblock_dns.dns_telemetry;
 
-import std;
+import ext.windows;
+import unblock_dns.ag_bind;
+
+// s_addr is a member-name macro in <winsock2.h> that a module cannot carry;
+// redefine it locally (same expansion) so the field access reads as before.
+#define s_addr S_un.S_addr
 
 namespace dns
 {
@@ -37,7 +32,7 @@ namespace dns
 
 				char stamp[32]{};
 				ctime_s(stamp, sizeof(stamp), &now);
-				stamp[strcspn(stamp, "\n")] = '\0';
+				stamp[std::strcspn(stamp, "\n")] = '\0';
 
 				std::lock_guard lock{ mutex };
 				if (file.is_open())

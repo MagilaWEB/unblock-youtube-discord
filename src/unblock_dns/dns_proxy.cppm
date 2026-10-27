@@ -1,10 +1,6 @@
-module;
-
-#include "ag_bind.h"
-
 export module unblock_dns.dns_proxy;
 
-import std;
+import unblock_dns.ag_bind;
 import common.dns_config;
 
 export namespace dns

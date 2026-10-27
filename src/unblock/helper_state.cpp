@@ -1,12 +1,12 @@
-module;
-
-#include <winsock2.h>
-
 module unblock.helper_state;
 
-import std;
+import ext.windows;
 import core.types;
 import unblock.ipc_signals;
+
+// s_addr is a member-name macro in <winsock2.h> that a module cannot carry;
+// redefine it locally (same expansion) so the field access reads as before.
+#define s_addr S_un.S_addr
 
 namespace
 {
