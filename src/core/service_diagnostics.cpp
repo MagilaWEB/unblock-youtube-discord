@@ -180,6 +180,20 @@ std::string DiagnosticReport::fullText() const
 	return text;
 }
 
+std::string DiagnosticReport::issueText() const
+{
+	// Minimal cause description for a GitHub issue: just the verdict and the
+	// summary (failure stage, Win32 code, process exit code, lifetime). The
+	// complete report — checklist, recommendations and raw evidence — is
+	// written to logs/service-report.txt, which the user attaches.
+	std::string text = verdict;
+
+	if (!summary.empty())
+		text += "\n\n" + summary;
+
+	return text;
+}
+
 DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvidence& evidence)
 {
 	DiagnosticReport report;

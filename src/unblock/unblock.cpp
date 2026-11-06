@@ -524,6 +524,18 @@ void Unblock::_refreshServiceReport(Technology technology)
 	for (const auto& line : report.raw)
 		Debug::info("service diagnostics: raw: {}", line);
 
+	// The full report goes to the attached file: verdict, summary, checklist,
+	// recommendations and the raw evidence. The issue body carries only the
+	// minimum (verdict + summary) and asks the user to attach this file.
+	// Written next to the log and overwritten by every new report, like
+	// logs/strategy.args.txt.
+	File report_file{ false };
+	report_file.open(Core::get().currentPath() / "logs" / "service-report", ".txt", true);
+	report_file.clear();
+	report_file.writeText(report.fullText());
+	report_file.close();
+	Debug::info(Localization::Str{ "str_service_report_dump" }(), report_file.getPath().string());
+
 	CRITICAL_SECTION_RAII(_service_report_lock);
 	_service_report = std::move(report);
 	++_service_report_id;

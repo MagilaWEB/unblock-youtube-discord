@@ -63,6 +63,7 @@ str_success_stop_service=служба [{}] остановлена.
 str_warning_no_start_service=служба [{}] была запущена но неожиданно сменила свой статус.
 str_error_service_died_after_start=служба [{}] стартовала, но её процесс сразу завершился — смотрите диагностику сбоя.
 str_strategy_args_dump=Аргументы стратегии: {} — полный список в файле: {}
+str_service_report_dump=Отчёт по службе сохранён в файле: {}
 
 // Warning/error url
 str_warning_url=⚠ Проблема доступа: {}
@@ -649,7 +650,7 @@ str_issue_crash_header=### 🐞 Unblock crash
 str_issue_report_header=### 🐞 Unblock bug report
 str_issue_service_header=### 🐞 Unblock service failure
 str_issue_version=**Версия:** {}
-str_issue_log_summary=📄 Хвост лога (последние 150 строк)
+str_issue_log_summary=📄 Хвост лога (последние 30 строк)
 str_issue_describe_header=### 📝 Опишите, пожалуйста
 str_issue_before_crash=**Что вы делали перед ошибкой:**
 str_issue_report_description=**Описание проблемы:**
@@ -657,6 +658,8 @@ str_issue_steps=**Как воспроизвести:**
 str_issue_expected=**Ожидаемое поведение:**
 str_issue_actual=**Фактическое поведение:**
 str_issue_full_log_hint=**Полный лог:** `logs/log.txt` — прикрепите файл перетаскиванием в issue.
+str_issue_service_report_file=**Полный отчёт:** `{}` — прикрепите файл отчёта перетаскиванием в issue.
+str_issue_truncated=…отчёт обрезан из-за ограничения длины ссылки, полный — в приложенном файле отчёта рядом с логом.
 
 // Service failure diagnostics (issue #110)
 str_diag_verdict_unknown=Причину сбоя службы определить не удалось

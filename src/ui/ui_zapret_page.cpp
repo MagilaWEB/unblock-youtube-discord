@@ -756,7 +756,7 @@ void UiZapretPage::_sendServiceReport()
 		[report]
 		{
 			const std::string title = utils::format(Localization::Str{ "str_issue_service_title" }(), report.verdict);
-			Debug::openGitHubIssue(title, Debug::buildServiceIssueBody(report.fullText()));
+			Debug::openGitHubIssue(title, Debug::buildServiceIssueBody(report.issueText()));
 		}
 	);
 }

@@ -105,7 +105,7 @@ private:
 		// Automatically open a GitHub issue with a crash report.
 		openGitHubIssue(
 			utils::format(Localization::Str{ "str_issue_crash_title" }(), utils::format("0x{:08X}", 0u)),
-			buildCrashIssueBody(readLogTail(150))
+			buildCrashIssueBody(readLogTail(30))
 		);
 
 		Debug::s_log.close();
@@ -118,6 +118,11 @@ public:
 	/** Report a problem on GitHub: opens the issue creation form in the browser
 	 *  with pre-filled title and body (template + information). */
 	static void openGitHubIssue(const std::string& title, const std::string& body);
+
+	/** Builds the pre-filled GitHub issue URL. When the whole URL would exceed
+	 *  the length GitHub accepts, the body is cut and a truncation marker is
+	 *  appended (the title is never touched). Exposed for tests. */
+	static std::string buildIssueUrl(const std::string& title, const std::string& body);
 
 	/** Enable/disable the crash handler (vectored exception handler + SEH filter).
 	 *  Disabled in tests so a crash reports to the test runner instead of showing a dialog. */

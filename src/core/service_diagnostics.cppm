@@ -31,6 +31,12 @@ export struct DiagnosticReport
 
 	[[nodiscard]] bool		  empty() const;
 	[[nodiscard]] std::string fullText() const;
+
+	/** Minimal cause description for a GitHub issue: just the verdict and the
+	 *  summary (failure stage, Win32 and exit codes, lifetime). The complete
+	 *  report — checklist, recommendations and raw evidence — is attached as
+	 *  logs/service-report.txt. */
+	[[nodiscard]] std::string issueText() const;
 };
 
 /** Everything the verdict needs, gathered from the system. A plain struct, so

@@ -205,7 +205,7 @@ namespace
 
 		Debug::openGitHubIssue(
 			utils::format(langStr("str_issue_crash_title"), utils::format("0x{:08X}", error_code)),
-			Debug::buildCrashIssueBody(Debug::readLogTail(150))
+			Debug::buildCrashIssueBody(Debug::readLogTail(30))
 		);
 
 		Debug::s_log.close();
@@ -331,12 +331,56 @@ void Debug::setCrashHandlerEnabled(bool enabled)
 
 void Debug::openGitHubIssue(const std::string& title, const std::string& body)
 {
-	constexpr pcstr c_issue_url_base{ "https://github.com/MagilaWEB/unblock-youtube-discord/issues/new" };
-
-	const std::string url = std::string{ c_issue_url_base } + "?title=" + urlEncode(title) + "&body=" + urlEncode(body);
+	const std::string url = buildIssueUrl(title, body);
 
 	// ShellExecuteA is safe for '?' and '&' in the URL (unlike system("start ...")).
 	ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+}
+
+std::string Debug::buildIssueUrl(const std::string& title, const std::string& body)
+{
+	constexpr pcstr c_issue_url_base{ "https://github.com/MagilaWEB/unblock-youtube-discord/issues/new" };
+
+	// GitHub rejects very long query strings: the whole URL (scheme, host,
+	// path, encoded title and encoded body) must stay under this budget.
+	constexpr size_t c_max_url_length{ 7'000 };
+
+	const std::string prefix	   = std::string{ c_issue_url_base } + "?title=" + urlEncode(title) + "&body=";
+	std::string		  encoded_body = urlEncode(body);
+
+	if (prefix.size() + encoded_body.size() <= c_max_url_length)
+		return prefix + encoded_body;
+
+	const size_t original_length = prefix.size() + encoded_body.size();
+
+	// Cut the already-encoded body at the budget: every raw byte maps to one
+	// unescaped char or one '%XX' group, so a single walk finds the exact
+	// byte boundary without re-encoding anything on the way.
+	const std::string encoded_marker = urlEncode("\n\n" + langStr("str_issue_truncated"));
+	const size_t	  reserved		 = prefix.size() + encoded_marker.size();
+	const size_t	  budget		 = reserved < c_max_url_length ? c_max_url_length - reserved : 0;
+
+	size_t raw_length = 0;
+	for (size_t encoded_pos = 0; encoded_pos < encoded_body.size() && raw_length < body.size();)
+	{
+		const size_t width = encoded_body[encoded_pos] == '%' ? 3 : 1;
+		if (encoded_pos + width > budget)
+			break;
+
+		encoded_pos += width;
+		++raw_length;
+	}
+
+	// Keep multibyte UTF-8 sequences whole: back off to the lead byte.
+	while (raw_length > 0 && raw_length < body.size() && (static_cast<unsigned char>(body[raw_length]) & 0xC0) == 0x80)
+		--raw_length;
+
+	encoded_body = urlEncode(std::string_view{ body }.substr(0, raw_length)) + encoded_marker;
+
+	const size_t final_length = prefix.size() + encoded_body.size();
+	Debug::warning("issue URL truncated: {} -> {} chars (limit {})", original_length, final_length, c_max_url_length);
+
+	return prefix + encoded_body;
 }
 
 std::string Debug::buildCrashIssueBody(const std::string& log_tail)
@@ -371,21 +415,18 @@ std::string Debug::buildReportIssueBody()
 
 std::string Debug::buildServiceIssueBody(std::string_view report_text)
 {
+	// The caller passes DiagnosticReport::issueText(): the minimal cause
+	// description (verdict + summary). The body adds the service header, the
+	// version and a request to attach the full report file.
 	return utils::format(
 		"{}\n\n"
 		"{}\n\n"
-		"{}\n\n"
-		"<details>\n<summary>{}</summary>\n\n"
-		"```\n{}\n```\n\n</details>\n\n"
 		"{}\n\n"
 		"{}",
 		langStr("str_issue_service_header"),
 		utils::format(langStr("str_issue_version"), version()),
 		report_text,
-		langStr("str_issue_log_summary"),
-		readLogTail(150),
-		userTemplate(false),
-		langStr("str_issue_full_log_hint")
+		utils::format(langStr("str_issue_service_report_file"), (Core::get().currentPath() / "logs" / "service-report.txt").string())
 	);
 }
 

@@ -277,3 +277,33 @@ TEST_CASE("Diagnostics: fullText carries verdict, checks, recommendations and ra
 	CHECK(text.contains("RAW"));
 	CHECK(text.contains("1. "));
 }
+
+TEST_CASE("Diagnostics: issueText carries only the cause description", "[service_diagnostics]")
+{
+	DiagnosticsFixture fx;
+
+	auto evidence				  = cleanEvidence();
+	evidence.windivert_dll_exists = false;
+
+	auto report = buildReport(makeFailure(), evidence);
+	auto text	= report.issueText();
+
+	// Cause: verdict plus a non-empty summary; nothing else.
+	REQUIRE_FALSE(report.summary.empty());
+	REQUIRE_FALSE(report.raw.empty());
+	REQUIRE_FALSE(report.checks.empty());
+	REQUIRE_FALSE(report.recommendations.empty());
+
+	CHECK(text.contains("VERDICT_ANTIVIRUS"));
+	CHECK(text.contains(report.summary));
+
+	// No raw section, no raw lines, no checklist tags, no recommendations.
+	CHECK_FALSE(text.contains("RAW"));
+	CHECK_FALSE(text.contains("win32_exit_code"));
+	CHECK_FALSE(text.contains("RECOMMENDATIONS"));
+	CHECK_FALSE(text.contains("REC_AV_FOLDER"));
+	CHECK_FALSE(text.contains("[OK]"));
+	CHECK_FALSE(text.contains("[FAILED]"));
+	CHECK_FALSE(text.contains("[WARNING]"));
+	CHECK_FALSE(text.contains("[SKIPPED]"));
+}

@@ -46,8 +46,8 @@ struct DebugFixture
 	}
 };
 
-// Issue template fixture: writes a minimal localization file with issue keys
-// so buildCrashIssueBody/buildReportIssueBody resolve strings.
+// Issue fixture: writes a minimal localization file with the keys the issue
+// bodies resolve (crash, manual report and service-failure templates).
 struct IssueTemplateFixture
 {
 	fs::path root;
@@ -66,6 +66,7 @@ struct IssueTemplateFixture
 			std::ofstream ofs(root / "ui" / "text" / "US.list");
 			ofs << "str_issue_crash_header=### Crash header\n";
 			ofs << "str_issue_report_header=### Report header\n";
+			ofs << "str_issue_service_header=### Service header\n";
 			ofs << "str_issue_version=**Version:** {}\n";
 			ofs << "str_issue_log_summary=Log tail summary\n";
 			ofs << "str_issue_describe_header=Describe header\n";
@@ -75,6 +76,8 @@ struct IssueTemplateFixture
 			ofs << "str_issue_expected=Expected\n";
 			ofs << "str_issue_actual=Actual\n";
 			ofs << "str_issue_full_log_hint=Full log hint\n";
+			ofs << "str_issue_service_report_file=Full report: {}\n";
+			ofs << "str_issue_truncated=TRUNCATED\n";
 		}
 
 		Localization::get().set("US");
@@ -337,4 +340,57 @@ TEST_CASE("Debug::buildCrashIssueBody contains full log hint", "[debug][issue]")
 
 	auto body = Debug::buildCrashIssueBody("TAIL");
 	CHECK(body.find("Full log hint") != std::string::npos);
+}
+
+TEST_CASE("Debug::buildServiceIssueBody keeps the cause description and asks for the file", "[debug][issue][service]")
+{
+	IssueTemplateFixture fx;
+	Debug::setVersion("1.2.3");
+
+	// issueText() layout: verdict and summary.
+	const std::string issue_text = "VERDICT LINE\n\nSUMMARY LINE";
+	auto			  body		 = Debug::buildServiceIssueBody(issue_text);
+
+	CHECK(body.find("### Service header") != std::string::npos);
+	CHECK(body.find("1.2.3") != std::string::npos);
+	CHECK(body.find("VERDICT LINE") != std::string::npos);
+	CHECK(body.find("SUMMARY LINE") != std::string::npos);
+	CHECK(body.find("Full report: ") != std::string::npos);	   // request to attach the file
+	CHECK(body.find("service-report.txt") != std::string::npos);
+	// No user template, no log tail, no raw/checklist section.
+	CHECK(body.find("Describe header") == std::string::npos);
+	CHECK(body.find("Log tail summary") == std::string::npos);
+	CHECK(body.find("<details>") == std::string::npos);
+}
+
+// ─── Issue URL guard ─────────────────────────────────────────
+
+TEST_CASE("Debug::buildIssueUrl keeps a short body untouched", "[debug][issue][url]")
+{
+	IssueTemplateFixture fx;
+	CoutSilencer		 silencer;
+
+	const std::string url = Debug::buildIssueUrl("T", "hello");
+
+	CHECK(url.size() < 7'000);
+	CHECK(url.ends_with("&body=hello"));
+	CHECK(url.find("TRUNCATED") == std::string::npos);
+}
+
+TEST_CASE("Debug::buildIssueUrl truncates an oversized body under the limit", "[debug][issue][url]")
+{
+	IssueTemplateFixture fx;
+	CoutSilencer		 silencer;
+
+	// ~18 KB report-like body: Cyrillic plus XML-ish raw records.
+	std::string body;
+	while (body.size() < 18'000)
+		body += "строка отчёта: <Data Name=\"Служба\">значение</Data>\n";
+	REQUIRE(body.size() >= 18'000);
+
+	const std::string url = Debug::buildIssueUrl("Service failure", body);
+
+	CHECK(url.size() <= 7'000);
+	CHECK(url.ends_with("TRUNCATED"));	  // the truncation marker is the final part
+	CHECK(url.size() < body.size());	  // the body was actually cut, not just encoded
 }
