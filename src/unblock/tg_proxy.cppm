@@ -22,6 +22,9 @@ public:
 	/** Snapshot of the service's last failure (see ServiceFailure). */
 	[[nodiscard]] const ServiceFailure& getLastFailure() const;
 
+	/** Underlying Windows service, exposed for the diagnostics collector. */
+	[[nodiscard]] Service& service() { return _service; }
+
 	/** tg:// proxy link built from the current host/port/secret. */
 	[[nodiscard]] std::string link() const;
 

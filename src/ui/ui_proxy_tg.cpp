@@ -3,6 +3,7 @@ module ui;
 import std;
 import core;
 import core.localization;
+import core.service_diagnostics;
 import core.utils;
 import dom.utils_saucer;
 import ui.widget_button;
@@ -17,8 +18,53 @@ UiProxyTg::UiProxyTg(std::shared_ptr<Ui> ui, TgProxy& tg_proxy) : _ui(std::move(
 void UiProxyTg::initialize()
 {
 	_enableProxyTg();
+
+	// The status sits right under the enable checkbox (same order as on the DNS
+	// page): controls are appended to the block in creation order, so creating
+	// it later would push it to the bottom of the page.
+	_status_tg->create("#tg_ws_proxy section .common");
+	_status_tg->setInactive(Localization::Str{ "str_status_tg_stopped" }());
+	_status_tg->addEventClick(
+		[this](JSArgs)
+		{
+			_ui->showServiceReport();
+			return false;
+		}
+	);
+
 	_enableProxyLinkTg();
 	_proxySettings();
+
+	updateStatus();
+}
+
+void UiProxyTg::updateStatus()
+{
+	if (!_status_tg->isCreate())
+		return;
+
+	const bool running	 = _tg_proxy.isRun();
+	const bool issue	 = _ui->unblock()->serviceReportCovers("TgWsProxy");
+	const u64  report_id = issue ? _ui->unblock()->lastServiceReportId() : 0;
+
+	if (running == _last_running && report_id == _last_report_id)
+		return;
+
+	_last_running	= running;
+	_last_report_id = report_id;
+
+	std::string text;
+	if (issue)
+		text = utils::format(Localization::Str{ "str_status_tg_issue" }(), _ui->unblock()->lastServiceReport().verdict);
+	else
+		text = running ? Localization::Str{ "str_status_tg_running" }() : Localization::Str{ "str_status_tg_stopped" }();
+
+	if (issue)
+		_status_tg->setWarning(text);
+	else if (running)
+		_status_tg->setActive(text);
+	else
+		_status_tg->setInactive(text);
 }
 
 void UiProxyTg::_enableProxyTg()
@@ -42,7 +88,7 @@ void UiProxyTg::_enableProxyTg()
 					else
 						_ui->getUiUnblock()->getWindowWaitStopService()->show();
 
-					_tg_proxy.run(state);
+					_ui->unblock()->runTgProxy(state);
 
 					if (state)
 						_ui->getWindowWaitStartService()->hide();
@@ -172,7 +218,7 @@ void UiProxyTg::_applyProxySettings()
 		[this]
 		{
 			_ui->getUiUnblock()->getWindowWaitStopService()->show();
-			_tg_proxy.run(false);
+			_ui->unblock()->runTgProxy(false);
 			_ui->getUiUnblock()->getWindowWaitStopService()->hide();
 
 			const auto				   host = jsToCpp<std::string>(_proxy_tg_host->getValue());
@@ -192,7 +238,7 @@ void UiProxyTg::_applyProxySettings()
 			_tg_proxy.setParams(host, port, dc_ip, "");	   // cfproxy
 
 			_ui->getWindowWaitStartService()->show();
-			_tg_proxy.run(true);
+			_ui->unblock()->runTgProxy(true);
 			_ui->getWindowWaitStartService()->hide();
 		}
 	);

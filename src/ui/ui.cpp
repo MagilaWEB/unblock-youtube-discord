@@ -6,6 +6,7 @@ import core.debug;
 import core.file_system;
 import core.localization;
 import core.service;
+import core.service_diagnostics;
 import core.utils;
 import dom;
 import dom.utils_saucer;
@@ -24,6 +25,65 @@ Ui::Ui(IEngineAPI* engine) : _engine(engine)
 {
 	_unblock = std::make_shared<Unblock>();
 }
+
+namespace
+{
+	std::string reportIssueBody()
+	{
+		return Debug::buildReportIssueBody();
+	}
+
+	// Verdict, summary, the checklist with markers, numbered recommendations
+	// and the raw data, all as one pre-line block for the report window.
+	std::string serviceReportText(const DiagnosticReport& report)
+	{
+		std::string text = report.verdict;
+
+		if (!report.summary.empty())
+			text += "\n\n" + report.summary;
+
+		if (!report.checks.empty())
+		{
+			text += "\n\n" + Localization::Str{ "str_diag_section_checks" }();
+			for (const auto& check : report.checks)
+			{
+				std::string_view marker{ "–" };
+				switch (check.level)
+				{
+				case DiagnosticCheck::Level::Ok:
+					marker = "✓";
+					break;
+				case DiagnosticCheck::Level::Warning:
+					marker = "⚠";
+					break;
+				case DiagnosticCheck::Level::Failed:
+					marker = "✗";
+					break;
+				default:
+					break;
+				}
+
+				text += "\n" + std::string{ marker } + " " + check.text;
+			}
+		}
+
+		if (!report.recommendations.empty())
+		{
+			text += "\n\n" + Localization::Str{ "str_diag_section_recommendations" }();
+			for (const auto& recommendation : report.recommendations)
+				text += "\n" + recommendation;
+		}
+
+		if (!report.raw.empty())
+		{
+			text += "\n\n" + Localization::Str{ "str_diag_section_raw" }();
+			for (const auto& line : report.raw)
+				text += "\n" + line;
+		}
+
+		return text;
+	}
+}	 // namespace
 
 void Ui::postConstruct()
 {
@@ -147,12 +207,55 @@ void Ui::_initializeWindowBase() const
 	_window_wait_start_service->setType(SecondaryWindow::Type::Info);
 }
 
+void Ui::_initServiceReport()
+{
+	_window_service_report->create(Localization::Str{ "str_window_service_report_title" }, "");
+	_window_service_report->setType(SecondaryWindow::Type::Report);
+	_window_service_report->addEventOk(
+		[this](JSArgs)
+		{
+			_window_service_report->hide();
+			return true;
+		}
+	);
+	_window_service_report->addEventReport(
+		[this](JSArgs)
+		{
+			_sendServiceReport();
+			return false;
+		}
+	);
+}
+
+void Ui::showServiceReport()
+{
+	if (!_unblock->hasServiceReport())
+		return;
+
+	_window_service_report->setDescription(serviceReportText(_unblock->lastServiceReport()));
+	_window_service_report->show();
+}
+
+void Ui::_sendServiceReport()
+{
+	const auto report = _unblock->lastServiceReport();
+
+	Core::get().addTask(
+		[report]
+		{
+			const std::string title = utils::format(Localization::Str{ "str_issue_service_title" }(), report.verdict);
+			Debug::openGitHubIssue(title, Debug::buildServiceIssueBody(report.issueText()));
+		}
+	);
+}
+
 void Ui::initialize()
 {
 	if (_init)
 		return;
 
 	_initializeWindowBase();
+	_initServiceReport();
 
 	_ui_background_tasks->initialize();
 	_initializeAppState();
@@ -175,6 +278,7 @@ void Ui::update()
 		return;
 
 	_ui_dns_proxy->updateInfoWindow();
+	_ui_proxy_tg->updateStatus();
 	_ui_zapret_helper->updateChecking();
 	_ui_zapret_helper->updateSeen();
 	_ui_zapret_helper->updateValid();
@@ -185,17 +289,19 @@ void Ui::update()
 	_ui_zapret->updateState();
 	_ui_zapret->updateServices();
 	_ui_zapret_helper->setVisible(_ui_zapret->technology() == Technology::Zapret2);
+
+	// The report window shows up on its own once per report, not on every
+	// tick, whichever page produced the failure.
+	if (const u64 report_id = _unblock->lastServiceReportId(); report_id != _last_report_id)
+	{
+		_last_report_id = report_id;
+		if (report_id != 0)
+			showServiceReport();
+	}
+
 	_updateAppProgressWindowInfo();
 	_ui_background_tasks->update();
 }
-
-namespace
-{
-	std::string reportIssueBody()
-	{
-		return Debug::buildReportIssueBody();
-	}
-}	 // namespace
 
 void Ui::_about()
 {

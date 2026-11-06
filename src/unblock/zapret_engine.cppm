@@ -71,4 +71,7 @@ public:
 
 	/** Snapshot of the underlying service's last failure (see ServiceFailure). */
 	[[nodiscard]] virtual const ServiceFailure& getLastFailure() const = 0;
+
+	/** Underlying Windows service, exposed for the diagnostics collector. */
+	[[nodiscard]] virtual Service& service() = 0;
 };

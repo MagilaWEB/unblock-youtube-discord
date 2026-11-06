@@ -126,3 +126,8 @@ const ServiceFailure& Zapret2Engine::getLastFailure() const
 {
 	return _service.getLastFailure();
 }
+
+Service& Zapret2Engine::service()
+{
+	return _service;
+}

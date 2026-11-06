@@ -320,6 +320,10 @@ The check runs through unblock_dns — AdguardDns64.dll must sit next to it or y
 str_button_test_upstream_title=🧪 Check server
 str_status_dns_running=🌐 DNS proxy running · queries: {} · cached: {} · errors: {}
 str_status_dns_stopped=🌐 DNS proxy stopped
+str_status_dns_issue=⚠ DNS proxy — {} (click for the report)
+str_status_tg_running=📱 Telegram proxy running
+str_status_tg_stopped=📱 Telegram proxy stopped
+str_status_tg_issue=⚠ Telegram proxy — {} (click for the report)
 str_window_test_upstream_title=🧪 Server check
 str_task_dns_proxy_title=🔒 Applying DNS proxy
 str_task_dns_proxy_test_title=🧪 Checking DNS server

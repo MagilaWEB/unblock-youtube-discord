@@ -135,10 +135,19 @@ private:
 	// INPUT(_proxy_tg_cfproxy_domain);
 	BUTTON(_proxy_tg_apply);
 
+	// Running state + proxy failure verdict (click opens the report window).
+	STATUS(_status_tg);
+	bool _last_running{ false };
+	u64	 _last_report_id{ 0 };
+
 public:
 	UiProxyTg(std::shared_ptr<Ui> ui, TgProxy& tg_proxy);
 
 	void initialize();
+
+	// Refreshes the status line on state change. Cheap: touches the DOM only
+	// on change, called from Ui::update.
+	void updateStatus();
 
 	const Ptr<CheckBox>& getCheckBoxProxyTg() const { return _proxy_tg_enable; }
 
@@ -298,9 +307,6 @@ export class UiZapretPage
 	SECONDARY_WINDOW(_window_configuration_selection_error);
 	SECONDARY_WINDOW(_window_no_bypass_targets);
 
-	// Service failure diagnostics (reason of the last failed start).
-	SECONDARY_WINDOW(_window_service_report);
-
 	// Warns when the other technology is running and this one is started.
 	SECONDARY_WINDOW(_window_warning_technology_busy);
 
@@ -318,7 +324,6 @@ export class UiZapretPage
 	bool					  _last_running{ false };
 	std::optional<Technology> _last_active;
 	bool					  _last_has_report{ false };
-	u64						  _last_report_id{ 0 };
 
 public:
 	explicit UiZapretPage(std::shared_ptr<Ui> ui);
@@ -385,10 +390,9 @@ private:
 	void _buttonUpdate();
 	void _updateStatus(std::optional<Technology> active);
 
-	/** Opens the service-failure report window when a report exists. */
-	void _showServiceReportWindow();
-	/** Opens a pre-filled GitHub issue with the last service report. */
-	void _sendServiceReport();
+	/** True when the current report covers one of this page's services (the
+	 *  active engine or the zapret-helper). */
+	bool _hasEngineReport() const;
 
 	/** Something to bypass: an enabled service or a custom host / IP. */
 	bool _hasBypassTargets() const;
@@ -454,6 +458,11 @@ export class Ui final : public utils::DefaultInit,
 	SECONDARY_WINDOW(_window_warning_no_internet);
 	SECONDARY_WINDOW(_window_wait_start_service);
 
+	// Service failure diagnostics: a single report and window for the whole
+	// app, shared by every service page.
+	SECONDARY_WINDOW(_window_service_report);
+	u64 _last_report_id{ 0 };
+
 	// About
 	BUTTON(_link_to_github);
 	BUTTON(_link_to_telegram);
@@ -484,6 +493,9 @@ public:
 
 	const Ptr<SecondaryWindow>& getWindowWaitStartService() { return _window_wait_start_service; }
 
+	/** Opens the shared service-failure report window when a report exists. */
+	void showServiceReport();
+
 	UiBackgroundTasks* backgroundTasks() { return _ui_background_tasks.get(); }
 
 	const Ptr<CheckBox>& getTestingDomainsStartup() const { return _ui_unblock->getTestingDomainsStartup(); }
@@ -503,6 +515,12 @@ private:
 	void _initComponents();
 	void _about();
 	void _initializeWindowBase() const;
+
+	// Builds the shared service-failure report window (OK closes, the report
+	// button opens a pre-filled issue).
+	void _initServiceReport();
+	// Opens a pre-filled GitHub issue with the last service report.
+	void _sendServiceReport();
 
 	void _checkConflictService();
 

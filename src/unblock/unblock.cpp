@@ -351,12 +351,26 @@ void Unblock::setDnsEnabled(bool state)
 	{
 		_dns_hosts->update();
 		_dns_hosts->enable();
-		_dns_proxy.run(true);
+		runDnsProxy(true);
 		return;
 	}
 
-	_dns_proxy.run(false);
+	runDnsProxy(false);
 	_dns_hosts->disable();
+}
+
+void Unblock::runDnsProxy(bool state)
+{
+	_dns_proxy.run(state);
+	if (state)
+		_buildServiceReport({ &_dns_proxy.service() });
+}
+
+void Unblock::runTgProxy(bool state)
+{
+	_tg_proxy.run(state);
+	if (state)
+		_buildServiceReport({ &_tg_proxy.service() });
 }
 
 namespace
@@ -477,38 +491,44 @@ void Unblock::startService(Technology technology)
 	_helper.sendHostList(testHostNames());
 }
 
-void Unblock::_refreshServiceReport(Technology technology)
+void Unblock::_buildServiceReport(std::initializer_list<Service*> services)
 {
 	std::vector<ServiceFailure> failures;
 
-	// Only the services this attempt actually started are judged: the active
-	// engine plus zapret-helper on Zapret2. Other services keep an older
-	// failure snapshot (even a speculative Service::open() writes one), and
-	// reporting it would show a failure from a previous run under a
-	// successful start. The driver state still reaches the report as
-	// evidence inside diagnose().
-	auto collect = [&failures](auto& service)
-	{
-		if (!service.isRun())
-			if (const auto& failure = service.getLastFailure(); failure.valid())
+	// Only the services this attempt actually started are judged: a service
+	// that is running started cleanly, and a service that never started keeps
+	// an older failure snapshot (even a speculative Service::open() writes
+	// one). Reporting that would show a failure from a previous run under a
+	// successful start. The driver state still reaches the report as evidence
+	// inside diagnose().
+	for (Service* service : services)
+		if (!service->isRun())
+			if (const auto& failure = service->getLastFailure(); failure.valid())
 				failures.push_back(failure);
-	};
 
-	collect(engine(technology));
-	if (technology == Technology::Zapret2)
-		collect(_zapret_helper);
-
-	// A clean start drops the previous report: there is nothing to show.
+	// A clean start drops the previous report only when it belongs to one of
+	// the services of this attempt. Starting the DNS proxy (or the Telegram
+	// one) cleanly must not erase a still valid engine failure and silently
+	// turn the engine's status line green; a report about other services is
+	// left untouched.
 	if (failures.empty())
 	{
-		clearServiceReport();
+		CRITICAL_SECTION_RAII(_service_report_lock);
+		if (_reportCoversAnyLocked(services))
+			_resetServiceReportLocked();
+
 		return;
 	}
 
 	DiagnosticReport report = ServiceDiagnostics::diagnose(failures, true);
 	if (report.empty())
 	{
-		clearServiceReport();
+		// Same rule as above: nothing to show about these services does not
+		// mean the report about the others became stale.
+		CRITICAL_SECTION_RAII(_service_report_lock);
+		if (_reportCoversAnyLocked(services))
+			_resetServiceReportLocked();
+
 		return;
 	}
 
@@ -538,7 +558,21 @@ void Unblock::_refreshServiceReport(Technology technology)
 
 	CRITICAL_SECTION_RAII(_service_report_lock);
 	_service_report = std::move(report);
+	_service_report_names.clear();
+	for (Service* service : services)
+		_service_report_names.emplace_back(service->getName());
 	++_service_report_id;
+}
+
+void Unblock::_refreshServiceReport(Technology technology)
+{
+	if (technology == Technology::Zapret2)
+	{
+		_buildServiceReport({ &engine(technology).service(), &_zapret_helper });
+		return;
+	}
+
+	_buildServiceReport({ &engine(technology).service() });
 }
 
 bool Unblock::hasServiceReport() const
@@ -562,6 +596,27 @@ u64 Unblock::lastServiceReportId() const
 void Unblock::clearServiceReport()
 {
 	CRITICAL_SECTION_RAII(_service_report_lock);
+	_resetServiceReportLocked();
+}
+
+bool Unblock::_reportCoversAnyLocked(std::initializer_list<Service*> services) const
+{
+	// _service_report_lock is held by the caller.
+	return std::ranges::any_of(
+		services,
+		[this](const Service* service) { return std::ranges::find(_service_report_names, service->getName()) != _service_report_names.end(); }
+	);
+}
+
+void Unblock::_resetServiceReportLocked()
+{
 	_service_report.reset();
+	_service_report_names.clear();
 	_service_report_id = 0;
+}
+
+bool Unblock::serviceReportCovers(std::string_view service_name) const
+{
+	CRITICAL_SECTION_RAII(_service_report_lock);
+	return std::ranges::any_of(_service_report_names, [service_name](const std::string& name) { return name == service_name; });
 }

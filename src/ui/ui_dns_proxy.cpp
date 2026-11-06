@@ -8,6 +8,7 @@ import std;
 import common.dns_config;
 import core;
 import core.localization;
+import core.service_diagnostics;
 import core.timer;
 import core.utils;
 import dom.utils_saucer;
@@ -62,6 +63,13 @@ void UiDnsProxy::initialize()
 
 	_status_dns->create("#dns section .common");
 	_status_dns->setInactive(Localization::Str{ "str_status_dns_stopped" }());
+	_status_dns->addEventClick(
+		[this](JSArgs)
+		{
+			_ui->showServiceReport();
+			return false;
+		}
+	);
 
 	// Every upstream lives in one editable list as a clean address; the
 	// built-in presets are only the default entries. The first one is the
@@ -288,7 +296,7 @@ void UiDnsProxy::_applyUpstreams()
 	Core::get().addTask(
 		[this]
 		{
-			_dns_proxy.run(true);
+			_ui->unblock()->runDnsProxy(true);
 			_ui->backgroundTasks()->finish("dns_proxy_apply");
 		}
 	);
@@ -315,13 +323,26 @@ void UiDnsProxy::_refreshStatus()
 			errors = line.substr(7);
 	}
 
-	const bool		  running = _dns_proxy.isRun();
-	const std::string text	  = running ? utils::format(Localization::Str{ "str_status_dns_running" }(), queries, cached, errors)
-										: Localization::Str{ "str_status_dns_stopped" }();
+	const bool running = _dns_proxy.isRun();
+	const bool issue   = _ui->unblock()->serviceReportCovers("unblock_dns");
+
+	std::string text;
+	if (issue)
+		text = utils::format(Localization::Str{ "str_status_dns_issue" }(), _ui->unblock()->lastServiceReport().verdict);
+	else if (running)
+		text = utils::format(Localization::Str{ "str_status_dns_running" }(), queries, cached, errors);
+	else
+		text = Localization::Str{ "str_status_dns_stopped" }();
 
 	if (text == _last_status)
 		return;
 
 	_last_status = text;
-	running ? _status_dns->setActive(text) : _status_dns->setInactive(text);
+
+	if (issue)
+		_status_dns->setWarning(text);
+	else if (running)
+		_status_dns->setActive(text);
+	else
+		_status_dns->setInactive(text);
 }

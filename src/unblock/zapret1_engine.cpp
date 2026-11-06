@@ -172,3 +172,8 @@ const ServiceFailure& Zapret1Engine::getLastFailure() const
 {
 	return _service.getLastFailure();
 }
+
+Service& Zapret1Engine::service()
+{
+	return _service;
+}

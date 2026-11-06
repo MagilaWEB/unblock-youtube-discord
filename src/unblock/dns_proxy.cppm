@@ -20,6 +20,9 @@ public:
 	/** Snapshot of the service's last failure (see ServiceFailure). */
 	[[nodiscard]] const ServiceFailure& getLastFailure() const;
 
+	/** Underlying Windows service, exposed for the diagnostics collector. */
+	[[nodiscard]] Service& service() { return _service; }
+
 	void							setUpstreams(std::vector<std::string> upstreams);
 	const std::vector<std::string>& upstreams() const;
 

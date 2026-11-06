@@ -133,6 +133,9 @@ private:
 	// Bumped on every new report, reset to 0 by clearServiceReport(): the UI
 	// opens the report window once per id change.
 	u64								_service_report_id{ 0 };
+	// Names of the services the current report covers, so a page shows the
+	// verdict only when the failure belongs to one of its own services.
+	std::vector<std::string>		_service_report_names;
 	mutable CriticalSection			_service_report_lock;
 
 	/** Enables TCP timestamps when the strategy needs ts/tcp_ts and they are
@@ -141,10 +144,22 @@ private:
 	/** Reverts TCP timestamps if this run enabled them. */
 	void _tcpTimestampRestore();
 
-	/** Gathers the failures of the services started in this attempt (the
-	 *  active engine plus zapret-helper on Zapret2), builds a diagnostic
-	 *  report and logs it. Clears the report when there is nothing to
-	 *  diagnose. */
+	/** Builds the diagnostic report from the failures of the given
+	 *  just-started services (skipping the ones that are running), logs it,
+	 *  writes logs/service-report.txt and stores it. Clears the report when
+	 *  there is nothing to diagnose. Shared by every service start path. */
+	void _buildServiceReport(std::initializer_list<Service*> services);
+
+	/** True when the stored report was built for at least one of the given
+	 *  services. The caller must hold _service_report_lock. */
+	[[nodiscard]] bool _reportCoversAnyLocked(std::initializer_list<Service*> services) const;
+
+	/** Drops the stored report (verdict, covered-service names and id). The
+	 *  caller must hold _service_report_lock; this does not lock itself. */
+	void _resetServiceReportLocked();
+
+	/** Thin wrapper over _buildServiceReport() for the engine start path: the
+	 *  active engine plus zapret-helper on Zapret2. */
 	void _refreshServiceReport(Technology technology);
 
 public:
@@ -200,6 +215,9 @@ public:
 	 *  when it is cleared. The UI opens the report window once per id. */
 	[[nodiscard]] u64			   lastServiceReportId() const;
 	void						   clearServiceReport();
+	/** True when the current report was produced by a service with this
+	 *  name. The UI shows the verdict only on the owning page. */
+	[[nodiscard]] bool			   serviceReportCovers(std::string_view service_name) const;
 
 	/** Fresh [HELPER] payload from the UI (in-memory userConfig, not the
 	 *  stale on-disk file). Sent as UDP CONFIG: right after the helper is
@@ -238,6 +256,13 @@ public:
 	/** Enables/disables the whole DNS feature: the unblock_dns proxy service
 	 *  plus Unblock's own domain->IP pins in the system hosts file. */
 	void setDnsEnabled(bool state);
+
+	/** Starts/stops the unblock_dns proxy and refreshes the service report:
+	 *  the proxy also starts outside Unblock::startService. */
+	void runDnsProxy(bool state);
+
+	/** Starts/stops the local Telegram proxy and refreshes the service report. */
+	void runTgProxy(bool state);
 
 	/** Local Telegram WS proxy subsystem. Consumers talk to it directly. */
 	TgProxy& tgProxy() { return _tg_proxy; }

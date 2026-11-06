@@ -46,57 +46,6 @@ namespace
 
 		return utils::format("{:.1f} {}", bps, c_units[unit]);
 	}
-
-	// Verdict, summary, the checklist with markers, numbered recommendations
-	// and the raw data, all as one pre-line block for the report window.
-	std::string serviceReportText(const DiagnosticReport& report)
-	{
-		std::string text = report.verdict;
-
-		if (!report.summary.empty())
-			text += "\n\n" + report.summary;
-
-		if (!report.checks.empty())
-		{
-			text += "\n\n" + Localization::Str{ "str_diag_section_checks" }();
-			for (const auto& check : report.checks)
-			{
-				std::string_view marker{ "–" };
-				switch (check.level)
-				{
-				case DiagnosticCheck::Level::Ok:
-					marker = "✓";
-					break;
-				case DiagnosticCheck::Level::Warning:
-					marker = "⚠";
-					break;
-				case DiagnosticCheck::Level::Failed:
-					marker = "✗";
-					break;
-				default:
-					break;
-				}
-
-				text += "\n" + std::string{ marker } + " " + check.text;
-			}
-		}
-
-		if (!report.recommendations.empty())
-		{
-			text += "\n\n" + Localization::Str{ "str_diag_section_recommendations" }();
-			for (const auto& recommendation : report.recommendations)
-				text += "\n" + recommendation;
-		}
-
-		if (!report.raw.empty())
-		{
-			text += "\n\n" + Localization::Str{ "str_diag_section_raw" }();
-			for (const auto& line : report.raw)
-				text += "\n" + line;
-		}
-
-		return text;
-	}
 }	 // namespace
 
 UiZapretPage::UiZapretPage(std::shared_ptr<Ui> ui) : _ui(std::move(ui))
@@ -566,7 +515,7 @@ void UiZapretPage::_initMainControls()
 	_status_engine->addEventClick(
 		[this](JSArgs)
 		{
-			_showServiceReportWindow();
+			_ui->showServiceReport();
 			return false;
 		}
 	);
@@ -617,23 +566,6 @@ void UiZapretPage::_initMainControls()
 		{
 			_window_no_bypass_targets->hide();
 			return true;
-		}
-	);
-
-	_window_service_report->create(Localization::Str{ "str_window_service_report_title" }, "");
-	_window_service_report->setType(SecondaryWindow::Type::Report);
-	_window_service_report->addEventOk(
-		[this](JSArgs)
-		{
-			_window_service_report->hide();
-			return true;
-		}
-	);
-	_window_service_report->addEventReport(
-		[this](JSArgs)
-		{
-			_sendServiceReport();
-			return false;
 		}
 	);
 
@@ -703,7 +635,7 @@ void UiZapretPage::_updateStatus(std::optional<Technology> active)
 
 	if (!active.has_value())
 	{
-		if (_ui->unblock()->hasServiceReport())
+		if (_hasEngineReport())
 			_status_engine->setInactive(
 				utils::format(Localization::Str{ "str_status_engine_stopped_reason" }(), _ui->unblock()->lastServiceReport().verdict)
 			);
@@ -717,7 +649,7 @@ void UiZapretPage::_updateStatus(std::optional<Technology> active)
 		// A running engine with a diagnostic report is not all green: the helper
 		// may have failed while the engine itself works. Warn and keep the
 		// verdict reachable by click (the window auto-opens once per report).
-		if (_ui->unblock()->hasServiceReport())
+		if (_hasEngineReport())
 			_status_engine->setWarning(
 				utils::format(
 					Localization::Str{ "str_status_engine_running_issue" }(),
@@ -739,25 +671,12 @@ void UiZapretPage::_updateStatus(std::optional<Technology> active)
 	}
 }
 
-void UiZapretPage::_showServiceReportWindow()
+bool UiZapretPage::_hasEngineReport() const
 {
-	if (!_ui->unblock()->hasServiceReport())
-		return;
-
-	_window_service_report->setDescription(serviceReportText(_ui->unblock()->lastServiceReport()));
-	_window_service_report->show();
-}
-
-void UiZapretPage::_sendServiceReport()
-{
-	const auto report = _ui->unblock()->lastServiceReport();
-
-	Core::get().addTask(
-		[report]
-		{
-			const std::string title = utils::format(Localization::Str{ "str_issue_service_title" }(), report.verdict);
-			Debug::openGitHubIssue(title, Debug::buildServiceIssueBody(report.issueText()));
-		}
+	const auto& unblock = _ui->unblock();
+	return std::ranges::any_of(
+		std::array<std::string_view, 3>{ "zapret1", "zapret2", "zapret2_helper" },
+		[&unblock](std::string_view name) { return unblock->serviceReportCovers(name); }
 	);
 }
 
@@ -765,7 +684,7 @@ void UiZapretPage::updateState()
 {
 	const bool running	  = _ui->unblock()->isRun(_technology);
 	const auto active	  = _ui->unblock()->runningTechnology();
-	const bool has_report = _ui->unblock()->hasServiceReport();
+	const bool has_report = _hasEngineReport();
 
 	if (running != _last_running || active != _last_active || has_report != _last_has_report)
 	{
@@ -774,14 +693,6 @@ void UiZapretPage::updateState()
 		_last_has_report = has_report;
 		_buttonUpdate();
 		_updateStatus(active);
-	}
-
-	// The report window shows up on its own once per report, not on every tick.
-	if (const u64 report_id = _ui->unblock()->lastServiceReportId(); report_id != _last_report_id)
-	{
-		_last_report_id = report_id;
-		if (report_id != 0)
-			_showServiceReportWindow();
 	}
 
 	// Live throughput in the status line: the rate rides the IPC once a
