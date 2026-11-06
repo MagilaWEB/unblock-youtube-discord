@@ -1,11 +1,17 @@
+module;
+
+#include "../core/macros.hpp"
+
 module unblock;
 
 import ext.windows;
 import core;
+import core.debug;
 import core.file_system;
 import core.hidden_process;
 import core.localization;
 import core.service;
+import core.service_diagnostics;
 import ext.curl;
 import unblock.constants;
 import unblock.dns_host;
@@ -274,6 +280,26 @@ namespace
 
 		return value;
 	}
+
+	// A diagnostic field holds paragraphs separated by newlines; every line is
+	// logged on its own so the log does not end up as one giant entry.
+	std::vector<std::string_view> splitLines(std::string_view text)
+	{
+		std::vector<std::string_view> lines;
+		for (size_t start = 0; start <= text.size();)
+		{
+			const size_t		   end	= text.find('\n', start);
+			const std::string_view line = text.substr(start, end == std::string_view::npos ? std::string_view::npos : end - start);
+			if (!line.empty())
+				lines.push_back(line);
+
+			if (end == std::string_view::npos)
+				break;
+
+			start = end + 1;
+		}
+		return lines;
+	}
 }	 // namespace
 
 ZapretRate Unblock::zapretRateBps()
@@ -436,6 +462,8 @@ void Unblock::startService(Technology technology)
 
 	eng.start();
 
+	_refreshServiceReport(technology);
+
 	if (technology != Technology::Zapret2)
 		return;
 
@@ -447,4 +475,81 @@ void Unblock::startService(Technology technology)
 
 	// send domain list to zapret-helper
 	_helper.sendHostList(testHostNames());
+}
+
+void Unblock::_refreshServiceReport(Technology technology)
+{
+	std::vector<ServiceFailure> failures;
+
+	// Only the services this attempt actually started are judged: the active
+	// engine plus zapret-helper on Zapret2. Other services keep an older
+	// failure snapshot (even a speculative Service::open() writes one), and
+	// reporting it would show a failure from a previous run under a
+	// successful start. The driver state still reaches the report as
+	// evidence inside diagnose().
+	auto collect = [&failures](auto& service)
+	{
+		if (!service.isRun())
+			if (const auto& failure = service.getLastFailure(); failure.valid())
+				failures.push_back(failure);
+	};
+
+	collect(engine(technology));
+	if (technology == Technology::Zapret2)
+		collect(_zapret_helper);
+
+	// A clean start drops the previous report: there is nothing to show.
+	if (failures.empty())
+	{
+		clearServiceReport();
+		return;
+	}
+
+	DiagnosticReport report = ServiceDiagnostics::diagnose(failures, true);
+	if (report.empty())
+	{
+		clearServiceReport();
+		return;
+	}
+
+	// The reason has to survive into the log tail that goes into a bug report.
+	// One entry per line, so the log does not become a single giant record:
+	// verdict, summary and recommendations at warning level (error would
+	// append a stack trace to every line), raw data at info.
+	Debug::warning("service diagnostics: verdict: {}", report.verdict);
+	for (const auto& line : splitLines(report.summary))
+		Debug::warning("service diagnostics: summary: {}", line);
+	for (const auto& recommendation : report.recommendations)
+		Debug::warning("service diagnostics: recommendation: {}", recommendation);
+	for (const auto& line : report.raw)
+		Debug::info("service diagnostics: raw: {}", line);
+
+	CRITICAL_SECTION_RAII(_service_report_lock);
+	_service_report = std::move(report);
+	++_service_report_id;
+}
+
+bool Unblock::hasServiceReport() const
+{
+	CRITICAL_SECTION_RAII(_service_report_lock);
+	return _service_report.has_value();
+}
+
+DiagnosticReport Unblock::lastServiceReport() const
+{
+	CRITICAL_SECTION_RAII(_service_report_lock);
+	return _service_report.value_or(DiagnosticReport{});
+}
+
+u64 Unblock::lastServiceReportId() const
+{
+	CRITICAL_SECTION_RAII(_service_report_lock);
+	return _service_report_id;
+}
+
+void Unblock::clearServiceReport()
+{
+	CRITICAL_SECTION_RAII(_service_report_lock);
+	_service_report.reset();
+	_service_report_id = 0;
 }

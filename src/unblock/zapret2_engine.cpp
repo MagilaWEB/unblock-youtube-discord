@@ -121,3 +121,8 @@ bool Zapret2Engine::isRun()
 {
 	return _service.isRun();
 }
+
+const ServiceFailure& Zapret2Engine::getLastFailure() const
+{
+	return _service.getLastFailure();
+}

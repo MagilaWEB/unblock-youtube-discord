@@ -17,6 +17,9 @@ public:
 	void run(bool state);
 	bool isRun();
 
+	/** Snapshot of the service's last failure (see ServiceFailure). */
+	[[nodiscard]] const ServiceFailure& getLastFailure() const;
+
 	void							setUpstreams(std::vector<std::string> upstreams);
 	const std::vector<std::string>& upstreams() const;
 

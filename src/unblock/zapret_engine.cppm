@@ -2,6 +2,7 @@ export module unblock.zapret_engine;
 
 import std;
 import core.file_system;
+import core.service;
 import core.types;
 
 // Bypass technology: classic zapret (winws.exe, static --dpi-desync configs)
@@ -67,4 +68,7 @@ public:
 	virtual void stop()	  = 0;
 	virtual void remove() = 0;
 	virtual bool isRun()  = 0;
+
+	/** Snapshot of the underlying service's last failure (see ServiceFailure). */
+	[[nodiscard]] virtual const ServiceFailure& getLastFailure() const = 0;
 };

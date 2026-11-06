@@ -40,6 +40,11 @@ bool TgProxy::isRun()
 	return _service.isRun();
 }
 
+const ServiceFailure& TgProxy::getLastFailure() const
+{
+	return _service.getLastFailure();
+}
+
 std::string TgProxy::link() const
 {
 	std::string tg{ "tg://proxy?server=" };

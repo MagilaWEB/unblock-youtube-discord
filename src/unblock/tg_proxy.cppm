@@ -19,6 +19,9 @@ public:
 	void run(bool state = true);
 	bool isRun();
 
+	/** Snapshot of the service's last failure (see ServiceFailure). */
+	[[nodiscard]] const ServiceFailure& getLastFailure() const;
+
 	/** tg:// proxy link built from the current host/port/secret. */
 	[[nodiscard]] std::string link() const;
 

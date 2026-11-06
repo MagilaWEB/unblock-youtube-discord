@@ -130,6 +130,11 @@ bool DnsProxy::isRun()
 	return _service.isRun();
 }
 
+const ServiceFailure& DnsProxy::getLastFailure() const
+{
+	return _service.getLastFailure();
+}
+
 void DnsProxy::setUpstreams(std::vector<std::string> upstreams)
 {
 	_upstreams = std::move(upstreams);

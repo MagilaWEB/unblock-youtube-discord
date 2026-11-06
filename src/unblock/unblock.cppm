@@ -2,7 +2,9 @@ export module unblock;
 
 import std;
 import core.file_system;
+import core.lock_thread;
 import core.service;
+import core.service_diagnostics;
 import core.types;
 
 export import unblock.app_update;
@@ -125,11 +127,25 @@ private:
 	// plus the CONFIG:/LIST: pushes to the helper process.
 	HelperState _helper;
 
+	// Report of the last failed service start, built on the start worker
+	// thread and read as a copy by the UI thread.
+	std::optional<DiagnosticReport> _service_report;
+	// Bumped on every new report, reset to 0 by clearServiceReport(): the UI
+	// opens the report window once per id change.
+	u64								_service_report_id{ 0 };
+	mutable CriticalSection			_service_report_lock;
+
 	/** Enables TCP timestamps when the strategy needs ts/tcp_ts and they are
 	 *  off, remembering that we changed the system. */
 	void _tcpTimestampSync(Technology technology);
 	/** Reverts TCP timestamps if this run enabled them. */
 	void _tcpTimestampRestore();
+
+	/** Gathers the failures of the services started in this attempt (the
+	 *  active engine plus zapret-helper on Zapret2), builds a diagnostic
+	 *  report and logs it. Clears the report when there is nothing to
+	 *  diagnose. */
+	void _refreshServiceReport(Technology technology);
 
 public:
 	Unblock();
@@ -175,6 +191,15 @@ public:
 	bool					  activeService();
 	bool					  isRun(Technology technology);
 	std::optional<Technology> runningTechnology();
+
+	/** True when the last failed start produced a diagnostic report. */
+	[[nodiscard]] bool			   hasServiceReport() const;
+	/** Copy of the last diagnostic report: the reader is another thread. */
+	[[nodiscard]] DiagnosticReport lastServiceReport() const;
+	/** Id of the current report: changes on every new report and resets to 0
+	 *  when it is cleared. The UI opens the report window once per id. */
+	[[nodiscard]] u64			   lastServiceReportId() const;
+	void						   clearServiceReport();
 
 	/** Fresh [HELPER] payload from the UI (in-memory userConfig, not the
 	 *  stale on-disk file). Sent as UDP CONFIG: right after the helper is

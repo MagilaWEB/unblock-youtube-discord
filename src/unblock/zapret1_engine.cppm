@@ -54,4 +54,7 @@ public:
 	void stop() override;
 	void remove() override;
 	bool isRun() override;
+
+	/** Snapshot of the service's last failure (see ServiceFailure). */
+	[[nodiscard]] const ServiceFailure& getLastFailure() const override;
 };
