@@ -125,8 +125,7 @@ void StrategiesZapret1::_uploadStrategies()
 	while (_strategy_dpi.back().starts_with("--new"))
 		_strategy_dpi.pop_back();
 
-	for (auto& line : _strategy_dpi)
-		Debug::ok("{}", line);
+	_dumpStrategyArgs();
 }
 
 void StrategiesZapret1::_saveStrategies(std::string_view str)

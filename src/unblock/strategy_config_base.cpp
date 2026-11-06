@@ -11,6 +11,7 @@ import core.file_system;
 import core.input_console;
 import core.localization;
 import core.types;
+import core.utils;
 import unblock.strategy_generator;
 
 StrategyConfigBase::StrategyConfigBase()
@@ -241,6 +242,22 @@ void StrategyConfigBase::_getAllPorts(std::string& str) const
 			}
 		}
 	}
+}
+
+void StrategyConfigBase::_dumpStrategyArgs() const
+{
+	// A non-existing file makes open() fail, but the path is still set and
+	// writeText()/close() create it; the false flag only silences the
+	// open-failure warning on the very first run.
+	File file{ false };
+	file.open(Core::get().currentPath() / "logs" / "strategy.args", ".txt", true);
+
+	file.clear();
+	for (const auto& line : _strategy_dpi)
+		file.writeText(line);
+	file.close();
+
+	Debug::info("{}", utils::format(Localization::Str{ "str_strategy_args_dump" }(), _strategy_dpi.size(), file.getPath().string()));
 }
 
 std::optional<std::string> StrategyConfigBase::_getPath(std::string_view str, std::string_view prefix, std::filesystem::path path) const

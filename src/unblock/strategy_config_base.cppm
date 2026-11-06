@@ -59,6 +59,11 @@ protected:
 	bool _ignoringLineStrategy(std::string_view str) const;
 	void _getAllPorts(std::string& str) const;
 
+	// Writes the effective strategy argument lines to logs/strategy.args.txt
+	// (rewritten on every build) and reports only the count plus the path in
+	// the log, so the log tail stays usable for bug reports.
+	void _dumpStrategyArgs() const;
+
 	virtual std::optional<std::string> _getPath(std::string_view str, std::string_view prefix, std::filesystem::path path) const;
 
 	void _sortFiles();

@@ -160,8 +160,7 @@ void StrategiesZapret2::_normalizeStrategyFinal()
 	while (_strategy_dpi.back().starts_with("--new"))
 		_strategy_dpi.pop_back();
 
-	for (auto& line : _strategy_dpi)
-		Debug::ok("{}", line);
+	_dumpStrategyArgs();
 }
 
 void StrategiesZapret2::_luaDesyncNumberStrategy(std::string& str)
