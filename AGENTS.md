@@ -4,6 +4,7 @@
 - Бинарники в `bin/`, деп-зависимости через FetchContent (saucer, curl+zlib из исходников, bit7z, 7za, zapret2) — первый конфиг долгий
 - Сборка без тестов: пресеты `debug-min`/`release-min` (BUILD_TESTS=OFF)
 - Скрипты-обёртки: `build-ai.ps1` (сборка), `test-ai.ps1` (ctest), `fmt-ai.ps1` (clang-format) — slash-команды `/build`, `/test`, `/fmt`
+- `build-ai.ps1` после сборки досоздаёт выходы `bin/`, которых не хватает: реконфиг чистит `bin/` (см. `src/engine/CMakeLists.txt`), а ninja удалённые, но «актуальные» файлы не пересобирает — без этого шага `zapret_helper.exe`, `unblock_dns.exe` и тестовые exe остаются отсутствующими до следующей полной линковки (а служба-помощник из-за этого не стартует)
 
 ## Modules
 
@@ -42,6 +43,7 @@
 - `src/core/` — база: File, Debug, Localization, Service, utils
 - `src/ui/` — интерфейс на Ultralight
 - `src/unblock/` — логика: Unblock, StrategiesDPI (генерация стратегий), DomainTesting (curl-проверка), DNSHost, IPCSignals (UDP 9999, Lua→C++)
+- Диагностика падения служб (почему не запустилось): неудачу фиксирует сам `Service` (снимок `ServiceFailure` — стадия, `dwWin32ExitCode`/`dwServiceSpecificExitCode`, `lived_ms`, путь и зарегистрированная команда; ожидание старта различает «поднялась / процесс умер / таймаут»), улики собирает `core.service_diagnostics` (журнал System по провайдеру Service Control Manager и Defender через `winevt` из `ext.windows`, файлы и метка `Zone.Identifier`, регистрация службы, драйвер WinDivert, конфликтующие процессы, права, путь установки), вердикт — чистая функция `buildReport(failure, evidence)` без Win32-вызовов (поэтому тестируется), а активная проба гоняет бинарник службы обычным процессом с перехватом вывода (`core.hidden_process`): для обёртки `SvcHost.exe` пробуется её полезная нагрузка, код 1063 уликой не считается, а отсутствующий файл всегда важнее пробы. `Unblock` строит отчёт только по службам, запускавшимся в этой попытке, отдаёт его в UI (жёлтая строка статуса с вердиктом + окно отчёта, окно открывается само один раз на новый отчёт) и пишет в лог без стектрейсов; кнопка «Отправить отчёт» открывает предзаполненный issue (`Debug::buildServiceIssueBody`). Полный список аргументов стратегии лежит в `logs/strategy.args.txt`, в логе остаётся одна строка со счётчиком и путём
 - `src/helper/` — `zapret_helper.exe`: UDP-сервер (порт 10000), принимает LIST:/CHECK:/CONFIG:/VALID:/ERR:/EXHAUSTED:/READY:, гонит проверку хостов через curl (насос трафика), состоянием мёртвых/valid/exhausted/unjudged владеет по вердиктам Lua и релеит его в unblock снапшотами на 9999
   - до первого `READY` (пульс zapret из Lua раз в 5 c) helper спит: воркеры не подняты, пробы и снапшоты не идут; после минуты тишины работа по хостам приостанавливается
 - Lua-скрипты: исходники в `resources/lua/`, в рантайме загружаются из `binaries/lua/` (копируются при сборке). Правки Lua применяются только после сборки!
@@ -57,5 +59,5 @@
 
 - Навигация по C++: не выдумывай API — сигнатуры, типы и связи проверяй по коду (`rg`/`grep`/`read`); сомнительные места подтверждай сборкой. В opencode2 LSP (clangd) не работает — диагностика только компилятором (`build-ai.ps1`) и `clang-tidy` (`tidy-ai.ps1`, модульные флаги он берёт из modmap в `compile_commands.json`, `.cppm` тоже проверяет).
 - Примеры извне: `gh_grep`, доки по либам: `context7`.
-- После правки: `pwsh -NoProfile -File build-ai.ps1`, потом `ctest --test-dir _build_ai --output-on-failure`. Реконфиг чистит `bin/` (так задумано в `src/engine/CMakeLists.txt`), так что сразу после него тестовые exe отсутствуют, а `ctest` показывает `Not Run` — до первой сборки. Lua правится в `resources/lua/` + сборка (копия в `binaries/lua/`).
+- После правки: `pwsh -NoProfile -File build-ai.ps1`, потом `ctest --test-dir _build_ai --output-on-failure`. Реконфиг чистит `bin/` (так задумано в `src/engine/CMakeLists.txt`), так что сразу после него тестовые exe отсутствуют, а `ctest` показывает `Not Run` — до первой сборки (досоздать недостающие выходы `bin/` поможет `build-ai.ps1`, см. `## Build`). Lua правится в `resources/lua/` + сборка (копия в `binaries/lua/`).
 - Не индексируй мусор: `_build_ai/`, `_build/`, `_deps/`, `bin/`.
