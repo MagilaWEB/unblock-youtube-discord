@@ -66,7 +66,38 @@ if ($needConfigure) {
 Write-Host 'Building...'
 if ($Target) {
     cmake --build _build_ai --target $Target
-} else {
-    cmake --build _build_ai
+    exit $LASTEXITCODE
 }
-exit $LASTEXITCODE
+
+cmake --build _build_ai
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+# Configuration wipes bin/ (see src/engine/CMakeLists.txt), but ninja still
+# considers the deleted binaries up to date and never relinks them. Restore
+# every bin output that is missing after the build, so bin/ never ends up
+# half empty (a missing zapret_helper.exe is a run that silently misbehaves).
+$ninjaFile = '_build_ai/build.ninja'
+if (Test-Path $ninjaFile) {
+    $root   = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+    $binDir = (Join-Path $root 'bin').Replace('/', '\').ToLowerInvariant()
+
+    $binOutputs = Select-String -Path $ninjaFile -Pattern '^build (\S+?\.(?:exe|dll)):' |
+        ForEach-Object { $_.Matches[0].Groups[1].Value.Replace('$:', ':').Replace('$ ', ' ') } |
+        Where-Object {
+            $full = $_.Replace('/', '\')
+            $full.Contains('\') -and $full.Substring(0, $full.LastIndexOf('\')).ToLowerInvariant() -eq $binDir
+        } |
+        Select-Object -Unique
+
+    $missing = $binOutputs | Where-Object { -not (Test-Path $_) }
+    if ($missing) {
+        Write-Host 'Restoring binaries removed from bin/ by configure (ninja thought them fresh):'
+        foreach ($output in $missing) {
+            Write-Host "  $output"
+            & ninja -C _build_ai $output
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        }
+    }
+}
+
+exit 0
