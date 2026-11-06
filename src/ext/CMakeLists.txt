@@ -21,7 +21,7 @@ target_sources(win32
       windows.cppm
 )
 
-target_link_libraries(win32 PUBLIC ub_std)
+target_link_libraries(win32 PUBLIC ub_std wevtapi)
 
 target_compile_options(win32 PRIVATE ${PROJECT_WARNING_FLAGS})
 

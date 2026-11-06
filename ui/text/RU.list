@@ -61,6 +61,8 @@ str_expired_wait_time_start_service=истекло время ожидания �
 str_success_start_service=служба [{}] запущена.
 str_success_stop_service=служба [{}] остановлена.
 str_warning_no_start_service=служба [{}] была запущена но неожиданно сменила свой статус.
+str_error_service_died_after_start=служба [{}] стартовала, но её процесс сразу завершился — смотрите диагностику сбоя.
+str_strategy_args_dump=Аргументы стратегии: {} — полный список в файле: {}
 
 // Warning/error url
 str_warning_url=⚠ Проблема доступа: {}
@@ -115,6 +117,7 @@ str_b_secondary_window_ok=✅ OK
 str_b_secondary_window_yes=✅ Да
 str_b_secondary_window_no=❌ Нет
 str_b_secondary_window_cancel=↩ Отмена
+str_button_send_report=📨 Отправить отчёт
 
 // Secondary Window start\stop service
 str_window_service_start_wait_description=▶ Запуск служб...
@@ -159,6 +162,9 @@ str_window_configuration_selection_error=❌ Автоподбор не удал�
 Решение:
 • Выберите конфиг вручную
 • Или воспользуйтесь VPN
+
+// Secondary Window service failure diagnostics
+str_window_service_report_title=🩺 Диагностика сбоя службы
 
 // Secondary Window nothing to bypass
 str_window_no_bypass_targets=❌ Нечего обходить
@@ -408,7 +414,9 @@ str_select_engine_description=Zapret2 — основной движок с ад�
 // Engine status line
 str_status_engine_running=▶ Работает: {}
 str_status_engine_running_rate=▶ Работает: {} · ↓ {} · ↑ {}
+str_status_engine_running_issue=⚠ Работает: {} · ↓ {} · ↑ {} — {}
 str_status_engine_stopped=⏹ Движок остановлен
+str_status_engine_stopped_reason=⏹ Движок остановлен: {} (нажмите для отчёта)
 
 // Setting strategy version
 str_select_version_strategy_title=📚 Версия списка стратегий
@@ -636,8 +644,10 @@ str_tour_step={} из {}
 // GitHub issue report templates
 str_issue_crash_title=🐞 Bug report: Unblock crash (ошибка: {})
 str_issue_report_title=🐞 Bug report: Unblock
+str_issue_service_title=🐞 Bug report: Unblock — сбой службы ({})
 str_issue_crash_header=### 🐞 Unblock crash
 str_issue_report_header=### 🐞 Unblock bug report
+str_issue_service_header=### 🐞 Unblock service failure
 str_issue_version=**Версия:** {}
 str_issue_log_summary=📄 Хвост лога (последние 150 строк)
 str_issue_describe_header=### 📝 Опишите, пожалуйста
@@ -647,3 +657,125 @@ str_issue_steps=**Как воспроизвести:**
 str_issue_expected=**Ожидаемое поведение:**
 str_issue_actual=**Фактическое поведение:**
 str_issue_full_log_hint=**Полный лог:** `logs/log.txt` — прикрепите файл перетаскиванием в issue.
+
+// Service failure diagnostics (issue #110)
+str_diag_verdict_unknown=Причину сбоя службы определить не удалось
+str_diag_verdict_probe_exit=Бинарник службы падает при запуске (код {})
+str_diag_verdict_probe_ok=Бинарник службы сам по себе стартует, значит дело в контексте службы
+str_diag_verdict_scm=Причина сбоя записана в журнал служб (Service Control Manager)
+str_diag_verdict_exit_code=Процесс службы упал с кодом {} — {}
+str_diag_summary_exit_code=Процесс службы стартовал и упал: код {} означает «{}». Проблема внутри самого процесса, а не в регистрации или правах.
+str_diag_verdict_antivirus=Файлы службы пропали или заблокированы — вероятно, сработал антивирус
+str_diag_verdict_registration=Служба зарегистрирована по старому пути
+str_diag_verdict_disabled=Служба отключена в системе
+str_diag_verdict_driver=Драйвер WinDivert недоступен
+str_diag_verdict_conflict=Конфликт с другой программой: {}
+str_diag_verdict_rights=Недостаточно прав для запуска службы
+str_diag_verdict_path=Путь установки мешает запуску службы
+str_diag_summary_failure=Служба {} не смогла запуститься. Этап: {}. Код Win32: {}. Код выхода процесса: {}. Время жизни: {} мс.
+str_diag_summary_unknown=Ни коды, ни журнал, ни проверки файлов не дали однозначной причины. Ниже — все собранные данные, приложите их к обращению.
+str_diag_summary_probe_exit=При прямом запуске бинарник службы завершился с ошибочным кодом {}.
+str_diag_summary_probe_output=Вывод процесса: {}
+str_diag_summary_probe_no_output=Процесс ничего не вывел.
+str_diag_summary_probe_ok=При прямом запуске бинарник службы работает. Значит дело не в самом файле, а в условиях запуска службы: права, антивирус, драйвер или конфликтующая программа.
+str_diag_summary_scm=Диспетчер служб записал причину сбоя в журнал System. Текст записей приведён в списке проверок и в сырых данных ниже.
+str_diag_summary_antivirus=Файлы программы отсутствуют или помечены как заблокированные. Это типичный след антивируса: файл унесли в карантин или запретили запуск.
+str_diag_summary_registration=Команда запуска, записанная в системе, не совпадает с текущим каталогом программы. Служба запускает бинарник со старого места: {}
+str_diag_summary_disabled=Служба отключена (тип запуска SERVICE_DISABLED), поэтому стартовать она не может.
+str_diag_summary_driver=Служба драйвера WinDivert не работает. Без него zapret не может фильтровать трафик.
+str_diag_summary_conflict=Найдены сторонние процессы, которые занимают тот же драйвер или порты: {}
+str_diag_summary_rights=Приложение запущено без прав администратора, поэтому управлять службами оно не может.
+str_diag_summary_path=Путь установки содержит проблему: {}
+str_diag_stage_create=создание службы
+str_diag_stage_open=открытие службы
+str_diag_stage_start=запуск службы
+str_diag_stage_wait_running=ожидание запуска
+str_diag_stage_unexpected_stop=служба стартовала и сразу завершилась
+str_diag_code_unknown=код неизвестен
+str_diag_code_dll_not_found=не найдена зависимая библиотека (DLL)
+str_diag_code_dll_init_failed=сбой инициализации библиотеки (DLL)
+str_diag_code_access_violation=нарушение доступа к памяти
+str_diag_code_stack_overflow=переполнение стека
+str_diag_code_service_specific=ошибка, специфичная для службы (смотри специфичный код выхода)
+str_diag_code_service_timeout=служба не ответила на запрос запуска вовремя
+str_diag_code_service_disabled=служба отключена в системе
+str_diag_code_process_exited=процесс службы неожиданно завершился
+str_diag_code_logon_failed=ошибка входа в учётную запись службы
+str_diag_code_stop_pending=служба отменила приём управляющего сообщения
+str_diag_code_dependency_missing=отсутствует служба, от которой зависит запуск
+str_diag_code_bad_account=служба не выполнена в нужной учётной записи
+str_diag_code_critical_startup=критическая ошибка при запуске
+str_diag_code_access_denied=отказано в доступе
+str_diag_code_file_not_found=файл не найден
+str_diag_check_exit_code=Код выхода процесса службы: {} — {}
+str_diag_check_exit_code_ok=Код выхода процесса службы: не задан
+str_diag_check_specific_code=Специфичный для службы код выхода: {} — {}
+str_diag_check_win32_error=Код ошибки Win32: {} — {}
+str_diag_check_lifetime=Служба прожила после старта: {} мс
+str_diag_check_failed_services=В этой попытке упали службы: {}
+str_diag_check_scm_found=Журнал служб (Service Control Manager): найдено записей {}
+str_diag_check_scm_empty=Журнал служб (Service Control Manager): записей об ошибках нет
+str_diag_check_event=Запись {} — {}
+str_diag_check_defender_found=Защитник Windows: найдено записей {}
+str_diag_check_defender_blocked=В записях Защитника упоминается каталог программы — файл заблокирован антивирусом
+str_diag_check_defender_empty=Защитник Windows: записей о блокировке нет
+str_diag_check_binary_exists=Файл службы на месте: {}
+str_diag_check_binary_missing=Файл службы не найден: {}
+str_diag_check_files_ok=Все файлы, на которые ссылается команда запуска, на месте
+str_diag_check_files_missing=Не найдены файлы, на которые ссылается команда запуска: {}
+str_diag_check_blocked=Файл помечен как заблокированный (Zone.Identifier): {}
+str_diag_check_windivert_ok=Файлы WinDivert.dll и WinDivert64.sys на месте
+str_diag_check_windivert_missing=Не найден файл WinDivert: {}
+str_diag_check_log_dir_ok=Каталог журналов доступен для записи
+str_diag_check_log_dir_fail=Каталог журналов недоступен для записи: {}
+str_diag_check_registration_ok=Путь регистрации службы совпадает с каталогом программы
+str_diag_check_registration_mismatch=Служба зарегистрирована по другому пути: {}
+str_diag_check_service_disabled=Тип запуска службы — «отключена»
+str_diag_check_driver_ok=Драйвер WinDivert зарегистрирован и запущен
+str_diag_check_driver_stopped=Драйвер WinDivert зарегистрирован, но не запущен
+str_diag_check_driver_absent=Драйвер WinDivert не зарегистрирован в системе
+str_diag_check_conflicts=Найдены конфликтующие процессы: {}
+str_diag_check_no_conflicts=Конфликтующих процессов не найдено
+str_diag_check_elevated_ok=Приложение запущено с правами администратора
+str_diag_check_elevated_fail=Приложение запущено без прав администратора
+str_diag_check_path_ok=Путь установки без проблемных символов и каталогов
+str_diag_check_path_issue=Путь установки: {}
+str_diag_check_probe_ok=Проба: бинарник запустился и продолжает работать
+str_diag_check_probe_zero=Проба: бинарник запустился и сразу завершился с кодом 0
+str_diag_check_probe_exit=Проба: бинарник завершился с кодом {}
+str_diag_check_probe_not_indicative=Проба не показательна: бинарник службы не запускается вне диспетчера служб (код 1063)
+str_diag_check_probe_failed=Проба: не удалось запустить бинарник службы
+str_diag_check_probe_skipped=Проба не запускалась
+str_diag_check_probe_output=Вывод пробы: {}
+str_diag_path_too_long=слишком длинный путь (больше 240 символов)
+str_diag_path_non_ascii=не-ASCII символы (кириллица) в пути
+str_diag_path_onedrive=каталог внутри OneDrive
+str_diag_path_unc=сетевой путь (UNC)
+str_diag_section_checks=Проверки:
+str_diag_section_recommendations=Что делать:
+str_diag_section_raw=Сырые данные:
+str_diag_rec_antivirus_1=Откройте «Безопасность Windows» → «Защита от вирусов и угроз» → «Параметры защиты от вирусов и угроз» → «Исключения» → «Добавить или удалить исключения».
+str_diag_rec_antivirus_2=Добавьте в исключения папку программы: {}
+str_diag_rec_antivirus_3=Откройте «Журнал защиты» в том же разделе и восстановите файлы программы из карантина, если они там есть.
+str_diag_rec_antivirus_4=Если антивирус сторонний, добавьте ту же папку в его исключения и восстановите файлы из его карантина.
+str_diag_rec_antivirus_5=Перезапустите приложение и нажмите «запустить запрет». Если файлы снова исчезли, приложите этот отчёт к обращению.
+str_diag_rec_scm_1=Смотрите текст записей журнала выше: служба сама называет причину остановки.
+str_diag_rec_scm_2=Если в записи упомянут антивирус, ошибка доступа или отсутствующая зависимость, выполните шаги соответствующего блока ниже.
+str_diag_rec_registration_1=Пересоздайте службы: удалите интеграцию и нажмите «запустить запрет» заново, службы пропишутся по текущему пути.
+str_diag_rec_registration_2=При необходимости удалите старые службы вручную: sc delete <имя службы>.
+str_diag_rec_disabled_1=Включите службу: Панель управления → Администрирование → Службы (services.msc) → найдите службу → «Тип запуска» → «Автоматически» → «Запустить».
+str_diag_rec_driver_1=Перезапустите «запустить запрет»: драйвер WinDivert ставится вместе с zapret при первом запуске.
+str_diag_rec_driver_2=Проверьте, что драйвер не блокируют антивирус и защита от подделки драйверов, и разрешите его загрузку.
+str_diag_rec_conflict_1=Закройте или удалите конкурирующие программы: {}
+str_diag_rec_conflict_2=После этого нажмите «запустить запрет» заново.
+str_diag_rec_rights_1=Закройте приложение и запустите его от имени администратора (правый клик по ярлыку → «Запуск от имени администратора»).
+str_diag_rec_exit_1=Код аварии указывает на проблему внутри процесса службы: повреждённая или отсутствующая библиотека, нарушение доступа к памяти.
+str_diag_rec_exit_2=Переустановите файлы программы и проверьте, что антивирус их не удаляет, затем нажмите «запустить запрет» заново.
+str_diag_rec_path_1=Перенесите папку программы в простой локальный путь без кириллицы и OneDrive, например C:\Unblock.
+str_diag_rec_path_2=Запустите приложение из нового места и нажмите «запустить запрет».
+str_diag_rec_probe_1=Смотрите вывод процесса выше: это прямая причина падения.
+str_diag_rec_probe_2=Переустановите файлы программы (запустите обновление или распакуйте дистрибутив заново) и проверьте, что антивирус их не удаляет.
+str_diag_rec_probe_ok_1=Бинарник рабочий, значит проверьте права, антивирус и конфликтующие программы.
+str_diag_rec_probe_ok_2=Если после этого служба всё равно падает, приложите этот отчёт к обращению.
+str_diag_rec_unknown_1=Приложите текст этого отчёта к обращению: в нём есть коды, пути и выдержки журнала.
+str_diag_rec_unknown_2=Проверьте полный лог приложения: logs/log.txt.

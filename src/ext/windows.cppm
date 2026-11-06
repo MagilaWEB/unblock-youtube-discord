@@ -18,6 +18,7 @@ module;
 #include <shellscalingapi.h>
 #include <tlhelp32.h>
 #include <wincrypt.h>
+#include <winevt.h>
 #include <winreg.h>
 #include <winsvc.h>
 
@@ -99,6 +100,7 @@ export using ::CreateMutexW;
 export using ::CreateProcessW;
 export using ::ExitProcess;
 export using ::GetExitCodeProcess;
+export using ::GetFileAttributesW;
 export using ::GetLastError;
 export using ::GetModuleFileNameA;
 export using ::GetModuleFileNameW;
@@ -119,9 +121,22 @@ export using ::EnumServicesStatusA;
 export using ::QueryServiceConfigA;
 export using ::QueryServiceStatusEx;
 
+// --- Event log (winevt) ------------------------------------------------------
+export using ::EvtClose;
+export using ::EvtFormatMessage;
+export using ::EvtNext;
+export using ::EvtQuery;
+export using ::EvtRender;
+
 export using ::CreateToolhelp32Snapshot;
 export using ::Process32FirstW;
 export using ::Process32NextW;
+
+// --- Anonymous pipes and file I/O --------------------------------------------
+export using ::CreatePipe;
+export using ::PeekNamedPipe;
+export using ::ReadFile;
+export using ::SetHandleInformation;
 
 // --- Security ----------------------------------------------------------------
 export using ::AllocateAndInitializeSid;
@@ -192,10 +207,30 @@ export using ::SERVICE_STATUS_PROCESS;
 export using ::QUERY_SERVICE_CONFIGA;
 export using ::ENUM_SERVICE_STATUSA;
 
+export using ::EVT_HANDLE;
+export using ::EVT_VARIANT;
+export using ::EVT_SYSTEM_PROPERTY_ID;
+export using ::EVT_RENDER_FLAGS;
+export using ::EVT_FORMAT_MESSAGE_FLAGS;
+export using ::EVT_QUERY_FLAGS;
+
+export using ::SECURITY_ATTRIBUTES;
+
 // Enumerators exported with a using-declaration (they are not macros).
 export using ::MDT_EFFECTIVE_DPI;
 export using ::SC_STATUS_PROCESS_INFO;
 export using ::DWMWA_USE_IMMERSIVE_DARK_MODE;
+
+export using ::EvtRenderEventXml;
+export using ::EvtFormatMessageEvent;
+export using ::EvtQueryChannelPath;
+export using ::EvtQueryReverseDirection;
+export using ::EvtQueryTolerateQueryErrors;
+export using ::EvtVarTypeString;
+export using ::EvtVarTypeUInt16;
+export using ::EvtVarTypeFileTime;
+export using ::EvtVarTypeUInt32;
+export using ::EvtVarTypeNull;
 
 // --- Networking (winsock) ----------------------------------------------------
 export using ::WSADATA;
@@ -346,6 +381,8 @@ export inline constexpr int LOCALE_NAME_MAX_LENGTH = 85;
 
 #undef STD_OUTPUT_HANDLE
 export inline constexpr DWORD STD_OUTPUT_HANDLE = static_cast<DWORD>(-11);
+#undef STD_INPUT_HANDLE
+export inline constexpr DWORD STD_INPUT_HANDLE = static_cast<DWORD>(-10);
 #undef ATTACH_PARENT_PROCESS
 export inline constexpr DWORD ATTACH_PARENT_PROCESS = static_cast<DWORD>(-1);
 #undef INFINITE
@@ -399,10 +436,18 @@ export inline constexpr DWORD FILE_ATTRIBUTE_NORMAL = 0x00'00'00'80;
 export inline constexpr DWORD GENERIC_READ = 0x80'00'00'00L;
 #undef GENERIC_WRITE
 export inline constexpr DWORD GENERIC_WRITE = 0x40'00'00'00L;
+#undef FILE_SHARE_READ
+export inline constexpr DWORD FILE_SHARE_READ = 0x00'00'00'01;
+#undef FILE_SHARE_WRITE
+export inline constexpr DWORD FILE_SHARE_WRITE = 0x00'00'00'02;
 #undef WAIT_TIMEOUT
 export inline constexpr DWORD WAIT_TIMEOUT = 258L;
 #undef WAIT_OBJECT_0
 export inline constexpr DWORD WAIT_OBJECT_0 = 0;
+#undef STARTF_USESTDHANDLES
+export inline constexpr DWORD STARTF_USESTDHANDLES = 0x00'00'01'00;
+#undef HANDLE_FLAG_INHERIT
+export inline constexpr DWORD HANDLE_FLAG_INHERIT = 0x00'00'00'01;
 #undef TH32CS_SNAPPROCESS
 export inline constexpr DWORD TH32CS_SNAPPROCESS = 0x00'00'00'02;
 #undef PROCESS_QUERY_LIMITED_INFORMATION
@@ -422,6 +467,12 @@ export inline constexpr DWORD ERROR_LOCK_VIOLATION = 33L;
 export inline constexpr DWORD ERROR_INSUFFICIENT_BUFFER = 122L;
 #undef ERROR_MORE_DATA
 export inline constexpr DWORD ERROR_MORE_DATA = 234L;
+#undef ERROR_BROKEN_PIPE
+export inline constexpr DWORD ERROR_BROKEN_PIPE = 109L;
+#undef ERROR_TIMEOUT
+export inline constexpr DWORD ERROR_TIMEOUT = 1'460L;
+#undef ERROR_NO_MORE_ITEMS
+export inline constexpr DWORD ERROR_NO_MORE_ITEMS = 259L;
 
 #undef EXCEPTION_ACCESS_VIOLATION
 export inline constexpr DWORD EXCEPTION_ACCESS_VIOLATION = 0xC0'00'00'05L;
@@ -464,6 +515,8 @@ export inline constexpr DWORD SERVICE_WIN32_OWN_PROCESS = 0x00'00'00'10;
 export inline constexpr DWORD SERVICE_WIN32 = 0x00'00'00'30;
 #undef SERVICE_STATE_ALL
 export inline constexpr DWORD SERVICE_STATE_ALL = 0x00'00'00'03;
+#undef SERVICE_DISABLED
+export inline constexpr DWORD SERVICE_DISABLED = 0x00'00'00'04;
 
 #undef SECURITY_BUILTIN_DOMAIN_RID
 export inline constexpr DWORD SECURITY_BUILTIN_DOMAIN_RID = 0x00'00'00'20L;
@@ -519,6 +572,8 @@ export inline constexpr int IF_TYPE_TUNNEL = 131;
 export inline constexpr DWORD NO_ERROR = 0;
 #undef ERROR_SUCCESS
 export inline constexpr DWORD ERROR_SUCCESS = 0;
+#undef INVALID_FILE_ATTRIBUTES
+export inline constexpr DWORD INVALID_FILE_ATTRIBUTES = 0xFF'FF'FF'FFL;
 
 #undef RRF_RT_REG_DWORD
 export inline constexpr DWORD RRF_RT_REG_DWORD = 0x00'00'00'10;

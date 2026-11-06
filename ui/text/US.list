@@ -61,6 +61,8 @@ str_expired_wait_time_start_service=timeout waiting for service [{}] to start, p
 str_success_start_service=service [{}] started.
 str_success_stop_service=service [{}] stopped.
 str_warning_no_start_service=service [{}] was started but unexpectedly changed its status.
+str_error_service_died_after_start=service [{}] started but its process exited immediately, see the failure diagnostics.
+str_strategy_args_dump=Strategy arguments: {} — full list in file: {}
 
 // Warning/error url
 str_warning_url=access problem: {}
@@ -115,6 +117,7 @@ str_b_secondary_window_ok=✅ OK
 str_b_secondary_window_yes=✅ Yes
 str_b_secondary_window_no=❌ No
 str_b_secondary_window_cancel=↩ Cancel
+str_button_send_report=📨 Send report
 
 // Secondary Window start\stop service
 str_window_service_start_wait_description=▶ Starting services...
@@ -159,6 +162,9 @@ Possible reasons:
 Solutions:
 • Choose config manually
 • Or use a VPN
+
+// Secondary Window service failure diagnostics
+str_window_service_report_title=🩺 Service failure diagnostics
 
 // Secondary Window nothing to bypass
 str_window_no_bypass_targets=❌ Nothing to bypass
@@ -408,7 +414,9 @@ str_select_engine_description=Zapret2 is the main engine with adaptive rotation 
 // Engine status line
 str_status_engine_running=▶ Running: {}
 str_status_engine_running_rate=▶ Running: {} · ↓ {} · ↑ {}
+str_status_engine_running_issue=⚠ Running: {} · ↓ {} · ↑ {} — {}
 str_status_engine_stopped=⏹ Engine stopped
+str_status_engine_stopped_reason=⏹ Engine stopped: {} (click for the report)
 
 // Setting strategy version
 str_select_version_strategy_title=📚 Strategy list version
@@ -636,8 +644,10 @@ str_tour_step={} of {}
 // GitHub issue report templates
 str_issue_crash_title=🐞 Bug report: Unblock crash (error: {})
 str_issue_report_title=🐞 Bug report: Unblock
+str_issue_service_title=🐞 Bug report: Unblock — service failure ({})
 str_issue_crash_header=### 🐞 Unblock crash
 str_issue_report_header=### 🐞 Unblock bug report
+str_issue_service_header=### 🐞 Unblock service failure
 str_issue_version=**Version:** {}
 str_issue_log_summary=📄 Log tail (last 150 lines)
 str_issue_describe_header=### 📝 Please describe
@@ -647,3 +657,125 @@ str_issue_steps=**Steps to reproduce:**
 str_issue_expected=**Expected behavior:**
 str_issue_actual=**Actual behavior:**
 str_issue_full_log_hint=**Full log:** `logs/log.txt` — attach the file by dragging it into the issue.
+
+// Service failure diagnostics (issue #110)
+str_diag_verdict_unknown=Could not determine the cause of the service failure
+str_diag_verdict_probe_exit=The service binary crashes on startup (exit code {})
+str_diag_verdict_probe_ok=The service binary starts on its own, so the problem is in the service context
+str_diag_verdict_scm=The failure cause is written to the Service Control Manager log
+str_diag_verdict_exit_code=The service process crashed with code {} — {}
+str_diag_summary_exit_code=The service process started and crashed: code {} means "{}". The problem is inside the process itself, not in the registration or the rights.
+str_diag_verdict_antivirus=Service files are missing or blocked — an antivirus is likely involved
+str_diag_verdict_registration=The service is registered under an old path
+str_diag_verdict_disabled=The service is disabled
+str_diag_verdict_driver=The WinDivert driver is unavailable
+str_diag_verdict_conflict=Conflict with another program: {}
+str_diag_verdict_rights=Not enough rights to start the service
+str_diag_verdict_path=The installation path blocks the service
+str_diag_summary_failure=Service {} failed to start. Stage: {}. Win32 code: {}. Process exit code: {}. Lifetime: {} ms.
+str_diag_summary_unknown=Neither the codes, nor the event log, nor the file checks produced a definite cause. All collected data is below, attach it to the report.
+str_diag_summary_probe_exit=When started directly the service binary exited with error code {}.
+str_diag_summary_probe_output=Process output: {}
+str_diag_summary_probe_no_output=The process produced no output.
+str_diag_summary_probe_ok=When started directly the service binary works. The problem is therefore in the service context: rights, antivirus, driver or a conflicting program.
+str_diag_summary_scm=The service manager logged the cause to the System log. The entries are listed in the checks and in the raw data below.
+str_diag_summary_antivirus=The program files are missing or marked as blocked. That is what an antivirus leaves behind: the file was quarantined or its start was blocked.
+str_diag_summary_registration=The command line stored in the system does not match the current program folder. The service starts the binary from the old place: {}
+str_diag_summary_disabled=The service is disabled (SERVICE_DISABLED start type), so it cannot start.
+str_diag_summary_driver=The WinDivert driver service is not running. Without it zapret cannot filter traffic.
+str_diag_summary_conflict=Third party processes were found that hold the same driver or ports: {}
+str_diag_summary_rights=The application runs without administrator rights, so it cannot manage services.
+str_diag_summary_path=The installation path has a problem: {}
+str_diag_stage_create=creating the service
+str_diag_stage_open=opening the service
+str_diag_stage_start=starting the service
+str_diag_stage_wait_running=waiting for the start
+str_diag_stage_unexpected_stop=the service started and immediately exited
+str_diag_code_unknown=unknown code
+str_diag_code_dll_not_found=dependent library (DLL) not found
+str_diag_code_dll_init_failed=library (DLL) initialization failed
+str_diag_code_access_violation=memory access violation
+str_diag_code_stack_overflow=stack overflow
+str_diag_code_service_specific=service specific error (see the specific exit code)
+str_diag_code_service_timeout=the service did not respond to the start request in time
+str_diag_code_service_disabled=the service is disabled
+str_diag_code_process_exited=the service process terminated unexpectedly
+str_diag_code_logon_failed=the service account logon failed
+str_diag_code_stop_pending=the service refused a control message
+str_diag_code_dependency_missing=a service it depends on is missing
+str_diag_code_bad_account=the service is not running in the required account
+str_diag_code_critical_startup=critical error on startup
+str_diag_code_access_denied=access denied
+str_diag_code_file_not_found=file not found
+str_diag_check_exit_code=Service process exit code: {} — {}
+str_diag_check_exit_code_ok=Service process exit code: not set
+str_diag_check_specific_code=Service specific exit code: {} — {}
+str_diag_check_win32_error=Win32 error code: {} — {}
+str_diag_check_lifetime=The service lived for {} ms after the start
+str_diag_check_failed_services=Services that failed in this attempt: {}
+str_diag_check_scm_found=Service Control Manager log: {} entries found
+str_diag_check_scm_empty=Service Control Manager log: no error entries
+str_diag_check_event=Entry {} — {}
+str_diag_check_defender_found=Windows Defender: {} entries found
+str_diag_check_defender_blocked=A Defender entry mentions the program folder, the file was blocked by the antivirus
+str_diag_check_defender_empty=Windows Defender: no blocking entries
+str_diag_check_binary_exists=Service file is present: {}
+str_diag_check_binary_missing=Service file not found: {}
+str_diag_check_files_ok=Every file referenced by the command line is present
+str_diag_check_files_missing=Files referenced by the command line are missing: {}
+str_diag_check_blocked=File is marked as blocked (Zone.Identifier): {}
+str_diag_check_windivert_ok=WinDivert.dll and WinDivert64.sys are present
+str_diag_check_windivert_missing=WinDivert file not found: {}
+str_diag_check_log_dir_ok=The log directory is writable
+str_diag_check_log_dir_fail=The log directory is not writable: {}
+str_diag_check_registration_ok=The registered path matches the program folder
+str_diag_check_registration_mismatch=The service is registered under another path: {}
+str_diag_check_service_disabled=The start type of the service is disabled
+str_diag_check_driver_ok=The WinDivert driver is registered and running
+str_diag_check_driver_stopped=The WinDivert driver is registered but not running
+str_diag_check_driver_absent=The WinDivert driver is not registered
+str_diag_check_conflicts=Conflicting processes found: {}
+str_diag_check_no_conflicts=No conflicting processes found
+str_diag_check_elevated_ok=The application runs with administrator rights
+str_diag_check_elevated_fail=The application runs without administrator rights
+str_diag_check_path_ok=The installation path has no problematic characters or folders
+str_diag_check_path_issue=Installation path: {}
+str_diag_check_probe_ok=Probe: the binary started and keeps running
+str_diag_check_probe_zero=Probe: the binary started and immediately exited with code 0
+str_diag_check_probe_exit=Probe: the binary exited with code {}
+str_diag_check_probe_not_indicative=Probe not indicative: the service binary does not run outside the Service Control Manager (code 1063)
+str_diag_check_probe_failed=Probe: could not start the service binary
+str_diag_check_probe_skipped=Probe was not run
+str_diag_check_probe_output=Probe output: {}
+str_diag_path_too_long=path too long (over 240 characters)
+str_diag_path_non_ascii=non-ASCII characters in the path
+str_diag_path_onedrive=folder inside OneDrive
+str_diag_path_unc=network path (UNC)
+str_diag_section_checks=Checks:
+str_diag_section_recommendations=What to do:
+str_diag_section_raw=Raw data:
+str_diag_rec_antivirus_1=Open Windows Security → Virus and threat protection → Virus and threat protection settings → Exclusions → Add or remove exclusions.
+str_diag_rec_antivirus_2=Add the program folder to the exclusions: {}
+str_diag_rec_antivirus_3=Open Protection history in the same section and restore the program files from quarantine if they are there.
+str_diag_rec_antivirus_4=If you use a third party antivirus, add the same folder to its exclusions and restore the files from its quarantine.
+str_diag_rec_antivirus_5=Restart the application and press "start unblock". If the files disappear again, attach this report to an issue.
+str_diag_rec_scm_1=Read the log entries above: the service names the stop reason itself.
+str_diag_rec_scm_2=If an entry mentions an antivirus, an access error or a missing dependency, follow the matching block below.
+str_diag_rec_registration_1=Recreate the services: remove the integration and press "start unblock" again, the services will be registered at the current path.
+str_diag_rec_registration_2=If needed, delete the old services manually: sc delete <service name>.
+str_diag_rec_disabled_1=Enable the service: Control Panel → Administrative Tools → Services (services.msc) → find the service → Startup type → Automatic → Start.
+str_diag_rec_driver_1=Press "start unblock" again: the WinDivert driver is installed together with zapret on the first run.
+str_diag_rec_driver_2=Make sure the antivirus and the driver signature enforcement do not block the driver, and allow it to load.
+str_diag_rec_conflict_1=Close or remove the conflicting programs: {}
+str_diag_rec_conflict_2=Then press "start unblock" again.
+str_diag_rec_rights_1=Close the application and run it as administrator (right click the shortcut → Run as administrator).
+str_diag_rec_exit_1=The crash code points to a problem inside the service process: a damaged or missing library, a memory access violation.
+str_diag_rec_exit_2=Reinstall the program files, make sure the antivirus does not delete them, then press "start unblock" again.
+str_diag_rec_path_1=Move the program folder to a simple local path without non-ASCII characters and OneDrive, for example C:\Unblock.
+str_diag_rec_path_2=Run the application from the new location and press "start unblock".
+str_diag_rec_probe_1=Read the process output above: it is the direct cause of the crash.
+str_diag_rec_probe_2=Reinstall the program files (run the updater or unpack the distribution again) and make sure the antivirus does not delete them.
+str_diag_rec_probe_ok_1=The binary works, so check rights, antivirus and conflicting programs.
+str_diag_rec_probe_ok_2=If the service still dies after that, attach this report to an issue.
+str_diag_rec_unknown_1=Attach this report to your request: it contains the codes, the paths and the log excerpts.
+str_diag_rec_unknown_2=Check the full application log: logs/log.txt.

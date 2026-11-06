@@ -18,6 +18,11 @@ static std::string winErrorMessage(DWORD err)
 	return std::system_category().message(static_cast<int>(err));
 }
 
+bool ServiceFailure::valid() const
+{
+	return !service_name.empty();
+}
+
 Service::~Service()
 {
 	close();
@@ -57,6 +62,45 @@ const Service::Config& Service::getConfig()
 	CRITICAL_SECTION_RAII(_lock);
 	update();
 	return _config;
+}
+
+const ServiceFailure& Service::getLastFailure() const
+{
+	return _last_failure;
+}
+
+void Service::clearLastFailure()
+{
+	_last_failure = {};
+}
+
+std::vector<std::string> Service::getArgs()
+{
+	CRITICAL_SECTION_RAII(_lock);
+	return _args;
+}
+
+std::filesystem::path Service::getFilePath() const
+{
+	return Core::get().binariesPath() / _file_name;
+}
+
+void Service::_recordFailure(ServiceFailure::Stage stage, u32 win32_error)
+{
+	_last_failure					 = {};
+	_last_failure.service_name		 = _name;
+	_last_failure.binary_path		 = getFilePath().string();
+	_last_failure.stage				 = stage;
+	_last_failure.win32_error		 = win32_error;
+	_last_failure.created			 = _was_created;
+	_last_failure.start_tick_ms		 = _start_tick_ms;
+	_last_failure.state				 = static_cast<u32>(_config.sc_status.dwCurrentState);
+	_last_failure.checkpoint		 = static_cast<u32>(_config.sc_status.dwCheckPoint);
+	_last_failure.win32_exit_code	 = static_cast<u32>(_config.sc_status.dwWin32ExitCode);
+	_last_failure.specific_exit_code = static_cast<u32>(_config.sc_status.dwServiceSpecificExitCode);
+
+	if (_start_tick_ms != 0)
+		_last_failure.lived_ms = GetTickCount64() - _start_tick_ms;
 }
 
 bool Service::isRun()
@@ -118,6 +162,8 @@ void Service::open()
 		if (i < c_max_open_retries - 1)
 			std::this_thread::sleep_for(std::chrono::milliseconds(c_open_retry_ms));
 	}
+
+	_recordFailure(ServiceFailure::Stage::Open, GetLastError());
 }
 
 void Service::create()
@@ -170,6 +216,7 @@ void Service::create()
 		if (h)
 		{
 			_sc.reset(h);
+			_was_created = true;
 
 			SERVICE_DESCRIPTIONW sd{};
 			sd.lpDescription = wdesc.empty() ? nullptr : const_cast<LPWSTR>(wdesc.c_str());
@@ -191,6 +238,7 @@ void Service::create()
 			{
 				DWORD		err		= GetLastError();
 				std::string message = winErrorMessage(err);
+				_recordFailure(ServiceFailure::Stage::Create, err);
 				InputConsole::textError(Localization::Str{ "str_error_create_service" }(), _name, message.c_str());
 				_sc.reset();
 				return;
@@ -210,6 +258,7 @@ void Service::create()
 		if (_time_limit.getElapsedSec() > 5.0F)
 		{
 			std::string message = winErrorMessage(err);
+			_recordFailure(ServiceFailure::Stage::Create, err);
 			InputConsole::textError(Localization::Str{ "str_error_create_service" }(), _name, message.c_str());
 			return;
 		}
@@ -228,6 +277,7 @@ void Service::start()
 
 		if (!_sc)
 		{
+			_recordFailure(ServiceFailure::Stage::Open, GetLastError());
 			InputConsole::textError(Localization::Str{ "str_error_stopping_service" }(), _name);
 			return;
 		}
@@ -249,37 +299,69 @@ void Service::start()
 		argv.push_back(arg.c_str());
 
 	_time_limit.start();
+	DWORD start_error = 0;
 	while (true)
 	{
 		if (StartService(_sc.get(), static_cast<DWORD>(argv.size()), argv.data()))
 			break;
 
+		start_error = GetLastError();
+
 		if (_time_limit.getElapsedSec() > 5.0F)
 		{
+			_recordFailure(ServiceFailure::Stage::Start, start_error);
 			InputConsole::textError(Localization::Str{ "str_error_wait_time_start_service" }(), _name);
 			return;
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(c_start_retry_ms));
 	}
 
+	// The process is alive from here on: this tick anchors lived_ms and the
+	// event log window the diagnostics look at.
+	_start_tick_ms = GetTickCount64();
 	update();
 
-	auto on_timeout = [this]
+	bool unexpected_stop = false;
+	bool timed_out		 = false;
+	switch (_waitStarted())
 	{
+	case StartOutcome::Stopped:
+		// The process died or was stopped before it reported running. That is
+		// not a timeout and must not be reported as a status change: the SCM
+		// exit codes recorded in the snapshot are the actual evidence.
+		unexpected_stop = true;
+		_recordFailure(ServiceFailure::Stage::UnexpectedStop, 0);
+		InputConsole::textError(Localization::Str{ "str_error_service_died_after_start" }(), _name);
+		break;
+	case StartOutcome::TimedOut:
+		timed_out = true;
+		_recordFailure(ServiceFailure::Stage::WaitRunning, 0);
 		InputConsole::textError(Localization::Str{ "str_expired_wait_time_start_service" }(), _name);
 		stop();
-	};
-
-	_waitStatusService(SERVICE_START_PENDING, SERVICE_RUNNING, on_timeout);
-	_waitStatusService(SERVICE_CONTINUE_PENDING, SERVICE_RUNNING, on_timeout);
+		break;
+	default:
+		break;
+	}
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(30));
 	update();
 
+	if (unexpected_stop)
+		return;
+
 	if (_config.sc_status.dwCurrentState == SERVICE_RUNNING)
+	{
+		clearLastFailure();
 		InputConsole::textOk(Localization::Str{ "str_success_start_service" }(), _name);
+	}
 	else
+	{
+		// The timeout snapshot (pending state + checkpoint) is the useful one,
+		// stop() has just overwritten the status.
+		if (!timed_out)
+			_recordFailure(ServiceFailure::Stage::WaitRunning, 0);
 		InputConsole::textWarning(Localization::Str{ "str_warning_no_start_service" }(), _name);
+	}
 }
 
 void Service::update()
@@ -383,6 +465,7 @@ void Service::remove()
 
 	DeleteService(_sc.get());	 // ignore error, service might already be deleted
 	_sc.reset();
+	_was_created = false;
 }
 
 void Service::close()
@@ -390,7 +473,8 @@ void Service::close()
 	CRITICAL_SECTION_RAII(_lock);
 	_sc.reset();
 	_sc_manager.reset();
-	_config = {};
+	_config		 = {};
+	_was_created = false;
 	_refreshCachedRunning();
 }
 
@@ -462,4 +546,42 @@ void Service::_waitStatusService(DWORD check_state, DWORD check_stat_end, std::f
 			break;
 		}
 	}
+}
+
+Service::StartOutcome Service::_waitStarted()
+{
+	_dw_start_time = GetTickCount64();
+
+	while (_sc)
+	{
+		switch (_config.sc_status.dwCurrentState)
+		{
+		case SERVICE_RUNNING:
+			return StartOutcome::Running;
+
+		// The process left the pending state by dying (or being stopped). The
+		// old code treated any exit from START_PENDING as success and left the
+		// caller to report a vague "changed its status".
+		case SERVICE_STOPPED:
+		case SERVICE_STOP_PENDING:
+			return StartOutcome::Stopped;
+
+		case SERVICE_START_PENDING:
+		case SERVICE_CONTINUE_PENDING:
+			break;
+
+		default:
+			return StartOutcome::Unknown;
+		}
+
+		_dw_wait_time = std::clamp<DWORD>(_config.sc_status.dwWaitHint / 10, 1'000, 10'000);
+		std::this_thread::sleep_for(std::chrono::milliseconds(_dw_wait_time));
+
+		update();
+
+		if ((GetTickCount64() - _dw_start_time) > c_dw_timeout_ms)
+			return StartOutcome::TimedOut;
+	}
+
+	return StartOutcome::Stopped;
 }
