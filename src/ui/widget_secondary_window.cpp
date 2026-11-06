@@ -16,6 +16,7 @@ import ui.widget_base_element;
 std::vector<SecondaryWindow*> SecondaryWindow::_all_window;
 SecondaryWindow::MapEvent	  SecondaryWindow::_event_yes_no;	 // NOLINT - global event registry
 SecondaryWindow::MapEvent	  SecondaryWindow::_event_cancel;	 // NOLINT - global event registry
+SecondaryWindow::MapEvent	  SecondaryWindow::_event_report;	 // NOLINT - global event registry
 #pragma clang diagnostic pop
 
 SecondaryWindow::SecondaryWindow(std::string_view name) : BaseElement(name)
@@ -70,6 +71,7 @@ void SecondaryWindow::create(Localization::Str title, Localization::Str descript
 	_event_click[_name].clear();
 	_event_yes_no[_name].clear();
 	_event_cancel[_name].clear();
+	_event_report[_name].clear();
 	_created = true;
 }
 
@@ -149,6 +151,30 @@ void SecondaryWindow::_buildWait()
 	_elements.addClass("vertically");
 }
 
+void SecondaryWindow::_buildReport()
+{
+	ui::dom::Element send;
+	_addButton(Localization::Str{ "str_button_send_report" }(), send);
+	send.on(
+		ui::dom::Event::Click,
+		[](std::string element_name, js::Value) -> bool { return eventCPP({ std::move(element_name) }, _event_report); },
+		_name,
+		{ .persist = true }
+	);
+
+	// "Close" rides the OK registry, so the page wires it with addEventOk.
+	ui::dom::Element close;
+	_addButton(Localization::Str{ "str_b_secondary_window_ok" }(), close);
+	close.on(
+		ui::dom::Event::Click,
+		[](std::string element_name, js::Value) -> bool { return eventCPP({ std::move(element_name) }, _event_click); },
+		_name,
+		{ .persist = true }
+	);
+
+	_elements.addClass("horizontally");
+}
+
 void SecondaryWindow::setType(Type type)
 {
 	if (!_created)
@@ -167,6 +193,9 @@ void SecondaryWindow::setType(Type type)
 	case Type::Wait:
 		_buildWait();
 		break;
+	case Type::Report:
+		_buildReport();
+		break;
 	default:
 		break;
 	}
@@ -174,6 +203,7 @@ void SecondaryWindow::setType(Type type)
 	_event_click[_name].clear();
 	_event_yes_no[_name].clear();
 	_event_cancel[_name].clear();
+	_event_report[_name].clear();
 }
 
 void SecondaryWindow::setDescription(Localization::Str description)
@@ -306,4 +336,17 @@ void SecondaryWindow::addEventCancel(std::function<bool(JSArgs)>&& callback)
 void SecondaryWindow::clearEventCancel()
 {
 	_event_cancel[_name].clear();
+}
+
+void SecondaryWindow::addEventReport(std::function<bool(JSArgs)>&& callback)
+{
+	if (!_created)
+		return;
+
+	_event_report[_name].push_back(std::move(callback));
+}
+
+void SecondaryWindow::clearEventReport()
+{
+	_event_report[_name].clear();
 }

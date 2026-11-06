@@ -130,6 +130,10 @@ public:
 	/** Builds the manual bug report body (version + user template). */
 	static std::string buildReportIssueBody();
 
+	/** Builds the service-failure report body: version, the diagnostic report
+	 *  text, the log tail and the user template. */
+	static std::string buildServiceIssueBody(std::string_view report_text);
+
 	/** Reads the last tail_lines lines from logs/log.txt. */
 	static std::string readLogTail(size_t tail_lines);
 

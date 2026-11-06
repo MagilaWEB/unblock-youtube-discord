@@ -369,6 +369,26 @@ std::string Debug::buildReportIssueBody()
 	);
 }
 
+std::string Debug::buildServiceIssueBody(std::string_view report_text)
+{
+	return utils::format(
+		"{}\n\n"
+		"{}\n\n"
+		"{}\n\n"
+		"<details>\n<summary>{}</summary>\n\n"
+		"```\n{}\n```\n\n</details>\n\n"
+		"{}\n\n"
+		"{}",
+		langStr("str_issue_service_header"),
+		utils::format(langStr("str_issue_version"), version()),
+		report_text,
+		langStr("str_issue_log_summary"),
+		readLogTail(150),
+		userTemplate(false),
+		langStr("str_issue_full_log_hint")
+	);
+}
+
 std::string Debug::readLogTail(size_t tail_lines)
 {
 	return readLogTailLines(tail_lines);

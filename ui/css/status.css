@@ -35,6 +35,12 @@
     animation: none;
 }
 
+.status_warning .status_dot {
+    background-color: #facc15;
+    box-shadow: 0 0 8px rgba(250, 204, 21, 0.9);
+    animation: statusPulse 1.6s ease-in-out infinite;
+}
+
 .status_text {
     color: #e8e8e8;
     font-size: 1.3vw;
@@ -43,6 +49,10 @@
 
 .status_active .status_text {
     color: #d1fae5;
+}
+
+.status_warning .status_text {
+    color: #fef9c3;
 }
 
 @keyframes statusPulse {

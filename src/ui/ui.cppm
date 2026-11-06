@@ -298,6 +298,9 @@ export class UiZapretPage
 	SECONDARY_WINDOW(_window_configuration_selection_error);
 	SECONDARY_WINDOW(_window_no_bypass_targets);
 
+	// Service failure diagnostics (reason of the last failed start).
+	SECONDARY_WINDOW(_window_service_report);
+
 	// Warns when the other technology is running and this one is started.
 	SECONDARY_WINDOW(_window_warning_technology_busy);
 
@@ -314,6 +317,8 @@ export class UiZapretPage
 	// Last known states, to touch the DOM only on change (Ui::update ticks).
 	bool					  _last_running{ false };
 	std::optional<Technology> _last_active;
+	bool					  _last_has_report{ false };
+	u64						  _last_report_id{ 0 };
 
 public:
 	explicit UiZapretPage(std::shared_ptr<Ui> ui);
@@ -379,6 +384,11 @@ private:
 
 	void _buttonUpdate();
 	void _updateStatus(std::optional<Technology> active);
+
+	/** Opens the service-failure report window when a report exists. */
+	void _showServiceReportWindow();
+	/** Opens a pre-filled GitHub issue with the last service report. */
+	void _sendServiceReport();
 
 	/** Something to bypass: an enabled service or a custom host / IP. */
 	bool _hasBypassTargets() const;

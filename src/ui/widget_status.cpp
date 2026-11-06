@@ -8,6 +8,7 @@ import std;
 import core.debug;
 import core.localization;
 import dom;
+import dom.utils_saucer;
 import ui.widget_base_element;
 
 StatusIndicator::StatusIndicator(std::string_view name) : BaseElement(name)
@@ -34,6 +35,14 @@ void StatusIndicator::create(std::string_view selector)
 	_label.addClass("status_text");
 	_root.append(_label);
 
+	_root.on(
+		ui::dom::Event::Click,
+		[](std::string element_name, js::Value) -> bool { return eventCPP({ std::move(element_name) }, _event_click); },
+		_name,
+		{ .persist = true }
+	);
+	_event_click[_name].clear();
+
 	_created = true;
 }
 
@@ -42,7 +51,7 @@ void StatusIndicator::setActive(std::string_view text)
 	if (!_created)
 		return;
 
-	_root.removeClass("status_inactive").addClass("status_active");
+	_root.removeClass("status_inactive").removeClass("status_warning").addClass("status_active");
 	_label.text(text);
 }
 
@@ -51,6 +60,23 @@ void StatusIndicator::setInactive(std::string_view text)
 	if (!_created)
 		return;
 
-	_root.removeClass("status_active").addClass("status_inactive");
+	_root.removeClass("status_active").removeClass("status_warning").addClass("status_inactive");
 	_label.text(text);
+}
+
+void StatusIndicator::setWarning(std::string_view text)
+{
+	if (!_created)
+		return;
+
+	_root.removeClass("status_active").removeClass("status_inactive").addClass("status_warning");
+	_label.text(text);
+}
+
+void StatusIndicator::addEventClick(std::function<bool(JSArgs)>&& callback)
+{
+	if (!_created)
+		return;
+
+	_event_click[_name].push_back(std::move(callback));
 }

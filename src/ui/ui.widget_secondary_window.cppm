@@ -15,6 +15,7 @@ export class SecondaryWindow final : public BaseElement
 	static std::vector<SecondaryWindow*> _all_window;
 	static MapEvent						 _event_yes_no;
 	static MapEvent						 _event_cancel;
+	static MapEvent						 _event_report;
 
 	std::atomic_bool _is_showing{ false };
 	std::atomic_bool _wait_show{ false };
@@ -35,6 +36,7 @@ public:
 		OK,
 		YesNo,
 		Wait,
+		Report,
 		Info = type_max<u8>
 	};
 
@@ -72,10 +74,16 @@ public:
 	void addEventCancel(std::function<bool(JSArgs)>&& callback);
 	void clearEventCancel();
 
+	/** "Send report" button of the Report type (the OK handler is the "Close"
+	 *  button). */
+	void addEventReport(std::function<bool(JSArgs)>&& callback);
+	void clearEventReport();
+
 private:
 	void _clearElements();
 	void _buildOk();
 	void _buildYesNo();
 	void _buildWait();
+	void _buildReport();
 	void _addButton(std::string_view text, ui::dom::Element& out);
 };

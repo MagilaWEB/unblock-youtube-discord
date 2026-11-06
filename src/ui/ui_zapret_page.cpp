@@ -9,6 +9,7 @@ import core;
 import core.debug;
 import core.file_system;
 import core.localization;
+import core.service_diagnostics;
 import core.timer;
 import core.utils;
 import dom.utils_saucer;
@@ -44,6 +45,57 @@ namespace
 			return utils::format("{} {}", static_cast<int>(bps), c_units[unit]);
 
 		return utils::format("{:.1f} {}", bps, c_units[unit]);
+	}
+
+	// Verdict, summary, the checklist with markers, numbered recommendations
+	// and the raw data, all as one pre-line block for the report window.
+	std::string serviceReportText(const DiagnosticReport& report)
+	{
+		std::string text = report.verdict;
+
+		if (!report.summary.empty())
+			text += "\n\n" + report.summary;
+
+		if (!report.checks.empty())
+		{
+			text += "\n\n" + Localization::Str{ "str_diag_section_checks" }();
+			for (const auto& check : report.checks)
+			{
+				std::string_view marker{ "–" };
+				switch (check.level)
+				{
+				case DiagnosticCheck::Level::Ok:
+					marker = "✓";
+					break;
+				case DiagnosticCheck::Level::Warning:
+					marker = "⚠";
+					break;
+				case DiagnosticCheck::Level::Failed:
+					marker = "✗";
+					break;
+				default:
+					break;
+				}
+
+				text += "\n" + std::string{ marker } + " " + check.text;
+			}
+		}
+
+		if (!report.recommendations.empty())
+		{
+			text += "\n\n" + Localization::Str{ "str_diag_section_recommendations" }();
+			for (const auto& recommendation : report.recommendations)
+				text += "\n" + recommendation;
+		}
+
+		if (!report.raw.empty())
+		{
+			text += "\n\n" + Localization::Str{ "str_diag_section_raw" }();
+			for (const auto& line : report.raw)
+				text += "\n" + line;
+		}
+
+		return text;
 	}
 }	 // namespace
 
@@ -511,6 +563,13 @@ void UiZapretPage::_initMainControls()
 	_status_engine->create("#zapret .common");
 	_status_engine->addTutorialStep("str_tour_engine_rate_title", "str_tour_engine_rate_description", 9);
 	_status_engine->setInactive(Localization::Str{ "str_status_engine_stopped" }());
+	_status_engine->addEventClick(
+		[this](JSArgs)
+		{
+			_showServiceReportWindow();
+			return false;
+		}
+	);
 
 	_start_button->create("#zapret .common", "str_b_start_zapret");
 	_start_button->addTutorialStep("str_tour_start_button_title", "str_tour_start_button_description", 1);
@@ -558,6 +617,23 @@ void UiZapretPage::_initMainControls()
 		{
 			_window_no_bypass_targets->hide();
 			return true;
+		}
+	);
+
+	_window_service_report->create(Localization::Str{ "str_window_service_report_title" }, "");
+	_window_service_report->setType(SecondaryWindow::Type::Report);
+	_window_service_report->addEventOk(
+		[this](JSArgs)
+		{
+			_window_service_report->hide();
+			return true;
+		}
+	);
+	_window_service_report->addEventReport(
+		[this](JSArgs)
+		{
+			_sendServiceReport();
+			return false;
 		}
 	);
 
@@ -626,32 +702,86 @@ void UiZapretPage::_updateStatus(std::optional<Technology> active)
 		return;
 
 	if (!active.has_value())
-		_status_engine->setInactive(Localization::Str{ "str_status_engine_stopped" }());
+	{
+		if (_ui->unblock()->hasServiceReport())
+			_status_engine->setInactive(
+				utils::format(Localization::Str{ "str_status_engine_stopped_reason" }(), _ui->unblock()->lastServiceReport().verdict)
+			);
+		else
+			_status_engine->setInactive(Localization::Str{ "str_status_engine_stopped" }());
+	}
 	else
 	{
 		const auto rate = _ui->unblock()->zapretRateBps();
-		_status_engine->setActive(
-			utils::format(
-				Localization::Str{ "str_status_engine_running_rate" }(),
-				_technologyName(active.value()),
-				formatRate(rate.down),
-				formatRate(rate.up)
-			)
-		);
+
+		// A running engine with a diagnostic report is not all green: the helper
+		// may have failed while the engine itself works. Warn and keep the
+		// verdict reachable by click (the window auto-opens once per report).
+		if (_ui->unblock()->hasServiceReport())
+			_status_engine->setWarning(
+				utils::format(
+					Localization::Str{ "str_status_engine_running_issue" }(),
+					_technologyName(active.value()),
+					formatRate(rate.down),
+					formatRate(rate.up),
+					_ui->unblock()->lastServiceReport().verdict
+				)
+			);
+		else
+			_status_engine->setActive(
+				utils::format(
+					Localization::Str{ "str_status_engine_running_rate" }(),
+					_technologyName(active.value()),
+					formatRate(rate.down),
+					formatRate(rate.up)
+				)
+			);
 	}
+}
+
+void UiZapretPage::_showServiceReportWindow()
+{
+	if (!_ui->unblock()->hasServiceReport())
+		return;
+
+	_window_service_report->setDescription(serviceReportText(_ui->unblock()->lastServiceReport()));
+	_window_service_report->show();
+}
+
+void UiZapretPage::_sendServiceReport()
+{
+	const auto report = _ui->unblock()->lastServiceReport();
+
+	Core::get().addTask(
+		[report]
+		{
+			const std::string title = utils::format(Localization::Str{ "str_issue_service_title" }(), report.verdict);
+			Debug::openGitHubIssue(title, Debug::buildServiceIssueBody(report.fullText()));
+		}
+	);
 }
 
 void UiZapretPage::updateState()
 {
-	const bool running = _ui->unblock()->isRun(_technology);
-	const auto active  = _ui->unblock()->runningTechnology();
+	const bool running	  = _ui->unblock()->isRun(_technology);
+	const auto active	  = _ui->unblock()->runningTechnology();
+	const bool has_report = _ui->unblock()->hasServiceReport();
 
-	if (running != _last_running || active != _last_active)
+	if (running != _last_running || active != _last_active || has_report != _last_has_report)
 	{
-		_last_running = running;
-		_last_active  = active;
+		_last_running	 = running;
+		_last_active	 = active;
+		_last_has_report = has_report;
 		_buttonUpdate();
 		_updateStatus(active);
+	}
+
+	// The report window shows up on its own once per report, not on every tick.
+	if (const u64 report_id = _ui->unblock()->lastServiceReportId(); report_id != _last_report_id)
+	{
+		_last_report_id = report_id;
+		if (report_id != 0)
+			_showServiceReportWindow();
 	}
 
 	// Live throughput in the status line: the rate rides the IPC once a
