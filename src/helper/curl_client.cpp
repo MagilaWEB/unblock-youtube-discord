@@ -51,6 +51,14 @@ size_t CurlClient::_writeCallback(char*, size_t size, size_t count, void*)
 	return size * count;
 }
 
+int CurlClient::_progressAbort(void* clientp, curl_off_t, curl_off_t, curl_off_t, curl_off_t)
+{
+	if (const auto* abort = static_cast<const CurlAbort*>(clientp); abort && *abort && (*abort)())
+		return 1;
+
+	return 0;
+}
+
 curl_slist* CurlClient::_buildHeaders()
 {
 	curl_slist* list = nullptr;
@@ -64,7 +72,7 @@ curl_slist* CurlClient::_buildHeaders()
 	return list;
 }
 
-std::expected<long, int> CurlClient::_fetch(const std::string& url)
+std::expected<long, int> CurlClient::_fetch(const std::string& url, const CurlAbort& abort)
 {
 	std::unique_ptr<CURL, CurlCleanup> curl{ curl_easy_init() };
 	if (!curl)
@@ -85,6 +93,8 @@ std::expected<long, int> CurlClient::_fetch(const std::string& url)
 	curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT, c_check_timeout_sec);
 	curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT, c_connect_timeout_sec);
 	curl_easy_setopt(curl.get(), CURLOPT_NOPROGRESS, 0L);
+	curl_easy_setopt(curl.get(), CURLOPT_XFERINFOFUNCTION, &CurlClient::_progressAbort);
+	curl_easy_setopt(curl.get(), CURLOPT_XFERINFODATA, &abort);
 	curl_easy_setopt(curl.get(), CURLOPT_WRITEFUNCTION, &CurlClient::_writeCallback);
 
 	if (const CURLcode res = curl_easy_perform(curl.get()); res != CURLE_OK)
@@ -101,17 +111,17 @@ bool CurlClient::isTerminalError(int curl_code)
 	return curl_code == CURLE_COULDNT_RESOLVE_HOST;
 }
 
-std::expected<long, int> CurlClient::checkHost(const std::string& host)
+std::expected<long, int> CurlClient::checkHost(const std::string& host, const CurlAbort& abort)
 {
 	const std::string_view suffix{ ".googlevideo.com" };
 	const bool			   is_googlevideo = host.size() > suffix.size() && host.ends_with(suffix);
 
 	const std::string url = is_googlevideo ? std::format("https://{}/videoplayback?expire=1", host) : std::format("https://{}", host);
 
-	return _fetch(url);
+	return _fetch(url, abort);
 }
 
-std::expected<long, int> CurlClient::checkVoiceHost(const std::string& host)
+std::expected<long, int> CurlClient::checkVoiceHost(const std::string& host, const CurlAbort& abort)
 {
 	std::unique_ptr<CURL, CurlCleanup> curl{ curl_easy_init() };
 	if (!curl)
@@ -126,6 +136,9 @@ std::expected<long, int> CurlClient::checkVoiceHost(const std::string& host)
 	curl_easy_setopt(curl.get(), CURLOPT_SSL_VERIFYPEER, 0L);
 	curl_easy_setopt(curl.get(), CURLOPT_USERAGENT, c_user_agent);
 	curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT, c_connect_timeout_sec);
+	curl_easy_setopt(curl.get(), CURLOPT_NOPROGRESS, 0L);
+	curl_easy_setopt(curl.get(), CURLOPT_XFERINFOFUNCTION, &CurlClient::_progressAbort);
+	curl_easy_setopt(curl.get(), CURLOPT_XFERINFODATA, &abort);
 
 	CURLcode res = curl_easy_perform(curl.get());
 	if (res != CURLE_OK)
@@ -160,6 +173,12 @@ std::expected<long, int> CurlClient::checkVoiceHost(const std::string& host)
 	long		code = 0;
 	while (std::chrono::steady_clock::now() < deadline)
 	{
+		// Between recv steps, not inside a blocking call: a host whose
+		// strategy lua just killed must not hold the worker to the end of
+		// the voice budget.
+		if (abort && abort())
+			return std::unexpected(static_cast<int>(CURLE_ABORTED_BY_CALLBACK));
+
 		char   buffer[512];
 		size_t received = 0;
 		res				= curl_easy_recv(curl.get(), buffer, sizeof(buffer), &received);
@@ -202,6 +221,9 @@ std::expected<long, int> CurlClient::checkVoiceHost(const std::string& host)
 	{
 		std::this_thread::sleep_for(std::chrono::milliseconds(c_voice_ping_gap_ms));
 
+		if (abort && abort())
+			return std::unexpected(static_cast<int>(CURLE_ABORTED_BY_CALLBACK));
+
 		res = curl_easy_send(curl.get(), ping.data(), ping.size(), &sent);
 		if (res != CURLE_OK)
 			return std::unexpected(static_cast<int>(res));
@@ -209,6 +231,9 @@ std::expected<long, int> CurlClient::checkVoiceHost(const std::string& host)
 		const auto pong_deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(c_voice_ping_gap_ms);
 		while (std::chrono::steady_clock::now() < pong_deadline)
 		{
+			if (abort && abort())
+				return std::unexpected(static_cast<int>(CURLE_ABORTED_BY_CALLBACK));
+
 			char   buffer[256];
 			size_t received = 0;
 			res				= curl_easy_recv(curl.get(), buffer, sizeof(buffer), &received);

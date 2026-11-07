@@ -32,6 +32,7 @@ export using ::curl_global_init;
 export using ::curl_global_cleanup;
 
 export using ::CURLE_OK;
+export using ::CURLE_ABORTED_BY_CALLBACK;
 export using ::CURLE_AGAIN;
 export using ::CURLE_COULDNT_CONNECT;
 export using ::CURLE_COULDNT_RESOLVE_HOST;

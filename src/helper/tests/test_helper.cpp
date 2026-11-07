@@ -68,6 +68,24 @@ public:
 
 	void clearQueue() { helper._queue.clear(); }
 
+	// Simulate the worker's probe lifecycle without running curl.
+	void beginCheck(const std::string& host)
+	{
+		helper._in_check.insert(host);
+		helper._cancel[host] = std::make_shared<std::atomic<bool>>(false);
+	}
+	void endCheck(const std::string& host)
+	{
+		std::lock_guard lock(helper._mutex);
+		helper._endCheck(host);
+	}
+	bool cancelArmed(const std::string& host) const
+	{
+		const auto it = helper._cancel.find(host);
+		return it != helper._cancel.end() && it->second->load();
+	}
+	const std::unordered_set<std::string>& pending() const { return helper._pending; }
+
 	void idleStep() { helper._idleStep(); }
 	void setLastRecheckNow() { helper._last_recheck = std::chrono::steady_clock::now(); }
 	void setLastRecheckInPast() { helper._last_recheck -= helper._recheck_interval + std::chrono::seconds(1); }
@@ -252,6 +270,43 @@ TEST_CASE("CHECK empty ignored", "[helper][check]")
 	t.handleMessage("CHECK:");
 	CHECK(t.knownHosts().empty());
 	CHECK(t.queue().empty());
+}
+
+TEST_CASE("CHECK on a busy host aborts the probe and requeues it", "[helper][check][cancel]")
+{
+	ZapretHelperTest t;
+	t.addHost("a.com");
+	t.beginCheck("a.com");
+	t.clearQueue();
+
+	// The host is already being probed: the CHECK must not duplicate the
+	// queue entry, but it must kill the stale probe and re-probe right after.
+	t.handleMessage("CHECK:a.com");
+	CHECK(t.queue().empty());
+	CHECK(t.pending().contains("a.com"));
+	CHECK(t.cancelArmed("a.com"));
+
+	t.endCheck("a.com");
+	CHECK(t.queue().contains("a.com"));
+	CHECK(t.inCheck().empty());
+	CHECK_FALSE(t.pending().contains("a.com"));
+	CHECK_FALSE(t.cancelArmed("a.com"));
+}
+
+TEST_CASE("ERR on a busy host aborts the probe and requeues it", "[helper][err][cancel]")
+{
+	ZapretHelperTest t;
+	t.addHost("a.com");
+	t.beginCheck("a.com");
+	t.clearQueue();
+
+	t.handleMessage("ERR:a.com:5");
+	CHECK(t.errorStrategy("a.com") == "5");
+	CHECK(t.pending().contains("a.com"));
+	CHECK(t.cancelArmed("a.com"));
+
+	t.endCheck("a.com");
+	CHECK(t.queue().contains("a.com"));
 }
 
 TEST_CASE("VALID records valid strategy", "[helper][valid]")

@@ -161,10 +161,13 @@ void ZapretHelper::_handleMessage(std::string_view message)
 	else if (message.starts_with("CHECK:"))
 	{
 		std::lock_guard lock(_mutex);
-		const auto		host = splitOnce(message.substr(6), ':').first;
-		// Do not re-enqueue a host already being checked: the pump must not
-		// drive duplicates.
-		if (!_in_check.contains(std::string{ host }))
+		const auto		host = std::string{ splitOnce(message.substr(6), ':').first };
+		// A host already being probed cannot be enqueued again (the pump must
+		// not drive duplicates). But a CHECK right now means lua changed the
+		// strategy: kill the stale probe and re-probe under the new one.
+		if (_in_check.contains(host))
+			_requestRecheck(host);
+		else
 			_addHost(host);
 		_cv.notify_one();	 // single host: one worker is enough
 	}
@@ -242,6 +245,12 @@ void ZapretHelper::_handleMessage(std::string_view message)
 				_cv.notify_all();
 			}
 		}
+
+		// lua switched strategy for this host: the probe that is running now
+		// tests the strategy that was just rejected, so let it die and re-probe
+		// immediately instead of holding a worker to the curl timeout.
+		if (_isValidHost(host) && _in_check.contains(host))
+			_requestRecheck(host);
 	}
 	else if (message.starts_with("EXHAUSTED:"))
 	{
@@ -293,13 +302,35 @@ void ZapretHelper::_handleMessage(std::string_view message)
 	}
 }
 
-void ZapretHelper::_checkHost(std::string_view host)
+void ZapretHelper::_requestRecheck(const std::string& host)
+{
+	// Caller holds _mutex. The probe polls its own flag without the lock, so
+	// storing through the shared_ptr is what the worker thread actually sees.
+	if (const auto it = _cancel.find(host); it != _cancel.end())
+		it->second->store(true);
+
+	_pending.insert(host);
+}
+
+void ZapretHelper::_endCheck(const std::string& host)
+{
+	// Caller holds _mutex.
+	_cancel.erase(host);
+	_in_check.erase(host);
+
+	// A recheck requested while the probe ran must land in the queue now that
+	// the worker is free again; that is the whole point of aborting the probe.
+	if (_pending.erase(host))
+		_queue.insert(host);
+}
+
+void ZapretHelper::_checkHost(std::string_view host, const CurlAbort& abort)
 {
 	const bool voice = _isVoiceMediaHost(host);
 
 	_log(std::format("{} {}", voice ? "voice check" : "check", host));
 
-	const auto result = voice ? CurlClient::checkVoiceHost(std::string{ host }) : CurlClient::checkHost(std::string{ host });
+	const auto result = voice ? CurlClient::checkVoiceHost(std::string{ host }, abort) : CurlClient::checkHost(std::string{ host }, abort);
 	_send(_makeDoneSignal(host), c_ipc_port);
 
 	// Stamp the probe. If lua never delivers a verdict for this host, the
@@ -393,12 +424,18 @@ void ZapretHelper::_workerRoutine(u32 epoch)
 		if (!host)
 			continue;
 
+		// The probe's abort flag is bound to this host before the lock drops:
+		// a CHECK/ERR arriving for it from now on sets the flag, and the
+		// running probe dies at the next libcurl callback.
+		const auto cancel = std::make_shared<std::atomic<bool>>(false);
+		_cancel[*host]	  = cancel;
+
 		lock.unlock();
 
-		_checkHost(*host);
+		_checkHost(*host, [cancel] { return cancel->load(); });
 
 		lock.lock();
-		_in_check.erase(*host);
+		_endCheck(*host);
 		_cv.notify_all();
 		lock.unlock();
 	}

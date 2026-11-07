@@ -47,6 +47,13 @@ export class ZapretHelper
 	std::unordered_set<std::string>										   _queue;
 	std::unordered_set<std::string>										   _known_hosts;
 	std::unordered_set<std::string>										   _in_check;
+	// Hosts re-requested while their probe was in flight: lua killed the
+	// current strategy, so the running probe must be aborted and the host
+	// probed again at once. _cancel carries the flag the probe polls (worker
+	// thread owns the shared_ptr for the duration of the check), _pending
+	// remembers the host for the re-probe that the abort has to trigger.
+	std::unordered_map<std::string, std::shared_ptr<std::atomic<bool>>>	   _cancel;
+	std::unordered_set<std::string>										   _pending;
 	std::unordered_map<std::string, ErrorInfo>							   _error_hosts;
 	std::unordered_map<std::string, std::string>						   _valid_hosts;
 	// Fully-tried hosts (lua wrapped a whole plan and went for the second
@@ -131,8 +138,17 @@ private:
 	void					   _addHost(std::string_view hosts);
 	/** Handle an incoming message (LIST or CHECK). */
 	void					   _handleMessage(std::string_view message);
-	/** Check a host via curl: pump traffic and relay the done signal. */
-	void					   _checkHost(std::string_view host);
+	/** Arm an abort+pending pair for a host whose probe is in flight: lua
+	 *  ruled the current strategy dead, so the running probe must die and the
+	 *  host must be probed again right away. Caller holds _mutex. */
+	void					   _requestRecheck(const std::string& host);
+	/** Worker epilogue: drop the host's abort flag and in-check mark, and
+	 *  requeue it when a recheck was requested while it was busy. Caller
+	 *  holds _mutex. */
+	void					   _endCheck(const std::string& host);
+	/** Check a host via curl: pump traffic and relay the done signal. Abort
+	 *  is polled by libcurl and by the voice exchange. */
+	void					   _checkHost(std::string_view host, const CurlAbort& abort);
 	/** Pop the next host (from queue, then error hosts) under mutex. */
 	std::optional<std::string> _popHost();
 	/** True if any host is waiting and not currently being checked. */
