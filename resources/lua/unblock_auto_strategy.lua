@@ -20,13 +20,19 @@
 --   1. Сначала пробуем прямое соединение (direct, nstrategy = 0)
 --   2. TCP: вердикты по пакетам — ретрансмиссия до первых данных, RST в
 --      начале рукопожатия, DPI-redirect (http_reply 302/307) и
---      throttling-after-handshake. Скорость считается по conntrack-счётчику
---      байт сервера (track.pos.server.pbcounter): пропущенные пакеты не
---      теряются. Окно throttle_window секунд плохое, если оно ниже
---      throttle_min_bps или ниже throttle_collapse от пика этого же
---      соединения; throttle_windows плохих окон подряд — провал. Одно
---      соединение докладывает провал не чаще раза в 5 секунд, счётчик fails
---      сбрасывается по времени (time) или настоящим успехом.
+--      throttling-after-handshake. Ретрансмиссия судится только до ответа
+--      сервера (crec.handshake_ok): на живом соединении это обычная потеря,
+--      а не перерезанный DPI путь — голосовые и API-потоки до гейта в 4096
+--      байт серверных данных не доходят никогда, и каждый их сбой уводил
+--      стратегию из-под работающего соединения (а звонок Discord после
+--      этого рвётся). Залипание после рукопожатия — дело троттл-пути.
+--      Скорость считается по conntrack-счётчику байт сервера
+--      (track.pos.server.pbcounter): пропущенные пакеты не теряются. Окно
+--      throttle_window секунд плохое, если оно ниже throttle_min_bps или
+--      ниже throttle_collapse от пика этого же соединения; throttle_windows
+--      плохих окон подряд — провал. Одно соединение докладывает провал не
+--      чаще раза в 2 секунды, счётчик fails сбрасывается по времени (time)
+--      или настоящим успехом.
 --   3. Положительный вердикт — входящий tls_server_hello/http_reply: он
 --      подтверждает стратегию для helper (VALID) и рейтинга. Для
 --      googlevideo и QUIC рукопожатия мало: успех ставит только здоровое
@@ -770,10 +776,15 @@ function auto_strategy(ctx, desync)
             -- data, before any real downstream data, means the handshake is
             -- stuck (DPI dropped it). The payload gate keeps pure ACKs and
             -- SYN retransmits out; the maxseq gate keeps ordinary loss deep in
-            -- the stream out.
+            -- the stream out. A connection the server already answered is a
+            -- live dialog, not a stuck handshake: its retransmissions are
+            -- ordinary loss (small flows like voice or API calls never reach
+            -- the 4096-byte data gate, so without this every hiccup read as a
+            -- DPI cut and rotated the strategy under a working connection).
+            -- A stall after the handshake belongs to the throttle path.
             local seq = pos_get(desync, 's')
-            if desync.outgoing and plen > 0 and is_retransmission(desync) and not crec.data_ok and seq > 0
-                and seq <= arg.maxseq then
+            if desync.outgoing and plen > 0 and is_retransmission(desync) and not crec.data_ok and not crec.handshake_ok
+                and seq > 0 and seq <= arg.maxseq then
                 auto_reset_connection(desync, arg, name, host_or_ip, dport)
                 auto_request_check(host_name, hrec)
 
