@@ -134,6 +134,20 @@ void StrategiesZapret2::_blob_init_to_zapret()
 	}
 }
 
+void StrategiesZapret2::_normalizeFinalLine(std::string& line)
+{
+	// Service port macros (%DiscordPort%, %DiscordPortUPD%, %GamePort%, ...)
+	// must be expanded BEFORE the leftover-macro sweep: without this the
+	// --wf-* whitelists silently lost every service port, so winws2 never
+	// intercepted the voice/game traffic at all.
+	_getAllPorts(line);
+
+	static const std::regex port_vars{ R"(%[^%]+%)" };
+	line = std::regex_replace(line, port_vars, "");
+
+	_normalizeStrategyString(line);
+}
+
 void StrategiesZapret2::_normalizeStrategyFinal()
 {
 	_numbering_active = false;
@@ -142,11 +156,7 @@ void StrategiesZapret2::_normalizeStrategyFinal()
 	for (auto& line : _strategy_dpi)
 	{
 		_luaDesyncNumberStrategy(line);
-
-		static const std::regex port_vars{ R"(%[^%]+%)" };
-		line = std::regex_replace(line, port_vars, "");
-
-		_normalizeStrategyString(line);
+		_normalizeFinalLine(line);
 	}
 
 	std::erase_if(_strategy_dpi, [](const std::string& line) { return line.empty(); });

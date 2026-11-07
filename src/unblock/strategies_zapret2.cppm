@@ -1,3 +1,9 @@
+module;
+
+#ifdef UNBLOCK_TESTS
+	#include "tests/test_forwards.h"
+#endif
+
 export module unblock.strategies_zapret2;
 
 import std;
@@ -36,4 +42,9 @@ private:
 	void _blob_init_to_zapret();
 	void _normalizeStrategyFinal();
 	void _luaDesyncNumberStrategy(std::string& str);
+	void _normalizeFinalLine(std::string& line);
+
+#ifdef UNBLOCK_TESTS
+	friend class StrategiesZapret2Test;
+#endif
 };
