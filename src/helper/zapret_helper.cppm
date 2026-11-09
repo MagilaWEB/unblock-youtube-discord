@@ -130,14 +130,6 @@ private:
 	 * verdicts never poison auto_strategy. */
 	static bool _isVoiceMediaHost(std::string_view host);
 
-	/** Valid host the helper may fetch on its own. Voice media
-	 *  (*.discord.media) is opened by the client with its own credentials, so
-	 *  the bare probe can only get 403/redirect out of it: such hosts are
-	 *  registered and their verdicts are accepted (status stays visible in the
-	 *  UI), but they are never queued for a download. The bare discord.media
-	 *  is a plain website with images, no auth needed — it stays probeable. */
-	static bool _isProbeable(std::string_view host);
-
 	/** Send a UDP message to target_ip and the given port. */
 	void					   _send(std::string_view message, u32 port) const;
 	/** Send a log entry to unblock (port 9999). */

@@ -79,14 +79,9 @@ bool ZapretHelper::_isVoiceMediaHost(std::string_view host)
 	// Voice endpoints live on *.discord.media subdomains in several shapes
 	// (c-<region>-<hash> and bare <region><digits> without the c- prefix).
 	// The bare domain is a website and keeps the regular check, so only
-	// suffix matches qualify. These hosts are fetched by the client itself
-	// (it owns the credentials), so the helper never downloads them.
+	// suffix matches qualify. These hosts are checked by the voice-path
+	// probe (WebSocket upgrade), never by the plain curl.
 	return host.ends_with(".discord.media");
-}
-
-bool ZapretHelper::_isProbeable(std::string_view host)
-{
-	return _isValidHost(host) && !_isVoiceMediaHost(host);
 }
 
 void ZapretHelper::_send(std::string_view message, u32 port) const
@@ -144,12 +139,7 @@ void ZapretHelper::_addHost(std::string_view host)
 		return;
 
 	_known_hosts.insert(std::string{ host });
-
-	// Status-only hosts (voice media) are never queued: the helper shows
-	// them in the seen list but never downloads from them (see _isProbeable).
-	if (_isProbeable(host))
-		_queue.insert(std::string{ host });
-
+	_queue.insert(std::string{ host });
 	// No notify here: bulk LIST wakes the whole pool once, a single CHECK
 	// wakes one worker (see _handleMessage).
 }
@@ -569,7 +559,7 @@ void ZapretHelper::_idleStep()
 		if ((now - _last_recheck) > _recheck_interval)
 		{
 			for (const auto& host : _known_hosts)
-				if (!_queue.contains(host) && !_in_check.contains(host) && _isProbeable(host))
+				if (!_queue.contains(host) && !_in_check.contains(host))
 				{
 					_queue.insert(host);
 					grew = true;
@@ -607,7 +597,7 @@ void ZapretHelper::_idleStep()
 				_known_hosts.insert(host);
 
 			// Host is currently being checked - do not re-enqueue it.
-			if (_queue.contains(host) || _in_check.contains(host) || !_isProbeable(host))
+			if (_queue.contains(host) || _in_check.contains(host))
 				continue;
 
 			if ((now - info.first) < _errors_progress_interval)
@@ -628,7 +618,7 @@ void ZapretHelper::_idleStep()
 		// drops out of the exhausted bucket on its own.
 		for (auto& [host, info] : _exhausted_hosts)
 		{
-			if (_queue.contains(host) || _in_check.contains(host) || !_isProbeable(host))
+			if (_queue.contains(host) || _in_check.contains(host))
 				continue;
 
 			if ((now - info.last) > _errors_recheck_interval)
@@ -644,7 +634,7 @@ void ZapretHelper::_idleStep()
 		// verdict (VALID/ERR/EXHAUSTED), never by the recheck itself.
 		for (auto& [host, info] : _unjudged_hosts)
 		{
-			if (_queue.contains(host) || _in_check.contains(host) || !_isProbeable(host))
+			if (_queue.contains(host) || _in_check.contains(host))
 				continue;
 
 			if ((now - info.last) > _errors_recheck_interval)

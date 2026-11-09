@@ -309,46 +309,6 @@ TEST_CASE("ERR on a busy host aborts the probe and requeues it", "[helper][err][
 	CHECK(t.queue().contains("a.com"));
 }
 
-TEST_CASE("voice media host is registered but never queued for a download", "[helper][media]")
-{
-	ZapretHelperTest t;
-	t.handleMessage("CHECK:c-waw05-bf927c75.discord.media");
-	CHECK(t.knownHosts().contains("c-waw05-bf927c75.discord.media"));
-	CHECK(t.queue().empty());
-}
-
-TEST_CASE("bare discord.media is a website and stays probeable", "[helper][media]")
-{
-	ZapretHelperTest t;
-	t.handleMessage("CHECK:discord.media");
-	CHECK(t.knownHosts().contains("discord.media"));
-	CHECK(t.queue().contains("discord.media"));
-}
-
-TEST_CASE("voice media host is not requeued by a full recheck", "[helper][media]")
-{
-	ZapretHelperTest t;
-	t.addHost("latency.discord.media");
-	t.clearQueue();
-
-	t.setLastRecheckInPast();
-	t.idleStep();
-	CHECK(t.queue().empty());
-	CHECK(t.knownHosts().contains("latency.discord.media"));
-}
-
-TEST_CASE("voice media host in the error bucket is not re-probed", "[helper][media]")
-{
-	ZapretHelperTest t;
-	t.handleMessage("ERR:c-waw05-bf927c75.discord.media:strategy_3");
-	CHECK(t.errorStrategy("c-waw05-bf927c75.discord.media") == "strategy_3");
-
-	// The aggressive error phase would normally requeue it every idle step.
-	t.setLastRecheckNow();
-	t.idleStep();
-	CHECK(t.queue().empty());
-}
-
 TEST_CASE("VALID records valid strategy", "[helper][valid]")
 {
 	ZapretHelperTest t;
