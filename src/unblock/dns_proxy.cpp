@@ -11,22 +11,28 @@ std::vector<std::string> DnsProxy::defaultUpstreams()
 {
 	// Order is the priority: the first entry is the primary resolver, the
 	// rest are only fallbacks (see unblock_dns buildSettings). GeoHide leads
-	// (queries must reach it for region-specific answers) across its DoH/DoT
-	// endpoints and ports, then Comss.one (encrypted, unfiltered), then Xbox
-	// DNS (free Smart DNS), then plain DNS as the last resort.
+	// (queries must reach it for region-specific answers) across its regional
+	// DoH endpoints, then its plain-DNS IPs, then other encrypted resolvers.
 	return {
-		"https://dns.geohide.ru:8443/dns-query",
-		"https://dns.geohide.ru:853/dns-query",
-		"https://dns.geohide.ru:443/dns-query",
-		"tls://dns.geohide.ru:8443",
-		"tls://dns.geohide.ru:853",
-		"tls://dns.geohide.ru:443",
+		"https://geohide.ru/dns-query",
+		"https://eu.geohide.ru/dns-query",
+		"https://us.geohide.ru/dns-query",
+		"5.175.161.3",
+		"5.175.161.40",
+		"37.221.93.141",
+		"45.13.237.213",
+		"31.25.239.132",
+		"143.20.64.192",
+		"107.175.76.134",
+		"192.255.159.240",
+		"192.255.159.241",
+		"192.3.233.253",
+		"https://dns.bezmezhau.com/dns-query",
+		"https://dns.commonnet.work/dns-query",
 		"https://dns.comss.one/dns-query",
-		"tls://dns.comss.one",
-		"111.88.96.54",
-		"111.88.96.55",
-		"1.1.1.1",
-		"1.0.0.1",
+		"https://router.comss.one/dns-query",
+		"https://dns.dns-ai.ru/dns-query",
+		"https://dns.zapret.moe/dns-query",
 	};
 }
 
@@ -40,9 +46,9 @@ std::vector<std::string> DnsProxy::defaultBootstrap()
 
 std::uint32_t DnsProxy::defaultTimeout()
 {
-	// A private resolver (GeoHide) stalls from time to time; a generous
-	// default avoids spurious SERVFAILs. Editable in the UI.
-	return 15'000;
+	// Upstream exchange timeout, matching the curated resolver list above.
+	// Editable in the UI.
+	return 5'000;
 }
 
 DnsProxy::DnsProxy()
