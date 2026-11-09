@@ -19,25 +19,22 @@
 -- Как работает:
 --   1. Сначала пробуем прямое соединение (direct, nstrategy = 0)
 --   2. TCP: вердикты по пакетам — ретрансмиссия до первых данных, RST в
---      начале рукопожатия, DPI-redirect (http_reply 302/307) и
---      throttling-after-handshake. Ретрансмиссия судится только до ответа
---      сервера (crec.handshake_ok): на живом соединении это обычная потеря,
---      а не перерезанный DPI путь — голосовые и API-потоки до гейта в 4096
---      байт серверных данных не доходят никогда, и каждый их сбой уводил
---      стратегию из-под работающего соединения (а звонок Discord после
---      этого рвётся). Залипание после рукопожатия — дело троттл-пути.
---      Скорость считается по conntrack-счётчику байт сервера
---      (track.pos.server.pbcounter): пропущенные пакеты не теряются. Окно
---      throttle_window секунд плохое, если оно ниже throttle_min_bps или
---      ниже throttle_collapse от пика этого же соединения; throttle_windows
---      плохих окон подряд — провал. Одно соединение докладывает провал не
---      чаще раза в 2 секунды, счётчик fails сбрасывается по времени (time)
---      или настоящим успехом.
+--      начале рукопожатия и DPI-redirect (http_reply 302/307). Ретрансмиссия
+--      судится только до ответа сервера (crec.handshake_ok): на живом
+--      соединении это обычная потеря, а не перерезанный DPI путь — голосовые
+--      и API-потоки до гейта в 4096 байт серверных данных не доходят никогда,
+--      и каждый их сбой уводил стратегию из-под работающего соединения (а
+--      звонок Discord после этого рвётся). Работающий TCP подтверждается
+--      ответом сервера (п. 3); по скорости TCP не судится — throttle-окно
+--      (conntrack-счётчик байт сервера, track.pos.server.pbcounter) работает
+--      только на QUIC (п. 5). Одно соединение докладывает провал не чаще раза
+--      в 2 секунды, счётчик fails сбрасывается по времени (time) или настоящим
+--      успехом.
 --   3. Положительный вердикт — входящий tls_server_hello/http_reply: он
---      подтверждает стратегию для helper (VALID) и рейтинга. Для
---      googlevideo и QUIC рукопожатия мало: успех ставит только здоровое
---      окно скорости, иначе «сайт открылся, видео стоит» навсегда закреплял
---      бы троттлящую стратегию.
+--      подтверждает стратегию для helper (VALID) и рейтинга — для TCP этого
+--      достаточно. Для QUIC (UDP) рукопожатия мало: успех ставит только
+--      здоровое окно скорости, иначе «сайт открылся, видео стоит» навсегда
+--      закрепляло бы троттлящую стратегию.
 --   3b. Рейтинг стратегий (в пределах плана и прогона winws2): +1 к счётчику
 --      успехов стратегии. При переключении кандидаты берутся в порядке: успешные
 --      (по числу успехов убыв., ничьи — по номеру), затем неотмеченные 1..N.
@@ -84,7 +81,7 @@
 --   udp_out=N      — исходящих UDP пакетов для вердикта FAIL (по умолч. 4)
 --   udp_in=N       — входящих UDP пакетов: больше N — успех, иначе фейл (по умолч. 1)
 --   udp_silence=N  — секунд молчания сервера при живом исходящем потоке
---                    (только streaming/QUIC) до вердикта FAIL (по умолч. 3)
+--                    (только QUIC) до вердикта FAIL (по умолч. 3)
 --   reset          — отправлять RST при ошибке
 --   start=N        — начальный номер стратегии (0 = direct, по умолч. 0)
 -- auto_host_group — группирует хосты одного семейства в общую стратегию.
@@ -94,13 +91,16 @@
 -- Голос Discord — вся семья *.discord.media: и c-<регион>-<хэш> (хэш уникален
 -- на сессию), и формы без c- вроде finland14144.discord.media. Без группировки
 -- каждая новая сессия/форма начинала бы перебор заново; с группировкой
--- подобранная стратегия помнится на всю семью .discord.media.
+-- подобранная стратегия помнится на всю семью (ключ stream.discord.media;
+-- префикс stream. отделяет голосовые поддомены от сайта discord.media).
+-- Судится как обычный TCP-хост — по ответу сервера (см. auto_host_record).
 function auto_host_group(hostkey)
     if hostkey and hostkey:find("googlevideo%.com$") then
         return "googlevideo.com"
     end
+
     if hostkey and hostkey:find("%.discord%.media$") then
-        return "discord.media"
+        return "stream.discord.media"
     end
     return hostkey
 end
@@ -156,12 +156,7 @@ function auto_host_record(desync, askey)
         autostate[askey][hostkey] = {}
     end
 
-    local rec = autostate[askey][hostkey]
-    -- Streaming host: a handshake proves the site answers, not that the data
-    -- path delivers. Such a host is confirmed only by a healthy goodput
-    -- window (see auto_confirm_goodput).
-    rec.stream = (hostkey == "googlevideo.com")
-    return rec
+    return autostate[askey][hostkey]
 end
 
 -- Fingerprint of the profile's plan: number of distinct strategy numbers in
@@ -205,11 +200,9 @@ end
 -- makes one failure enough: during the search (the host has never worked yet)
 -- waiting for the full threshold only stretches the sweep, and a strategy
 -- that was judged wrongly is retried later. The counter is reset by time
--- (arg.time) and by a real success, never by a handshake of a streaming host:
--- every throttled googlevideo connection answers the handshake, and resetting
--- there would keep fails at zero.
+-- (arg.time) and by a real success (the server's answer).
 function auto_check_fails(rec, arg, crec, fast)
-    if not arg.fails then
+    if not arg.fails or arg.fails == 0 then
         return false
     end
 
@@ -927,7 +920,7 @@ function auto_strategy(ctx, desync)
             -- server packets, so goodput is the only evidence of throttling
             -- there. Voice/game UDP keeps the packet-count verdict below: its
             -- bitrate is legitimately low, but its packet flow is steady.
-            local streaming = hrec.stream or (desync.track.l7proto == "quic")
+            local streaming = (desync.track.l7proto == "quic")
             if streaming then
                 auto_throttle_account(crec, desync, now)
                 local rate = auto_throttle_rate(crec, arg, now)
