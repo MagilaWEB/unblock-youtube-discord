@@ -214,8 +214,8 @@ void UiProxyTg::_proxySettings()
 	// Reset the proxy settings to the built-in defaults. Like the DNS page,
 	// the enable switch is not touched, and the service is restarted only when
 	// it is already running (otherwise the reset would silently start it).
-	_reset_defaults->create("#tg_ws_proxy section .common", "str_button_reset_defaults_title");
-	_reset_defaults->addEventClick(
+	_reset_tg->create("#tg_ws_proxy section .common", "str_button_reset_defaults_title");
+	_reset_tg->addEventClick(
 		[this](JSArgs)
 		{
 			_proxy_tg_host->setValue(JSValue{ TgProxy::defaultHost() });

@@ -91,7 +91,7 @@ private:
 	INPUT(_timeout);
 	INPUT(_test_input);
 	BUTTON(_test_button);
-	BUTTON(_reset_defaults);
+	BUTTON(_reset_dns);
 
 	SECONDARY_WINDOW(_window_test_result);
 	SECONDARY_WINDOW(_window_enable_dns_proxy);
@@ -135,7 +135,7 @@ private:
 	INPUT(_proxy_tg_dc_ip_4);
 	// INPUT(_proxy_tg_cfproxy_domain);
 	BUTTON(_proxy_tg_apply);
-	BUTTON(_reset_defaults);
+	BUTTON(_reset_tg);
 
 	// Running state + proxy failure verdict (click opens the report window).
 	STATUS(_status_tg);

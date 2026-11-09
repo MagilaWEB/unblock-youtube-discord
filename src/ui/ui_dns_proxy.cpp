@@ -206,8 +206,8 @@ void UiDnsProxy::initialize()
 		}
 	);
 
-	_reset_defaults->create("#dns section .common", "str_button_reset_defaults_title");
-	_reset_defaults->addEventClick(
+	_reset_dns->create("#dns section .common", "str_button_reset_defaults_title");
+	_reset_dns->addEventClick(
 		[this](JSArgs)
 		{
 			// Reset the three DNS parameters to their built-in defaults: seed
