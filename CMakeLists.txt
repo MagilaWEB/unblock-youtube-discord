@@ -145,7 +145,7 @@ FetchContent_Declare(
 FetchContent_Declare(
   Zapret1
   GIT_REPOSITORY https://github.com/bol-van/zapret-win-bundle
-  GIT_TAG de9795d71287fdb21cf8c20b8af1a09d0eb10ab2
+  GIT_TAG 6b4375fa04f6bd7017eec379e16e462d3ea8df66
   GIT_SHALLOW TRUE
   SOURCE_DIR zapret1
 )
