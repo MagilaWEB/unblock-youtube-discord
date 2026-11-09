@@ -135,6 +135,7 @@ private:
 	INPUT(_proxy_tg_dc_ip_4);
 	// INPUT(_proxy_tg_cfproxy_domain);
 	BUTTON(_proxy_tg_apply);
+	BUTTON(_reset_defaults);
 
 	// Running state + proxy failure verdict (click opens the report window).
 	STATUS(_status_tg);
@@ -156,6 +157,7 @@ private:
 	void		_enableProxyTg();
 	void		_enableProxyLinkTg();
 	void		_proxySettings();
+	void		_saveProxySettings();
 	void		_applyProxySettings();
 	std::string _settingValue(std::string_view key, std::string_view default_value);
 };

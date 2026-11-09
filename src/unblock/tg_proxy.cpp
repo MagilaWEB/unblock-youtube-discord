@@ -13,6 +13,26 @@ TgProxy::TgProxy()
 	_service.open();
 }
 
+std::string TgProxy::defaultHost()
+{
+	return "127.0.0.1";
+}
+
+std::string TgProxy::defaultPort()
+{
+	return "9101";
+}
+
+std::array<std::string, 4> TgProxy::defaultDcIp()
+{
+	return { "149.154.175.50", "91.105.192.100", "149.154.175.100", "149.154.167.91" };
+}
+
+std::string TgProxy::defaultCfproxyDomain()
+{
+	return "unblock.kermanua1488.workers.dev";
+}
+
 void TgProxy::run(bool state)
 {
 	if (!state)

@@ -8,13 +8,19 @@ export class TgProxy final
 {
 	Service _service{ "TgWsProxy", "SvcHost.exe" };
 
-	std::string				   _host{ "127.0.0.1" };
-	std::string				   _port{ "9101" };
-	std::array<std::string, 4> _dc_ip{ "149.154.175.50", "91.105.192.100", "149.154.175.100", "149.154.167.91" };
-	std::string				   _cfproxy_domain{ "unblock.kermanua1488.workers.dev" };
+	std::string				   _host{ defaultHost() };
+	std::string				   _port{ defaultPort() };
+	std::array<std::string, 4> _dc_ip{ defaultDcIp() };
+	std::string				   _cfproxy_domain{ defaultCfproxyDomain() };
 
 public:
 	TgProxy();
+
+	/** Built-in proxy settings — the reset-to-defaults target. */
+	static std::string				  defaultHost();
+	static std::string				  defaultPort();
+	static std::array<std::string, 4> defaultDcIp();
+	static std::string				  defaultCfproxyDomain();
 
 	void run(bool state = true);
 	bool isRun();

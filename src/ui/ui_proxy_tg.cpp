@@ -210,6 +210,63 @@ void UiProxyTg::_proxySettings()
 			return false;
 		}
 	);
+
+	// Reset the proxy settings to the built-in defaults. Like the DNS page,
+	// the enable switch is not touched, and the service is restarted only when
+	// it is already running (otherwise the reset would silently start it).
+	_reset_defaults->create("#tg_ws_proxy section .common", "str_button_reset_defaults_title");
+	_reset_defaults->addEventClick(
+		[this](JSArgs)
+		{
+			_proxy_tg_host->setValue(JSValue{ TgProxy::defaultHost() });
+			_proxy_tg_port->setValue(JSValue{ TgProxy::defaultPort() });
+			const auto dc_ip = TgProxy::defaultDcIp();
+			_proxy_tg_dc_ip_1->setValue(JSValue{ dc_ip[0] });
+			_proxy_tg_dc_ip_2->setValue(JSValue{ dc_ip[1] });
+			_proxy_tg_dc_ip_3->setValue(JSValue{ dc_ip[2] });
+			_proxy_tg_dc_ip_4->setValue(JSValue{ dc_ip[3] });
+
+			Core::get().addTask(
+				[this]
+				{
+					const bool running = _tg_proxy.isRun();
+					if (running)
+					{
+						_ui->getUiUnblock()->getWindowWaitStopService()->show();
+						_ui->unblock()->runTgProxy(false);
+						_ui->getUiUnblock()->getWindowWaitStopService()->hide();
+					}
+
+					_saveProxySettings();
+
+					if (running)
+					{
+						_ui->getWindowWaitStartService()->show();
+						_ui->unblock()->runTgProxy(true);
+						_ui->getWindowWaitStartService()->hide();
+					}
+				}
+			);
+			return false;
+		}
+	);
+}
+
+void UiProxyTg::_saveProxySettings()
+{
+	const auto				   host = jsToCpp<std::string>(_proxy_tg_host->getValue());
+	const auto				   port = jsToCpp<std::string>(_proxy_tg_port->getValue());
+	std::array<std::string, 4> dc_ip{ jsToCpp<std::string>(_proxy_tg_dc_ip_1->getValue()),
+									  jsToCpp<std::string>(_proxy_tg_dc_ip_2->getValue()),
+									  jsToCpp<std::string>(_proxy_tg_dc_ip_3->getValue()),
+									  jsToCpp<std::string>(_proxy_tg_dc_ip_4->getValue()) };
+
+	_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", "host", host);
+	_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", "port", port);
+	for (const auto& [i, ip] : std::views::enumerate(dc_ip))
+		_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", utils::format("dc_ip_{}", i + 1), ip);
+
+	_tg_proxy.setParams(host, port, dc_ip, "");	   // cfproxy
 }
 
 void UiProxyTg::_applyProxySettings()
@@ -221,21 +278,7 @@ void UiProxyTg::_applyProxySettings()
 			_ui->unblock()->runTgProxy(false);
 			_ui->getUiUnblock()->getWindowWaitStopService()->hide();
 
-			const auto				   host = jsToCpp<std::string>(_proxy_tg_host->getValue());
-			const auto				   port = jsToCpp<std::string>(_proxy_tg_port->getValue());
-			// const auto				   cfproxy = jsToCpp<std::string>(_proxy_tg_cfproxy_domain->getValue());
-			std::array<std::string, 4> dc_ip{ jsToCpp<std::string>(_proxy_tg_dc_ip_1->getValue()),
-											  jsToCpp<std::string>(_proxy_tg_dc_ip_2->getValue()),
-											  jsToCpp<std::string>(_proxy_tg_dc_ip_3->getValue()),
-											  jsToCpp<std::string>(_proxy_tg_dc_ip_4->getValue()) };
-
-			_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", "host", host);
-			_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", "port", port);
-			//_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", "cfproxy_worker_domain", cfproxy);
-			for (const auto& [i, ip] : std::views::enumerate(dc_ip))
-				_ui->userConfig()->writeSectionParameter("TG_WS_PROXY", utils::format("dc_ip_{}", i + 1), ip);
-
-			_tg_proxy.setParams(host, port, dc_ip, "");	   // cfproxy
+			_saveProxySettings();
 
 			_ui->getWindowWaitStartService()->show();
 			_ui->unblock()->runTgProxy(true);
