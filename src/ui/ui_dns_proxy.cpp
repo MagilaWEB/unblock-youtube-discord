@@ -230,7 +230,12 @@ void UiDnsProxy::initialize()
 	{
 		_enable_dns_proxy->setState(cfg.value());
 		_refreshStatus();
-		_applyState(cfg.value());
+		// The proxy is a system service that outlives the app, so a launch
+		// must not tear it down and recreate it: apply only when the persisted
+		// setting and the live service state disagree (first run, crashed
+		// service, or a manual stop). A matching running service stays as is.
+		if (cfg.value() != _dns_proxy.isRun())
+			_applyState(cfg.value());
 	}
 	else
 	{
