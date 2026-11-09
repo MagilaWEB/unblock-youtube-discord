@@ -132,7 +132,7 @@ FetchContent_Declare(
 
 FetchContent_Declare(
   Zapret2
-  URL https://github.com/bol-van/zapret2/releases/download/v1.0.6/zapret2-v1.0.6.zip
+  URL https://github.com/bol-van/zapret2/releases/download/v1.0.7/zapret2-v1.0.7.zip
   SOURCE_DIR zapret2
 )
 

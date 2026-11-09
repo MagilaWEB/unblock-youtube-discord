@@ -204,7 +204,7 @@ Zapret: https://github.com/bol-van/zapret2/blob/master/docs/readme.md
 
 ### Проверка файлов
 Все исполняемые файлы взяты из проверенных источников:
-- [zapret2](https://github.com/bol-van/zapret2) (v1.0.6)
+- [zapret2](https://github.com/bol-van/zapret2) (v1.0.7)
 - [zapret-win-bundle](https://github.com/bol-van/zapret-win-bundle) (`winws.exe` классического Zapret)
 - [TgWsProxy](https://github.com/Flowseal/tg-ws-proxy) Собран в режим работы через консоль, в оригинальном репозитории такого .exe нет.
 - [AdGuard DnsLibs](https://github.com/AdguardTeam/DnsLibs) (`AdguardDns64.dll`, Apache License 2.0) — системный DNS-прокси
