@@ -91,6 +91,7 @@ private:
 	INPUT(_timeout);
 	INPUT(_test_input);
 	BUTTON(_test_button);
+	BUTTON(_reset_defaults);
 
 	SECONDARY_WINDOW(_window_test_result);
 	SECONDARY_WINDOW(_window_enable_dns_proxy);

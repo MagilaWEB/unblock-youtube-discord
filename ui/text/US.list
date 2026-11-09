@@ -307,7 +307,7 @@ str_checkbox_enable_dns_proxy_description=🔒 System DNS over encrypted servers
 When enabled, Unblock starts the unblock_dns service and points adapter DNS at 127.0.0.1.
 When disabled, DNS settings are restored.
 str_dns_proxy_servers_title=🌐 DNS servers
-str_dns_proxy_servers_description=🌐 Each line is a DNS server address (DoH/DoT/QUIC or a plain IP). The first server is primary, the rest are fallbacks. Defaults: GeoHide primary; Comss.one, Xbox DNS and 1.1.1.1 fallbacks.
+str_dns_proxy_servers_description=🌐 Each line is a DNS server address (DoH/DoT/QUIC or a plain IP). The first server is primary, the rest are fallbacks. The "Reset to defaults" button restores the built-in list.
 Examples: https://dns.geohide.ru:8443/dns-query or tls://dns.adguard.com
 str_dns_proxy_bootstrap_title=🧩 Bootstrap
 str_dns_proxy_bootstrap_description=🧩 Plain DNS servers, comma-separated; used to resolve the address of DoH/DoT servers (hostname to IP only). Defaults: 1.1.1.1,8.8.8.8,9.9.9.9,77.88.8.8. Press Enter to apply.
@@ -318,6 +318,7 @@ str_input_test_upstream_title=🧪 Server check
 str_input_test_upstream_description=🧪 Server line to check with the button below.
 The check runs through unblock_dns — AdguardDns64.dll must sit next to it or you will see a load error.
 str_button_test_upstream_title=🧪 Check server
+str_button_reset_defaults_title=♻️ Reset to defaults
 str_status_dns_running=🌐 DNS proxy running · queries: {} · cached: {} · errors: {}
 str_status_dns_stopped=🌐 DNS proxy stopped
 str_status_dns_issue=⚠ DNS proxy — {} (click for the report)

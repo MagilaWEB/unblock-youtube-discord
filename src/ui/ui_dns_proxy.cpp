@@ -206,6 +206,33 @@ void UiDnsProxy::initialize()
 		}
 	);
 
+	_reset_defaults->create("#dns section .common", "str_button_reset_defaults_title");
+	_reset_defaults->addEventClick(
+		[this](JSArgs)
+		{
+			// Reset the three DNS parameters to their built-in defaults: seed
+			// the proxy, refresh the widgets, persist and apply. The enable
+			// switch is left alone — the user asked to reset the settings,
+			// not to turn the feature off.
+			const auto upstreams = DnsProxy::defaultUpstreams();
+			_dns_proxy.setUpstreams(upstreams);
+			_dns_proxy.setBootstrap(DnsProxy::defaultBootstrap());
+			_dns_proxy.setTimeout(DnsProxy::defaultTimeout());
+
+			_upstreams->setItems(upstreams);
+
+			std::string bootstrap_csv;
+			for (const auto& b : DnsProxy::defaultBootstrap())
+				bootstrap_csv += (bootstrap_csv.empty() ? "" : ",") + b;
+			_bootstrap->setValue(JSValue{ bootstrap_csv });
+			_timeout->setValue(JSValue{ static_cast<int>(DnsProxy::defaultTimeout() / 1'000) });
+
+			_collectUpstreams();
+			_applyUpstreams();
+			return false;
+		}
+	);
+
 	// Restore persisted servers, otherwise the built-in presets.
 	std::vector<std::string> items;
 	if (auto cfg = _ui->userConfig()->parameterSectionVector("DNS", "upstreams"))
