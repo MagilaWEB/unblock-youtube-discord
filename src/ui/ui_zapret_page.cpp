@@ -622,10 +622,20 @@ void UiZapretPage::_testingInit()
 
 void UiZapretPage::_buttonUpdate()
 {
-	if (_ui->unblock()->isRun(_technology))
-		_start_button->setTitle("str_b_restart_unblock");
-	else
-		_start_button->setTitle("str_b_start_zapret");
+	// Owner of the button title and of _last_running. Called every updateState()
+	// tick and right after a start/stop/auto-start, so the button always mirrors
+	// the live engine state; the DOM is rewritten only on change. A change-gate
+	// here would go stale: an out-of-band call can run on a transient state
+	// (service mid-restart, isRun() briefly false) and freeze the title.
+	if (!_start_button->isCreate())
+		return;
+
+	const bool running = _ui->unblock()->isRun(_technology);
+	if (running == _last_running)
+		return;
+
+	_last_running = running;
+	_start_button->setTitle(running ? "str_b_restart_unblock" : "str_b_start_zapret");
 }
 
 void UiZapretPage::_updateStatus(std::optional<Technology> active)
@@ -686,12 +696,14 @@ void UiZapretPage::updateState()
 	const auto active	  = _ui->unblock()->runningTechnology();
 	const bool has_report = _hasEngineReport();
 
-	if (running != _last_running || active != _last_active || has_report != _last_has_report)
+	// The button mirrors the live state on every tick (see _buttonUpdate); the
+	// status line and the rate follow the active engine, refreshed on change.
+	_buttonUpdate();
+
+	if (active != _last_active || has_report != _last_has_report)
 	{
-		_last_running	 = running;
 		_last_active	 = active;
 		_last_has_report = has_report;
-		_buttonUpdate();
 		_updateStatus(active);
 	}
 
