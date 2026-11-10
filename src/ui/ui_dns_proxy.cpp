@@ -257,7 +257,7 @@ void UiDnsProxy::initialize()
 		if (_ui->userConfig()->parameterSection<bool>("DNS", "enable"))
 			_ui->userConfig()->writeSectionParameter("DNS", "consent", "true");
 		else
-			Core::get().addTask([this] { _window_enable_dns_proxy->show(); });
+			_window_enable_dns_proxy->show();
 	}
 }
 
