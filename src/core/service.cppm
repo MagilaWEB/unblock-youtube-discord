@@ -151,6 +151,11 @@ private:
 	u64			   _start_tick_ms{ 0 };
 
 	static constexpr DWORD	c_dw_timeout_ms	   = 30'000;
+	// Status polling is a local, cheap SCM query. A service may advertise a
+	// long dwWaitHint, but sleeping that whole hint makes stop/start feel
+	// frozen, so poll often and keep the hint only as a coarse upper bound.
+	static constexpr DWORD	c_wait_poll_min_ms = 100;
+	static constexpr DWORD	c_wait_poll_max_ms = 500;
 	static constexpr DWORD	c_create_retry_ms  = 300;
 	static constexpr DWORD	c_start_retry_ms   = 300;
 	static constexpr DWORD	c_open_retry_ms	   = 5;

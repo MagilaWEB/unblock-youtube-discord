@@ -551,7 +551,7 @@ void Service::_waitStatusService(DWORD check_state, DWORD check_stat_end, std::f
 	_dw_start_time = GetTickCount64();
 	while (_sc && _config.sc_status.dwCurrentState == check_state)
 	{
-		_dw_wait_time = std::clamp<DWORD>(_config.sc_status.dwWaitHint / 10, 1'000, 10'000);
+		_dw_wait_time = std::clamp<DWORD>(_config.sc_status.dwWaitHint / 10, c_wait_poll_min_ms, c_wait_poll_max_ms);
 		std::this_thread::sleep_for(std::chrono::milliseconds(_dw_wait_time));
 
 		update();
@@ -593,7 +593,7 @@ Service::StartOutcome Service::_waitStarted()
 			return StartOutcome::Unknown;
 		}
 
-		_dw_wait_time = std::clamp<DWORD>(_config.sc_status.dwWaitHint / 10, 1'000, 10'000);
+		_dw_wait_time = std::clamp<DWORD>(_config.sc_status.dwWaitHint / 10, c_wait_poll_min_ms, c_wait_poll_max_ms);
 		std::this_thread::sleep_for(std::chrono::milliseconds(_dw_wait_time));
 
 		update();
