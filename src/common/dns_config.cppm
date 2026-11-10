@@ -213,10 +213,10 @@ export std::optional<std::vector<std::string>> parseBootstrapList(std::string_vi
 	return out;
 }
 
-// Parses whole config content. Returns {config, error}; error is empty on
-// success. A config without upstreams, or with hostname upstreams but no
+// Parses whole config content. On success returns the config; on failure an
+// error message. A config without upstreams, or with hostname upstreams but no
 // bootstrap, is an error (the DLL could not init them).
-export std::pair<DnsProxyConfig, std::string> parseProxyConfig(const std::string& content)
+export std::expected<DnsProxyConfig, std::string> parseProxyConfig(const std::string& content)
 {
 	DnsProxyConfig config;
 	size_t		   pos = 0;
@@ -235,7 +235,7 @@ export std::pair<DnsProxyConfig, std::string> parseProxyConfig(const std::string
 
 		const size_t eq = line.find('=');
 		if (eq == std::string::npos)
-			return { config, "Bad line (no '='): " + line };
+			return std::unexpected("Bad line (no '='): " + line);
 
 		const std::string key	= trimConfigLine(line.substr(0, eq));
 		const std::string value = trimConfigLine(line.substr(eq + 1));
@@ -244,43 +244,29 @@ export std::pair<DnsProxyConfig, std::string> parseProxyConfig(const std::string
 			config.listen = value;
 		else if (key == "port")
 		{
-			try
-			{
-				const int port = std::stoi(value);
-				if (port <= 0 || port > 65'535)
-					return { config, "Bad port: " + value };
-				config.port = static_cast<std::uint16_t>(port);
-			}
-			catch (...)
-			{
-				return { config, "Bad port: " + value };
-			}
+			std::uint16_t port = 0;
+			if (std::from_chars(value.data(), value.data() + value.size(), port).ec != std::errc{} || port == 0)
+				return std::unexpected("Bad port: " + value);
+			config.port = port;
 		}
 		else if (key == "timeout")
 		{
-			try
-			{
-				const int timeout = std::stoi(value);
-				if (timeout < 1'000 || timeout > 120'000)
-					return { config, "Bad timeout: " + value };
-				config.timeout_ms = static_cast<std::uint32_t>(timeout);
-			}
-			catch (...)
-			{
-				return { config, "Bad timeout: " + value };
-			}
+			std::uint32_t timeout = 0;
+			if (std::from_chars(value.data(), value.data() + value.size(), timeout).ec != std::errc{} || timeout < 1'000 || timeout > 120'000)
+				return std::unexpected("Bad timeout: " + value);
+			config.timeout_ms = timeout;
 		}
 		else if (key == "bootstrap")
 		{
 			auto list = parseBootstrapList(value);
 			if (!list)
-				return { config, "Bad bootstrap: " + value };
+				return std::unexpected("Bad bootstrap: " + value);
 			config.bootstrap = std::move(*list);
 		}
 		else if (key == "upstream")
 		{
 			if (!isValidUpstreamAddress(value))
-				return { config, "Bad upstream: " + value };
+				return std::unexpected("Bad upstream: " + value);
 			config.upstreams.push_back(value);
 		}
 		else if (key == "log")
@@ -288,16 +274,16 @@ export std::pair<DnsProxyConfig, std::string> parseProxyConfig(const std::string
 		else if (key == "backup")
 			config.backup_path = value;
 		else
-			return { config, "Unknown key: " + key };
+			return std::unexpected("Unknown key: " + key);
 	}
 
 	if (config.upstreams.empty())
-		return { config, "No upstreams configured" };
+		return std::unexpected("No upstreams configured");
 
 	if (config.bootstrap.empty())
 		for (const auto& upstream : config.upstreams)
 			if (upstreamNeedsBootstrap(upstream))
-				return { config, "Bootstrap required for hostname upstream: " + upstream };
+				return std::unexpected("Bootstrap required for hostname upstream: " + upstream);
 
-	return { config, {} };
+	return config;
 }

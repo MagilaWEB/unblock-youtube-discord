@@ -163,12 +163,14 @@ int main(int argc, char** argv)
 		return 2;
 	}
 
-	auto [config, config_error] = parseProxyConfig(content);
-	if (!config_error.empty())
+	auto parsed = parseProxyConfig(content);
+	if (!parsed)
 	{
-		std::cerr << config_error << "\n";
+		std::cerr << parsed.error() << "\n";
 		return 2;
 	}
+
+	DnsProxyConfig config = std::move(*parsed);
 
 	const std::filesystem::path cfg_dir = std::filesystem::path{ config_path }.parent_path();
 	if (config.log_path.empty())

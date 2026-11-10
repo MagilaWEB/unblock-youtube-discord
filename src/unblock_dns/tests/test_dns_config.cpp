@@ -81,48 +81,36 @@ TEST_CASE("parseProxyConfig reads full config", "[dns][config]")
 								"backup=C:/u/dns_proxy.adapters\n"
 								"log=C:/tmp/dns.log\n";
 
-	const auto [config, error] = parseProxyConfig(content);
-	CHECK(error.empty());
-	CHECK(config.listen == "127.0.0.1");
-	CHECK(config.port == 53);
-	CHECK(config.timeout_ms == 12'000);
-	REQUIRE(config.bootstrap.size() == 3);
-	CHECK(config.bootstrap[0] == "1.1.1.1");
-	REQUIRE(config.upstreams.size() == 2);
-	CHECK(config.upstreams[0] == "https://cloudflare-dns.com/dns-query");
-	CHECK(config.upstreams[1] == "1.1.1.1");
-	CHECK(config.backup_path == "C:/u/dns_proxy.adapters");
-	CHECK(config.log_path == "C:/tmp/dns.log");
+	const auto config = parseProxyConfig(content);
+	REQUIRE(config.has_value());
+	CHECK(config->listen == "127.0.0.1");
+	CHECK(config->port == 53);
+	CHECK(config->timeout_ms == 12'000);
+	REQUIRE(config->bootstrap.size() == 3);
+	CHECK(config->bootstrap[0] == "1.1.1.1");
+	REQUIRE(config->upstreams.size() == 2);
+	CHECK(config->upstreams[0] == "https://cloudflare-dns.com/dns-query");
+	CHECK(config->upstreams[1] == "1.1.1.1");
+	CHECK(config->backup_path == "C:/u/dns_proxy.adapters");
+	CHECK(config->log_path == "C:/tmp/dns.log");
 }
 
 TEST_CASE("parseProxyConfig rejects bad input", "[dns][config]")
 {
-	const auto [c1, e1] = parseProxyConfig("port=53\n");
-	CHECK(e1 == "No upstreams configured");
-
-	const auto [c2, e2] = parseProxyConfig("upstream=discord.com:99:99\n");
-	CHECK(e2 == "Bad upstream: discord.com:99:99");
-
-	const auto [c3, e3] = parseProxyConfig("upstream=https://dns.google/dns-query\nport=99999\n");
-	CHECK(e3 == "Bad port: 99999");
-
-	const auto [c4, e4] = parseProxyConfig("upstream=https://dns.google/dns-query\nfrobnicate=1\n");
-	CHECK(e4 == "Unknown key: frobnicate");
-
-	const auto [c5, e5] = parseProxyConfig("bootstrap=nope\nupstream=1.1.1.1\n");
-	CHECK(e5 == "Bad bootstrap: nope");
-
-	const auto [c8, e8] = parseProxyConfig("timeout=abc\nupstream=1.1.1.1\n");
-	CHECK(e8 == "Bad timeout: abc");
-
-	const auto [c9, e9] = parseProxyConfig("timeout=100\nupstream=1.1.1.1\n");
-	CHECK(e9 == "Bad timeout: 100");
+	CHECK(parseProxyConfig("port=53\n").error() == "No upstreams configured");
+	CHECK(parseProxyConfig("upstream=discord.com:99:99\n").error() == "Bad upstream: discord.com:99:99");
+	CHECK(parseProxyConfig("upstream=https://dns.google/dns-query\nport=99999\n").error() == "Bad port: 99999");
+	CHECK(parseProxyConfig("upstream=https://dns.google/dns-query\nfrobnicate=1\n").error() == "Unknown key: frobnicate");
+	CHECK(parseProxyConfig("bootstrap=nope\nupstream=1.1.1.1\n").error() == "Bad bootstrap: nope");
+	CHECK(parseProxyConfig("timeout=abc\nupstream=1.1.1.1\n").error() == "Bad timeout: abc");
+	CHECK(parseProxyConfig("timeout=100\nupstream=1.1.1.1\n").error() == "Bad timeout: 100");
 
 	// A hostname upstream without any bootstrap cannot init in the DLL.
-	const auto [c6, e6] = parseProxyConfig("upstream=https://dns.google/dns-query\n");
-	CHECK(e6 == "Bootstrap required for hostname upstream: https://dns.google/dns-query");
+	CHECK(
+		parseProxyConfig("upstream=https://dns.google/dns-query\n").error()
+		== "Bootstrap required for hostname upstream: https://dns.google/dns-query"
+	);
 
 	// Plain-IP upstream needs no bootstrap.
-	const auto [c7, e7] = parseProxyConfig("upstream=1.1.1.1\n");
-	CHECK(e7.empty());
+	CHECK(parseProxyConfig("upstream=1.1.1.1\n").has_value());
 }
