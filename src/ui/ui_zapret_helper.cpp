@@ -312,19 +312,7 @@ void UiZapretHelper::updateSummary()
 
 u32 UiZapretHelper::_helperSettingU32(std::string_view key, u32 fallback) const
 {
-	if (auto v = _ui->userConfig()->parameterSection<std::string>("HELPER", std::string{ key }))
-	{
-		try
-		{
-			return static_cast<u32>(std::stoul(v.value()));
-		}
-		catch (...)
-		{
-			return fallback;
-		}
-	}
-
-	return fallback;
+	return _ui->userConfig()->parameterSection<u32>("HELPER", std::string{ key }).value_or(fallback);
 }
 
 void UiZapretHelper::_applyHelperSettings()

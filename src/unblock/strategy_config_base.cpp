@@ -278,7 +278,16 @@ void StrategyConfigBase::_sortFiles()
 			std::smatch				right_res;
 			static const std::regex reg{ "\\d+" };
 			if (std::regex_search(left, left_res, reg) && std::regex_search(right, right_res, reg))
-				return std::stoul(left_res.str()) < std::stoul(right_res.str());
+			{
+				const std::string left_str	= left_res.str();
+				const std::string right_str = right_res.str();
+
+				u32 left_num  = 0;
+				u32 right_num = 0;
+				if (std::from_chars(left_str.data(), left_str.data() + left_str.size(), left_num).ec == std::errc{}
+					&& std::from_chars(right_str.data(), right_str.data() + right_str.size(), right_num).ec == std::errc{})
+					return left_num < right_num;
+			}
 
 			return left.length() < right.length();
 		}

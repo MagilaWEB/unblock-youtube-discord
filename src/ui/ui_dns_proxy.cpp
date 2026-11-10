@@ -131,15 +131,8 @@ void UiDnsProxy::initialize()
 	// Upstream exchange timeout (seconds). Private resolvers stall now and
 	// then, so it is tunable without rebuilding.
 	std::uint32_t timeout_sec = DnsProxy::defaultTimeout() / 1'000;
-	if (auto cfg = _ui->userConfig()->parameterSection<std::string>("DNS", "timeout"))
-		try
-		{
-			if (const int parsed = std::stoi(trimConfigLine(cfg.value())); parsed >= 1 && parsed <= 120)
-				timeout_sec = static_cast<std::uint32_t>(parsed);
-		}
-		catch (...)
-		{
-		}
+	if (const auto cfg = _ui->userConfig()->parameterSection<std::uint32_t>("DNS", "timeout"); cfg && *cfg >= 1 && *cfg <= 120)
+		timeout_sec = *cfg;
 	_dns_proxy.setTimeout(timeout_sec * 1'000);
 
 	_timeout->create(
@@ -154,16 +147,13 @@ void UiDnsProxy::initialize()
 	_timeout->addEventSubmit(
 		[this](JSArgs args)
 		{
-			try
+			const std::string text = trimConfigLine(jsToCpp<std::string>(args[0]));
+
+			if (int seconds = 0; std::from_chars(text.data(), text.data() + text.size(), seconds).ec == std::errc{})
 			{
-				int seconds = std::stoi(trimConfigLine(jsToCpp<std::string>(args[0])));
-				seconds		= std::clamp(seconds, 1, 120);
-				_dns_proxy.setTimeout(static_cast<std::uint32_t>(seconds) * 1'000);
+				_dns_proxy.setTimeout(static_cast<std::uint32_t>(std::clamp(seconds, 1, 120)) * 1'000);
 				_collectUpstreams();
 				_applyUpstreams();
-			}
-			catch (...)
-			{
 			}
 			return false;
 		}

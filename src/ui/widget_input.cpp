@@ -362,14 +362,15 @@ u32 Input::getValueU32(Types type, u32 default_value, u32 min_value, u32 max_val
 
 	if (!isNumericKind(type))
 	{
-		try
-		{
-			return std::clamp(static_cast<u32>(std::stoul(raw)), min_value, max_value);
-		}
-		catch (...)
-		{
-			return std::clamp(default_value, min_value, max_value);
-		}
+		// from_chars, unlike stoul, does not skip leading blanks.
+		const std::string_view view{ raw };
+		const size_t		   begin = view.find_first_not_of(" \t\r\n");
+
+		u32 value = 0;
+		if (begin != std::string_view::npos && std::from_chars(view.data() + begin, view.data() + view.size(), value).ec == std::errc{})
+			return std::clamp(value, min_value, max_value);
+
+		return std::clamp(default_value, min_value, max_value);
 	}
 
 	return parseDurationToUnit(raw, type, std::clamp(default_value, min_value, max_value), min_value, max_value);

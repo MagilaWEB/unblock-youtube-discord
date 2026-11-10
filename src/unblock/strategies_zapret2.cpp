@@ -211,12 +211,15 @@ void StrategiesZapret2::_luaDesyncNumberStrategy(std::string& str)
 	std::smatch manual;
 	if (std::regex_search(str, manual, reg_manual_strategy))
 	{
-		const auto number = static_cast<u32>(std::stoul(manual[1].str()));
+		const std::string digits = manual[1].str();
 
-		if (number < _strategy_index)
-			Debug::warning("manual strategy={} is lower than the counter {} in the line [{}]", number, _strategy_index, str);
-		else
-			_strategy_index = number;
+		if (u32 number = 0; std::from_chars(digits.data(), digits.data() + digits.size(), number).ec == std::errc{})
+		{
+			if (number < _strategy_index)
+				Debug::warning("manual strategy={} is lower than the counter {} in the line [{}]", number, _strategy_index, str);
+			else
+				_strategy_index = number;
+		}
 	}
 	else if (!str.contains(":final"))
 	{

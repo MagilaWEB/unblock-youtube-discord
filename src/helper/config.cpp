@@ -14,17 +14,11 @@ namespace
 
 	u32 parseClamped(std::string_view text, u32 fallback, u32 lo, u32 hi)
 	{
-		if (text.empty())
+		u32 value = 0;
+		if (text.empty() || std::from_chars(text.data(), text.data() + text.size(), value).ec != std::errc{})
 			return fallback;
 
-		try
-		{
-			return std::clamp(static_cast<u32>(std::stoul(std::string{ text })), lo, hi);
-		}
-		catch (...)
-		{
-			return fallback;
-		}
+		return std::clamp(value, lo, hi);
 	}
 
 	void applyPair(HelperConfig& cfg, std::string_view key, std::string_view value)

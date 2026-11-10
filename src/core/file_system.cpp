@@ -196,10 +196,9 @@ std::expected<TypeReturn, std::string> File::parameterSection(std::string_view s
 		}
 		else if constexpr (ValidNumber<TypeReturn>)
 		{
-			if constexpr (std::same_as<TypeReturn, float>)
-				return std::stof(key_value.value());
-			else
-				return std::stod(key_value.value());
+			TypeReturn state{};
+			std::istringstream{ key_value.value() } >> state;
+			return state;
 		}
 		else if constexpr (ValidIntegerUnsigned<TypeReturn>)
 		{
