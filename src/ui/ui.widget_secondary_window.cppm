@@ -22,6 +22,10 @@ export class SecondaryWindow final : public BaseElement
 
 	std::vector<ui::dom::Element> _buttons;
 
+	// The cancel button of the Wait type, kept so its click can flip it to a
+	// "cancelling" state and show() can restore it for the next use.
+	ui::dom::Element _cancel_button;
+
 	// Optional progress bar (see enableProgress). The percentage lives in the
 	// bar itself, so the description text is set once and never rewritten.
 	ui::dom::Element _progress;
@@ -85,5 +89,6 @@ private:
 	void _buildYesNo();
 	void _buildWait();
 	void _buildReport();
+	void _resetCancelButton(bool busy = false);
 	void _addButton(std::string_view text, ui::dom::Element& out);
 };

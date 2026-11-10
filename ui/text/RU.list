@@ -118,6 +118,7 @@ str_b_secondary_window_ok=✅ OK
 str_b_secondary_window_yes=✅ Да
 str_b_secondary_window_no=❌ Нет
 str_b_secondary_window_cancel=↩ Отмена
+str_b_secondary_window_cancelling=⏳ Отменяем...
 str_button_send_report=📨 Отправить отчёт
 
 // Secondary Window start\stop service

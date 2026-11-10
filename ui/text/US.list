@@ -118,6 +118,7 @@ str_b_secondary_window_ok=✅ OK
 str_b_secondary_window_yes=✅ Yes
 str_b_secondary_window_no=❌ No
 str_b_secondary_window_cancel=↩ Cancel
+str_b_secondary_window_cancelling=⏳ Cancelling...
 str_button_send_report=📨 Send report
 
 // Secondary Window start\stop service

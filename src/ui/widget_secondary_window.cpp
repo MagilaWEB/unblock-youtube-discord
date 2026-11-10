@@ -80,6 +80,7 @@ void SecondaryWindow::_clearElements()
 	for (auto& btn : _buttons)
 		btn.remove();
 	_buttons.clear();
+	_cancel_button = {};
 	_elements.removeClass("horizontally").removeClass("vertically");
 	_elements.html("");
 }
@@ -141,14 +142,43 @@ void SecondaryWindow::_buildWait()
 
 	ui::dom::Element cancel;
 	_addButton(Localization::Str{ "str_b_secondary_window_cancel" }(), cancel);
+	_cancel_button = cancel;
 	cancel.on(
 		ui::dom::Event::Click,
-		[](std::string element_name, js::Value) -> bool { return eventCPP({ std::move(element_name) }, _event_cancel); },
+		[this](std::string element_name, js::Value) -> bool
+		{
+			// The round in flight can take a moment to notice the cancel flag,
+			// so the button commits to the "cancelling" state right away:
+			// disabled and relabelled, which also swallows a second click.
+			// Only when a handler is wired — some Wait windows show the button
+			// with nothing behind it.
+			const auto it = _event_cancel.find(_name);
+			if (it != _event_cancel.end() && !it->second.empty())
+				_resetCancelButton(true);
+			return eventCPP({ std::move(element_name) }, _event_cancel);
+		},
 		_name,
 		{ .persist = true }
 	);
 
 	_elements.addClass("vertically");
+}
+
+void SecondaryWindow::_resetCancelButton(bool busy)
+{
+	if (!_cancel_button.valid())
+		return;
+
+	auto inner = _cancel_button.query("button");
+	if (!inner.valid())
+		return;
+
+	inner.text(Localization::Str{ busy ? "str_b_secondary_window_cancelling" : "str_b_secondary_window_cancel" }());
+
+	if (busy)
+		inner.setAttr("disabled", "disabled");
+	else
+		inner.removeAttr("disabled");
 }
 
 void SecondaryWindow::_buildReport()
@@ -247,6 +277,8 @@ void SecondaryWindow::setProgress(float percent)
 
 void SecondaryWindow::show()
 {
+	_resetCancelButton();
+
 	for (auto& window : _all_window)
 	{
 		if (window->isShow() && (!window->waitShow()))
