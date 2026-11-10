@@ -98,6 +98,10 @@ private:
 
 	std::string _last_status;
 
+	// True while a start/stop task is in flight: the checkbox keeps the
+	// optimistic value until the live service state catches up.
+	std::atomic_bool _apply_pending{ false };
+
 public:
 	UiDnsProxy(std::shared_ptr<Ui> ui, DnsProxy& dns_proxy);
 

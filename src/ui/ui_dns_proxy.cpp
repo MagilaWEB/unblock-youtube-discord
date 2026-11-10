@@ -37,14 +37,16 @@ void UiDnsProxy::initialize()
 		}
 	);
 
-	// First-run consent: a missing DNS/enable key means the user has never
-	// decided about the DNS feature, so ask before touching the hosts file.
+	// First-run consent: the app asks once before it starts touching the system
+	// DNS. The answer is remembered by its own key, kept apart from the live
+	// state, which is never persisted.
 	_window_enable_dns_proxy->create(Localization::Str{ "str_warning" }, "str_window_enable_dns_proxy_description");
 	_window_enable_dns_proxy->setType(SecondaryWindow::Type::YesNo);
 	_window_enable_dns_proxy->addEventYesNo(
 		[this](JSArgs args)
 		{
 			_window_enable_dns_proxy->hide();
+			_ui->userConfig()->writeSectionParameter("DNS", "consent", "true");
 			setEnabled(jsToCpp<bool>(args[0]));
 			return false;
 		}
@@ -251,30 +253,26 @@ void UiDnsProxy::initialize()
 	// Seed the proxy and persist the list.
 	_collectUpstreams();
 
-	// Reconcile with the persisted setting; on the very first run there is
-	// none, so ask for consent to enable the DNS feature instead.
-	if (auto cfg = _ui->userConfig()->parameterSection<bool>("DNS", "enable"))
+	// The checkbox is the live service state, never a stored preference: the
+	// proxy is a system service that outlives the app, so whatever it is doing
+	// now is the truth. A launch only mirrors it and never starts or stops it.
+	_enable_dns_proxy->setState(_dns_proxy.isRun());
+	_refreshStatus();
+
+	// The very first decision is a one-time consent, remembered separately.
+	if (!_ui->userConfig()->parameterSection<bool>("DNS", "consent").value_or(false))
 	{
-		_enable_dns_proxy->setState(cfg.value());
-		_refreshStatus();
-		// The proxy is a system service that outlives the app, so a launch
-		// must not tear it down and recreate it: apply only when the persisted
-		// setting and the live service state disagree (first run, crashed
-		// service, or a manual stop). A matching running service stays as is.
-		if (cfg.value() != _dns_proxy.isRun())
-			_applyState(cfg.value());
-	}
-	else
-	{
-		_enable_dns_proxy->setState(false);
-		_refreshStatus();
-		Core::get().addTask([this] { _window_enable_dns_proxy->show(); });
+		// Older builds kept the decision under "enable": carry it over so an
+		// upgrade does not ask again.
+		if (_ui->userConfig()->parameterSection<bool>("DNS", "enable"))
+			_ui->userConfig()->writeSectionParameter("DNS", "consent", "true");
+		else
+			Core::get().addTask([this] { _window_enable_dns_proxy->show(); });
 	}
 }
 
 void UiDnsProxy::setEnabled(bool state)
 {
-	_ui->userConfig()->writeSectionParameter("DNS", "enable", state ? "true" : "false");
 	_enable_dns_proxy->setState(state);
 	_applyState(state);
 }
@@ -282,10 +280,12 @@ void UiDnsProxy::setEnabled(bool state)
 void UiDnsProxy::_applyState(bool state)
 {
 	_ui->backgroundTasks()->start("dns_proxy_apply", "str_task_dns_proxy_title");
+	_apply_pending = true;
 	Core::get().addTask(
 		[this, state]
 		{
 			_ui->unblock()->setDnsEnabled(state);
+			_apply_pending = false;
 			_ui->backgroundTasks()->finish("dns_proxy_apply");
 		}
 	);
@@ -321,14 +321,16 @@ void UiDnsProxy::_collectUpstreams()
 
 void UiDnsProxy::_applyUpstreams()
 {
-	if (!_ui->userConfig()->parameterSection<bool>("DNS", "enable").value_or(false))
+	if (!_dns_proxy.isRun())
 		return;
 
 	_ui->backgroundTasks()->start("dns_proxy_apply", "str_task_dns_proxy_title");
+	_apply_pending = true;
 	Core::get().addTask(
 		[this]
 		{
 			_ui->unblock()->runDnsProxy(true);
+			_apply_pending = false;
 			_ui->backgroundTasks()->finish("dns_proxy_apply");
 		}
 	);
@@ -357,6 +359,12 @@ void UiDnsProxy::_refreshStatus()
 
 	const bool running = _dns_proxy.isRun();
 	const bool issue   = _ui->unblock()->serviceReportCovers("unblock_dns");
+
+	// Mirror reality: the box follows the service, not a stored preference.
+	// While a start/stop task is in flight the live state lags the intent, so
+	// keep the optimistic value instead of flickering back.
+	if (!_apply_pending.load() && _enable_dns_proxy->getState() != running)
+		_enable_dns_proxy->setState(running);
 
 	std::string text;
 	if (issue)
