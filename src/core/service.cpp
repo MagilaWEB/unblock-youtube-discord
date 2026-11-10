@@ -253,7 +253,26 @@ void Service::create()
 		open();
 
 		if (_sc)
+		{
+			// CreateServiceW did not touch an existing registration: re-assert the
+			// start type the app always creates it with. A leftover "disabled"
+			// (set by a cleaner or by hand) would otherwise silently block every
+			// StartService with ERROR_SERVICE_DISABLED.
+			ChangeServiceConfigW(
+				_sc.get(),
+				SERVICE_NO_CHANGE,
+				SERVICE_AUTO_START,
+				SERVICE_NO_CHANGE,
+				nullptr,
+				nullptr,
+				nullptr,
+				nullptr,
+				nullptr,
+				nullptr,
+				nullptr
+			);
 			return;
+		}
 
 		if (_time_limit.getElapsedSec() > 5.0F)
 		{

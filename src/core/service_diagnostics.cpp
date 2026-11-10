@@ -12,8 +12,7 @@ import core.utils;
 
 namespace
 {
-	constexpr u32	 c_probe_timeout_ms = 3'000;
-	constexpr size_t c_raw_clip			= 600;
+	constexpr u32 c_probe_timeout_ms = 3'000;
 
 	// ERROR_FAILED_SERVICE_CONTROLLER_CONNECT: a service image run outside the
 	// SCM exits with exactly this code, so the probe verdict would be a lie.
@@ -29,8 +28,9 @@ namespace
 		return std::format("0x{:08X}", value);
 	}
 
-	// One line, no control characters: the value ends up in the UI and in a log.
-	std::string clip(std::string_view text, size_t limit = c_raw_clip)
+	// One line, no control characters: the value ends up in the attached report
+	// (and sometimes in the UI), so it stays whole there.
+	std::string flatten(std::string_view text)
 	{
 		std::string line;
 		line.reserve(text.size());
@@ -41,11 +41,17 @@ namespace
 		while (line.contains("  "))
 			line.replace(line.find("  "), 2, " ");
 
-		std::string trimmed = line;
-		while (!trimmed.empty() && trimmed.front() == ' ')
-			trimmed.erase(trimmed.begin());
+		while (!line.empty() && line.front() == ' ')
+			line.erase(line.begin());
 
-		return trimmed.size() <= limit ? trimmed : trimmed.substr(0, limit) + "...";
+		return line;
+	}
+
+	// Same as flatten, but capped: only the pieces that ride a URL stay short.
+	std::string clip(std::string_view text, size_t limit)
+	{
+		std::string line = flatten(text);
+		return line.size() <= limit ? line : line.substr(0, limit) + "...";
 	}
 
 	std::string join(const std::vector<std::string>& items, std::string_view separator)
@@ -202,11 +208,15 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 	// is merely suspicious only fills the checklist.
 	enum class Cause
 	{
+		// A disabled start type is a hard blocker: the SCM refuses to start the
+		// service no matter how healthy the binary is. It outranks the probe,
+		// which only proves the image runs outside the SCM, so the structural
+		// reason must drive the verdict instead of sending the user after rights.
+		Disabled,
 		Probe,
 		Scm,
 		ExitCode,
 		Antivirus,
-		Disabled,
 		Registration,
 		Driver,
 		Conflict,
@@ -219,15 +229,15 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 	{
 		switch (cause)
 		{
-		case Cause::Probe:
-			return 0;
-		case Cause::Scm:
-			return 1;
-		case Cause::ExitCode:
-			return 2;
-		case Cause::Antivirus:
-			return 3;
 		case Cause::Disabled:
+			return 0;
+		case Cause::Probe:
+			return 1;
+		case Cause::Scm:
+			return 2;
+		case Cause::ExitCode:
+			return 3;
+		case Cause::Antivirus:
 			return 4;
 		case Cause::Registration:
 			return 5;
@@ -283,11 +293,16 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 		report.raw.push_back(std::format("path_issue={}", issue));
 	for (const auto& event : evidence.scm_events)
 		report.raw.push_back(
-			std::format("scm_event id={} time={} msg={}", event.id, event.time_utc_ms, clip(event.message.empty() ? event.xml : event.message))
+			std::format("scm_event id={} time={} msg={}", event.id, event.time_utc_ms, flatten(event.message.empty() ? event.xml : event.message))
 		);
 	for (const auto& event : evidence.defender_events)
 		report.raw.push_back(
-			std::format("defender_event id={} time={} msg={}", event.id, event.time_utc_ms, clip(event.message.empty() ? event.xml : event.message))
+			std::format(
+				"defender_event id={} time={} msg={}",
+				event.id,
+				event.time_utc_ms,
+				flatten(event.message.empty() ? event.xml : event.message)
+			)
 		);
 	if (evidence.probe_attempted)
 	{
@@ -295,9 +310,9 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 			std::format("probe_started={} timed_out={} exit_code={}", evidence.probe_started, evidence.probe_timed_out, evidence.probe_exit_code)
 		);
 		if (!evidence.probe_out.empty())
-			report.raw.push_back("probe_stdout=" + clip(evidence.probe_out));
+			report.raw.push_back("probe_stdout=" + flatten(evidence.probe_out));
 		if (!evidence.probe_err.empty())
-			report.raw.push_back("probe_stderr=" + clip(evidence.probe_err));
+			report.raw.push_back("probe_stderr=" + flatten(evidence.probe_err));
 	}
 
 	// --- Codes ---------------------------------------------------------------
@@ -342,7 +357,10 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 	const bool file_gone = !evidence.binary_exists || !evidence.missing_files.empty();
 
 	// The probe output is the only evidence that shows the actual crash text.
-	const std::string probe_output = clip(evidence.probe_err.empty() ? evidence.probe_out : evidence.probe_err, 400);
+	// The attached report keeps it whole; only the issue summary, which has to
+	// survive as a URL, is clipped.
+	const std::string probe_full   = flatten(evidence.probe_err.empty() ? evidence.probe_out : evidence.probe_err);
+	const std::string probe_output = clip(probe_full, 400);
 	if (evidence.probe_attempted)
 	{
 		if (!evidence.probe_started)
@@ -374,8 +392,8 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 				promote(Cause::Probe);
 		}
 
-		if (!probe_output.empty())
-			add_check(DiagnosticCheck::Level::Warning, utils::format(localized("str_diag_check_probe_output"), probe_output));
+		if (!probe_full.empty())
+			add_check(DiagnosticCheck::Level::Warning, utils::format(localized("str_diag_check_probe_output"), probe_full));
 	}
 	else
 	{
@@ -393,7 +411,7 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 		for (const auto& event : evidence.scm_events)
 			add_check(
 				DiagnosticCheck::Level::Warning,
-				utils::format(localized("str_diag_check_event"), event.id, clip(event.message.empty() ? event.xml : event.message, 400))
+				utils::format(localized("str_diag_check_event"), event.id, flatten(event.message.empty() ? event.xml : event.message))
 			);
 		promote(Cause::Scm);
 	}
@@ -417,7 +435,7 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 		for (const auto& event : evidence.defender_events)
 			add_check(
 				DiagnosticCheck::Level::Warning,
-				utils::format(localized("str_diag_check_event"), event.id, clip(event.message.empty() ? event.xml : event.message, 400))
+				utils::format(localized("str_diag_check_event"), event.id, flatten(event.message.empty() ? event.xml : event.message))
 			);
 
 		if (defender_blocked)
@@ -484,7 +502,7 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 		{
 			add_check(
 				DiagnosticCheck::Level::Failed,
-				utils::format(localized("str_diag_check_registration_mismatch"), clip(evidence.registered_command, 300))
+				utils::format(localized("str_diag_check_registration_mismatch"), flatten(evidence.registered_command))
 			);
 			promote(Cause::Registration);
 		}

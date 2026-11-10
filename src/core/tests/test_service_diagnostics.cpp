@@ -172,6 +172,23 @@ TEST_CASE("Diagnostics: a disabled service is reported", "[service_diagnostics]"
 	CHECK(report.verdict == "VERDICT_DISABLED");
 }
 
+TEST_CASE("Diagnostics: a disabled service outranks a healthy probe", "[service_diagnostics]")
+{
+	DiagnosticsFixture fx;
+
+	auto evidence			 = cleanEvidence();
+	evidence.start_type		 = 4;	 // SERVICE_DISABLED
+	evidence.probe_attempted = true;
+	evidence.probe_started	 = true;
+	evidence.probe_timed_out = true;
+
+	auto report = buildReport(makeFailure(), evidence);
+
+	// The probe only proves the binary runs outside the SCM: it must not bury
+	// the real blocker and tell the user to check rights and antivirus.
+	CHECK(report.verdict == "VERDICT_DISABLED");
+}
+
 TEST_CASE("Diagnostics: no evidence stays an honest unknown with raw data", "[service_diagnostics]")
 {
 	DiagnosticsFixture fx;
@@ -223,6 +240,24 @@ TEST_CASE("Diagnostics: the probe output outranks everything else", "[service_di
 	CHECK(report.fullText().contains("CHECK_PROBE_OUTPUT"));
 	CHECK(report.fullText().contains("dll init failed"));
 	CHECK(report.fullText().contains("CHECK_SCM_FOUND"));
+}
+
+TEST_CASE("Diagnostics: fullText keeps the whole probe output, issueText clips it", "[service_diagnostics]")
+{
+	DiagnosticsFixture fx;
+
+	auto evidence			 = cleanEvidence();
+	evidence.probe_attempted = true;
+	evidence.probe_started	 = true;
+	evidence.probe_exit_code = 5;	 // neither 0 nor 1063, so the probe branch reports a failure
+	evidence.probe_err		 = std::string(600, 'x') + "PROBE_TAIL";
+
+	auto report = buildReport(makeFailure(), evidence);
+
+	// The attached file carries the evidence whole...
+	CHECK(report.fullText().contains("PROBE_TAIL"));
+	// ...while the issue URL (issueText) keeps only the short summary.
+	CHECK_FALSE(report.issueText().contains("PROBE_TAIL"));
 }
 
 TEST_CASE("Diagnostics: a missing file outranks the probe verdict", "[service_diagnostics]")
