@@ -25,16 +25,18 @@
 --      и API-потоки до гейта в 4096 байт серверных данных не доходят никогда,
 --      и каждый их сбой уводил стратегию из-под работающего соединения (а
 --      звонок Discord после этого рвётся). Работающий TCP подтверждается
---      ответом сервера (п. 3); по скорости TCP не судится — throttle-окно
---      (conntrack-счётчик байт сервера, track.pos.server.pbcounter) работает
---      только на QUIC (п. 5). Одно соединение докладывает провал не чаще раза
---      в 2 секунды, счётчик fails сбрасывается по времени (time) или настоящим
---      успехом.
+--      ответом сервера (п. 3), а троттлинг после рукопожатия ловит
+--      throttle-судья (conntrack-счётчик байт сервера,
+--      track.pos.server.pbcounter): потоковые хосты (googlevideo) судятся по
+--      скорости и на TLS, и на QUIC (п. 5), а обычный TCP (API, long-poll) —
+--      нет, он низкоскоростной по природе. Одно соединение докладывает
+--      провал не чаще раза в 2 секунды, счётчик fails сбрасывается по времени
+--      (time) или настоящим успехом.
 --   3. Положительный вердикт — входящий tls_server_hello/http_reply: он
---      подтверждает стратегию для helper (VALID) и рейтинга — для TCP этого
---      достаточно. Для QUIC (UDP) рукопожатия мало: успех ставит только
---      здоровое окно скорости, иначе «сайт открылся, видео стоит» навсегда
---      закрепляло бы троттлящую стратегию.
+--      подтверждает стратегию для helper (VALID) и рейтинга — для обычного TCP
+--      этого достаточно. Для потоковых хостов (googlevideo) и QUIC рукопожатия
+--      мало: успех ставит только здоровое окно скорости, иначе «сайт открылся,
+--      видео стоит» навсегда закрепляло бы троттлящую стратегию.
 --   3b. Рейтинг стратегий (в пределах плана и прогона winws2): +1 к счётчику
 --      успехов стратегии. При переключении кандидаты берутся в порядке: успешные
 --      (по числу успехов убыв., ничьи — по номеру), затем неотмеченные 1..N.
@@ -74,14 +76,22 @@
 --                    исчерпания плана, сек (по умолч. 60)
 --   maxseq=N       — макс. seq для проверок (по умолч. 32768)
 --   throttle_window=N — окно замера скорости даунстрима, сек (по умолч. 3)
---   throttle_min_bps=N — ниже этой скорости (Б/с) окно плохое (по умолч. 500)
+--   throttle_min_bps=N — ниже этой скорости (Б/с) окно плохое, и такой
+--                    поток не подтверждается (по умолч. 20000: под любым
+--                    играбельным видео, но выше мусора — 500 Б/с проходил
+--                    даже ползущий ручеёк)
 --   throttle_collapse=N — доля пика соединения, ниже которой окно плохое
 --                    (по умолч. 0.25; 0 — выключить проверку)
 --   throttle_windows=N — сколько плохих окон подряд до провала (по умолч. 2)
+--   stream_min_bytes=N — объём серверных байт, с которого пото́к считается
+--                    потоковым и его можно судить по скорости (по умолч.
+--                    200000). Ниже метки это проба или API-запрос: объёма у
+--                    них нет по природе, и вердикт им даёт ответ сервера, а не
+--                    скорость (иначе 403 на пробе валит рабочую стратегию).
 --   udp_out=N      — исходящих UDP пакетов для вердикта FAIL (по умолч. 4)
 --   udp_in=N       — входящих UDP пакетов: больше N — успех, иначе фейл (по умолч. 1)
 --   udp_silence=N  — секунд молчания сервера при живом исходящем потоке
---                    (только QUIC) до вердикта FAIL (по умолч. 3)
+--                    (потоковые хосты и QUIC) до вердикта FAIL (по умолч. 3)
 --   reset          — отправлять RST при ошибке
 --   start=N        — начальный номер стратегии (0 = direct, по умолч. 0)
 -- auto_host_group — группирует хосты одного семейства в общую стратегию.
@@ -156,7 +166,13 @@ function auto_host_record(desync, askey)
         autostate[askey][hostkey] = {}
     end
 
-    return autostate[askey][hostkey]
+    local rec = autostate[askey][hostkey]
+    -- Streaming host (googlevideo): a server answer proves the site is
+    -- reachable, not that its data path delivers. Such a host is confirmed
+    -- only by a healthy goodput window (see auto_confirm_goodput) and judged
+    -- by the throttle path on both transports - TLS and QUIC.
+    rec.stream = (hostkey == "googlevideo.com")
+    return rec
 end
 
 -- Fingerprint of the profile's plan: number of distinct strategy numbers in
@@ -247,7 +263,8 @@ end
 local c_success_cycles = 2
 
 -- Ordered candidates for the host's next strategy. Successful strategies are
--- ranked by success count (desc, ties by number asc); never-successful ones
+-- ranked by measured throughput first (see auto_confirm_goodput), then by
+-- success count (desc, ties by number asc); never-successful ones
 -- follow, fewest *global* failures first: a new host must not start with a
 -- strategy that just failed for every other host in this plan. Only numbers
 -- present in THIS plan are considered. Already-tried numbers (rec.tried) are
@@ -268,7 +285,15 @@ function auto_strategy_candidates(rec, rating, failures)
         end
     end
 
+    -- Proven strategies: the measured goodput wins first, so a strategy that
+    -- really streamed is preferred over one that only answered the handshake.
+    -- Ties fall back to the success count and then to the number.
     table.sort(proven, function(a, b)
+        local ra = (rec.rate and rec.rate[a]) or 0
+        local rb = (rec.rate and rec.rate[b]) or 0
+        if ra ~= rb then
+            return ra > rb
+        end
         if rating[a] ~= rating[b] then
             return rating[a] > rating[b]
         end
@@ -520,6 +545,14 @@ function auto_strategy_plan(desync, rec, verdict)
     return verdict
 end
 
+-- Goodput floor for a video host, B/s. Below it the flow is not really
+-- working: a strategy that only lets a crawl through must not be confirmed
+-- (VALID) and must not outrank one that really delivered. 20 KB/s is under
+-- any playable stream, but far above the old 500 B/s - a crawl used to count
+-- as a healthy window, so a host could be certified as working while its
+-- video never played. Tunable per plan with throttle_min_bps.
+local c_throttle_min_bps = 20000
+
 -- Per-connection downstream goodput (throttling-after-handshake). The
 -- conntrack counter is cumulative for the whole flow, so a packet that never
 -- reaches Lua (another profile's filter, a skipped block) does not lose its
@@ -545,10 +578,16 @@ function auto_throttle_account(crec, desync, now)
 end
 
 -- Goodput (B/s) over the finished window, nil while the window is still
--- open. An idle window (pause, ended request) is not evidence: rearm and
--- drop the bad-window streak instead of punishing silence. A long gap is not
--- a sample either: bytes accumulated over a minute of silence are not a
--- throughput measurement.
+-- open. Three kinds of window are not a measurement: the still-open one, an
+-- idle one before the connection ever delivered, and a long gap (bytes
+-- accumulated over a minute of silence are not a throughput measurement).
+--
+-- An idle window after a healthy phase is evidence: the server stops sending
+-- while the client keeps the window closing (ACKs, retransmissions). That is
+-- a stall - the DPI cut the data path - and the old code threw it away, so a
+-- video that stopped mid-stream was never judged and the strategy stayed.
+-- A paused player sends nothing at all, so no window closes: it lands in the
+-- long-gap branch instead of here.
 function auto_throttle_rate(crec, arg, now)
     if not crec.t_window_start then
         return nil
@@ -565,10 +604,21 @@ function auto_throttle_rate(crec, arg, now)
     crec.t_window_base = (crec.t_window_base or 0) + bytes
     crec.t_window_bytes = 0
 
-    if bytes == 0 or elapsed > window * 4 then
+    if elapsed > window * 4 then
         crec.t_bad = 0
         return nil
     end
+
+    if bytes == 0 then
+        local healthy = (crec.t_peak or 0) >= (tonumber(arg.throttle_min_bps) or c_throttle_min_bps)
+        if not healthy or elapsed > window * 2 then
+            crec.t_bad = 0
+            return nil
+        end
+        -- Stall: 0 B/s, counted as a bad window below.
+        return 0
+    end
+
     return bytes / elapsed
 end
 
@@ -581,7 +631,7 @@ end
 -- restarts then, so one verdict costs throttle_windows bad windows.
 function auto_throttle_judge(crec, arg, rate)
     local peak = crec.t_peak or 0
-    local min = tonumber(arg.throttle_min_bps) or 0
+    local min = tonumber(arg.throttle_min_bps) or c_throttle_min_bps
     local ratio = tonumber(arg.throttle_collapse) or 0
 
     local bad = rate < min or (ratio > 0 and peak > 0 and rate < peak * ratio)
@@ -610,7 +660,7 @@ end
 -- arrives after a short fast burst, and the first window alone would rate a
 -- strategy that is about to collapse. Once per connection and strategy.
 function auto_confirm_goodput(hrec, crec, arg, rate, is_udp, askey)
-    if crec.rated_n == hrec.nstrategy or rate < (tonumber(arg.throttle_min_bps) or 0) then
+    if crec.rated_n == hrec.nstrategy or rate < (tonumber(arg.throttle_min_bps) or c_throttle_min_bps) then
         return
     end
 
@@ -750,6 +800,21 @@ function auto_strategy(ctx, desync)
             local now = os.time()
             auto_throttle_account(crec, desync, now)
 
+            -- Flow class: a streaming host's flow is judged by goodput only
+            -- once it really streamed. The helper and the app's test probe
+            -- rr*.googlevideo.com with /videoplayback?expire=1 and get an
+            -- "access denied" page, so such a flow never carries video volume:
+            -- judging it by speed failed a working strategy over a 403. The
+            -- class is fixed once the flow crosses the volume mark or the
+            -- server closes it; until then the flow is not judged by speed.
+            local srv_bytes = desync.track.pos.server and desync.track.pos.server.pbcounter or 0
+            if not crec.streamed and srv_bytes >= arg.stream_min_bytes then
+                crec.streamed = true
+            end
+            if bitand(desync.dis.tcp.th_flags, TH_FIN) ~= 0 then
+                crec.closed = true
+            end
+
             -- Positive evidence: the server answered. An outgoing ClientHello
             -- proves nothing (DPI lets the request out and kills the reply),
             -- so only an incoming handshake/HTTP reply may confirm the
@@ -826,13 +891,14 @@ function auto_strategy(ctx, desync)
                 end
             end
 
-            -- Throttling-after-handshake, streaming hosts only: the DPI lets
-            -- the handshake through and then chokes the data path. Two bad
-            -- windows in a row (see auto_throttle_judge) fail the strategy; a
-            -- healthy window is the real success for a video stream. Ordinary
-            -- TCP (long-poll, websocket, API) is low-rate by design and must
-            -- not be judged by bitrate: its verdict is the handshake below.
-            if hrec.stream then
+            -- Throttling-after-handshake, streaming hosts only, and only on a
+            -- flow that really streamed: the DPI lets the handshake through
+            -- and then chokes the data path. Two bad windows in a row (see
+            -- auto_throttle_judge) fail the strategy; a healthy window is the
+            -- real success for a video stream. Ordinary TCP (long-poll,
+            -- websocket, API) and probe flows are low-rate by design and must
+            -- not be judged by bitrate: their verdict is the handshake below.
+            if hrec.stream and crec.streamed then
                 local rate = auto_throttle_rate(crec, arg, now)
                 if rate then
                     local fire, bad = auto_throttle_judge(crec, arg, rate)
@@ -863,11 +929,15 @@ function auto_strategy(ctx, desync)
 
             -- Confirm once per connection: the server answered and the failure
             -- branches above did not fire. A handshake alone confirms only a
-            -- non-streaming host: for googlevideo the goodput window above
-            -- owns the success, otherwise a throttled stream would be pinned
-            -- as a working strategy and VALID would hide it from the
-            -- outer autopick.
-            local confirmed = crec.handshake_ok and (not hrec.stream or crec.goodput_ok)
+            -- non-streaming host, plus a probe flow: for googlevideo the
+            -- goodput window above owns the success (otherwise a throttled
+            -- stream would be pinned as a working strategy and VALID would hide
+            -- it from the outer autopick), but a flow the server closed before
+            -- it carried the volume mark (the probe above) had no data path to
+            -- measure - its answer is the verdict, and that is exactly the
+            -- preliminary signal the probe hosts exist for.
+            local probe = not crec.streamed and crec.closed == true
+            local confirmed = crec.handshake_ok and (not hrec.stream or crec.goodput_ok or probe)
             if host_name and confirmed and not crec.valid_sent then
                 crec.valid_sent = true
                 send_signal("VALID", host_name, name, 10000)
@@ -916,12 +986,21 @@ function auto_strategy(ctx, desync)
                 crec.t_server = now
             end
 
-            -- QUIC is the video transport: a throttled stream still receives
-            -- server packets, so goodput is the only evidence of throttling
-            -- there. Voice/game UDP keeps the packet-count verdict below: its
-            -- bitrate is legitimately low, but its packet flow is steady.
-            local streaming = (desync.track.l7proto == "quic")
-            if streaming then
+            -- googlevideo and QUIC are the video transports: a throttled stream
+            -- still receives server packets, so goodput is the only evidence of
+            -- throttling there. Voice/game UDP keeps the packet-count verdict
+            -- below: its bitrate is legitimately low, but its packet flow is
+            -- steady.
+            --
+            -- Same flow class as on the TCP side: a QUIC flow that never
+            -- carried the volume mark (an API call, a handshake-only reply) is
+            -- not judged by speed either.
+            local streaming = hrec.stream or (desync.track.l7proto == "quic")
+            local srv_bytes = desync.track.pos.server and desync.track.pos.server.pbcounter or 0
+            if not crec.streamed and srv_bytes >= arg.stream_min_bytes then
+                crec.streamed = true
+            end
+            if streaming and crec.streamed then
                 auto_throttle_account(crec, desync, now)
                 local rate = auto_throttle_rate(crec, arg, now)
                 if rate then
@@ -1036,9 +1115,10 @@ function args_defaults(arg)
         udp_out = tonumber(arg.udp_out) or 4,
         udp_silence = tonumber(arg.udp_silence) or 3,
         throttle_window = tonumber(arg.throttle_window) or 3,
-        throttle_min_bps = tonumber(arg.throttle_min_bps) or 500,
+        throttle_min_bps = tonumber(arg.throttle_min_bps) or c_throttle_min_bps,
         throttle_collapse = tonumber(arg.throttle_collapse) or 0.25,
         throttle_windows = tonumber(arg.throttle_windows) or 2,
+        stream_min_bytes = tonumber(arg.stream_min_bytes) or 200000,
         reset = arg.reset ~= nil or false
     }
 end
