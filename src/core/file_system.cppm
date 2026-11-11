@@ -51,6 +51,11 @@ public:
 	void forLineSection(std::string_view section, std::function<bool(std::string&)> fn);
 	void forLineParametersSection(std::string_view section, std::function<bool(std::string key, std::string value)> fn);
 
+	// Replaces the first line equal to token with a block of lines, in place.
+	// Meant to run before any section scan: the per-section cache filled lazily
+	// by forLineSection would otherwise go stale.
+	bool replaceLine(std::string_view token, const std::vector<std::string>& block);
+
 	std::optional<u32> positionSection(std::string_view section);
 
 	template<concepts::ValidAll TypeReturn>

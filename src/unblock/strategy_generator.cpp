@@ -8,6 +8,7 @@ import std;
 import core;
 import core.debug;
 import core.file_system;
+import core.types;
 
 const std::filesystem::path& StrategyGenerator::_base_blacklist()
 {
@@ -64,6 +65,8 @@ void StrategyGenerator::inFile(std::shared_ptr<File>& strategy)
 	_map_filters.clear();
 
 	_convertDataFiles();
+
+	_expandTemplates();
 
 	_readFileFilters("START");
 
@@ -151,6 +154,53 @@ void StrategyGenerator::_convertDataFiles()
 	// Effective exclude files: the configs base plus the custom entries, rebuilt on every run.
 	_buildUserExclude(Core::get().configsPath() / "domains_exclude.list", _user_domains_exclude(), _custom_domains_exclude);
 	_buildUserExclude(Core::get().configsPath() / "ip-exclude.list", _user_ip_exclude(), _custom_ip_exclude);
+}
+
+void StrategyGenerator::_expandTemplates()
+{
+	// configs/templates.config holds the boilerplate shared by the strategy
+	// configs: [TEMPLATES:<NAME>] starts a block that runs until the next
+	// anchor, and a config writes %TEMPLATES_<NAME>% where the block belongs.
+	// The splice happens before the section scan, so the lines take part in
+	// sections, %BLOCKLIST% and use_in>> exactly as if they were written in the
+	// config itself.
+	File templates{ false };
+	templates.open(Core::get().configsPath() / "templates", ".config", true);
+
+	if (!templates.isOpen())
+		return;
+
+	constexpr std::string_view anchor{ "[TEMPLATES:" };
+
+	std::map<std::string, std::vector<std::string>> blocks;
+	std::string										current;
+
+	for (const auto& line : templates)
+	{
+		if (line.starts_with(anchor))
+		{
+			current = line.substr(anchor.size());
+			if (const auto end = current.find(']'); end != std::string::npos)
+				current.resize(end);
+			continue;
+		}
+
+		if (!current.empty())
+			blocks[current].push_back(line);
+	}
+
+	// A block may carry the token of another block (the 1.6 head pulls the wf
+	// filter block in), so expand until nothing is left. The cap is a guard
+	// against an anchor referencing itself.
+	for (u32 pass = 0; pass < 8; ++pass)
+	{
+		bool replaced = false;
+		for (auto& [name, block] : blocks)
+			replaced |= _file_strategy->replaceLine(std::format("%TEMPLATES_{}%", name), block);
+
+		if (!replaced)
+			break;
+	}
 }
 
 void StrategyGenerator::_readFileFilters(std::string_view section)

@@ -94,6 +94,21 @@ void File::forLineSection(std::string_view section, std::function<bool(std::stri
 			break;
 }
 
+bool File::replaceLine(std::string_view token, const std::vector<std::string>& block)
+{
+	CRITICAL_SECTION_RAII(_lock);
+
+	const auto iter = std::ranges::find_if(_line_string, [token](const std::string& line) { return std::string_view{ line } == token; });
+	if (iter == _line_string.end())
+		return false;
+
+	// erase() invalidates the passed iterator: the block goes to the position
+	// erase() returns.
+	_line_string.insert(_line_string.erase(iter), block.begin(), block.end());
+
+	return true;
+}
+
 void File::forLineParametersSection(std::string_view section, std::function<bool(std::string key, std::string value)> fn)
 {
 	CRITICAL_SECTION_RAII(_lock);

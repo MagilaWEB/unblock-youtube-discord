@@ -41,6 +41,7 @@ public:
 
 private:
 	void					   _convertDataFiles();
+	void					   _expandTemplates();
 	void					   _readFileFilters(std::string_view section);
 	bool					   _useIn(std::string str, std::string_view section);
 	std::optional<std::string> _getDataFile(std::string str, std::string_view section, bool all = false);

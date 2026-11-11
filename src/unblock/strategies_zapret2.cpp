@@ -75,7 +75,11 @@ void StrategiesZapret2::_blob_init_to_zapret()
 
 		static const std::regex pattern{ R"(:blob=([^:]+)|:seqovl_pattern=([^:]+)|:pattern=([^:]+))" };
 
-		auto& file_strategy = *_file_strategy_dpi;
+		// Scan the assembled lines, not the raw config file: the shared
+		// templates (%TEMPLATES_*) are spliced in by the generator, and a blob
+		// used only inside one of them (VOICE_PRE in the voice template) would
+		// otherwise never be registered.
+		auto& file_strategy = _strategy_dpi;
 		for (auto& line : file_strategy)
 		{
 			for (auto& [key, data] : _fake_bin_params)
