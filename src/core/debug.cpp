@@ -234,7 +234,7 @@ static LONG WINAPI seh_unhandled_filter(_EXCEPTION_POINTERS* pExceptionInfo)
 	return EXCEPTION_EXECUTE_HANDLER;
 }
 
-// Vectored handler: catches every exception (including access violation) at the
+// Vectored handler: catches real faults (access violation and the like) at the
 // OS level before the CRT/SEH machinery, regardless of compiler flags.
 static LONG CALLBACK vectored_exception_handler(PEXCEPTION_POINTERS pExceptionInfo)
 {
@@ -242,17 +242,25 @@ static LONG CALLBACK vectored_exception_handler(PEXCEPTION_POINTERS pExceptionIn
 	if (!Debug::crashHandlerEnabled())
 		return EXCEPTION_CONTINUE_SEARCH;
 
-	// Ignore non-fatal exceptions: those without the severity bit set
-	// (e.g. DBG_PRINTEXCEPTION_C 0x4001000A used by OutputDebugString,
-	// which Ultralight raises while logging). They must go through normally.
-	if ((pExceptionInfo->ExceptionRecord->ExceptionCode & 0x80'00'00'00U) == 0)
-		return EXCEPTION_CONTINUE_SEARCH;
+	const DWORD code = pExceptionInfo->ExceptionRecord->ExceptionCode;
 
 	// Let C++ exceptions (0xE06D7363) go through the normal try/catch path.
-	if (pExceptionInfo->ExceptionRecord->ExceptionCode == 0xE0'6D'73'63)
+	if (code == 0xE0'6D'73'63)
 		return EXCEPTION_CONTINUE_SEARCH;
 
-	handleCrash(buildCrashMessage(pExceptionInfo->ExceptionRecord), pExceptionInfo->ExceptionRecord->ExceptionCode);
+	// Only the 0xC000'0000 severity block is a real fault. Everything else must
+	// ride the normal path: informational codes (DBG_PRINTEXCEPTION_C
+	// 0x4001'000A from OutputDebugString) and, more importantly, the
+	// HRESULT-severity exceptions COM/RPC raise to be caught by SEH up the
+	// stack — WebView2/UIAutomation throws 0x8001'010D
+	// RPC_E_CANTCALLOUT_ININPUTSYNCCALL exactly that way. A vectored handler
+	// runs before SEH, so terminating here turned a handled callout failure into
+	// a bogus crash. The unhandled filter below still reports them if nobody
+	// catches.
+	if ((code & 0xC0'00'00'00U) != 0xC0'00'00'00U)
+		return EXCEPTION_CONTINUE_SEARCH;
+
+	handleCrash(buildCrashMessage(pExceptionInfo->ExceptionRecord), code);
 
 	// Unreachable (handleCrash terminates the process).
 	return EXCEPTION_CONTINUE_SEARCH;
