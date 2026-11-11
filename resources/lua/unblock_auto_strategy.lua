@@ -38,8 +38,15 @@
 --      мало: успех ставит только здоровое окно скорости, иначе «сайт открылся,
 --      видео стоит» навсегда закрепляло бы троттлящую стратегию.
 --   3b. Рейтинг стратегий (в пределах плана и прогона winws2): +1 к счётчику
---      успехов стратегии. При переключении кандидаты берутся в порядке: успешные
---      (по числу успехов убыв., ничьи — по номеру), затем неотмеченные 1..N.
+--      успехов стратегии, плюс хост попадает в охват стратегии (сколько разных
+--      хостов она подтвердила). При переключении кандидаты берутся в порядке:
+--      успешные (замеренная скорость убыв., затем охват по хостам, затем число
+--      успехов, ничьи — по номеру), затем неотмеченные 1..N. Стратегия, которая
+--      работает на многих хостах, лидирует и для нового хоста — так разбор
+--      сходится на нескольких широко рабочих стратегиях, а не размазывается по
+--      плану. У потокового хоста (YouTube) охват не учитывается: его запись
+--      общая на всю семью, скорость там замерена по-настоящему, и популярность
+--      у API-хостов не должна сдвигать видео.
 --      Хост, который уже срабатывал (had_success), ротируется по успешным,
 --      но после c_success_cycles (2) полных кругов без успеха выходит в
 --      полный перебор (сначала неотмеченные), и если и там всё исчерпано —
@@ -167,6 +174,9 @@ function auto_host_record(desync, askey)
     end
 
     local rec = autostate[askey][hostkey]
+    -- The key is kept on the record: a confirmation registers the host in the
+    -- strategy's coverage, and the coverage is per host, not per connection.
+    rec.key = hostkey
     -- Streaming host (googlevideo): a server answer proves the site is
     -- reachable, not that its data path delivers. Such a host is confirmed
     -- only by a healthy goodput window (see auto_confirm_goodput) and judged
@@ -263,8 +273,10 @@ end
 local c_success_cycles = 2
 
 -- Ordered candidates for the host's next strategy. Successful strategies are
--- ranked by measured throughput first (see auto_confirm_goodput), then by
--- success count (desc, ties by number asc); never-successful ones
+-- ranked by measured throughput first (see auto_confirm_goodput), then by the
+-- number of hosts they proved themselves on, then by success count (desc, ties
+-- by number asc); a streaming host (YouTube) skips the coverage step and ranks
+-- by speed alone. Never-successful ones
 -- follow, fewest *global* failures first: a new host must not start with a
 -- strategy that just failed for every other host in this plan. Only numbers
 -- present in THIS plan are considered. Already-tried numbers (rec.tried) are
@@ -272,7 +284,7 @@ local c_success_cycles = 2
 -- (rec.had_success) until it burns c_success_cycles full passes with no
 -- success; then rec.full_enum makes it try the never-successful strategies
 -- first (the proven ones only as a last resort).
-function auto_strategy_candidates(rec, rating, failures)
+function auto_strategy_candidates(rec, rating, failures, coverage)
     local proven  = {}
     local unknown = {}
     for n = 1, rec.ctstrategy do
@@ -287,12 +299,27 @@ function auto_strategy_candidates(rec, rating, failures)
 
     -- Proven strategies: the measured goodput wins first, so a strategy that
     -- really streamed is preferred over one that only answered the handshake.
-    -- Ties fall back to the success count and then to the number.
+    -- Then the host coverage: a strategy that proved itself on many hosts leads
+    -- for a new one too, so the plan converges instead of scattering. Success
+    -- count and number break the remaining ties.
+    --
+    -- Streaming hosts (YouTube) rank by speed alone: the family record carries
+    -- the real measured goodput, so coverage - built mostly by API and voice
+    -- hosts, which have no video to measure - must not steer the video plan.
+    -- Coverage stays the prior for hosts that have no speed of their own yet.
+    local used = {}
+    for _, n in ipairs(proven) do
+        used[n] = rec.stream and 0 or auto_strategy_host_count(coverage, n)
+    end
+
     table.sort(proven, function(a, b)
         local ra = (rec.rate and rec.rate[a]) or 0
         local rb = (rec.rate and rec.rate[b]) or 0
         if ra ~= rb then
             return ra > rb
+        end
+        if used[a] ~= used[b] then
+            return used[a] > used[b]
         end
         if rating[a] ~= rating[b] then
             return rating[a] > rating[b]
@@ -374,6 +401,7 @@ function auto_do_switch(rec, is_udp, askey, reason, peer, dport, send_exhausted,
 
     local rating = auto_strategy_rating(is_udp, askey)
     local failures = auto_strategy_failures(is_udp, askey)
+    local coverage = auto_strategy_coverage(is_udp, askey)
 
     -- The next strategy starts from a clean slate: the old connection's peak
     -- would otherwise mark every ramp-up window as a collapse, and the old
@@ -406,7 +434,7 @@ function auto_do_switch(rec, is_udp, askey, reason, peer, dport, send_exhausted,
         failures[rec.nstrategy] = (failures[rec.nstrategy] or 0) + 1
     end
 
-    local candidates = auto_strategy_candidates(rec, rating, failures)
+    local candidates = auto_strategy_candidates(rec, rating, failures, coverage)
 
     if #candidates == 0 then
         if rec.had_success and not rec.full_enum then
@@ -418,7 +446,7 @@ function auto_do_switch(rec, is_udp, askey, reason, peer, dport, send_exhausted,
             if rec.success_cycles >= c_success_cycles then
                 rec.full_enum = true
             end
-            candidates = auto_strategy_candidates(rec, rating, failures)
+            candidates = auto_strategy_candidates(rec, rating, failures, coverage)
         end
 
         if #candidates == 0 then
@@ -450,6 +478,53 @@ function auto_strategy_rating(is_udp, askey)
     local key = (is_udp and "udp_strategy_success" or "strategy_success") .. "#" .. tostring(askey or "default")
     _G[key] = _G[key] or {}
     return _G[key]
+end
+
+-- Per-plan host coverage: strategy number -> set of host keys that confirmed
+-- it. Counted per host, not per connection: a strategy that works for many
+-- hosts is broadly useful, while one host re-confirming it says nothing about
+-- the plan. In-run only, like the rating.
+function auto_strategy_coverage(is_udp, askey)
+    local key = (is_udp and "udp_strategy_hosts" or "strategy_hosts") .. "#" .. tostring(askey or "default")
+    _G[key] = _G[key] or {}
+    return _G[key]
+end
+
+-- How many distinct hosts a strategy proved itself on.
+function auto_strategy_host_count(coverage, n)
+    local hosts = coverage and coverage[n]
+    if not hosts then
+        return 0
+    end
+
+    local count = 0
+    for _ in pairs(hosts) do
+        count = count + 1
+    end
+    return count
+end
+
+-- One confirmation of rec's current strategy: the plan-wide success count and
+-- the strategy's host coverage. Both feed the candidate order (see
+-- auto_strategy_candidates); the per-connection bookkeeping stays with the
+-- caller.
+function auto_rate_strategy(is_udp, askey, rec)
+    if not rec or not rec.nstrategy or rec.nstrategy == 0 then
+        return
+    end
+
+    local rating = auto_strategy_rating(is_udp, askey)
+    rating[rec.nstrategy] = (rating[rec.nstrategy] or 0) + 1
+
+    if rec.key then
+        local coverage = auto_strategy_coverage(is_udp, askey)
+        local hosts = coverage[rec.nstrategy]
+        if not hosts then
+            hosts = {}
+            coverage[rec.nstrategy] = hosts
+        end
+        hosts[rec.key] = true
+    end
 end
 
 -- Per-plan failure scoreboard: number -> failed verdicts across all hosts.
@@ -675,8 +750,7 @@ function auto_confirm_goodput(hrec, crec, arg, rate, is_udp, askey)
     end
 
     crec.rated_n = hrec.nstrategy
-    local rating = auto_strategy_rating(is_udp, askey)
-    rating[hrec.nstrategy] = (rating[hrec.nstrategy] or 0) + 1
+    auto_rate_strategy(is_udp, askey, hrec)
 
     hrec.rate = hrec.rate or {}
     if rate > (hrec.rate[hrec.nstrategy] or 0) then
@@ -944,8 +1018,7 @@ function auto_strategy(ctx, desync)
                 ULOG("OK", "zapret:auto_strategy: CONFIRMED TCP " .. name .. "->" .. host_or_ip .. ":" .. dport)
 
                 if crec.rated_n ~= hrec.nstrategy and hrec.nstrategy ~= 0 then
-                    local rating = auto_strategy_rating(false, askey)
-                    rating[hrec.nstrategy] = (rating[hrec.nstrategy] or 0) + 1
+                    auto_rate_strategy(false, askey, hrec)
                     crec.rated_n = hrec.nstrategy
                 end
                 hrec.had_success = true
@@ -1066,10 +1139,7 @@ function auto_strategy(ctx, desync)
                     if not streaming then
                         ULOG("OK", "zapret:auto_strategy: CONFIRMED UDP " .. name .. "->" .. host_or_ip .. ":" .. dport)
 
-                        if hrec.nstrategy ~= 0 then
-                            local rating = auto_strategy_rating(true, askey)
-                            rating[hrec.nstrategy] = (rating[hrec.nstrategy] or 0) + 1
-                        end
+                        auto_rate_strategy(true, askey, hrec)
                         hrec.had_success = true
                         crec.rated_n = hrec.nstrategy
                         auto_mark_success(hrec)
