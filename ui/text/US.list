@@ -323,6 +323,7 @@ str_button_reset_defaults_title=♻️ Reset to defaults
 str_status_dns_running=🌐 DNS proxy running · queries: {} · cached: {} · errors: {}
 str_status_dns_stopped=🌐 DNS proxy stopped
 str_status_dns_issue=⚠ DNS proxy — {} (click for the report)
+str_status_dns_vpn_paused=⏸ DNS proxy idle: an active VPN tunnel was detected
 str_status_tg_running=📱 Telegram proxy running
 str_status_tg_stopped=📱 Telegram proxy stopped
 str_status_tg_issue=⚠ Telegram proxy — {} (click for the report)

@@ -52,9 +52,17 @@ namespace dns
 
 		Stats s_stats;
 
+		// Set while a VPN/tunnel owns the default route and our DNS is handed
+		// back to the system (reported to the engine).
+		std::atomic_bool s_vpn_paused{ false };
+
 		// Telemetry to the engine over UDP 9999 (IPCSignals). LATEST keys are
 		// latest-only: the engine peeks them without consuming, so pushing every
 		// few seconds never grows a queue (unlike the STRING event FIFO).
+		// The service outlives the app: while the engine is closed the sends
+		// bounce off a dead port, and an ignored send error left the socket
+		// latched in that state, so the status quietly stopped arriving after
+		// the app came back. A failed send now drops the socket for a fresh one.
 		void sendIpc(std::string_view message)
 		{
 			static SOCKET s_sock = INVALID_SOCKET;
@@ -67,7 +75,12 @@ namespace dns
 			to.sin_family	   = AF_INET;
 			to.sin_port		   = htons(9'999);
 			to.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-			sendto(s_sock, message.data(), static_cast<int>(message.size()), 0, reinterpret_cast<sockaddr*>(&to), sizeof(to));
+
+			if (sendto(s_sock, message.data(), static_cast<int>(message.size()), 0, reinterpret_cast<sockaddr*>(&to), sizeof(to)) == SOCKET_ERROR)
+			{
+				closesocket(s_sock);
+				s_sock = INVALID_SOCKET;
+			}
 		}
 	}	 // namespace
 
@@ -145,5 +158,11 @@ namespace dns
 		sendIpc("LATEST:dns.queries:" + std::to_string(s_stats.queries.load()));
 		sendIpc("LATEST:dns.cache_hits:" + std::to_string(s_stats.cache_hits.load()));
 		sendIpc("LATEST:dns.errors:" + std::to_string(s_stats.errors.load()));
+		sendIpc(std::string{ "LATEST:dns.vpn_paused:" } + (s_vpn_paused.load() ? "1" : "0"));
+	}
+
+	void setVpnPaused(bool paused)
+	{
+		s_vpn_paused.store(paused);
 	}
 }	 // namespace dns

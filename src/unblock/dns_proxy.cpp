@@ -124,6 +124,7 @@ void DnsProxy::run(bool state)
 		IPCSignals::get().clear("dns.queries");
 		IPCSignals::get().clear("dns.cache_hits");
 		IPCSignals::get().clear("dns.errors");
+		IPCSignals::get().clear("dns.vpn_paused");
 		return;
 	}
 
@@ -137,6 +138,7 @@ void DnsProxy::run(bool state)
 	IPCSignals::get().clear("dns.queries");
 	IPCSignals::get().clear("dns.cache_hits");
 	IPCSignals::get().clear("dns.errors");
+	IPCSignals::get().clear("dns.vpn_paused");
 
 	_service.remove();
 	_service.setDescription("Unblock DNS proxy (AdGuard DnsLibs).");
@@ -192,6 +194,7 @@ std::string DnsProxy::status() const
 	ss << "queries=" << ipc.getLatestU32("dns.queries").value_or(0) << "\n";
 	ss << "cache_hits=" << ipc.getLatestU32("dns.cache_hits").value_or(0) << "\n";
 	ss << "errors=" << ipc.getLatestU32("dns.errors").value_or(0) << "\n";
+	ss << "vpn_paused=" << ipc.getLatestU32("dns.vpn_paused").value_or(0) << "\n";
 	return ss.str();
 }
 

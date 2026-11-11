@@ -22,4 +22,9 @@ export namespace dns
 	// Only adapters still pointing at that address are restored. Returns 0 on
 	// success, 1 when a restore failed.
 	int repairAdapters(AgBind& ag, const std::filesystem::path& backup_path, bool ipv6);
+
+	// True when a VPN/tunnel adapter is up: the user's traffic may leave
+	// through it, so our DNS must go back to the system. which receives the
+	// tunnel adapter's name for the log.
+	bool vpnTunnelActive(std::string& which);
 }

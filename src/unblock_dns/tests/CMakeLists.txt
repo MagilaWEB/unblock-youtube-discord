@@ -1,5 +1,6 @@
 add_executable(test_unblock_dns
     test_dns_config.cpp
+    test_net_state.cpp
     ${CMAKE_SOURCE_DIR}/src/core/tests/tap_main.cpp
 )
 target_link_libraries(test_unblock_dns PRIVATE Catch2::Catch2 core common)

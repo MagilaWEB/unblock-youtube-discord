@@ -335,9 +335,10 @@ void UiDnsProxy::_refreshStatus()
 	if (!_status_dns->isCreate())
 		return;
 
-	std::string queries = "0";
-	std::string cached	= "0";
-	std::string errors	= "0";
+	std::string queries		   = "0";
+	std::string cached		   = "0";
+	std::string errors		   = "0";
+	std::string vpn_paused_raw = "0";
 
 	const std::string status = _dns_proxy.status();
 	for (auto row : status | std::views::split('\n'))
@@ -349,10 +350,16 @@ void UiDnsProxy::_refreshStatus()
 			cached = line.substr(11);
 		else if (line.starts_with("errors="))
 			errors = line.substr(7);
+		else if (line.starts_with("vpn_paused="))
+			vpn_paused_raw = line.substr(11);
 	}
 
 	const bool running = _dns_proxy.isRun();
 	const bool issue   = _ui->unblock()->serviceReportCovers("unblock_dns");
+
+	// The service keeps running but steps aside while a VPN tunnel is up: the
+	// adapters hold the tunnel's own resolvers, so our protection is idle.
+	const bool vpn_paused = running && vpn_paused_raw != "0";
 
 	// Mirror reality: the box follows the service, not a stored preference.
 	// While a start/stop task is in flight the live state lags the intent, so
@@ -363,6 +370,8 @@ void UiDnsProxy::_refreshStatus()
 	std::string text;
 	if (issue)
 		text = Localization::Str{ "str_status_dns_issue", _ui->unblock()->lastServiceReport().verdict }();
+	else if (vpn_paused)
+		text = Localization::Str{ "str_status_dns_vpn_paused" }();
 	else if (running)
 		text = Localization::Str{ "str_status_dns_running", queries, cached, errors }();
 	else
@@ -373,7 +382,7 @@ void UiDnsProxy::_refreshStatus()
 
 	_last_status = text;
 
-	if (issue)
+	if (issue || vpn_paused)
 		_status_dns->setWarning(text);
 	else if (running)
 		_status_dns->setActive(text);

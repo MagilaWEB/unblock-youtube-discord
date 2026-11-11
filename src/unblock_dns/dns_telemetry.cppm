@@ -18,4 +18,8 @@ export namespace dns
 
 	// Pushes the counters to the engine over UDP 9999 (IPCSignals LATEST keys).
 	void pushStatus();
+
+	// Reports whether we handed the adapters' DNS back because a VPN/tunnel
+	// took the default route (dns.vpn_paused IPC key: 0/1).
+	void setVpnPaused(bool paused);
 }

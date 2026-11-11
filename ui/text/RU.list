@@ -323,6 +323,7 @@ str_button_reset_defaults_title=♻️ Сбросить на умолчания
 str_status_dns_running=🌐 DNS-прокси работает · запросов: {} · из кэша: {} · ошибок: {}
 str_status_dns_stopped=🌐 DNS-прокси остановлен
 str_status_dns_issue=⚠ DNS-прокси — {} (нажмите для отчёта)
+str_status_dns_vpn_paused=⏸ DNS-прокси не работает: обнаружен активный VPN-туннель
 str_status_tg_running=📱 Прокси Telegram работает
 str_status_tg_stopped=📱 Прокси Telegram остановлен
 str_status_tg_issue=⚠ Прокси Telegram — {} (нажмите для отчёта)
