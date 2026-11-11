@@ -11,6 +11,7 @@
 import ext.windows;
 import unblock_dns.ag_bind;
 import common.dns_config;
+import common.net_state;
 import unblock_dns.dns_adapters;
 import unblock_dns.dns_proxy;
 import unblock_dns.dns_telemetry;
@@ -211,7 +212,7 @@ int main(int argc, char** argv)
 	else
 	{
 		std::string which;
-		if (dns::vpnTunnelActive(which))
+		if (net::vpnTunnelActive(which))
 		{
 			dns::logLine("VPN/tunnel is up [" + which + "]: leaving the adapters' DNS untouched");
 			yielded = true;
@@ -240,14 +241,14 @@ int main(int argc, char** argv)
 			if (!no_os_switch)
 			{
 				std::string which;
-				if (!yielded && dns::vpnTunnelActive(which))
+				if (!yielded && net::vpnTunnelActive(which))
 				{
 					dns::logLine("VPN/tunnel is up [" + which + "]: returning the adapters' DNS");
 					dns::restoreOsDns(ag, config.backup_path);
 					yielded = true;
 					dns::setVpnPaused(true);
 				}
-				else if (yielded && !dns::vpnTunnelActive(which))
+				else if (yielded && !net::vpnTunnelActive(which))
 				{
 					dns::logLine("VPN gone: switching the adapters back to the proxy");
 					if (dns::switchOsDns(ag, config, config.backup_path, ipv6))

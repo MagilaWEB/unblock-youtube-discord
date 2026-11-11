@@ -643,6 +643,14 @@ void UiZapretPage::_updateStatus(std::optional<Technology> active)
 	if (!_status_engine->isCreate())
 		return;
 
+	// VPN pause outranks stopped/running: the engines are down because the
+	// helper stopped them, not because the user stopped them.
+	if (_ui->unblock()->vpnPaused())
+	{
+		_status_engine->setWarning(Localization::Str{ "str_status_engine_vpn_paused" }());
+		return;
+	}
+
 	if (!active.has_value())
 	{
 		if (_hasEngineReport())
@@ -686,15 +694,17 @@ void UiZapretPage::updateState()
 	const bool running	  = _ui->unblock()->isRun(_technology);
 	const auto active	  = _ui->unblock()->runningTechnology();
 	const bool has_report = _hasEngineReport();
+	const bool vpn_paused = _ui->unblock()->vpnPaused();
 
 	// The button mirrors the live state on every tick (see _buttonUpdate); the
 	// status line and the rate follow the active engine, refreshed on change.
 	_buttonUpdate();
 
-	if (active != _last_active || has_report != _last_has_report)
+	if (active != _last_active || has_report != _last_has_report || vpn_paused != _last_vpn_paused)
 	{
 		_last_active	 = active;
 		_last_has_report = has_report;
+		_last_vpn_paused = vpn_paused;
 		_updateStatus(active);
 	}
 

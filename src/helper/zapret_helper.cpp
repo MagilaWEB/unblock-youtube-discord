@@ -1,6 +1,7 @@
 module helper.zapret_helper;
 
 import ext.windows;
+import common.net_state;
 import helper.curl_client;
 import helper.config;
 import helper.net;
@@ -8,6 +9,108 @@ import helper.types;
 
 namespace
 {
+	// Names of the two zapret engine services (see unblock.zapret1_engine /
+	// unblock.zapret2_engine): the helper stops exactly these for a VPN pause
+	// and leaves the DNS and Telegram services untouched.
+	inline constexpr char c_zapret1_service[]{ "zapret1" };
+	inline constexpr char c_zapret2_service[]{ "zapret2" };
+
+	// Longest wait for a stopped zapret service to report SERVICE_STOPPED
+	// before the helper gives up (the SCM usually answers in well under).
+	inline constexpr auto c_service_stop_wait{ std::chrono::seconds(10) };
+
+	// SCM handles for one call, both closed on scope exit. A null service
+	// handle means the manager or the service is absent: querying the state
+	// of a service that was never created must be a quiet "not running".
+	struct ServiceHandle
+	{
+		SC_HANDLE manager{ nullptr };
+		SC_HANDLE service{ nullptr };
+
+		~ServiceHandle()
+		{
+			if (service)
+				CloseServiceHandle(service);
+
+			if (manager)
+				CloseServiceHandle(manager);
+		}
+	};
+
+	ServiceHandle openService(LPCSTR name)
+	{
+		ServiceHandle handle;
+		handle.manager = OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS);
+		if (!handle.manager)
+			return handle;
+
+		handle.service = OpenService(handle.manager, name, SC_MANAGER_ALL_ACCESS);
+		return handle;
+	}
+
+	DWORD serviceState(SC_HANDLE service)
+	{
+		SERVICE_STATUS_PROCESS status{};
+		DWORD				   needed = 0;
+
+		if (!QueryServiceStatusEx(service, SC_STATUS_PROCESS_INFO, reinterpret_cast<LPBYTE>(&status), sizeof(status), &needed))
+			return SERVICE_STOPPED;
+
+		return status.dwCurrentState;
+	}
+
+	bool serviceRunning(LPCSTR name)
+	{
+		ServiceHandle handle = openService(name);
+		if (!handle.service)
+			return false;
+
+		const DWORD state = serviceState(handle.service);
+		return state == SERVICE_RUNNING || state == SERVICE_START_PENDING;
+	}
+
+	// Returns true once the service reports SERVICE_STOPPED (already stopped
+	// counts), false when it never does within c_service_stop_wait.
+	bool stopService(LPCSTR name)
+	{
+		ServiceHandle handle = openService(name);
+		if (!handle.service)
+			return false;
+
+		if (serviceState(handle.service) == SERVICE_STOPPED)
+			return true;
+
+		SERVICE_STATUS status{};
+		if (!ControlService(handle.service, SERVICE_CONTROL_STOP, &status))
+			return false;
+
+		const auto deadline = std::chrono::steady_clock::now() + c_service_stop_wait;
+		while (std::chrono::steady_clock::now() < deadline)
+		{
+			if (serviceState(handle.service) == SERVICE_STOPPED)
+				return true;
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		}
+
+		return false;
+	}
+
+	// Brings the service back up. StartService failing because it is already
+	// running is still a success: the SCM state is the answer.
+	bool startService(LPCSTR name)
+	{
+		ServiceHandle handle = openService(name);
+		if (!handle.service)
+			return false;
+
+		if (StartService(handle.service, 0, nullptr))
+			return true;
+
+		const DWORD state = serviceState(handle.service);
+		return state == SERVICE_RUNNING || state == SERVICE_START_PENDING;
+	}
+
 	// Split "left:right" at the first delimiter; right is empty when absent.
 	std::pair<std::string_view, std::string_view> splitOnce(std::string_view text, char delimiter)
 	{
@@ -146,6 +249,10 @@ void ZapretHelper::_addHost(std::string_view host)
 
 void ZapretHelper::_handleMessage(std::string_view message)
 {
+	// Zapret1 has no helper protocol at all, and a VPN pause freezes the pump:
+	// in both cases nothing may enqueue work or wake the pool.
+	if (_vpn_only || _vpn_paused)
+		return;
 	if (message.starts_with("LIST:"))
 	{
 		std::lock_guard lock(_mutex);
@@ -516,6 +623,86 @@ void ZapretHelper::_checkZapretLiveness()
 	_log("zapret heartbeat lost: host work suspended");
 }
 
+void ZapretHelper::_checkVpnPause()
+{
+	const auto now = std::chrono::steady_clock::now();
+	if (now - _last_vpn_check < c_vpn_check_interval)
+		return;
+
+	_last_vpn_check = now;
+
+	std::string which;
+	const bool	active = net::vpnTunnelActive(which);
+
+	if (active)
+	{
+		if (!_vpn_paused)
+		{
+			// Capture the engines that are live BEFORE stopping anything: only
+			// those are ours to bring back. A zapret the user kept off must
+			// stay off (the DNS/Telegram services are never touched at all).
+			_vpn_zapret1_was_running = serviceRunning(c_zapret1_service);
+			_vpn_zapret2_was_running = serviceRunning(c_zapret2_service);
+
+			_log(std::format("VPN tunnel is up [{}]: stopping zapret services", which));
+
+			if (_vpn_zapret1_was_running && !stopService(c_zapret1_service))
+				_log("couldn't stop the zapret1 service for the VPN pause");
+
+			if (_vpn_zapret2_was_running && !stopService(c_zapret2_service))
+				_log("couldn't stop the zapret2 service for the VPN pause");
+
+			// Freeze the pump at once: the verdicts are meaningless under a
+			// tunnel, and waiting for the heartbeat timeout would keep feeding
+			// the queue for a whole minute. The in-flight probe finishes (a
+			// join here would block the loop), no new one is taken.
+			_zapret_ready = false;
+			{
+				std::lock_guard lock(_mutex);
+				_queue.clear();
+			}
+
+			_vpn_paused = true;
+		}
+
+		// Re-asserted every tick, not only on the transition: the receiver
+		// drops a LATEST value after a few minutes, so a long pause must be
+		// kept alive or the UI would fall back to "engine stopped".
+		_send("LATEST:zapret.vpn_paused:1", c_ipc_port);
+		return;
+	}
+
+	if (_vpn_paused)
+	{
+		if (_vpn_zapret1_was_running && !startService(c_zapret1_service))
+			_log("couldn't restart the zapret1 service after the VPN pause");
+
+		if (_vpn_zapret2_was_running && !startService(c_zapret2_service))
+			_log("couldn't restart the zapret2 service after the VPN pause");
+
+		_vpn_zapret1_was_running = false;
+		_vpn_zapret2_was_running = false;
+		_vpn_paused				 = false;
+
+		// Everything the helper learned is meaningless behind a tunnel: drop the
+		// verdicts so the hosts are re-probed once the engines are back.
+		{
+			std::lock_guard lock(_mutex);
+			_error_hosts.clear();
+			_exhausted_hosts.clear();
+			_unjudged_hosts.clear();
+			_probed_at.clear();
+		}
+
+		_log("VPN tunnel gone: zapret services restored");
+	}
+
+	// Kept alive while unpaused too: a stale "1" from a previous helper
+	// incarnation (killed right after pausing) would otherwise show a ghost
+	// pause until the receiver's TTL expiry.
+	_send("LATEST:zapret.vpn_paused:0", c_ipc_port);
+}
+
 void ZapretHelper::_refreshUnjudged()
 {
 	// Caller holds _mutex. A probe that finished but never got a lua verdict
@@ -681,6 +868,11 @@ void ZapretHelper::_idleStep()
 		_cv.notify_all();
 }
 
+void ZapretHelper::setVpnOnly(bool value)
+{
+	_vpn_only = value;
+}
+
 int ZapretHelper::run()
 {
 	// Cold start / PC reboot fallback: the file was flushed on unblock close,
@@ -699,10 +891,15 @@ int ZapretHelper::run()
 	// Workers are NOT started here. They are spawned once on the first READY
 	// (zapret heartbeat), so no probe can race the strategy startup. Starting
 	// them here as well spawned a second pool (2x pool_size).
+	if (_vpn_only)
+		_log("vpn-only mode: watching the VPN tunnel, host pumping disabled");
 
 	while (_running)
 	{
-		_checkZapretLiveness();
+		if (!_vpn_only)
+			_checkZapretLiveness();
+
+		_checkVpnPause();
 
 		if (_zapret_ready.load())
 			_idleStep();

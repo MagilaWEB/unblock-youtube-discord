@@ -331,6 +331,7 @@ export class UiZapretPage
 	bool					  _last_running{ false };
 	std::optional<Technology> _last_active;
 	bool					  _last_has_report{ false };
+	bool					  _last_vpn_paused{ false };
 
 public:
 	explicit UiZapretPage(std::shared_ptr<Ui> ui);

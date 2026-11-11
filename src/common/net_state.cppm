@@ -8,9 +8,10 @@ import std;
 // our upstreams are pinned to the physical interface. The signal is the live
 // tunnel adapter itself, not the default route: tun-mode VPNs (sing-box,
 // WireGuard with a ruleset) often leave 0.0.0.0/0 on the physical adapter and
-// capture only selected prefixes, so the default route says nothing. Kept free
-// of Win32 types so it is unit-tested directly; the bridge in
-// unblock_dns.dns_adapters feeds it real data.
+// capture only selected prefixes, so the default route says nothing. The
+// predicate pair below is pure so it is unit-tested directly; the Win32 query
+// (vpnTunnelActive) lives here too because both the DNS service and the
+// zapret helper need to ask the system the same question.
 
 export namespace net
 {
@@ -32,4 +33,10 @@ export namespace net
 	// True when an up tunnel adapter exists: the tunnel is live and our DNS
 	// must stay out of its way. On true, which receives that adapter's name.
 	bool activeTunnel(const std::vector<AdapterInfo>& adapters, std::string* which = nullptr);
+
+	// Asks the system whether a tunnel adapter is up right now (GetAdapters
+	// followed by activeTunnel). which receives the tunnel adapter's name for
+	// the log. Shared by the DNS service and the zapret helper: both must step
+	// aside while a VPN carries the traffic.
+	bool vpnTunnelActive(std::string& which);
 }

@@ -234,6 +234,17 @@ std::optional<Technology> Unblock::runningTechnology()
 	return std::nullopt;
 }
 
+bool Unblock::vpnPaused()
+{
+	// The flag rides the helper's IPC and only means something while that
+	// helper runs: a dead or never-started helper must not leave a stale pause
+	// on the UI.
+	if (!_zapret_helper.isRun())
+		return false;
+
+	return IPCSignals::get().getLatestU32("zapret.vpn_paused").value_or(0) != 0;
+}
+
 std::vector<std::string> Unblock::helperCheckingHosts()
 {
 	return _helper.checkingHosts();
@@ -459,15 +470,19 @@ void Unblock::startService(Technology technology)
 	if (eng.strategies().empty())
 		return;
 
-	// The helper only understands the zapret2 protocol (Lua auto_strategy
-	// over --lua-desync); Zapret1 runs standalone like in 1.4.19.
-	if (technology == Technology::Zapret2)
-	{
-		_zapret_helper.setDescription(Localization::Str{ "str_service_zapret_description" }());
-		_zapret_helper.setArgs({ (Core::get().binPath() / "zapret_helper.exe").string() });
-		_zapret_helper.create();
-		_zapret_helper.start();
-	}
+	// The helper understands the zapret2 protocol (Lua auto_strategy over
+	// --lua-desync). Under Zapret1 there is nothing to pump, so it is started
+	// with --vpn-only: it only watches for a VPN tunnel and pauses the engines
+	// while one is up, then brings back exactly those it found running.
+	const std::string		 helper_exe = (Core::get().binPath() / "zapret_helper.exe").string();
+	std::vector<std::string> helper_args{ helper_exe };
+	if (technology == Technology::Zapret1)
+		helper_args.emplace_back("--vpn-only");
+
+	_zapret_helper.setDescription(Localization::Str{ "str_service_zapret_description" }());
+	_zapret_helper.setArgs(std::move(helper_args));
+	_zapret_helper.create();
+	_zapret_helper.start();
 
 	// ts/tcp_ts fooling needs OS TCP timestamps, which Windows ships off.
 	// Enable them only when the effective strategy uses it, and remember it

@@ -3,7 +3,6 @@ module unblock_dns.dns_adapters;
 import ext.windows;
 import unblock_dns.ag_bind;
 import common.dns_config;
-import common.net_state;
 import unblock_dns.dns_telemetry;
 import unblock_dns.dns_util;
 
@@ -160,23 +159,6 @@ namespace dns
 
 			std::string out{ raw };
 			ag.str_free(raw);
-
-			return out;
-		}
-
-		// PWCHAR (FriendlyName/Description) to UTF-8 for the log and matching.
-		std::string narrow(const wchar_t* wide)
-		{
-			if (!wide || !*wide)
-				return {};
-
-			const int size = WideCharToMultiByte(CP_UTF8, 0, wide, -1, nullptr, 0, nullptr, nullptr);
-			if (size <= 1)
-				return {};
-
-			std::string out(static_cast<size_t>(size), '\0');
-			WideCharToMultiByte(CP_UTF8, 0, wide, -1, out.data(), size, nullptr, nullptr);
-			out.resize(static_cast<size_t>(size - 1));
 
 			return out;
 		}
@@ -362,29 +344,5 @@ namespace dns
 		}
 
 		return failed ? 1 : 0;
-	}
-
-	bool vpnTunnelActive(std::string& which)
-	{
-		std::vector<net::AdapterInfo> adapters;
-
-		ULONG buf_size = 0;
-		GetAdaptersAddresses(AF_INET, GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST, nullptr, nullptr, &buf_size);
-		if (buf_size > 0)
-		{
-			std::vector<uint8_t>  buffer(buf_size);
-			IP_ADAPTER_ADDRESSES* list = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buffer.data());
-			if (GetAdaptersAddresses(AF_INET, GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST, nullptr, list, &buf_size) == NO_ERROR)
-				for (auto* a = list; a; a = a->Next)
-					adapters.push_back(
-						{ static_cast<std::uint32_t>(a->IfIndex),
-						  static_cast<std::uint32_t>(a->IfType),
-						  narrow(a->FriendlyName),
-						  narrow(a->Description),
-						  a->OperStatus == IfOperStatusUp }
-					);
-		}
-
-		return net::activeTunnel(adapters, &which);
 	}
 }	 // namespace dns

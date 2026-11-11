@@ -2,12 +2,14 @@ module common.net_state;
 
 import std;
 
+import ext.windows;
+
 namespace net
 {
 	namespace
 	{
-		// IF_TYPE_* from ipifcons.h, kept as literals so this unit stays
-		// Win32-free.
+		// IF_TYPE_* from ipifcons.h, kept as literals so the pure part below
+		// does not depend on Win32 headers.
 		inline constexpr std::uint32_t c_if_type_tunnel		  = 131;
 		inline constexpr std::uint32_t c_if_type_prop_virtual = 53;
 		inline constexpr std::uint32_t c_if_type_ppp		  = 23;
@@ -44,6 +46,23 @@ namespace net
 
 			return false;
 		}
+
+		// PWCHAR (FriendlyName/Description) to UTF-8 for matching.
+		std::string narrow(const wchar_t* wide)
+		{
+			if (!wide || !*wide)
+				return {};
+
+			const int size = WideCharToMultiByte(CP_UTF8, 0, wide, -1, nullptr, 0, nullptr, nullptr);
+			if (size <= 1)
+				return {};
+
+			std::string out(static_cast<size_t>(size), '\0');
+			WideCharToMultiByte(CP_UTF8, 0, wide, -1, out.data(), size, nullptr, nullptr);
+			out.resize(static_cast<size_t>(size - 1));
+
+			return out;
+		}
 	}	 // namespace
 
 	bool isTunnelAdapter(std::uint32_t if_type, std::string_view name, std::string_view description)
@@ -79,5 +98,29 @@ namespace net
 			which->clear();
 
 		return false;
+	}
+
+	bool vpnTunnelActive(std::string& which)
+	{
+		std::vector<AdapterInfo> adapters;
+
+		ULONG buf_size = 0;
+		GetAdaptersAddresses(AF_INET, GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST, nullptr, nullptr, &buf_size);
+		if (buf_size > 0)
+		{
+			std::vector<std::uint8_t> buffer(buf_size);
+			IP_ADAPTER_ADDRESSES*	  list = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buffer.data());
+			if (GetAdaptersAddresses(AF_INET, GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST, nullptr, list, &buf_size) == NO_ERROR)
+				for (auto* a = list; a; a = a->Next)
+					adapters.push_back(
+						{ static_cast<std::uint32_t>(a->IfIndex),
+						  static_cast<std::uint32_t>(a->IfType),
+						  narrow(a->FriendlyName),
+						  narrow(a->Description),
+						  a->OperStatus == IfOperStatusUp }
+					);
+		}
+
+		return net::activeTunnel(adapters, &which);
 	}
 }	 // namespace net

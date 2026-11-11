@@ -33,6 +33,9 @@ export class ZapretHelper
 	// Zapret liveness: the helper stays dormant until lua sends READY and
 	// suspends host work after this much silence.
 	inline static constexpr auto   c_zapret_timeout{ std::chrono::seconds(60) };
+	// How often the VPN-tunnel probe runs: an adapter appearing/disappearing
+	// is not an edge we get notified about, so it is polled on a short cadence.
+	inline static constexpr auto   c_vpn_check_interval{ std::chrono::seconds(2) };
 
 	struct ErrorInfo
 	{
@@ -96,6 +99,19 @@ export class ZapretHelper
 	bool								  _workers_started{ false };
 	std::chrono::steady_clock::time_point _last_ready{};
 
+	// VPN pause: while a tunnel is up the desync engines are stopped and only
+	// those that were live beforehand are brought back afterwards, so a
+	// user-kept-off zapret stays off. All of it is in-memory: after a helper
+	// restart nothing is remembered, the live service state is re-read.
+	std::chrono::steady_clock::time_point _last_vpn_check{};
+	bool								  _vpn_paused{ false };
+	bool								  _vpn_zapret1_was_running{ false };
+	bool								  _vpn_zapret2_was_running{ false };
+	// --vpn-only (Zapret1): the helper protocol is not in use, so the host
+	// pump, the verdicts and the liveness gate stay off; only the tunnel
+	// watch and the engine pause run.
+	bool								  _vpn_only{ false };
+
 	// Runtime settings: file fallback at startup (cold start / PC reboot),
 	// fresh values always arrive via UDP CONFIG: pushed by Unblock.
 	u32					 _pool_size{ HelperConfig::defaults().pool_size };
@@ -113,6 +129,11 @@ public:
 
 	/** Main loop: receive UDP messages and drive the check queue. */
 	int run();
+
+	/** vpn-only mode (started next to Zapret1, which has no helper protocol):
+	 *  watch the VPN tunnel and pause the engines, ignore everything else.
+	 *  Call it before run(), the flag is read by the loop. */
+	void setVpnOnly(bool value);
 
 	/** Apply settings: curl timeouts immediately, intervals on next idle
 	 *  step, pool is resized live when workers are already running. */
@@ -195,4 +216,9 @@ private:
 
 	/** Suspend host work when zapret stopped sending READY (heartbeat lost). */
 	void _checkZapretLiveness();
+
+	/** Stop the zapret engines while a VPN tunnel is up and bring the ones
+	 *  that were live back once it is gone. Sends zapret.vpn_paused to unblock
+	 *  on each transition; the DNS and Telegram services are left alone. */
+	void _checkVpnPause();
 };

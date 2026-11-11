@@ -16,7 +16,8 @@ target_sources(${NAME}
 )
 
 # ext PUBLIC: curl comes from the ext.curl wrapper; ub_std is the std module.
-target_link_libraries(${NAME} PUBLIC ub_std ext ws2_32 win32)
+# common carries the VPN-tunnel probe (net::vpnTunnelActive) shared with the DNS service.
+target_link_libraries(${NAME} PUBLIC ub_std ext ws2_32 win32 common)
 
 target_compile_definitions(${NAME} PRIVATE CONSOLE WIN32_LEAN_AND_MEAN)
 

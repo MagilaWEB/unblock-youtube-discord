@@ -207,6 +207,11 @@ public:
 	bool					  isRun(Technology technology);
 	std::optional<Technology> runningTechnology();
 
+	/** True while the zapret helper has the engines paused because a VPN
+	 *  tunnel is up. The key is dropped when the helper itself is not
+	 *  running, so a dead helper cannot leave a stale pause behind. */
+	[[nodiscard]] bool vpnPaused();
+
 	/** True when the last failed start produced a diagnostic report. */
 	[[nodiscard]] bool			   hasServiceReport() const;
 	/** Copy of the last diagnostic report: the reader is another thread. */

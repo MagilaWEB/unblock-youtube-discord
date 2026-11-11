@@ -93,6 +93,7 @@ This action is irreversible. Are you sure you want to continue?
 
 // Input console log info
 str_beginning_auto_selection=🔍 Starting automatic configuration selection
+str_auto_strategy_vpn_paused=⏸ Auto-selection paused: an active VPN tunnel was detected
 
 // BLOCK HOME
 str_h2_verified_domains=✅ Available domains (Zapret):
@@ -425,6 +426,7 @@ str_status_engine_running_rate=▶ Running: {} · ↓ {} · ↑ {}
 str_status_engine_running_issue=⚠ Running: {} · ↓ {} · ↑ {} — {}
 str_status_engine_stopped=⏹ Engine stopped
 str_status_engine_stopped_reason=⏹ Engine stopped: {} (click for the report)
+str_status_engine_vpn_paused=⏸ Zapret paused: an active VPN tunnel was detected
 
 // Setting strategy version
 str_select_version_strategy_title=📚 Strategy list version

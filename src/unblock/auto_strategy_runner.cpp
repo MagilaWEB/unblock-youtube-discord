@@ -20,10 +20,37 @@ void AutoStrategyRunner::run(Technology technology, std::string_view start_versi
 
 	InputConsole::textOk(Localization::Str{ "str_beginning_auto_selection" }());
 
+	// A VPN tunnel pauses the engines (the helper stops them for as long as it
+	// is up): raising or cycling strategies now is pointless, the services
+	// would just be swept back down.
+	auto finishVpnPaused = [&]
+	{
+		InputConsole::textWarning(Localization::Str{ "str_auto_strategy_vpn_paused" }());
+
+		AutoStrategyResult result{};
+		result.cancelled = true;
+
+		if (callbacks.finished)
+			callbacks.finished(result);
+	};
+
+	if (_unblock.vpnPaused())
+	{
+		finishVpnPaused();
+		return;
+	}
+
 	while (_tryNext(technology, callbacks))
 	{
 		if (callbacks.cancelled && callbacks.cancelled())
 			break;
+
+		// The tunnel may have come up mid-search: stop cycling at once.
+		if (_unblock.vpnPaused())
+		{
+			finishVpnPaused();
+			return;
+		}
 
 		_unblock.startService(technology);
 
