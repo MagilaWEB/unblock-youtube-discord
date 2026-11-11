@@ -257,7 +257,7 @@ void StrategyConfigBase::_dumpStrategyArgs() const
 		file.writeText(line);
 	file.close();
 
-	Debug::info("{}", utils::format(Localization::Str{ "str_strategy_args_dump" }(), _strategy_dpi.size(), file.getPath().string()));
+	Debug::info("{}", Localization::Str{ "str_strategy_args_dump", _strategy_dpi.size(), file.getPath().string() }());
 }
 
 std::optional<std::string> StrategyConfigBase::_getPath(std::string_view str, std::string_view prefix, std::filesystem::path path) const

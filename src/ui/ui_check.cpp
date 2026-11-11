@@ -13,7 +13,7 @@ void Ui::_checkValidRootDirectory()
 	{
 		_window_root_directory_error->create(
 			Localization::Str{ "str_error" },
-			utils::format(Localization::Str{ "str_root_directory_error" }(), Core::get().binariesPath().parent_path().string())
+			Localization::Str{ "str_root_directory_error", Core::get().binariesPath().parent_path().string() }()
 		);
 		_window_root_directory_error->setType(SecondaryWindow::Type::OK);
 

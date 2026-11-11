@@ -243,7 +243,7 @@ void Ui::_sendServiceReport()
 	Core::get().addTask(
 		[report]
 		{
-			const std::string title = utils::format(Localization::Str{ "str_issue_service_title" }(), report.verdict);
+			const std::string title = Localization::Str{ "str_issue_service_title", report.verdict }();
 			Debug::openGitHubIssue(title, Debug::buildServiceIssueBody(report.issueText()));
 		}
 	);
@@ -384,9 +384,7 @@ void Ui::_checkConflictService()
 				names_services.append(service.getName()).append(",");
 			names_services.pop_back();
 
-			self->_window_warning_conflict_service->setDescription(
-				utils::format(Localization::Str{ "str_window_warning_conflict_service" }(), names_services)
-			);
+			self->_window_warning_conflict_service->setDescription(Localization::Str{ "str_window_warning_conflict_service", names_services }());
 			self->_window_warning_conflict_service->show();
 
 			// The list is move-only (Service holds a lock), so it is kept alive

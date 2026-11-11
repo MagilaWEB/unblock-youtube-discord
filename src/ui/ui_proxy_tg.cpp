@@ -55,7 +55,7 @@ void UiProxyTg::updateStatus()
 
 	std::string text;
 	if (issue)
-		text = utils::format(Localization::Str{ "str_status_tg_issue" }(), _ui->unblock()->lastServiceReport().verdict);
+		text = Localization::Str{ "str_status_tg_issue", _ui->unblock()->lastServiceReport().verdict }();
 	else
 		text = running ? Localization::Str{ "str_status_tg_running" }() : Localization::Str{ "str_status_tg_stopped" }();
 

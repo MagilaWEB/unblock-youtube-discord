@@ -68,8 +68,9 @@ void Ui::_checkAppUpdate()
 		{
 			if (auto new_version = self->_unblock->updater().check())
 			{
-				static auto desc = Localization::Str{ "str_window_update_unblock" }();
-				self->_window_update_unblock->setDescription(utils::format(desc, new_version.value()));
+				// Formatted per call: a cached translation would keep the old
+				// language and the old version in the text.
+				self->_window_update_unblock->setDescription(Localization::Str{ "str_window_update_unblock", new_version.value() }());
 				self->_window_update_unblock->show();
 				self->_ui_background_tasks->finish("check_update");
 				self->_start_check_update_app->setTitle(Localization::Str{ "str_bottom_check_update_app_startup_title" });

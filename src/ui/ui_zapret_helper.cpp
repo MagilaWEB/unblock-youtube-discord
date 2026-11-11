@@ -69,7 +69,7 @@ void UiZapretHelper::_initHelperSummary()
 
 void UiZapretHelper::_initHelperChecking()
 {
-	_list_helper_checking->create(_sel(" section"), utils::format(Localization::Str{ "str_zapret_helper_checking_title" }(), 0, 0));
+	_list_helper_checking->create(_sel(" section"), Localization::Str{ "str_zapret_helper_checking_title", 0, 0 }());
 }
 
 std::span<const UiZapretHelper::HelperSettingDef> UiZapretHelper::helperSettingDefs()
@@ -148,6 +148,8 @@ void UiZapretHelper::updateChecking()
 		// O(N) datagrams per lua packet and drown them on loopback.
 		const auto stats	= _ui->unblock()->helperStats();
 		const bool snapshot = stats.in_check != 0 || stats.queued != 0 || stats.known != 0 || hosts.empty();
+		// The macro body is a preprocessor argument: a braced initializer with
+		// commas would split it, so this call keeps the utils::format form.
 		const auto title	= utils::format(
 			Localization::Str{ "str_zapret_helper_checking_title" }(),
 			snapshot ? stats.in_check : hosts.size(),
@@ -173,7 +175,7 @@ void UiZapretHelper::updateChecking()
 
 void UiZapretHelper::_initHelperSeen()
 {
-	_list_helper_seen->create(_sel(" section"), utils::format(Localization::Str{ "str_zapret_helper_seen_title" }(), 0));
+	_list_helper_seen->create(_sel(" section"), Localization::Str{ "str_zapret_helper_seen_title", 0 }());
 }
 
 void UiZapretHelper::updateSeen()
@@ -189,7 +191,7 @@ void UiZapretHelper::updateSeen()
 
 	_last_helper_seen = hosts;
 
-	_list_helper_seen->setTitle(utils::format(Localization::Str{ "str_zapret_helper_seen_title" }(), hosts.size()));
+	_list_helper_seen->setTitle(Localization::Str{ "str_zapret_helper_seen_title", hosts.size() }());
 	_list_helper_seen->clear();
 	for (auto& host : hosts)
 		_list_helper_seen->createLi(Localization::Str{ host });
@@ -197,7 +199,7 @@ void UiZapretHelper::updateSeen()
 
 void UiZapretHelper::_initHelperValid()
 {
-	_list_helper_valid->create(_sel(" section"), utils::format(Localization::Str{ "str_zapret_helper_valid_title" }(), 0));
+	_list_helper_valid->create(_sel(" section"), Localization::Str{ "str_zapret_helper_valid_title", 0 }());
 }
 
 void UiZapretHelper::updateValid()
@@ -213,15 +215,15 @@ void UiZapretHelper::updateValid()
 
 	_last_helper_valid = entries;
 
-	_list_helper_valid->setTitle(utils::format(Localization::Str{ "str_zapret_helper_valid_title" }(), entries.size()));
+	_list_helper_valid->setTitle(Localization::Str{ "str_zapret_helper_valid_title", entries.size() }());
 	_list_helper_valid->clear();
 	for (auto& [host, strategy] : entries)
-		_list_helper_valid->createLiSuccess(utils::format(Localization::Str{ "str_zapret_helper_valid_item" }(), host, strategy), true);
+		_list_helper_valid->createLiSuccess(Localization::Str{ "str_zapret_helper_valid_item", host, strategy }(), true);
 }
 
 void UiZapretHelper::_initHelperError()
 {
-	_list_helper_error->create(_sel(" section"), utils::format(Localization::Str{ "str_zapret_helper_error_title" }(), 0));
+	_list_helper_error->create(_sel(" section"), Localization::Str{ "str_zapret_helper_error_title", 0 }());
 }
 
 void UiZapretHelper::updateError()
@@ -237,15 +239,15 @@ void UiZapretHelper::updateError()
 
 	_last_helper_error = entries;
 
-	_list_helper_error->setTitle(utils::format(Localization::Str{ "str_zapret_helper_error_title" }(), entries.size()));
+	_list_helper_error->setTitle(Localization::Str{ "str_zapret_helper_error_title", entries.size() }());
 	_list_helper_error->clear();
 	for (auto& [host, strategy] : entries)
-		_list_helper_error->createLiSuccess(utils::format(Localization::Str{ "str_zapret_helper_error_item" }(), host, strategy));
+		_list_helper_error->createLiSuccess(Localization::Str{ "str_zapret_helper_error_item", host, strategy }());
 }
 
 void UiZapretHelper::_initHelperExhausted()
 {
-	_list_helper_exhausted->create(_sel(" section"), utils::format(Localization::Str{ "str_zapret_helper_exhausted_title" }(), 0));
+	_list_helper_exhausted->create(_sel(" section"), Localization::Str{ "str_zapret_helper_exhausted_title", 0 }());
 }
 
 void UiZapretHelper::updateExhausted()
@@ -261,15 +263,15 @@ void UiZapretHelper::updateExhausted()
 
 	_last_helper_exhausted = entries;
 
-	_list_helper_exhausted->setTitle(utils::format(Localization::Str{ "str_zapret_helper_exhausted_title" }(), entries.size()));
+	_list_helper_exhausted->setTitle(Localization::Str{ "str_zapret_helper_exhausted_title", entries.size() }());
 	_list_helper_exhausted->clear();
 	for (auto& [host, strategy] : entries)
-		_list_helper_exhausted->createLiSuccess(utils::format(Localization::Str{ "str_zapret_helper_exhausted_item" }(), host, strategy));
+		_list_helper_exhausted->createLiSuccess(Localization::Str{ "str_zapret_helper_exhausted_item", host, strategy }());
 }
 
 void UiZapretHelper::_initHelperUnjudged()
 {
-	_list_helper_unjudged->create(_sel(" section"), utils::format(Localization::Str{ "str_zapret_helper_unjudged_title" }(), 0));
+	_list_helper_unjudged->create(_sel(" section"), Localization::Str{ "str_zapret_helper_unjudged_title", 0 }());
 }
 
 void UiZapretHelper::updateUnjudged()
@@ -285,7 +287,7 @@ void UiZapretHelper::updateUnjudged()
 
 	_last_helper_unjudged = hosts;
 
-	_list_helper_unjudged->setTitle(utils::format(Localization::Str{ "str_zapret_helper_unjudged_title" }(), hosts.size()));
+	_list_helper_unjudged->setTitle(Localization::Str{ "str_zapret_helper_unjudged_title", hosts.size() }());
 	_list_helper_unjudged->clear();
 	for (auto& host : hosts)
 		_list_helper_unjudged->createLi(Localization::Str{ host });
@@ -306,6 +308,8 @@ void UiZapretHelper::updateSummary()
 		const auto judged	 = valid + error + exhausted;
 		const auto percent	 = judged != 0 ? static_cast<unsigned>((valid * 100 + judged / 2) / judged) : 0U;
 
+		// Macro argument: a braced initializer with commas would split it, so
+		// this call keeps the utils::format form.
 		_helper_summary->setText(utils::format(Localization::Str{ "str_zapret_helper_summary" }(), percent, valid, error, exhausted, unjudged));
 	})
 }

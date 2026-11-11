@@ -104,7 +104,7 @@ void UiBackgroundTasks::_syncIndicator(const std::vector<SnapshotItem>& items)
 		return;
 	}
 
-	const std::string text = utils::format(Localization::Str{ "str_tasks_indicator_title" }(), items.size());
+	const std::string text = Localization::Str{ "str_tasks_indicator_title", items.size() }();
 	if (text != _last_indicator_text)
 	{
 		_last_indicator_text = text;

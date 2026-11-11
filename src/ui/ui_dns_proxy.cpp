@@ -362,9 +362,9 @@ void UiDnsProxy::_refreshStatus()
 
 	std::string text;
 	if (issue)
-		text = utils::format(Localization::Str{ "str_status_dns_issue" }(), _ui->unblock()->lastServiceReport().verdict);
+		text = Localization::Str{ "str_status_dns_issue", _ui->unblock()->lastServiceReport().verdict }();
 	else if (running)
-		text = utils::format(Localization::Str{ "str_status_dns_running" }(), queries, cached, errors);
+		text = Localization::Str{ "str_status_dns_running", queries, cached, errors }();
 	else
 		text = Localization::Str{ "str_status_dns_stopped" }();
 

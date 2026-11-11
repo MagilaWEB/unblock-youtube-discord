@@ -103,10 +103,7 @@ private:
 		Debug::fatalErrorMessage(msg.c_str());
 
 		// Automatically open a GitHub issue with a crash report.
-		openGitHubIssue(
-			utils::format(Localization::Str{ "str_issue_crash_title" }(), utils::format("0x{:08X}", 0u)),
-			buildCrashIssueBody(readLogTail(30))
-		);
+		openGitHubIssue(Localization::Str{ "str_issue_crash_title", utils::format("0x{:08X}", 0u) }(), buildCrashIssueBody(readLogTail(30)));
 
 		Debug::s_log.close();
 		std::abort();

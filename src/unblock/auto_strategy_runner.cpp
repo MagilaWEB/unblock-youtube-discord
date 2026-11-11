@@ -34,14 +34,12 @@ void AutoStrategyRunner::run(Technology technology, std::string_view start_versi
 		// description names the active one — otherwise iterations look like a
 		// stuck loop.
 		if (technology == Technology::Zapret1)
-			text_desc = utils::format(
-				Localization::Str{ "str_window_auto_start_wait_name_strategy_description_zapret1" }(),
-				strategy_name,
-				_current_version,
-				_unblock.fakeBinKey(technology)
-			);
+			text_desc = Localization::Str{ "str_window_auto_start_wait_name_strategy_description_zapret1",
+										   strategy_name,
+										   _current_version,
+										   _unblock.fakeBinKey(technology) }();
 		else
-			text_desc = utils::format(Localization::Str{ "str_window_auto_start_wait_name_strategy_description" }(), strategy_name, _current_version);
+			text_desc = Localization::Str{ "str_window_auto_start_wait_name_strategy_description", strategy_name, _current_version }();
 
 		text_desc.insert(0, "\n");
 		text_desc.insert(0, Localization::Str{ _waitDescription(technology) }());
@@ -173,13 +171,11 @@ bool AutoStrategyRunner::_runPassiveRound(Technology technology, std::string_vie
 		// never a blind 2Hz hammer.
 		const auto now	= std::chrono::steady_clock::now();
 		auto	   live = std::string{ header } + "\n"
-						+ utils::format(
-							  Localization::Str{ "str_window_auto_start_wait_live" }(),
-							  valid_count,
-							  _unblock.helperCheckingHosts().size(),
-							  error_count,
-							  exhausted_set.size()
-						);
+						+ Localization::Str{ "str_window_auto_start_wait_live",
+											 valid_count,
+											 _unblock.helperCheckingHosts().size(),
+											 error_count,
+											 exhausted_set.size() }();
 
 		if (live != last_live && now - last_live_at >= std::chrono::seconds(2))
 		{

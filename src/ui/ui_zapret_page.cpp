@@ -147,7 +147,7 @@ void UiZapretPage::_requestTechnologySwitch(Technology technology)
 	}
 
 	_window_warning_technology_busy->setDescription(
-		utils::format(Localization::Str{ "str_window_warning_technology_switch_description" }(), _technologyName(other))
+		Localization::Str{ "str_window_warning_technology_switch_description", _technologyName(other) }()
 	);
 	_window_warning_technology_busy->show();
 	_window_warning_technology_busy->addEventYesNo(
@@ -646,9 +646,7 @@ void UiZapretPage::_updateStatus(std::optional<Technology> active)
 	if (!active.has_value())
 	{
 		if (_hasEngineReport())
-			_status_engine->setInactive(
-				utils::format(Localization::Str{ "str_status_engine_stopped_reason" }(), _ui->unblock()->lastServiceReport().verdict)
-			);
+			_status_engine->setInactive(Localization::Str{ "str_status_engine_stopped_reason", _ui->unblock()->lastServiceReport().verdict }());
 		else
 			_status_engine->setInactive(Localization::Str{ "str_status_engine_stopped" }());
 	}
@@ -661,22 +659,15 @@ void UiZapretPage::_updateStatus(std::optional<Technology> active)
 		// verdict reachable by click (the window auto-opens once per report).
 		if (_hasEngineReport())
 			_status_engine->setWarning(
-				utils::format(
-					Localization::Str{ "str_status_engine_running_issue" }(),
-					_technologyName(active.value()),
-					formatRate(rate.down),
-					formatRate(rate.up),
-					_ui->unblock()->lastServiceReport().verdict
-				)
+				Localization::Str{ "str_status_engine_running_issue",
+								   _technologyName(active.value()),
+								   formatRate(rate.down),
+								   formatRate(rate.up),
+								   _ui->unblock()->lastServiceReport().verdict }()
 			);
 		else
 			_status_engine->setActive(
-				utils::format(
-					Localization::Str{ "str_status_engine_running_rate" }(),
-					_technologyName(active.value()),
-					formatRate(rate.down),
-					formatRate(rate.up)
-				)
+				Localization::Str{ "str_status_engine_running_rate", _technologyName(active.value()), formatRate(rate.down), formatRate(rate.up) }()
 			);
 	}
 }
@@ -738,7 +729,7 @@ void UiZapretPage::_startWithTechnologyCheck(std::function<void()>&& proceed)
 	}
 
 	_window_warning_technology_busy->setDescription(
-		utils::format(Localization::Str{ "str_window_warning_technology_busy_description" }(), _technologyName(other), _technologyName(_technology))
+		Localization::Str{ "str_window_warning_technology_busy_description", _technologyName(other), _technologyName(_technology) }()
 	);
 	_window_warning_technology_busy->show();
 	_window_warning_technology_busy->addEventYesNo(
@@ -818,18 +809,13 @@ void UiZapretPage::_autoStart()
 						{
 							_ui->userConfig()->writeSectionParameter(_rememberSection(), "config", result.strategy);
 
-							const auto description = _technology == Technology::Zapret1
-													   ? utils::format(
-															 Localization::Str{ "str_window_auto_start_wait_name_strategy_description_zapret1" }(),
-															 result.strategy,
-															 result.version,
-															 result.fake_key
-														 )
-													   : utils::format(
-															 Localization::Str{ "str_window_continue_select_strategy_description" }(),
-															 result.strategy,
-															 result.version
-														 );
+							const auto description =
+								_technology == Technology::Zapret1
+									? Localization::Str{ "str_window_auto_start_wait_name_strategy_description_zapret1",
+														 result.strategy,
+														 result.version,
+														 result.fake_key }()
+									: Localization::Str{ "str_window_continue_select_strategy_description", result.strategy, result.version }();
 
 							_window_continue_select_strategy->setDescription(description);
 							_window_continue_select_strategy->show();
@@ -942,7 +928,7 @@ void UiZapretPage::_testingServiceDomains()
 
 			if (!_domain_testing_cancel.load())
 			{
-				_list_host_info->setTitle(utils::format(Localization::Str{ "str_window_title_info_result" }(), _ui->unblock()->domainSuccessRate()));
+				_list_host_info->setTitle(Localization::Str{ "str_window_title_info_result", _ui->unblock()->domainSuccessRate() }());
 
 				_window_info_testing->show();
 				return;

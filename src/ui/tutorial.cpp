@@ -445,9 +445,7 @@ void Tutorial::updatePanel()
 	_panel_title.text(Localization::Str{ step.title }());
 	_panel_desc.text(Localization::Str{ step.desc }());
 
-	const auto step_text = Localization::Str{ "str_tour_step" }();
-	const auto counter	 = utils::format(step_text, _index + 1, _steps.size());
-	_panel_counter.text(counter);
+	_panel_counter.text(Localization::Str{ "str_tour_step", _index + 1, _steps.size() }());
 
 	_btn_prev.style("visibility", _index == 0 ? "hidden" : "visible");
 	_btn_prev.text(Localization::Str{ "str_tour_prev" }());
