@@ -3,10 +3,39 @@ module unblock.tg_proxy;
 import ext.windows;
 import core;
 import core.debug;
+import core.file_system;
 import core.service;
 import core.utils;
 
-constexpr static std::string_view c_proxy_secret{ "dd92bc05d4dc4f4bef9cb4b7bf5628c5" };
+namespace
+{
+	// Defaults live in configs/tg_proxy.config [DEFAULTS]: the first-run values,
+	// the reset button and the arguments the proxy service is started with.
+	// Opened once - edit the config and restart to pick up changes.
+	File& configDefaults()
+	{
+		static File config{ false };
+
+		if (!config.isOpen())
+		{
+			config.open(Core::get().configsPath() / "tg_proxy", ".config", true);
+
+			if (!config.isOpen())
+				Debug::error("configs/tg_proxy.config is missing or unreadable: the Telegram proxy defaults live there!");
+		}
+
+		return config;
+	}
+
+	std::string defaultValue(std::string_view parameter)
+	{
+		if (auto value = configDefaults().parameterSection<std::string>("DEFAULTS", std::string{ parameter }))
+			return value.value();
+
+		Debug::warning("tg proxy: configs/tg_proxy.config has no [DEFAULTS] {} - the default is empty", parameter);
+		return {};
+	}
+}
 
 TgProxy::TgProxy()
 {
@@ -15,22 +44,31 @@ TgProxy::TgProxy()
 
 std::string TgProxy::defaultHost()
 {
-	return "127.0.0.1";
+	return defaultValue("host");
 }
 
 std::string TgProxy::defaultPort()
 {
-	return "9101";
+	return defaultValue("port");
 }
 
 std::array<std::string, 4> TgProxy::defaultDcIp()
 {
-	return { "149.154.175.50", "91.105.192.100", "149.154.175.100", "149.154.167.91" };
+	if (auto dc_ip = configDefaults().parameterSectionVector("DEFAULTS", "dc_ip"); dc_ip && dc_ip.value().size() == 4)
+		return { dc_ip.value()[0], dc_ip.value()[1], dc_ip.value()[2], dc_ip.value()[3] };
+
+	Debug::error("configs/tg_proxy.config [DEFAULTS] dc_ip must list exactly 4 addresses!");
+	return {};
 }
 
 std::string TgProxy::defaultCfproxyDomain()
 {
-	return "unblock.kermanua1488.workers.dev";
+	return defaultValue("cfproxy_domain");
+}
+
+std::string TgProxy::defaultSecret()
+{
+	return defaultValue("secret");
 }
 
 void TgProxy::run(bool state)
@@ -45,7 +83,7 @@ void TgProxy::run(bool state)
 	_service.setDescription("Local proxy telegram.");
 	_service.setArgs(
 		{ (Core::get().binariesPath() / "tg-ws-proxy.exe").string(),
-		  std::string{ "--secret " } + c_proxy_secret.data(),
+		  std::string{ "--secret " } + defaultSecret(),
 		  "--dc-ip 1:" + _dc_ip[0] + " --dc-ip 2:" + _dc_ip[1] + " --dc-ip 3:" + _dc_ip[2] + " --dc-ip 4:" + _dc_ip[3],
 		  //		  "--cfproxy-worker-domain " + _cfproxy_domain,
 		  "--host " + _host,
@@ -72,7 +110,7 @@ std::string TgProxy::link() const
 	tg.append("&port=");
 	tg.append(_port);
 	tg.append("&secret=");
-	tg.append(c_proxy_secret);
+	tg.append(defaultSecret());
 	return tg;
 }
 

@@ -16,11 +16,13 @@ export class TgProxy final
 public:
 	TgProxy();
 
-	/** Built-in proxy settings — the reset-to-defaults target. */
+	/** Built-in proxy settings - the reset-to-defaults target, read from
+	 *  configs/tg_proxy.config [DEFAULTS]. */
 	static std::string				  defaultHost();
 	static std::string				  defaultPort();
 	static std::array<std::string, 4> defaultDcIp();
 	static std::string				  defaultCfproxyDomain();
+	static std::string				  defaultSecret();
 
 	void run(bool state = true);
 	bool isRun();

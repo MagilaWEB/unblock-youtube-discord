@@ -2,6 +2,7 @@ add_executable(test_unblock
     test_strategies_zapret1.cpp
     test_strategies_zapret2.cpp
     test_auto_round.cpp
+    test_defaults_config.cpp
     test_dns_pins.cpp
     test_update_version.cpp
     ${CMAKE_SOURCE_DIR}/src/core/tests/tap_main.cpp

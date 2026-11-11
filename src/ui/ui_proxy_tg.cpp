@@ -153,7 +153,7 @@ void UiProxyTg::_proxySettings()
 		Input::Types::ip,
 		JSValue{ host.c_str() },
 		Localization::Str{ "str_proxy_tg_host_title" },
-		Localization::Str{ "str_proxy_tg_host_description" }
+		Localization::Str{ "str_proxy_tg_host_description", TgProxy::defaultHost() }
 	);
 	_proxy_tg_host->addTutorialStep("str_tour_proxy_settings_title", "str_tour_proxy_settings_description", 25);
 	_proxy_tg_port->create(
@@ -161,7 +161,7 @@ void UiProxyTg::_proxySettings()
 		Input::Types::port,
 		JSValue{ port.c_str() },
 		Localization::Str{ "str_proxy_tg_port_title" },
-		Localization::Str{ "str_proxy_tg_port_description" }
+		Localization::Str{ "str_proxy_tg_port_description", TgProxy::defaultPort() }
 	);
 	_proxy_tg_dc_ip_1->create(
 		"#tg_ws_proxy section .common",

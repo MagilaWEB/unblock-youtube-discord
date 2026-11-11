@@ -106,12 +106,16 @@ void UiDnsProxy::initialize()
 		bootstrap_csv += (bootstrap_csv.empty() ? "" : ",") + b;
 	_dns_proxy.setBootstrap(bootstrap);
 
+	// The hint cites the shipped defaults (configs/dns_proxy.config), not the
+	// user's override; Localization::Str fills the {} of the text with them.
+	const std::string default_bootstrap_csv = DnsProxy::defaultBootstrap() | std::views::join_with(',') | std::ranges::to<std::string>();
+
 	_bootstrap->create(
 		"#dns section .common",
 		Input::Types::text,
 		JSValue{ bootstrap_csv },
 		Localization::Str{ "str_dns_proxy_bootstrap_title" },
-		Localization::Str{ "str_dns_proxy_bootstrap_description" }
+		Localization::Str{ "str_dns_proxy_bootstrap_description", default_bootstrap_csv }
 	);
 	_bootstrap->addTutorialStep("str_tour_dns_bootstrap_title", "str_tour_dns_bootstrap_description", 19);
 	_bootstrap->setValidator([](const std::string& value) { return parseBootstrapList(trimConfigLine(value)).has_value(); });

@@ -311,7 +311,7 @@ str_dns_proxy_servers_title=🌐 DNS servers
 str_dns_proxy_servers_description=🌐 Each line is a DNS server address (DoH/DoT/QUIC or a plain IP). The first server is primary, the rest are fallbacks. The "Reset to defaults" button restores the built-in list.
 Examples: https://dns.geohide.ru:8443/dns-query or tls://dns.adguard.com
 str_dns_proxy_bootstrap_title=🧩 Bootstrap
-str_dns_proxy_bootstrap_description=🧩 Plain DNS servers, comma-separated; used to resolve the address of DoH/DoT servers (hostname to IP only). Defaults: 1.1.1.1,8.8.8.8,9.9.9.9,77.88.8.8. Press Enter to apply.
+str_dns_proxy_bootstrap_description=🧩 Plain DNS servers, comma-separated; used to resolve the address of DoH/DoT servers (hostname to IP only). Defaults: {}. Press Enter to apply.
 str_dns_proxy_timeout_title=⏱️ Query timeout
 str_dns_proxy_timeout_description=⏱️ Seconds to wait for a DNS server response (1–120). Private resolvers like GeoHide stall now and then — raise it if you see errors. Press Enter to apply.
 str_input_dns_proxy_custom_placeholder=Add a server (e.g. https://cloudflare-dns.com/dns-query) and press Enter
@@ -340,10 +340,10 @@ str_b_proxy_tg_apply=💾 Apply settings
 
 // Setting tg ws proxy
 str_proxy_tg_host_title=🌐 Host
-str_proxy_tg_host_description=Address the proxy listens on. Default is 127.0.0.1 — works locally only.
+str_proxy_tg_host_description=Address the proxy listens on. Default is {} — works locally only.
 
 str_proxy_tg_port_title=🔌 Port
-str_proxy_tg_port_description=Proxy server port. Default is 9101. Used for the Telegram connection too.
+str_proxy_tg_port_description=Proxy server port. Default is {}. Used for the Telegram connection too.
 
 str_proxy_tg_dc_ip_1_title=📡 Datacenter 1
 str_proxy_tg_dc_ip_1_description=IP address of Telegram's first datacenter.

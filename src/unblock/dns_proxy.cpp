@@ -5,50 +5,64 @@ import core;
 import core.debug;
 import core.file_system;
 import core.hidden_process;
+import core.types;
 import unblock.ipc_signals;
+
+namespace
+{
+	// Defaults live in configs/dns_proxy.config [DEFAULTS]: the tab offers them
+	// as the initial values and the proxy falls back to them when the user file
+	// carries none. Opened once - edit the config and restart to pick up
+	// changes.
+	File& configDefaults()
+	{
+		static File config{ false };
+
+		if (!config.isOpen())
+		{
+			config.open(Core::get().configsPath() / "dns_proxy", ".config", true);
+
+			if (!config.isOpen())
+				Debug::error("configs/dns_proxy.config is missing or unreadable: the DNS defaults live there!");
+		}
+
+		return config;
+	}
+
+	std::vector<std::string> defaultList(std::string_view parameter)
+	{
+		if (auto value = configDefaults().parameterSectionVector("DEFAULTS", std::string{ parameter }))
+			return value.value();
+
+		Debug::warning("dns proxy: configs/dns_proxy.config has no [DEFAULTS] {} - the default is empty", parameter);
+		return {};
+	}
+}
 
 std::vector<std::string> DnsProxy::defaultUpstreams()
 {
 	// Order is the priority: the first entry is the primary resolver, the
-	// rest are only fallbacks (see unblock_dns buildSettings). GeoHide leads
-	// (queries must reach it for region-specific answers) across its regional
-	// DoH endpoints, then its plain-DNS IPs, then other encrypted resolvers.
-	return {
-		"https://geohide.ru/dns-query",
-		"https://eu.geohide.ru/dns-query",
-		"https://us.geohide.ru/dns-query",
-		"5.175.161.3",
-		"5.175.161.40",
-		"37.221.93.141",
-		"45.13.237.213",
-		"31.25.239.132",
-		"143.20.64.192",
-		"107.175.76.134",
-		"192.255.159.240",
-		"192.255.159.241",
-		"192.3.233.253",
-		"https://dns.bezmezhau.com/dns-query",
-		"https://dns.commonnet.work/dns-query",
-		"https://dns.comss.one/dns-query",
-		"https://router.comss.one/dns-query",
-		"https://dns.dns-ai.ru/dns-query",
-		"https://dns.zapret.moe/dns-query",
-	};
+	// rest are only fallbacks (see unblock_dns buildSettings).
+	return defaultList("upstream");
 }
 
 std::vector<std::string> DnsProxy::defaultBootstrap()
 {
-	// Plain DNS used only to resolve hostname upstreams. Editable in the UI;
-	// if the ISP poisons these, the user can point them at a reachable
-	// resolver (e.g. GeoHide's own IPs).
-	return { "1.1.1.1", "8.8.8.8", "9.9.9.9", "77.88.8.8" };
+	// Plain DNS used only to resolve hostname upstreams. If the ISP poisons
+	// these, the user can point them at a reachable resolver (e.g. GeoHide's
+	// own IPs).
+	return defaultList("bootstrap");
 }
 
 std::uint32_t DnsProxy::defaultTimeout()
 {
-	// Upstream exchange timeout, matching the curated resolver list above.
-	// Editable in the UI.
-	return 5'000;
+	// Upstream exchange timeout in milliseconds, matching the curated resolver
+	// list in the config.
+	if (auto timeout = configDefaults().parameterSection<u32>("DEFAULTS", "timeout"))
+		return timeout.value();
+
+	Debug::warning("dns proxy: configs/dns_proxy.config has no [DEFAULTS] timeout - the default is zero");
+	return 0;
 }
 
 DnsProxy::DnsProxy()
