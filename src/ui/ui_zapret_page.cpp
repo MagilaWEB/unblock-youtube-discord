@@ -638,14 +638,17 @@ void UiZapretPage::_buttonUpdate()
 	_start_button->setTitle(running ? "str_b_restart_unblock" : "str_b_start_zapret");
 }
 
-void UiZapretPage::_updateStatus(std::optional<Technology> active)
+void UiZapretPage::_updateStatus(std::optional<Technology> active, bool vpn_paused)
 {
 	if (!_status_engine->isCreate())
 		return;
 
 	// VPN pause outranks stopped/running: the engines are down because the
-	// helper stopped them, not because the user stopped them.
-	if (_ui->unblock()->vpnPaused())
+	// helper stopped them, not because the user stopped them. The caller
+	// resolves the flag once per tick and passes it in: reading it here again
+	// could disagree with the value the caller gated on (each read asks the
+	// SCM, and the answer is not monotonic).
+	if (vpn_paused)
 	{
 		_status_engine->setWarning(Localization::Str{ "str_status_engine_vpn_paused" }());
 		return;
@@ -702,16 +705,26 @@ void UiZapretPage::updateState()
 
 	if (active != _last_active || has_report != _last_has_report || vpn_paused != _last_vpn_paused)
 	{
+		Debug::info(
+			"Engine status: vpn={} active={} report={}",
+			vpn_paused ? "on" : "off",
+			active.has_value() ? _technologyName(active.value()) : "none",
+			has_report ? "yes" : "no"
+		);
 		_last_active	 = active;
 		_last_has_report = has_report;
 		_last_vpn_paused = vpn_paused;
-		_updateStatus(active);
+		_updateStatus(active, vpn_paused);
 	}
 
 	// Live throughput in the status line: the rate rides the IPC once a
-	// second, so refresh the text on that cadence while the engine runs.
-	if (running)
-		LIMIT_UPDATE(EngineRate, 1.F, { _updateStatus(active); });
+	// second, so refresh the text on that cadence while the engine runs. A
+	// pause needs the same treatment: the engines are down then, so this
+	// branch would never run and the change gate above could freeze the line
+	// on a stale "engine stopped" (the pause can arrive seconds after the
+	// helper took the engine down).
+	if (running || vpn_paused)
+		LIMIT_UPDATE(EngineRate, 1.F, { _updateStatus(active, vpn_paused); });
 }
 
 bool UiZapretPage::_hasBypassTargets() const

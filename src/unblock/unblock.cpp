@@ -236,13 +236,17 @@ std::optional<Technology> Unblock::runningTechnology()
 
 bool Unblock::vpnPaused()
 {
-	// The flag rides the helper's IPC and only means something while that
-	// helper runs: a dead or never-started helper must not leave a stale pause
-	// on the UI.
-	if (!_zapret_helper.isRun())
+	// The helper re-asserts this key every couple of seconds, so its freshness
+	// is the liveness proof. Asking the SCM instead made the pause flicker off:
+	// Service::isRun() falls back to a cached "not running" while its lock is
+	// busy, and one such read hid a real pause from the UI.
+	auto& ipc = IPCSignals::get();
+
+	auto age = ipc.latestAge("zapret.vpn_paused");
+	if (!age || *age > std::chrono::seconds{ 30 })
 		return false;
 
-	return IPCSignals::get().getLatestU32("zapret.vpn_paused").value_or(0) != 0;
+	return ipc.getLatestU32("zapret.vpn_paused").value_or(0) != 0;
 }
 
 std::vector<std::string> Unblock::helperCheckingHosts()

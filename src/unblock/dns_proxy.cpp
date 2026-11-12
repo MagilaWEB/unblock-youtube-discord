@@ -134,11 +134,13 @@ void DnsProxy::run(bool state)
 
 	_writeConfig(upstreams, bootstrap, timeout);
 
-	// Reset the IPC counters so a stale run's numbers don't show on start.
+	// Reset the IPC counters so a stale run's numbers don't show on start. The
+	// pause key is not ours to wipe: it is the service's own verdict, and
+	// clearing it would hide an ongoing VPN pause until the fresh service
+	// pushed it again (and a start/stop race can lose that push entirely).
 	IPCSignals::get().clear("dns.queries");
 	IPCSignals::get().clear("dns.cache_hits");
 	IPCSignals::get().clear("dns.errors");
-	IPCSignals::get().clear("dns.vpn_paused");
 
 	_service.remove();
 	_service.setDescription("Unblock DNS proxy (AdGuard DnsLibs).");
@@ -191,10 +193,18 @@ std::string DnsProxy::status() const
 {
 	auto&			   ipc = IPCSignals::get();
 	std::ostringstream ss;
+
+	// The pause key is re-asserted by the service every couple of seconds, so
+	// its freshness is the liveness proof: a stale "1" from a service that died
+	// would otherwise leave a "VPN paused" line while nothing runs.
+	bool vpn_paused = false;
+	if (auto age = ipc.latestAge("dns.vpn_paused"); age && *age <= std::chrono::seconds{ 30 })
+		vpn_paused = ipc.getLatestU32("dns.vpn_paused").value_or(0) != 0;
+
 	ss << "queries=" << ipc.getLatestU32("dns.queries").value_or(0) << "\n";
 	ss << "cache_hits=" << ipc.getLatestU32("dns.cache_hits").value_or(0) << "\n";
 	ss << "errors=" << ipc.getLatestU32("dns.errors").value_or(0) << "\n";
-	ss << "vpn_paused=" << ipc.getLatestU32("dns.vpn_paused").value_or(0) << "\n";
+	ss << "vpn_paused=" << (vpn_paused ? 1 : 0) << "\n";
 	return ss.str();
 }
 

@@ -96,8 +96,9 @@ private:
 	SECONDARY_WINDOW(_window_test_result);
 	SECONDARY_WINDOW(_window_enable_dns_proxy);
 
-	std::string _last_status;
-
+	// Which variant of the line is on screen (issue / vpn pause / running /
+	// stopped): logged on change so the log narrates what the page showed.
+	int				 _last_variant{ -1 };
 	// True while a start/stop task is in flight: the checkbox keeps the
 	// optimistic value until the live service state catches up.
 	std::atomic_bool _apply_pending{ false };
@@ -396,7 +397,7 @@ private:
 	void _testingInit();
 
 	void _buttonUpdate();
-	void _updateStatus(std::optional<Technology> active);
+	void _updateStatus(std::optional<Technology> active, bool vpn_paused);
 
 	/** True when the current report covers one of this page's services (the
 	 *  active engine or the zapret-helper). */

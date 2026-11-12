@@ -7,6 +7,7 @@ module ui;
 import std;
 import common.dns_config;
 import core;
+import core.debug;
 import core.localization;
 import core.service_diagnostics;
 import core.timer;
@@ -358,8 +359,11 @@ void UiDnsProxy::_refreshStatus()
 	const bool issue   = _ui->unblock()->serviceReportCovers("unblock_dns");
 
 	// The service keeps running but steps aside while a VPN tunnel is up: the
-	// adapters hold the tunnel's own resolvers, so our protection is idle.
-	const bool vpn_paused = running && vpn_paused_raw != "0";
+	// adapters hold the tunnel's own resolvers, so our protection is idle. The
+	// key is the service's own verdict: gating it on `running` would drop the
+	// pause for a tick whenever the SCM read lags, and the status text would
+	// then stop changing for good.
+	const bool vpn_paused = vpn_paused_raw != "0";
 
 	// Mirror reality: the box follows the service, not a stored preference.
 	// While a start/stop task is in flight the live state lags the intent, so
@@ -377,10 +381,20 @@ void UiDnsProxy::_refreshStatus()
 	else
 		text = Localization::Str{ "str_status_dns_stopped" }();
 
-	if (text == _last_status)
-		return;
+	// One line per variant change: the log narrates exactly what the line shows
+	// and why (issue / vpn pause / running / stopped) with the raw key and the
+	// service state. Counter-only changes stay silent.
+	const int variant = issue ? 0 : (vpn_paused ? 1 : (running ? 2 : 3));
+	if (variant != _last_variant)
+	{
+		_last_variant = variant;
+		Debug::info("DNS status: variant={} raw=[{}] service={} -> [{}]", variant, vpn_paused_raw, running ? "running" : "stopped", text);
+	}
 
-	_last_status = text;
+	// Re-assert every tick, not only on change: a paint missed once (the line
+	// was written while its tab was hidden) would otherwise stay stale until
+	// the text changed again. The widget clears the label before writing, so
+	// the assignment always invalidates.
 
 	if (issue || vpn_paused)
 		_status_dns->setWarning(text);
