@@ -630,12 +630,15 @@ void UiZapretPage::_buttonUpdate()
 	if (!_start_button->isCreate())
 		return;
 
-	const bool running = _ui->unblock()->isRun(_technology);
-	if (running == _last_running)
+	// "Engaged" = the engine runs or a VPN pause has taken it down. The pause is
+	// a temporary state nobody asked for, not the user's stop, so the button
+	// keeps offering a restart instead of pretending zapret was never started.
+	const bool engaged = _ui->unblock()->isRun(_technology) || _ui->unblock()->vpnPaused();
+	if (engaged == _last_running)
 		return;
 
-	_last_running = running;
-	_start_button->setTitle(running ? "str_b_restart_unblock" : "str_b_start_zapret");
+	_last_running = engaged;
+	_start_button->setTitle(engaged ? "str_b_restart_unblock" : "str_b_start_zapret");
 }
 
 void UiZapretPage::_updateStatus(std::optional<Technology> active, bool vpn_paused)
