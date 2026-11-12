@@ -19,6 +19,7 @@ import ui.widget_base_element;
 import ui.widget_button;
 import ui.widget_check_box;
 import ui.widget_secondary_window;
+import ui.widget_status;
 import unblock;
 
 Ui::Ui(IEngineAPI* engine) : _engine(engine)
@@ -110,6 +111,18 @@ void Ui::setup(saucer::smartview* view)
 
 	// JS -> CPP: translate a string by language key.
 	view->expose("CPPLangText", [this](std::string text_id) { return langText(std::move(text_id)); });
+
+	// JS -> CPP: the tab script reports an activation so the status lines can
+	// re-assert themselves. A line written while its tab was hidden is not
+	// repainted by WebView2, so it must be written again once it is visible.
+	view->expose(
+		"CPPActiveTab",
+		[](std::string)
+		{
+			StatusIndicator::repaintAll();
+			return true;
+		}
+	);
 
 	// Window geometry is persisted by the engine with a debounce — never
 	// run config regex/normalize on the resize hot path (DPI transitions

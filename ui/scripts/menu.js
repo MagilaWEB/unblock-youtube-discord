@@ -20,6 +20,11 @@ function eventClick(element) {
 			});
 
 			hash.classList.add("active");
+			// The status lines are written while their tab is hidden and WebView2
+			// does not repaint a hidden subtree: ask C++ to re-assert them now
+			// that the tab is visible.
+			if (RUN_CPP && window.saucer && saucer.exposed && saucer.exposed.CPPActiveTab)
+				saucer.exposed.CPPActiveTab(element.hash);
 
 			let active_teg_a = document.querySelector("#active");
 			if (active_teg_a)

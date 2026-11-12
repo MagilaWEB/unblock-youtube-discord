@@ -14,6 +14,14 @@ export class StatusIndicator final : public BaseElement
 	ui::dom::Element _dot;
 	ui::dom::Element _label;
 
+	// Shadow of what the DOM already shows: the pages re-assert their status
+	// every tick, and a write that changes nothing would cost a C++ -> JS -> DOM
+	// round trip per tick for nothing. Compared first, applied only on a change.
+	std::string _text;
+	int			_style{ -1 };
+
+	void _apply(int style, std::string_view text);
+
 public:
 	StatusIndicator(std::string_view name);
 
@@ -28,4 +36,10 @@ public:
 
 	// Click handler for the whole status line (same pattern as Button).
 	void addEventClick(std::function<bool(JSArgs)>&& callback);
+
+	// Re-apply the current state even though the shadow says the DOM already
+	// shows it: a line written while its tab was hidden is not repainted by
+	// WebView2, so it must be written again once the tab is visible.
+	void		repaint();
+	static void repaintAll();
 };
