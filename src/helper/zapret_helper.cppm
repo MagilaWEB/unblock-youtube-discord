@@ -107,6 +107,13 @@ export class ZapretHelper
 	bool								  _vpn_paused{ false };
 	bool								  _vpn_zapret1_was_running{ false };
 	bool								  _vpn_zapret2_was_running{ false };
+	// Engines known to be down right now. The pause re-checks them every tick:
+	// a stop can fail or be undone (the app starts the engine again), and the
+	// engine must not keep running behind the tunnel.
+	bool								  _vpn_zapret1_down{ false };
+	bool								  _vpn_zapret2_down{ false };
+	bool								  _vpn_seen_detected{ false };
+	std::chrono::steady_clock::time_point _last_vpn_stop_fail{};
 	// --vpn-only (Zapret1): the helper protocol is not in use, so the host
 	// pump, the verdicts and the liveness gate stay off; only the tunnel
 	// watch and the engine pause run.

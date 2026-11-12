@@ -462,6 +462,13 @@ void Unblock::startService(Technology technology)
 {
 	_helper.clear();
 
+	// While a VPN tunnel is up the helper owns the engines: it stops whatever
+	// runs and brings back exactly what was up before. Starting an engine here
+	// would be swept back down within a couple of seconds, and the auto-pick
+	// would burn through its strategies for nothing.
+	if (vpnPaused())
+		return;
+
 	// Exactly one technology runs at a time.
 	if (technology == Technology::Zapret1)
 		_zapret2_engine->stop();

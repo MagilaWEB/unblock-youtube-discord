@@ -19,6 +19,10 @@ namespace
 	// before the helper gives up (the SCM usually answers in well under).
 	inline constexpr auto c_service_stop_wait{ std::chrono::seconds(10) };
 
+	// Throttle for the "couldn't stop" log: a stop that keeps failing must not
+	// flood the log every tick.
+	inline constexpr auto c_vpn_stop_fail_interval{ std::chrono::seconds(10) };
+
 	// SCM handles for one call, both closed on scope exit. A null service
 	// handle means the manager or the service is absent: querying the state
 	// of a service that was never created must be a quiet "not running".
@@ -636,6 +640,14 @@ void ZapretHelper::_checkVpnPause()
 
 	if (active)
 	{
+		if (active != _vpn_seen_detected)
+		{
+			// Evidence in the app log that the helper saw the tunnel at all:
+			// without this line the pause never even started.
+			_vpn_seen_detected = active;
+			_log(std::format("VPN tunnel detected [{}]", which));
+		}
+
 		if (!_vpn_paused)
 		{
 			// Capture the engines that are live BEFORE stopping anything: only
@@ -643,6 +655,8 @@ void ZapretHelper::_checkVpnPause()
 			// stay off (the DNS/Telegram services are never touched at all).
 			_vpn_zapret1_was_running = serviceRunning(c_zapret1_service);
 			_vpn_zapret2_was_running = serviceRunning(c_zapret2_service);
+			_vpn_zapret1_down		 = false;
+			_vpn_zapret2_down		 = false;
 
 			// Announce the pause BEFORE stopping anything: the receiver shows
 			// "engine stopped" the moment an engine goes down, and stopping can
@@ -650,14 +664,6 @@ void ZapretHelper::_checkVpnPause()
 			// reports a stopped engine with no VPN explanation.
 			_vpn_paused = true;
 			_send("LATEST:zapret.vpn_paused:1", c_ipc_port);
-
-			_log(std::format("VPN tunnel is up [{}]: stopping zapret services", which));
-
-			if (_vpn_zapret1_was_running && !stopService(c_zapret1_service))
-				_log("couldn't stop the zapret1 service for the VPN pause");
-
-			if (_vpn_zapret2_was_running && !stopService(c_zapret2_service))
-				_log("couldn't stop the zapret2 service for the VPN pause");
 
 			// Freeze the pump at once: the verdicts are meaningless under a
 			// tunnel, and waiting for the heartbeat timeout would keep feeding
@@ -667,6 +673,53 @@ void ZapretHelper::_checkVpnPause()
 			{
 				std::lock_guard lock(_mutex);
 				_queue.clear();
+			}
+		}
+
+		// Held down on every tick, not once: the stop can fail while the service
+		// is still shutting down, and the engine can come back (the app restarts
+		// it with the tunnel up). A single attempt left traffic going through a
+		// bypass the VPN makes pointless.
+		// Any engine that is running while the tunnel is up gets stopped; the
+		// captured set only decides what the resume brings back. The helper is
+		// started together with the engine, so its first check races the
+		// engine's own start: without this the pause recorded "nothing was
+		// running" and the engine kept desyncing traffic behind the VPN.
+		if (serviceRunning(c_zapret1_service))
+		{
+			if (!_vpn_zapret1_was_running)
+			{
+				_vpn_zapret1_was_running = true;
+				_log("zapret1 started while the VPN is up: stopping it (and restoring it later)");
+			}
+			else if (_vpn_zapret1_down)
+				_log("zapret1 came back while the VPN is up: stopping it again");
+
+			if (stopService(c_zapret1_service))
+				_vpn_zapret1_down = true;
+			else if (now - _last_vpn_stop_fail > c_vpn_stop_fail_interval)
+			{
+				_last_vpn_stop_fail = now;
+				_log("couldn't stop the zapret1 service for the VPN pause");
+			}
+		}
+
+		if (serviceRunning(c_zapret2_service))
+		{
+			if (!_vpn_zapret2_was_running)
+			{
+				_vpn_zapret2_was_running = true;
+				_log("zapret2 started while the VPN is up: stopping it (and restoring it later)");
+			}
+			else if (_vpn_zapret2_down)
+				_log("zapret2 came back while the VPN is up: stopping it again");
+
+			if (stopService(c_zapret2_service))
+				_vpn_zapret2_down = true;
+			else if (now - _last_vpn_stop_fail > c_vpn_stop_fail_interval)
+			{
+				_last_vpn_stop_fail = now;
+				_log("couldn't stop the zapret2 service for the VPN pause");
 			}
 		}
 
@@ -687,6 +740,8 @@ void ZapretHelper::_checkVpnPause()
 
 		_vpn_zapret1_was_running = false;
 		_vpn_zapret2_was_running = false;
+		_vpn_zapret1_down		 = false;
+		_vpn_zapret2_down		 = false;
 		_vpn_paused				 = false;
 
 		// Everything the helper learned is meaningless behind a tunnel: drop the
