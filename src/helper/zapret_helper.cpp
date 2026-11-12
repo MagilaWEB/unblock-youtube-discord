@@ -644,6 +644,13 @@ void ZapretHelper::_checkVpnPause()
 			_vpn_zapret1_was_running = serviceRunning(c_zapret1_service);
 			_vpn_zapret2_was_running = serviceRunning(c_zapret2_service);
 
+			// Announce the pause BEFORE stopping anything: the receiver shows
+			// "engine stopped" the moment an engine goes down, and stopping can
+			// take seconds, so a late "1" would leave a window where the app
+			// reports a stopped engine with no VPN explanation.
+			_vpn_paused = true;
+			_send("LATEST:zapret.vpn_paused:1", c_ipc_port);
+
 			_log(std::format("VPN tunnel is up [{}]: stopping zapret services", which));
 
 			if (_vpn_zapret1_was_running && !stopService(c_zapret1_service))
@@ -661,8 +668,6 @@ void ZapretHelper::_checkVpnPause()
 				std::lock_guard lock(_mutex);
 				_queue.clear();
 			}
-
-			_vpn_paused = true;
 		}
 
 		// Re-asserted every tick, not only on the transition: the receiver
