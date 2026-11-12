@@ -203,6 +203,7 @@ std::string DiagnosticReport::issueText() const
 DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvidence& evidence)
 {
 	DiagnosticReport report;
+	report.service = failure.service_name;
 
 	// The verdict is chosen by the strongest piece of evidence; everything that
 	// is merely suspicious only fills the checklist.

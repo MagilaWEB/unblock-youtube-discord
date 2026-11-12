@@ -256,7 +256,7 @@ void Ui::_sendServiceReport()
 	Core::get().addTask(
 		[report]
 		{
-			const std::string title = Localization::Str{ "str_issue_service_title", report.verdict }();
+			const std::string title = Localization::Str{ "str_issue_service_title", report.service }();
 			Debug::openGitHubIssue(title, Debug::buildServiceIssueBody(report.issueText()));
 		}
 	);

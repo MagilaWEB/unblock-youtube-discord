@@ -57,6 +57,7 @@ str_error_stopping_service=service [{}] is not stopped or is stopping, cannot st
 str_wait_starting_service=wait for service [{}] to start
 str_wait_stopping_service=wait for service [{}] to stop
 str_error_wait_time_start_service=timeout waiting for service [{}] to start, startup aborted, unknown reason!
+str_error_start_service_disabled=service [{}] is disabled in the system and could not be re-enabled — check its start type in services.msc.
 str_expired_wait_time_start_service=timeout waiting for service [{}] to start, process will be stopped!
 str_success_start_service=service [{}] started.
 str_success_stop_service=service [{}] stopped.

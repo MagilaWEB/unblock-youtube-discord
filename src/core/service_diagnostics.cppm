@@ -23,6 +23,7 @@ export struct DiagnosticCheck
 /** The user facing result of a service failure diagnosis. */
 export struct DiagnosticReport
 {
+	std::string					 service;			 // the failing service name (issue title)
 	std::string					 verdict;			 // one short line for the UI status bar
 	std::string					 summary;			 // what happened, 1-3 paragraphs
 	std::vector<DiagnosticCheck> checks;			 // the checklist shown in the window

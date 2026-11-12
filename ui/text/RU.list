@@ -57,6 +57,7 @@ str_error_stopping_service=служба [{}] не остановлена или 
 str_wait_starting_service=подождите окончания запуска службы [{}]
 str_wait_stopping_service=подождите окончания остановки службы [{}]
 str_error_wait_time_start_service=истекло время ожидания запуска службы [{}], процесс запуска прерван, причина не известна!
+str_error_start_service_disabled=служба [{}] отключена в системе, включить её не удалось — проверьте тип запуска в services.msc.
 str_expired_wait_time_start_service=истекло время ожидания запуска службы [{}], процесс будет остановлен!
 str_success_start_service=служба [{}] запущена.
 str_success_stop_service=служба [{}] остановлена.

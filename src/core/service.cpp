@@ -319,12 +319,43 @@ void Service::start()
 
 	_time_limit.start();
 	DWORD start_error = 0;
+	bool  re_enabled  = false;
 	while (true)
 	{
 		if (StartService(_sc.get(), static_cast<DWORD>(argv.size()), argv.data()))
 			break;
 
 		start_error = GetLastError();
+
+		// A leftover "disabled" start type (a cleaner, a hand edit) blocks every
+		// StartService with 1058 and never heals by itself: re-assert the start
+		// type this app always creates its services with, once, and retry.
+		constexpr DWORD c_error_service_disabled{ 1'058 };
+		if (start_error == c_error_service_disabled && !re_enabled)
+		{
+			re_enabled = true;
+
+			if (!ChangeServiceConfigW(
+					_sc.get(),
+					SERVICE_NO_CHANGE,
+					SERVICE_AUTO_START,
+					SERVICE_NO_CHANGE,
+					nullptr,
+					nullptr,
+					nullptr,
+					nullptr,
+					nullptr,
+					nullptr,
+					nullptr
+				))
+			{
+				_recordFailure(ServiceFailure::Stage::Start, start_error);
+				InputConsole::textError(Localization::Str{ "str_error_start_service_disabled" }(), _name);
+				return;
+			}
+
+			continue;
+		}
 
 		if (_time_limit.getElapsedSec() > 5.0F)
 		{
