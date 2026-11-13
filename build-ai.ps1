@@ -98,6 +98,20 @@ if (Test-Path $ninjaFile) {
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         }
     }
+
+    # A preset without tests must not leave test binaries behind: bin/ is shared
+    # with the IDE's debug preset, and when the cached preset already matches,
+    # the configure-time wipe that would have removed them never runs.
+    if ($Preset -like '*-min') {
+        $testArtifacts = Get-ChildItem -Path (Join-Path $root 'bin') -Filter 'test_*' -File -ErrorAction SilentlyContinue
+        if ($testArtifacts) {
+            Write-Host 'Removing test artifacts (this preset builds no tests):'
+            foreach ($file in $testArtifacts) {
+                Write-Host "  $($file.Name)"
+                Remove-Item -LiteralPath $file.FullName -Force
+            }
+        }
+    }
 }
 
 exit 0
