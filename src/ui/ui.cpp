@@ -154,7 +154,7 @@ void Ui::_domReady()
 	ui::dom::bind(view);
 
 	// Page title shown in Task Manager for the WebView2 process: "Unblock <version>".
-	view->execute("document.title = {}", jsQuote(std::string("Unblock ") + VERSION_STR));
+	view->execute("document.title = {}", jsQuote("Unblock"));
 
 	BaseElement::initializeAll(view);
 	initialize();

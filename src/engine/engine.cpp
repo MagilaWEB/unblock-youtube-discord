@@ -186,7 +186,7 @@ coco::stray Engine::_start(saucer::application* app)
 	_window->set_min_size({ window_geometry::c_min_width, window_geometry::c_min_height });
 	_window->set_resizable(true);
 	_window->set_background({ .r = 13, .g = 14, .b = 20, .a = 255 });
-	_window->set_title(("Unblock " + std::format("Version: {}", VERSION_STR)).c_str());
+	_window->set_title("Unblock");
 
 	// Icon via saucer (big icon). One Win32 line complements the small
 	// title-bar icon — saucer's Win32 backend only sends ICON_BIG upstream.
