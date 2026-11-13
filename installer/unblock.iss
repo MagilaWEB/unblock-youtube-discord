@@ -2,8 +2,8 @@
 ;
 ; Сам установщик маленький: payload (unblock.7z) он качает с последнего релиза
 ; GitHub в момент установки. Распаковка — встроенными средствами Inno
-; (ExtractArchive + ArchiveExtraction=basic из LZMA SDK), поэтому никакой
-; внешний 7za.exe не нужен и в релиз ничего лишнего не добавляется.
+; (ExtractArchive + ArchiveExtraction=full), поэтому никакой внешний 7za.exe не
+; нужен и в релиз ничего лишнего не добавляется.
 ;
 ; Сборка (вызывает release-ai.ps1):
 ;   ISCC.exe /DAppVersion=1.10.0 installer\unblock.iss
@@ -40,11 +40,24 @@ ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=..\release
 OutputBaseFilename=unblock-setup
 SetupIconFile=..\src\engine\unblock.ico
+; Картинок в визарде нет: пустые значения убирают их, раскладка не меняется.
+WizardImageFile=
+WizardSmallImageFile=
 UninstallDisplayIcon={app}\bin\engine.exe
 LicenseFile=..\LICENSE.txt
 Compression=lzma2/max
 SolidCompression=yes
-WizardStyle=modern
+WizardStyle=modern dark
+; Фон визарда — цвет из палитры приложения (тёмный), а не системный.
+WizardBackColor=#1a1b2e
+; Выбор языка показываем только когда Windows не совпал ни с русским, ни с
+; английским: родной список Inno выделяет системным синим, а на тёмном фоне это
+; выглядит чужеродно. Явно задать язык можно ключом /LANG=<имя>.
+; Диалог выбора языка рисует выделение системным clHighlight — на тёмном фоне это
+; ярко-синяя плашка, перекрасить её штатно нечем (нужен свой .vsf). Поэтому диалога
+; нет: язык ставится по языку интерфейса Windows, первый в списке — запасной.
+ShowLanguageDialog=no
+LanguageDetectionMethod=uilanguage
 ; Полноценный распаковщик (значение full): умеет любые 7z, включая собранные с
 ; фильтром BCJ2, который 7-Zip сам включает для exe при -mx=9. Установщик от
 ; этого тяжелее примерно на полтора мегабайта.
@@ -57,26 +70,16 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [CustomMessages]
 russian.PayloadTitle=Загрузка Unblock
 russian.PayloadSubtitle=Установщик скачивает последнюю версию с GitHub — это займёт меньше минуты.
-russian.PayloadDownloading=Скачиваю последнюю версию с GitHub…
 russian.PayloadProgress=Скачиваю: %1 из %2 · %3 МБ/с
 russian.PayloadProgressNoTotal=Скачано: %1 · %2 МБ/с
-russian.PayloadUnpacking=Распаковываю…
-russian.PayloadReady=Готово. Нажмите «Далее», чтобы продолжить установку.
-russian.PayloadVersion=Устанавливается Unblock %1
 russian.PayloadDownloadFailed=Не удалось скачать архив с GitHub.%n%n%1
 russian.PayloadUnpackFailed=Архив скачан, но распаковать его не удалось.%n%n%1
-russian.PayloadRetry=Повторить
 english.PayloadTitle=Downloading Unblock
 english.PayloadSubtitle=The installer downloads the latest version from GitHub — this takes less than a minute.
-english.PayloadDownloading=Downloading the latest version from GitHub…
 english.PayloadProgress=Downloading: %1 of %2 · %3 MB/s
 english.PayloadProgressNoTotal=Downloaded: %1 · %2 MB/s
-english.PayloadUnpacking=Unpacking…
-english.PayloadReady=Ready. Press Next to continue the installation.
-english.PayloadVersion=Installing Unblock %1
 english.PayloadDownloadFailed=Could not download the archive from GitHub.%n%n%1
 english.PayloadUnpackFailed=The archive was downloaded but could not be unpacked.%n%n%1
-english.PayloadRetry=Retry
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -120,13 +123,11 @@ Filename: "{sys}\netsh.exe"; Parameters: "interface tcp set global timestamps=di
 
 [Code]
 var
-  PayloadPage:  TWizardPage;
-  PayloadBar:   TNewProgressBar;
-  PayloadLabel: TNewStaticText;
-  PayloadReady: Boolean;
-  SpeedSample:  Int64;
-  SpeedStamp:   Cardinal;
+  DownloadPage:  TDownloadWizardPage;
+  PayloadReady:  Boolean;
   LatestVersion: String;
+  SpeedSample:   Int64;
+  SpeedStamp:    Cardinal;
 
 // Часы для замера скорости: в Pascal Script у Inno своих нет, берём Win32-счётчик
 // миллисекунд напрямую (обёртка через 49 суток нам безразлична).
@@ -150,14 +151,14 @@ begin
     Result := Format('%d B', [Bytes]);
 end;
 
-// Прогресс скачивания: скачано/всего и текущая скорость. Скорость считаем по
-// дельте байтов между вызовами и обновляем подпись не чаще пяти раз в секунду,
-// иначе цифры дёргаются на каждом блоке.
+// Прогресс скачивания. Страница загрузки штатная (CreateDownloadPage), поэтому
+// ничего своего не рисуем: только меняем её текст и полоску. Своя надпись поверх
+// тёмного стиля давала серые плашки, а тут фон рисует сам Inno.
 function OnPayloadProgress(const Url, FileName: String; const Progress, ProgressMax: Int64): Boolean;
 var
-  Stamp:   Cardinal;
-  Elapsed: Cardinal;
-  Speed:   Double;
+  Stamp, Elapsed: Cardinal;
+  Speed: Double;
+  Line: String;
 begin
   Stamp := NowMs;
 
@@ -170,24 +171,30 @@ begin
     Speed := (Progress - SpeedSample) * 1000.0 / Elapsed / 1048576;
 
     if ProgressMax > 0 then
-      PayloadLabel.Caption := FmtMessage(CustomMessage('PayloadProgress'), [FormatSize(Progress), FormatSize(ProgressMax), Format('%.1f', [Speed])])
+      Line := FmtMessage(CustomMessage('PayloadProgress'), [FormatSize(Progress), FormatSize(ProgressMax), Format('%.1f', [Speed])])
     else
-      PayloadLabel.Caption := FmtMessage(CustomMessage('PayloadProgressNoTotal'), [FormatSize(Progress), Format('%.1f', [Speed])]);
+      Line := FmtMessage(CustomMessage('PayloadProgressNoTotal'), [FormatSize(Progress), Format('%.1f', [Speed])]);
+
+    if LatestVersion <> '' then
+      Line := 'Unblock ' + LatestVersion + ' · ' + Line;
+
+    // Вторая строка — та же, что пишет сама Inno (имя файла): если писать туда
+    // своё, строки мигают, подменяя друг друга на каждом обновлении.
+    DownloadPage.SetText(Line, '{#PayloadName}');
 
     SpeedSample := Progress;
     SpeedStamp  := Stamp;
   end;
 
   if ProgressMax > 0 then
-    PayloadBar.Position := (Progress * 100) div ProgressMax;
+    DownloadPage.SetProgress(Progress, ProgressMax);
+
   Result := True;
 end;
 
-// Прогресс распаковки: полоска та же, подпись уже переключена на «распаковываю».
+// Прогресс распаковки: своей полоски больше нет, распаковка идёт молча.
 function OnPayloadExtract(const ArchiveName, FileName: String; const Progress, ProgressMax: Int64): Boolean;
 begin
-  if ProgressMax > 0 then
-    PayloadBar.Position := (Progress * 100) div ProgressMax;
   Result := True;
 end;
 
@@ -227,53 +234,48 @@ begin
   end;
 end;
 
-// Скачивает payload в {tmp}\unblock.7z; исключения гасим здесь, чтобы страница
-// могла предложить «Повторить». Распаковка идёт уже на этапе установки, когда
-// службы остановлены (см. CurStepChanged).
-function FetchPayload: Boolean;
+// Скачивание показывает штатная страница Inno: она сама рисует полоску, текст и
+// кнопку отмены. Исключение ловим здесь, чтобы показать внятную ошибку и дать
+// повторить попытку — страница при этом всегда скрывается (иначе визард залипнет).
+function DownloadPayload: Boolean;
 begin
+  Result := False;
   PayloadReady := False;
-  PayloadBar.Position := 0;
-  PayloadLabel.Caption := CustomMessage('PayloadDownloading');
+  LatestVersion := FetchLatestVersion;
   SpeedSample := 0;
   SpeedStamp  := NowMs;
 
+  DownloadPage.Clear;
+  DownloadPage.Add('{#PayloadUrl}', '{#PayloadName}', '');
+  DownloadPage.Show;
   try
-    DownloadTemporaryFile('{#PayloadUrl}', '{#PayloadName}', '', @OnPayloadProgress);
-
-    PayloadReady := True;
-    PayloadBar.Position := 100;
-    PayloadLabel.Caption := CustomMessage('PayloadReady');
-    WizardForm.NextButton.Caption := SetupMessage(msgButtonNext);
-    Result := True;
-  except
-    PayloadLabel.Caption := FmtMessage(CustomMessage('PayloadDownloadFailed'), [GetExceptionMessage]);
-    WizardForm.NextButton.Caption := CustomMessage('PayloadRetry');
-    Result := False;
+    try
+      DownloadPage.Download;
+      PayloadReady := True;
+      Result := True;
+    except
+      if DownloadPage.AbortedByUser then
+        Log('Payload download aborted by user')
+      else
+        SuppressibleMsgBox(
+          FmtMessage(CustomMessage('PayloadDownloadFailed'), [GetExceptionMessage]),
+          mbCriticalError, MB_OK, IDOK
+        );
+    end;
+  finally
+    DownloadPage.Hide;
   end;
 end;
 
 procedure InitializeWizard;
 begin
-  PayloadPage := CreateCustomPage(wpSelectTasks, CustomMessage('PayloadTitle'), CustomMessage('PayloadSubtitle'));
+  DownloadPage := CreateDownloadPage(CustomMessage('PayloadTitle'), CustomMessage('PayloadSubtitle'), @OnPayloadProgress);
+  DownloadPage.ShowBaseNameInsteadOfUrl := True;
 
-  PayloadBar := TNewProgressBar.Create(PayloadPage);
-  PayloadBar.Parent := PayloadPage.Surface;
-  PayloadBar.Left := 0;
-  PayloadBar.Top := 0;
-  PayloadBar.Width := PayloadPage.SurfaceWidth;
-  PayloadBar.Height := 20;
-  PayloadBar.Min := 0;
-  PayloadBar.Max := 100;
-
-  PayloadLabel := TNewStaticText.Create(PayloadPage);
-  PayloadLabel.Parent := PayloadPage.Surface;
-  PayloadLabel.Left := 0;
-  PayloadLabel.Top := 32;
-  PayloadLabel.Width := PayloadPage.SurfaceWidth;
-  PayloadLabel.AutoSize := False;
-  PayloadLabel.WordWrap := True;
-  PayloadLabel.Height := 60;
+  // Синее выделение в поле пути: Inno выделяет весь путь при входе на страницу,
+  // и выделение оставалось висеть даже после ухода из поля.
+  WizardForm.DirEdit.AutoSelect := False;
+  WizardForm.DirEdit.HideSelection := True;
 end;
 
 // Перед заменой файлов службы надо остановить: они держат bin/. Ждём каждую
@@ -305,27 +307,16 @@ begin
     if (WizardDirValue <> DefaultDir) and (not DirExists(WizardDirValue)) then
       WizardForm.DirEdit.Text := DefaultDir;
   end;
-
-  if CurPageID = PayloadPage.ID then
-  begin
-    LatestVersion := FetchLatestVersion;
-    if LatestVersion <> '' then
-      WizardForm.PageDescriptionLabel.Caption := FmtMessage(CustomMessage('PayloadVersion'), [LatestVersion]);
-
-    FetchPayload;
-  end;
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
 
-  if (CurPageID = PayloadPage.ID) and not PayloadReady then
-  begin
-    // Кнопка на этой странице работает как «Повторить», пока payload не готов.
-    FetchPayload;
-    Result := False;
-  end;
+  // Качаем на шаге «Всё готово»: страница прогресса показывается поверх и уходит
+  // сама. Если сеть отвалилась — остаёмся здесь и повторяем по «Далее».
+  if (CurPageID = wpReady) and (not PayloadReady) then
+    Result := DownloadPayload;
 end;
 
 // Inno не умеет копировать каталоги из кода: обходим дерево сами. Внутри
@@ -361,12 +352,16 @@ end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
-  // Тихая установка: страницы нет, поэтому качаем здесь. Ошибку не глушим —
-  // пусть установка падает с внятным текстом.
+  // Тихая установка: страницы «готово» нет, поэтому качаем напрямую. Ошибку не
+  // глушим — пусть установка падает с внятным текстом.
   if (CurStep = ssInstall) and not PayloadReady then
   begin
-    if not FetchPayload then
-      RaiseException(CustomMessage('PayloadDownloadFailed'));
+    try
+      DownloadTemporaryFile('{#PayloadUrl}', '{#PayloadName}', '', nil);
+      PayloadReady := True;
+    except
+      RaiseException(FmtMessage(CustomMessage('PayloadDownloadFailed'), [GetExceptionMessage]));
+    end;
   end;
 
   // Распаковка — после [InstallDelete], который чистит прежние bin/binaries.
@@ -375,7 +370,6 @@ begin
   // имя папки установки произвольное, и файлы уехали бы рядом с ней.
   if CurStep = ssPostInstall then
   begin
-    PayloadLabel.Caption := CustomMessage('PayloadUnpacking');
     try
       ExtractArchive(
         ExpandConstant('{tmp}\{#PayloadName}'),
