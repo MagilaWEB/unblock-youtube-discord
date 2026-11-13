@@ -21,3 +21,6 @@ src/engine/version.hpp
 
 # CodeGraph: локальный индекс (создаётся `codegraph init`, машина-специфичный)
 .codegraph/
+
+# Release artifacts of release-ai.ps1
+release/
