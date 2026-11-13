@@ -43,7 +43,14 @@ void Ui::_removeAppRun()
 	Core::get().addTask(
 		[self = self]
 		{
-			self->_ui_unblock->stopAllServices();
+			// The app knows how to undo everything it created, and only it does:
+			// hosts pins and the adapters' DNS, the Telegram proxy, the services
+			// (stopping them is not enough — the registrations must go too, or a
+			// later install starts a disabled service and dies with 1058) and
+			// the WinDivert driver. The updater below only deletes the files.
+			self->_unblock->setDnsEnabled(false);
+			self->_unblock->tgProxy().run(false);
+			self->_unblock->removeService();
 
 			self->console(false);
 

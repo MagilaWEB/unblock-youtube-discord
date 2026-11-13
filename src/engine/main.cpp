@@ -2,6 +2,7 @@
 import core;
 import core.debug;
 import engine;
+import unblock;
 
 using namespace std;
 
@@ -58,6 +59,20 @@ static bool requestElevation()
 	return true;
 }
 
+// Полная уборка без интерфейса: её зовёт деинсталлятор установщика, прежде чем
+// снести файлы. Приложение знает про службы, драйвер WinDivert, hosts-пины и
+// возврат адаптерам их DNS — дублировать это в Inno не нужно.
+static int uninstall()
+{
+	Unblock unblock;
+
+	unblock.setDnsEnabled(false);
+	unblock.tgProxy().run(false);
+	unblock.removeService();
+
+	return 0;
+}
+
 // NOLINTNEXTLINE(bugprone-exception-escape) - unhandled exceptions are caught by Debug::tryWrap/SEH handlers
 int main(int argc, char** argv)
 {
@@ -73,6 +88,9 @@ int main(int argc, char** argv)
 			return 0;
 		return 1;
 	}
+
+	if (lp_cmd_line.find("--uninstall") != std::string::npos)
+		return uninstall();
 
 	auto res = Debug::tryWrap(run, lp_cmd_line);
 	return res;
