@@ -17,7 +17,8 @@ target_sources(${NAME}
 # win32: the VPN-tunnel probe (net_state.cpp) uses GetAdaptersAddresses.
 # iphlpapi: that function lives there; a static lib's PRIVATE deps would still
 # propagate, but PUBLIC keeps the module contract obvious.
-target_link_libraries(${NAME} PUBLIC ub_std win32 iphlpapi)
+# ws2_32: the same probe maps probe addresses to network byte order (htonl).
+target_link_libraries(${NAME} PUBLIC ub_std win32 iphlpapi ws2_32)
 
 target_compile_options(${NAME} PRIVATE ${PROJECT_WARNING_FLAGS})
 

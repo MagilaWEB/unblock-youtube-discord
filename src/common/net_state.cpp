@@ -63,6 +63,37 @@ namespace net
 
 			return out;
 		}
+
+		// Interface indexes the OS would use for public IPv4 traffic: whoever
+		// wins the best route to a handful of well-known public addresses. Both
+		// a full tunnel and a split one that captures wide prefixes land here,
+		// while an installed-but-idle adapter does not: Radmin VPN keeps its
+		// overlay adapter up with no route, and its traffic never leaves the
+		// physical interface.
+		std::vector<std::uint32_t> routedIndexes()
+		{
+			static constexpr std::uint32_t c_probes[]{
+				0x08'08'08'08u,	   // 8.8.8.8
+				0x01'01'01'01u,	   // 1.1.1.1
+				0x09'09'09'09u,	   // 9.9.9.9
+				0xD0'43'DE'DEu,	   // 208.67.222.222
+				0x4D'58'08'07u,	   // 77.88.8.7
+			};
+
+			std::vector<std::uint32_t> out;
+
+			for (std::uint32_t probe : c_probes)
+			{
+				MIB_IPFORWARDROW best{};
+				if (GetBestRoute(htonl(probe), 0, &best) != NO_ERROR)
+					continue;
+
+				if (std::ranges::find(out, best.dwForwardIfIndex) == out.end())
+					out.push_back(best.dwForwardIfIndex);
+			}
+
+			return out;
+		}
 	}	 // namespace
 
 	bool isTunnelAdapter(std::uint32_t if_type, std::string_view name, std::string_view description)
@@ -81,11 +112,16 @@ namespace net
 		return containsAny(lower_name, c_keywords, keyword_count) || containsAny(lower_description, c_keywords, keyword_count);
 	}
 
-	bool activeTunnel(const std::vector<AdapterInfo>& adapters, std::string* which)
+	bool activeTunnel(const std::vector<AdapterInfo>& adapters, std::span<const std::uint32_t> routed, std::string* which)
 	{
 		for (const auto& adapter : adapters)
 		{
 			if (!adapter.up || !isTunnelAdapter(adapter.if_type, adapter.name, adapter.description))
+				continue;
+
+			// Installed is not the same as in use: a tunnel that is up but
+			// carries no traffic must not stop our engines.
+			if (std::ranges::find(routed, adapter.if_index) == routed.end())
 				continue;
 
 			if (which)
@@ -121,6 +157,6 @@ namespace net
 					);
 		}
 
-		return net::activeTunnel(adapters, &which);
+		return net::activeTunnel(adapters, routedIndexes(), &which);
 	}
 }	 // namespace net

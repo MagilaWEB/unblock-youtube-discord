@@ -18,6 +18,9 @@ TEST_CASE("isTunnelAdapter matches VPN adapter names", "[net][dns]")
 	CHECK(net::isTunnelAdapter(6, "TAP-Windows Adapter V9", ""));
 	CHECK(net::isTunnelAdapter(6, "AmneziaVPN", ""));
 	CHECK(net::isTunnelAdapter(6, "", "OpenVPN Data Channel Offload"));
+	// LAN-overlay clients (Radmin VPN, Hamachi) keep an adapter up even when
+	// they are not connected; the name still marks it as a tunnel.
+	CHECK(net::isTunnelAdapter(6, "Radmin VPN", ""));
 	// sing-box tun: the type is already virtual, the name only confirms it.
 	CHECK(net::isTunnelAdapter(53, "tun_hglwuyxdy", "sing-tun Tunnel"));
 }
@@ -40,7 +43,7 @@ TEST_CASE("isTunnelAdapter ignores service pseudo-tunnels", "[net][dns]")
 	CHECK_FALSE(net::isTunnelAdapter(131, "6to4 Adapter", "Microsoft 6to4 Adapter"));
 }
 
-TEST_CASE("activeTunnel needs a tunnel adapter that is up", "[net][dns]")
+TEST_CASE("activeTunnel needs a tunnel adapter that is up and routed", "[net][dns]")
 {
 	const std::vector<net::AdapterInfo> up_tunnel{
 		{ 9,  6,	"Ethernet 2", "Realtek PCIe GbE Family Controller", true },
@@ -48,8 +51,23 @@ TEST_CASE("activeTunnel needs a tunnel adapter that is up", "[net][dns]")
 	};
 
 	std::string which;
-	CHECK(net::activeTunnel(up_tunnel, &which));
+	CHECK(net::activeTunnel(up_tunnel, std::vector<std::uint32_t>{ 4 }, &which));
 	CHECK(which == "tun_hglwuyxdy");
+}
+
+TEST_CASE("activeTunnel ignores an up tunnel that carries no traffic", "[net][dns]")
+{
+	// Radmin VPN: the overlay adapter reports up with no route through it, so
+	// the OS still sends public traffic out of the physical adapter. Treating
+	// it as a live VPN stops zapret and switches the DNS off for nothing.
+	const std::vector<net::AdapterInfo> idle_overlay{
+		{ 9, 6, "Ethernet 2", "Realtek PCIe GbE Family Controller", true },
+		{ 5, 6, "Radmin VPN",						  "Radmin VPN", true },
+	};
+
+	std::string which;
+	CHECK_FALSE(net::activeTunnel(idle_overlay, std::vector<std::uint32_t>{ 9 }, &which));
+	CHECK(which.empty());
 }
 
 TEST_CASE("activeTunnel skips down tunnels and physical-only systems", "[net][dns]")
@@ -63,7 +81,7 @@ TEST_CASE("activeTunnel skips down tunnels and physical-only systems", "[net][dn
 	};
 
 	std::string which;
-	CHECK_FALSE(net::activeTunnel(down_tunnels, &which));
+	CHECK_FALSE(net::activeTunnel(down_tunnels, std::vector<std::uint32_t>{ 9, 10, 16 }, &which));
 	CHECK(which.empty());
 
 	const std::vector<net::AdapterInfo> physical_only{
@@ -71,13 +89,13 @@ TEST_CASE("activeTunnel skips down tunnels and physical-only systems", "[net][dn
 		{ 1, 24, "Loopback Pseudo-Interface 1",		 "Software Loopback Interface 1", true },
 	};
 
-	CHECK_FALSE(net::activeTunnel(physical_only, &which));
+	CHECK_FALSE(net::activeTunnel(physical_only, std::vector<std::uint32_t>{ 9 }, &which));
 	CHECK(which.empty());
 }
 
 TEST_CASE("activeTunnel on empty input never matches", "[net][dns]")
 {
 	std::string which{ "stale" };
-	CHECK_FALSE(net::activeTunnel({}, &which));
+	CHECK_FALSE(net::activeTunnel({}, std::vector<std::uint32_t>{ 9 }, &which));
 	CHECK(which.empty());
 }
