@@ -114,6 +114,10 @@ export class ZapretHelper
 	bool								  _vpn_zapret2_down{ false };
 	bool								  _vpn_seen_detected{ false };
 	std::chrono::steady_clock::time_point _last_vpn_stop_fail{};
+	std::chrono::steady_clock::time_point _last_vpn_start_fail{};
+	// Failed resume ticks since the tunnel went away; the pause is released
+	// once they run out (see c_vpn_restore_attempts).
+	std::uint32_t						  _vpn_restore_attempts{ 0 };
 	// --vpn-only (Zapret1): the helper protocol is not in use, so the host
 	// pump, the verdicts and the liveness gate stay off; only the tunnel
 	// watch and the engine pause run.

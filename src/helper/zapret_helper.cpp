@@ -23,6 +23,21 @@ namespace
 	// flood the log every tick.
 	inline constexpr auto c_vpn_stop_fail_interval{ std::chrono::seconds(10) };
 
+	// Longest wait for a starting zapret service to reach SERVICE_RUNNING.
+	// StartService only queues the start and answers at once, so a payload that
+	// dies on launch cannot be told apart from a live one without waiting the
+	// state out — the resume used to report success for exactly that case.
+	inline constexpr auto c_service_start_wait{ std::chrono::seconds(10) };
+
+	// Throttle for the "couldn't restart" log, same reasoning as the stop one.
+	inline constexpr auto c_vpn_start_fail_interval{ std::chrono::seconds(10) };
+
+	// How many ticks the resume keeps retrying a zapret service that will not
+	// come up. After that the pause is released so the app's own start path
+	// (which recreates the service) can take over: a pause nobody can clear is
+	// worse than a logged failure.
+	inline constexpr std::uint32_t c_vpn_restore_attempts{ 5 };
+
 	// SCM handles for one call, both closed on scope exit. A null service
 	// handle means the manager or the service is absent: querying the state
 	// of a service that was never created must be a quiet "not running".
@@ -100,19 +115,54 @@ namespace
 		return false;
 	}
 
-	// Brings the service back up. StartService failing because it is already
-	// running is still a success: the SCM state is the answer.
+	// Brings the service back up and waits until it really runs. StartService
+	// only queues the start: a service whose process dies right after (a stale
+	// registration, a payload that refuses to launch) came back as "accepted"
+	// and the resume silently left the bypass down. Also re-asserts the start
+	// type the app creates its services with — a leftover "disabled" blocks
+	// every StartService with 1058 and never heals by itself.
 	bool startService(LPCSTR name)
 	{
 		ServiceHandle handle = openService(name);
 		if (!handle.service)
 			return false;
 
-		if (StartService(handle.service, 0, nullptr))
-			return true;
+		ChangeServiceConfigW(
+			handle.service,
+			SERVICE_NO_CHANGE,
+			SERVICE_AUTO_START,
+			SERVICE_NO_CHANGE,
+			nullptr,
+			nullptr,
+			nullptr,
+			nullptr,
+			nullptr,
+			nullptr,
+			nullptr
+		);
 
-		const DWORD state = serviceState(handle.service);
-		return state == SERVICE_RUNNING || state == SERVICE_START_PENDING;
+		if (!StartService(handle.service, 0, nullptr))
+		{
+			const DWORD state = serviceState(handle.service);
+			if (state != SERVICE_RUNNING && state != SERVICE_START_PENDING)
+				return false;
+		}
+
+		const auto deadline = std::chrono::steady_clock::now() + c_service_start_wait;
+		while (std::chrono::steady_clock::now() < deadline)
+		{
+			const DWORD state = serviceState(handle.service);
+			if (state == SERVICE_RUNNING)
+				return true;
+
+			// The process died on launch: waiting longer is pointless.
+			if (state == SERVICE_STOPPED)
+				return false;
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		}
+
+		return false;
 	}
 
 	// Split "left:right" at the first delimiter; right is empty when absent.
@@ -640,13 +690,17 @@ void ZapretHelper::_checkVpnPause()
 
 	if (active)
 	{
+		// The flag tracks the transition in both directions: leaving it set
+		// after the tunnel went away made every later detection silent, so a
+		// second pause looked like the helper had never seen the VPN at all.
 		if (active != _vpn_seen_detected)
 		{
 			// Evidence in the app log that the helper saw the tunnel at all:
 			// without this line the pause never even started.
-			_vpn_seen_detected = active;
 			_log(std::format("VPN tunnel detected [{}]", which));
 		}
+
+		_vpn_seen_detected = true;
 
 		if (!_vpn_paused)
 		{
@@ -657,6 +711,7 @@ void ZapretHelper::_checkVpnPause()
 			_vpn_zapret2_was_running = serviceRunning(c_zapret2_service);
 			_vpn_zapret1_down		 = false;
 			_vpn_zapret2_down		 = false;
+			_vpn_restore_attempts	 = 0;
 
 			// Announce the pause BEFORE stopping anything: the receiver shows
 			// "engine stopped" the moment an engine goes down, and stopping can
@@ -732,12 +787,59 @@ void ZapretHelper::_checkVpnPause()
 
 	if (_vpn_paused)
 	{
-		if (_vpn_zapret1_was_running && !startService(c_zapret1_service))
-			_log("couldn't restart the zapret1 service after the VPN pause");
+		// Resume only what the pause captured, and only once it is really up: a
+		// restart that failed must be retried on the next tick instead of being
+		// forgotten, otherwise the bypass stays down with a "restored" line in
+		// the log. Driven by the captured set, so the flags clear one by one.
+		bool retry = false;
 
-		if (_vpn_zapret2_was_running && !startService(c_zapret2_service))
-			_log("couldn't restart the zapret2 service after the VPN pause");
+		if (_vpn_zapret1_was_running)
+		{
+			if (startService(c_zapret1_service))
+				_vpn_zapret1_was_running = false;
+			else
+			{
+				retry = true;
 
+				if (now - _last_vpn_start_fail > c_vpn_start_fail_interval)
+				{
+					_last_vpn_start_fail = now;
+					_log("couldn't restart the zapret1 service after the VPN pause");
+				}
+			}
+		}
+
+		if (_vpn_zapret2_was_running)
+		{
+			if (startService(c_zapret2_service))
+				_vpn_zapret2_was_running = false;
+			else
+			{
+				retry = true;
+
+				if (now - _last_vpn_start_fail > c_vpn_start_fail_interval)
+				{
+					_last_vpn_start_fail = now;
+					_log("couldn't restart the zapret2 service after the VPN pause");
+				}
+			}
+		}
+
+		if (retry)
+		{
+			// Keep announcing the pause while the retries last: reporting a
+			// plain stop here would hide an engine the helper is still bringing
+			// back.
+			if (++_vpn_restore_attempts < c_vpn_restore_attempts)
+			{
+				_send("LATEST:zapret.vpn_paused:1", c_ipc_port);
+				return;
+			}
+
+			_log("gave up restarting the zapret service after the VPN pause");
+		}
+
+		_vpn_restore_attempts	 = 0;
 		_vpn_zapret1_was_running = false;
 		_vpn_zapret2_was_running = false;
 		_vpn_zapret1_down		 = false;
@@ -760,6 +862,7 @@ void ZapretHelper::_checkVpnPause()
 	// Kept alive while unpaused too: a stale "1" from a previous helper
 	// incarnation (killed right after pausing) would otherwise show a ghost
 	// pause until the receiver's TTL expiry.
+	_vpn_seen_detected = false;
 	_send("LATEST:zapret.vpn_paused:0", c_ipc_port);
 }
 
