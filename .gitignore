@@ -22,5 +22,6 @@ src/engine/version.hpp
 # CodeGraph: локальный индекс (создаётся `codegraph init`, машина-специфичный)
 .codegraph/
 
-# Release artifacts of release-ai.ps1
-release/
+# Release artifacts of release-ai.ps1. Anchored to the root: an unanchored
+# release/ also swallowed .opencode/skills/release/.
+/release/
