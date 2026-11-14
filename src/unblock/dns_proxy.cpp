@@ -125,6 +125,7 @@ void DnsProxy::run(bool state)
 		IPCSignals::get().clear("dns.cache_hits");
 		IPCSignals::get().clear("dns.errors");
 		IPCSignals::get().clear("dns.vpn_paused");
+		IPCSignals::get().clear("dns.vpn_name");
 		return;
 	}
 
@@ -201,10 +202,17 @@ std::string DnsProxy::status() const
 	if (auto age = ipc.latestAge("dns.vpn_paused"); age && *age <= std::chrono::seconds{ 30 })
 		vpn_paused = ipc.getLatestU32("dns.vpn_paused").value_or(0) != 0;
 
+	// The adapter name behind the pause, so the status line can name the client
+	// instead of just saying "a tunnel is up".
+	std::string vpn_name;
+	if (auto age = ipc.latestAge("dns.vpn_name"); age && *age <= std::chrono::seconds{ 30 })
+		vpn_name = ipc.getLatest("dns.vpn_name").value_or(std::string{});
+
 	ss << "queries=" << ipc.getLatestU32("dns.queries").value_or(0) << "\n";
 	ss << "cache_hits=" << ipc.getLatestU32("dns.cache_hits").value_or(0) << "\n";
 	ss << "errors=" << ipc.getLatestU32("dns.errors").value_or(0) << "\n";
 	ss << "vpn_paused=" << (vpn_paused ? 1 : 0) << "\n";
+	ss << "vpn_name=" << vpn_name << "\n";
 	return ss.str();
 }
 

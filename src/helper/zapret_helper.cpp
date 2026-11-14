@@ -688,6 +688,16 @@ void ZapretHelper::_checkVpnPause()
 	std::string which;
 	const bool	active = net::vpnTunnelActive(which);
 
+	// The pause indicator names the tunnel in the UI, so the name goes out next
+	// to the flag. Both are re-asserted while the pause lasts, and the latest
+	// name lives in _vpn_name: during a retry the tunnel is already gone and
+	// `which` is empty, yet the indicator still has to say whose pause it is.
+	auto announcePause = [&]
+	{
+		_send("LATEST:zapret.vpn_paused:1", c_ipc_port);
+		_send("LATEST:zapret.vpn_name:" + _vpn_name, c_ipc_port);
+	};
+
 	if (active)
 	{
 		// The flag tracks the transition in both directions: leaving it set
@@ -701,6 +711,7 @@ void ZapretHelper::_checkVpnPause()
 		}
 
 		_vpn_seen_detected = true;
+		_vpn_name		   = which;
 
 		if (!_vpn_paused)
 		{
@@ -718,7 +729,7 @@ void ZapretHelper::_checkVpnPause()
 			// take seconds, so a late "1" would leave a window where the app
 			// reports a stopped engine with no VPN explanation.
 			_vpn_paused = true;
-			_send("LATEST:zapret.vpn_paused:1", c_ipc_port);
+			announcePause();
 
 			// Freeze the pump at once: the verdicts are meaningless under a
 			// tunnel, and waiting for the heartbeat timeout would keep feeding
@@ -781,7 +792,7 @@ void ZapretHelper::_checkVpnPause()
 		// Re-asserted every tick, not only on the transition: the receiver
 		// drops a LATEST value after a few minutes, so a long pause must be
 		// kept alive or the UI would fall back to "engine stopped".
-		_send("LATEST:zapret.vpn_paused:1", c_ipc_port);
+		announcePause();
 		return;
 	}
 
@@ -832,7 +843,7 @@ void ZapretHelper::_checkVpnPause()
 			// back.
 			if (++_vpn_restore_attempts < c_vpn_restore_attempts)
 			{
-				_send("LATEST:zapret.vpn_paused:1", c_ipc_port);
+				announcePause();
 				return;
 			}
 

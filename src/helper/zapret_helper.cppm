@@ -113,6 +113,9 @@ export class ZapretHelper
 	bool								  _vpn_zapret1_down{ false };
 	bool								  _vpn_zapret2_down{ false };
 	bool								  _vpn_seen_detected{ false };
+	// Name of the tunnel the pause belongs to, reported to the UI as
+	// zapret.vpn_name (kept while retrying a resume, when `which` is gone).
+	std::string							  _vpn_name;
 	std::chrono::steady_clock::time_point _last_vpn_stop_fail{};
 	std::chrono::steady_clock::time_point _last_vpn_start_fail{};
 	// Failed resume ticks since the tunnel went away; the pause is released
@@ -229,7 +232,8 @@ private:
 	void _checkZapretLiveness();
 
 	/** Stop the zapret engines while a VPN tunnel is up and bring the ones
-	 *  that were live back once it is gone. Sends zapret.vpn_paused to unblock
-	 *  on each transition; the DNS and Telegram services are left alone. */
+	 *  that were live back once it is gone. Sends zapret.vpn_paused and
+	 *  zapret.vpn_name (the tunnel's adapter name) to unblock on each
+	 *  transition; the DNS and Telegram services are left alone. */
 	void _checkVpnPause();
 };

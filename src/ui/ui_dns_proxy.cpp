@@ -340,6 +340,7 @@ void UiDnsProxy::_refreshStatus()
 	std::string cached		   = "0";
 	std::string errors		   = "0";
 	std::string vpn_paused_raw = "0";
+	std::string vpn_name;
 
 	const std::string status = _dns_proxy.status();
 	for (auto row : status | std::views::split('\n'))
@@ -353,6 +354,8 @@ void UiDnsProxy::_refreshStatus()
 			errors = line.substr(7);
 		else if (line.starts_with("vpn_paused="))
 			vpn_paused_raw = line.substr(11);
+		else if (line.starts_with("vpn_name="))
+			vpn_name = line.substr(9);
 	}
 
 	const bool running = _dns_proxy.isRun();
@@ -375,7 +378,8 @@ void UiDnsProxy::_refreshStatus()
 	if (issue)
 		text = Localization::Str{ "str_status_dns_issue", _ui->unblock()->lastServiceReport().verdict }();
 	else if (vpn_paused)
-		text = Localization::Str{ "str_status_dns_vpn_paused" }();
+		text =
+			vpn_name.empty() ? Localization::Str{ "str_status_dns_vpn_paused" }() : Localization::Str{ "str_status_dns_vpn_paused_name", vpn_name }();
 	else if (running)
 		text = Localization::Str{ "str_status_dns_running", queries, cached, errors }();
 	else

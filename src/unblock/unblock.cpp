@@ -249,6 +249,19 @@ bool Unblock::vpnPaused()
 	return ipc.getLatestU32("zapret.vpn_paused").value_or(0) != 0;
 }
 
+std::string Unblock::vpnTunnelName()
+{
+	// Same freshness rule as vpnPaused: the helper re-sends the name together
+	// with the flag, so a stale name cannot outlive the pause it belongs to.
+	auto& ipc = IPCSignals::get();
+
+	auto age = ipc.latestAge("zapret.vpn_name");
+	if (!age || *age > std::chrono::seconds{ 30 })
+		return {};
+
+	return ipc.getLatest("zapret.vpn_name").value_or(std::string{});
+}
+
 std::vector<std::string> Unblock::helperCheckingHosts()
 {
 	return _helper.checkingHosts();

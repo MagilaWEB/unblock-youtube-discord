@@ -95,6 +95,7 @@ This action is irreversible. Are you sure you want to continue?
 // Input console log info
 str_beginning_auto_selection=🔍 Starting automatic configuration selection
 str_auto_strategy_vpn_paused=⏸ Auto-selection paused: an active VPN tunnel was detected
+str_auto_strategy_vpn_paused_name=⏸ Auto-selection paused: the active VPN tunnel is «{}»
 
 // BLOCK HOME
 str_h2_verified_domains=✅ Available domains (Zapret):
@@ -326,6 +327,7 @@ str_status_dns_running=🌐 DNS proxy running · queries: {} · cached: {} · er
 str_status_dns_stopped=🌐 DNS proxy stopped
 str_status_dns_issue=⚠ DNS proxy — {} (click for the report)
 str_status_dns_vpn_paused=⏸ DNS proxy running but not applied: an active VPN tunnel is in use
+str_status_dns_vpn_paused_name=⏸ DNS proxy running but not applied: «{}» is in use
 str_status_tg_running=📱 Telegram proxy running
 str_status_tg_stopped=📱 Telegram proxy stopped
 str_status_tg_issue=⚠ Telegram proxy — {} (click for the report)
@@ -428,6 +430,7 @@ str_status_engine_running_issue=⚠ Running: {} · ↓ {} · ↑ {} — {}
 str_status_engine_stopped=⏹ Engine stopped
 str_status_engine_stopped_reason=⏹ Engine stopped: {} (click for the report)
 str_status_engine_vpn_paused=⏸ Zapret paused: an active VPN tunnel was detected
+str_status_engine_vpn_paused_name=⏸ Zapret paused: «{}» is up
 
 // Setting strategy version
 str_select_version_strategy_title=📚 Strategy list version

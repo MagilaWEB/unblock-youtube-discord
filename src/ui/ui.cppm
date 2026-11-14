@@ -333,6 +333,7 @@ export class UiZapretPage
 	std::optional<Technology> _last_active;
 	bool					  _last_has_report{ false };
 	bool					  _last_vpn_paused{ false };
+	std::string				  _last_vpn_name;
 
 public:
 	explicit UiZapretPage(std::shared_ptr<Ui> ui);

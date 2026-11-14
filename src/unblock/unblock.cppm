@@ -212,6 +212,11 @@ public:
 	 *  running, so a dead helper cannot leave a stale pause behind. */
 	[[nodiscard]] bool vpnPaused();
 
+	/** Name of the adapter the VPN pause belongs to (zapret.vpn_name), empty
+	 *  when no fresh pause is reported. Shown in the status line so the user
+	 *  sees which client took the engines down. */
+	[[nodiscard]] std::string vpnTunnelName();
+
 	/** True when the last failed start produced a diagnostic report. */
 	[[nodiscard]] bool			   hasServiceReport() const;
 	/** Copy of the last diagnostic report: the reader is another thread. */

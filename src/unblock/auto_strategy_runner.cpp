@@ -25,7 +25,14 @@ void AutoStrategyRunner::run(Technology technology, std::string_view start_versi
 	// would just be swept back down.
 	auto finishVpnPaused = [&]
 	{
-		InputConsole::textWarning(Localization::Str{ "str_auto_strategy_vpn_paused" }());
+		// Name the tunnel when the helper reported one: otherwise the warning
+		// cannot tell which client stopped the auto-pick.
+		const auto vpn_name = _unblock.vpnTunnelName();
+
+		InputConsole::textWarning(
+			vpn_name.empty() ? Localization::Str{ "str_auto_strategy_vpn_paused" }()
+							 : Localization::Str{ "str_auto_strategy_vpn_paused_name", vpn_name }()
+		);
 
 		AutoStrategyResult result{};
 		result.cancelled = true;

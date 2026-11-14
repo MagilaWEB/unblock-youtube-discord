@@ -95,6 +95,7 @@ str_remove_app_description=🗑 Удаление Unblock
 // Input console log info
 str_beginning_auto_selection=🔍 Начат авто-подбор конфигурации
 str_auto_strategy_vpn_paused=⏸ Авто-подбор на паузе: обнаружен активный VPN-туннель
+str_auto_strategy_vpn_paused_name=⏸ Авто-подбор на паузе: активен VPN-туннель «{}»
 
 // BLOCK HOME
 str_h2_verified_domains=✅ Доступные домены (Zapret):
@@ -326,6 +327,7 @@ str_status_dns_running=🌐 DNS-прокси работает · запросо�
 str_status_dns_stopped=🌐 DNS-прокси остановлен
 str_status_dns_issue=⚠ DNS-прокси — {} (нажмите для отчёта)
 str_status_dns_vpn_paused=⏸ DNS-прокси работает, но не применяется: активен VPN-туннель
+str_status_dns_vpn_paused_name=⏸ DNS-прокси работает, но не применяется: активен VPN-туннель «{}»
 str_status_tg_running=📱 Прокси Telegram работает
 str_status_tg_stopped=📱 Прокси Telegram остановлен
 str_status_tg_issue=⚠ Прокси Telegram — {} (нажмите для отчёта)
@@ -428,6 +430,7 @@ str_status_engine_running_issue=⚠ Работает: {} · ↓ {} · ↑ {} —
 str_status_engine_stopped=⏹ Движок остановлен
 str_status_engine_stopped_reason=⏹ Движок остановлен: {} (нажмите для отчёта)
 str_status_engine_vpn_paused=⏸ Zapret на паузе: обнаружен активный VPN-туннель
+str_status_engine_vpn_paused_name=⏸ Zapret на паузе: активен VPN-туннель «{}»
 
 // Setting strategy version
 str_select_version_strategy_title=📚 Версия списка стратегий

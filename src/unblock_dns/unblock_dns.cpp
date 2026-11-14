@@ -205,25 +205,22 @@ int main(int argc, char** argv)
 
 	dns::logLine("Proxy listening on " + config.listen + ":" + std::to_string(config.port));
 
-	bool yielded = false;
+	bool		yielded = false;
+	std::string vpn_name;
 
 	if (no_os_switch)
 		dns::logLine("--no-os-switch: adapters left untouched (proxy-only run)");
-	else
+	else if (net::vpnTunnelActive(vpn_name))
 	{
-		std::string which;
-		if (net::vpnTunnelActive(which))
-		{
-			dns::logLine("VPN/tunnel is up [" + which + "]: leaving the adapters' DNS untouched");
-			yielded = true;
-		}
-		else if (!dns::switchOsDns(ag, config, config.backup_path, ipv6))
-			dns::logLine("Warning: no adapters switched, serving proxy only");
+		dns::logLine("VPN/tunnel is up [" + vpn_name + "]: leaving the adapters' DNS untouched");
+		yielded = true;
 	}
+	else if (!dns::switchOsDns(ag, config, config.backup_path, ipv6))
+		dns::logLine("Warning: no adapters switched, serving proxy only");
 
 	SetConsoleCtrlHandler(ctrlHandler, TRUE);
 
-	dns::setVpnPaused(yielded);
+	dns::setVpnPaused(yielded, vpn_name);
 	dns::pushStatus();
 
 	auto last_tick = std::chrono::steady_clock::now();
@@ -245,8 +242,9 @@ int main(int argc, char** argv)
 				{
 					dns::logLine("VPN/tunnel is up [" + which + "]: returning the adapters' DNS");
 					dns::restoreOsDns(ag, config.backup_path);
-					yielded = true;
-					dns::setVpnPaused(true);
+					yielded	 = true;
+					vpn_name = which;
+					dns::setVpnPaused(true, vpn_name);
 				}
 				else if (yielded && !net::vpnTunnelActive(which))
 				{
@@ -254,7 +252,8 @@ int main(int argc, char** argv)
 					if (dns::switchOsDns(ag, config, config.backup_path, ipv6))
 					{
 						yielded = false;
-						dns::setVpnPaused(false);
+						vpn_name.clear();
+						dns::setVpnPaused(false, vpn_name);
 					}
 				}
 			}

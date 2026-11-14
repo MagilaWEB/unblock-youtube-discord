@@ -53,8 +53,11 @@ namespace dns
 		Stats s_stats;
 
 		// Set while a VPN/tunnel owns the default route and our DNS is handed
-		// back to the system (reported to the engine).
+		// back to the system (reported to the engine). The name rides along:
+		// the status line names the client that took the adapters.
 		std::atomic_bool s_vpn_paused{ false };
+		std::mutex		 s_vpn_mutex;
+		std::string		 s_vpn_name;
 
 		// Telemetry to the engine over UDP 9999 (IPCSignals). LATEST keys are
 		// latest-only: the engine peeks them without consuming, so pushing every
@@ -155,14 +158,24 @@ namespace dns
 
 	void pushStatus()
 	{
+		std::string vpn_name;
+		{
+			std::lock_guard lock(s_vpn_mutex);
+			vpn_name = s_vpn_name;
+		}
+
 		sendIpc("LATEST:dns.queries:" + std::to_string(s_stats.queries.load()));
 		sendIpc("LATEST:dns.cache_hits:" + std::to_string(s_stats.cache_hits.load()));
 		sendIpc("LATEST:dns.errors:" + std::to_string(s_stats.errors.load()));
 		sendIpc(std::string{ "LATEST:dns.vpn_paused:" } + (s_vpn_paused.load() ? "1" : "0"));
+		sendIpc("LATEST:dns.vpn_name:" + vpn_name);
 	}
 
-	void setVpnPaused(bool paused)
+	void setVpnPaused(bool paused, std::string_view name)
 	{
 		s_vpn_paused.store(paused);
+
+		std::lock_guard lock(s_vpn_mutex);
+		s_vpn_name.assign(name);
 	}
 }	 // namespace dns

@@ -653,7 +653,14 @@ void UiZapretPage::_updateStatus(std::optional<Technology> active, bool vpn_paus
 	// SCM, and the answer is not monotonic).
 	if (vpn_paused)
 	{
-		_status_engine->setWarning(Localization::Str{ "str_status_engine_vpn_paused" }());
+		// Name the tunnel when the helper reported one: a bare "an active VPN
+		// tunnel was detected" leaves the user guessing which client took the
+		// engines down.
+		const auto name = _ui->unblock()->vpnTunnelName();
+
+		_status_engine->setWarning(
+			name.empty() ? Localization::Str{ "str_status_engine_vpn_paused" }() : Localization::Str{ "str_status_engine_vpn_paused_name", name }()
+		);
 		return;
 	}
 
@@ -701,22 +708,25 @@ void UiZapretPage::updateState()
 	const auto active	  = _ui->unblock()->runningTechnology();
 	const bool has_report = _hasEngineReport();
 	const bool vpn_paused = _ui->unblock()->vpnPaused();
+	const auto vpn_name	  = _ui->unblock()->vpnTunnelName();
 
 	// The button mirrors the live state on every tick (see _buttonUpdate); the
 	// status line and the rate follow the active engine, refreshed on change.
 	_buttonUpdate();
 
-	if (active != _last_active || has_report != _last_has_report || vpn_paused != _last_vpn_paused)
+	if (active != _last_active || has_report != _last_has_report || vpn_paused != _last_vpn_paused || vpn_name != _last_vpn_name)
 	{
 		Debug::info(
-			"Engine status: vpn={} active={} report={}",
+			"Engine status: vpn={} name=[{}] active={} report={}",
 			vpn_paused ? "on" : "off",
+			vpn_name,
 			active.has_value() ? _technologyName(active.value()) : "none",
 			has_report ? "yes" : "no"
 		);
 		_last_active	 = active;
 		_last_has_report = has_report;
 		_last_vpn_paused = vpn_paused;
+		_last_vpn_name	 = vpn_name;
 		_updateStatus(active, vpn_paused);
 	}
 

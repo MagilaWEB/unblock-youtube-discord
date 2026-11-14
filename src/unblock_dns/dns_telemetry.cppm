@@ -20,6 +20,7 @@ export namespace dns
 	void pushStatus();
 
 	// Reports whether we handed the adapters' DNS back because a VPN/tunnel
-	// took the default route (dns.vpn_paused IPC key: 0/1).
-	void setVpnPaused(bool paused);
+	// took the default route (dns.vpn_paused IPC key: 0/1) and which adapter
+	// that was (dns.vpn_name, for the status line).
+	void setVpnPaused(bool paused, std::string_view name);
 }
