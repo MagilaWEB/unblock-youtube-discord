@@ -144,6 +144,12 @@ private:
 	/** Reverts TCP timestamps if this run enabled them. */
 	void _tcpTimestampRestore();
 
+	/** Drops the helper's VPN-pause signal (zapret.vpn_paused / zapret.vpn_name).
+	 *  The helper is its only writer, so once it is gone the last value keeps
+	 *  looking fresh for the whole freshness window and the engine status stays
+	 *  on "VPN paused". Both stop paths call this right after stopping it. */
+	void _clearVpnPauseSignal();
+
 	/** Builds the diagnostic report from the failures of the given
 	 *  just-started services (skipping the ones that are running), logs it,
 	 *  writes logs/service-report.txt and stores it. Clears the report when

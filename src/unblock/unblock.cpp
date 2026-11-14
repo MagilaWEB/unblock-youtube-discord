@@ -455,6 +455,19 @@ void Unblock::removeService()
 	_zapret2_engine->remove();
 	_zapret_helper.remove();
 	_win_divert.remove();
+	_clearVpnPauseSignal();
+}
+
+void Unblock::_clearVpnPauseSignal()
+{
+	// The helper re-asserts these keys every couple of seconds and is their
+	// only writer: while it is gone the last value still looks fresh for the
+	// whole freshness window, so the engine status kept saying "VPN paused"
+	// long after the user stopped every service. Dropping the keys flips the
+	// status on the next tick.
+	auto& ipc = IPCSignals::get();
+	ipc.clear("zapret.vpn_paused");
+	ipc.clear("zapret.vpn_name");
 }
 
 void Unblock::stopService()
@@ -464,6 +477,7 @@ void Unblock::stopService()
 	_zapret1_engine->stop();
 	_zapret2_engine->stop();
 	_zapret_helper.stop();
+	_clearVpnPauseSignal();
 }
 
 void Unblock::pushHelperConfig() const
