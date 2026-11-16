@@ -249,6 +249,9 @@ public:
 	std::vector<std::pair<std::string, std::string>> helperValidHosts();
 	/** Fully-tried hosts: every strategy failed, nothing left to attempt. */
 	std::vector<std::pair<std::string, std::string>> helperExhaustedHosts();
+	/** Hosts whose probe died on name resolution: the helper tags them
+	 *  exhausted under the "dns" strategy. */
+	std::vector<std::string>						 helperDnsDeadHosts();
 
 	/** Last helper pool load snapshot (zeros when the helper is silent). */
 	HelperStats helperStats();

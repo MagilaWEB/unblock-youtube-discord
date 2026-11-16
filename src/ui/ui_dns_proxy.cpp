@@ -375,6 +375,7 @@ void UiDnsProxy::_refreshStatus()
 		_enable_dns_proxy->setState(running);
 
 	std::string text;
+	bool		dns_unresolved{ false };
 	if (issue)
 		text = Localization::Str{ "str_status_dns_issue", _ui->unblock()->lastServiceReport().verdict }();
 	else if (vpn_paused)
@@ -383,7 +384,15 @@ void UiDnsProxy::_refreshStatus()
 	else if (running)
 		text = Localization::Str{ "str_status_dns_running", queries, cached, errors }();
 	else
-		text = Localization::Str{ "str_status_dns_stopped" }();
+	{
+		// Enough hosts dying on name resolution while the proxy is down is the
+		// signature of a resolver that hands out no addresses, not a plain stop.
+		constexpr std::size_t c_dns_dead_hint_min = 5;
+		const auto			  dns_dead			  = _ui->unblock()->helperDnsDeadHosts().size();
+		dns_unresolved							  = dns_dead >= c_dns_dead_hint_min;
+		text =
+			dns_unresolved ? Localization::Str{ "str_status_dns_stopped_unresolved", dns_dead }() : Localization::Str{ "str_status_dns_stopped" }();
+	}
 
 	// One line per variant change: the log narrates exactly what the line shows
 	// and why (issue / vpn pause / running / stopped) with the raw key and the
@@ -400,7 +409,7 @@ void UiDnsProxy::_refreshStatus()
 	// the text changed again. The widget clears the label before writing, so
 	// the assignment always invalidates.
 
-	if (issue || vpn_paused)
+	if (issue || vpn_paused || dns_unresolved)
 		_status_dns->setWarning(text);
 	else if (running)
 		_status_dns->setActive(text);

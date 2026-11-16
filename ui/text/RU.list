@@ -68,6 +68,7 @@ str_service_report_dump=Отчёт по службе сохранён в фай�
 
 // Warning/error url
 str_warning_url=⚠ Проблема доступа: {}
+str_warning_url_dns=🚫 DNS не отдаёт адрес: {}
 str_result_url_testing=Тестирование завершилось с результатом [{}] из [{}] общий успех [{}%]
 str_base_testing_url_success=Базовое тестирование успешно, запуск полного тестирование...
 
@@ -247,7 +248,7 @@ str_zapret_helper_valid_item={} - {}
 str_zapret_helper_exhausted_title=🪦 Хосты без рабочей стратегии ({}):
 str_zapret_helper_exhausted_item={} - {}
 str_zapret_helper_unjudged_title=🦔 Хосты без вердикта Zapret ({}):
-str_zapret_helper_summary=Эффективность: {}% · ✅ {} · ⚠️ {} · 🪦 {} · 🦔 {}
+str_zapret_helper_summary=Эффективность: {}% · ✅ {} · ⚠️ {} · 🪦 {} · 🦔 {} · 🚫 {}
 
 // Настройки хелпера ([HELPER])
 str_helper_pool_title=🧵 Пул потоков хелпера
@@ -325,6 +326,7 @@ str_button_test_upstream_title=🧪 Проверить сервер
 str_button_reset_defaults_title=♻️ Сбросить на умолчания
 str_status_dns_running=🌐 DNS-прокси работает · запросов: {} · из кэша: {} · ошибок: {}
 str_status_dns_stopped=🌐 DNS-прокси остановлен
+str_status_dns_stopped_unresolved=🌐 DNS-прокси остановлен · 🚫 {} хостов не резолвятся — DNS не отдаёт адреса, включите DNS-прокси
 str_status_dns_issue=⚠ DNS-прокси — {} (нажмите для отчёта)
 str_status_dns_vpn_paused=⏸ DNS-прокси работает, но не применяется: активен VPN-туннель
 str_status_dns_vpn_paused_name=⏸ DNS-прокси работает, но не применяется: активен VPN-туннель «{}»

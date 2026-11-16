@@ -292,6 +292,14 @@ std::vector<std::pair<std::string, std::string>> Unblock::helperExhaustedHosts()
 	return _helper.exhaustedHosts();
 }
 
+std::vector<std::string> Unblock::helperDnsDeadHosts()
+{
+	// The helper tags a host "dns" when its probe failed on name resolution
+	// (see zapret_helper.cpp), so this is the "DNS gives no address" set.
+	return _helper.exhaustedHosts() | std::views::filter([](const auto& entry) { return entry.second == "dns"; })
+		 | std::views::transform([](const auto& entry) { return entry.first; }) | std::ranges::to<std::vector>();
+}
+
 HelperStats Unblock::helperStats()
 {
 	return _helper.stats();

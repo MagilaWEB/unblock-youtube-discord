@@ -32,6 +32,22 @@ static size_t writeData(void*, size_t size, size_t nmemb, void*)
 	return size * nmemb;
 }
 
+// Host of a URL, empty when it cannot be parsed.
+static std::string hostFromUrl(std::string_view url)
+{
+	std::smatch		  match;
+	const std::string text{ url };
+	return std::regex_search(text, match, std::regex{ R"(://([^/?#]+))" }) && match.size() > 1 ? match[1].str() : std::string{};
+}
+
+// The helper tags a host "dns" (helper_exhausted) when its probe failed at
+// name resolution: the resolver hands out no address for it.
+static bool isDnsDeadUrl(std::string_view url)
+{
+	const auto host = hostFromUrl(url);
+	return !host.empty() && IPCSignals::get().snapshotContains("helper_exhausted", host + "=dns");
+}
+
 DomainTesting::DomainTesting()
 {
 	static bool init_timer_wait_testing{ false };
@@ -109,7 +125,10 @@ void DomainTesting::test(bool base_test, std::function<void(std::string url, boo
 				}
 				else
 				{
-					InputConsole::textWarning(Localization::Str{ "str_warning_url" }(), domain.url);
+					InputConsole::textWarning(
+						Localization::Str{ isDnsDeadUrl(domain.url) ? "str_warning_url_dns" : "str_warning_url" }(),
+						domain.url
+					);
 					_domain_error++;
 				}
 
@@ -161,7 +180,10 @@ void DomainTesting::test(bool base_test, std::function<void(std::string url, boo
 				return;
 			}
 
-			InputConsole::textWarning(Localization::Str{ "str_warning_url" }(), result());
+			// result() has a side effect (it delivers the callback), so it runs
+			// exactly once and the printed key is chosen from its value.
+			const auto url = result();
+			InputConsole::textWarning(Localization::Str{ isDnsDeadUrl(url) ? "str_warning_url_dns" : "str_warning_url" }(), url);
 			_domain_error++;
 		}
 	);
@@ -244,17 +266,11 @@ bool DomainTesting::isConnectionUrl(DomainTesting* obj, CurlDomain& domain)
 		if (obj && obj->isCancelTesting())
 			break;
 
-		auto get_host = [&] -> std::string
-		{
-			std::smatch m;
-			return std::regex_search(domain.url, m, std::regex{ R"(://([^/?#]+))" }) && m.size() > 1 ? m[1].str() : "";
-		};
-
 		auto zapret_ckeck = [&]
 		{
 			if (obj->isResetConect())
 			{
-				auto host = get_host();
+				auto host = hostFromUrl(domain.url);
 
 				// Fully-tried verdict, relayed by the helper (lua reports
 				// EXHAUSTED to the helper only, never directly to unblock).

@@ -305,12 +305,15 @@ void UiZapretHelper::updateSummary()
 		const auto error	 = _ui->unblock()->helperErrorHosts().size();
 		const auto exhausted = _ui->unblock()->helperExhaustedHosts().size();
 		const auto unjudged	 = _ui->unblock()->helperUnjudgedHosts().size();
+		const auto dns_dead	 = _ui->unblock()->helperDnsDeadHosts().size();
 		const auto judged	 = valid + error + exhausted;
 		const auto percent	 = judged != 0 ? static_cast<unsigned>((valid * 100 + judged / 2) / judged) : 0U;
 
 		// Macro argument: a braced initializer with commas would split it, so
 		// this call keeps the utils::format form.
-		_helper_summary->setText(utils::format(Localization::Str{ "str_zapret_helper_summary" }(), percent, valid, error, exhausted, unjudged));
+		_helper_summary->setText(
+			utils::format(Localization::Str{ "str_zapret_helper_summary" }(), percent, valid, error, exhausted, unjudged, dns_dead)
+		);
 	})
 }
 

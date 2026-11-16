@@ -68,6 +68,7 @@ str_service_report_dump=Service report saved to file: {}
 
 // Warning/error url
 str_warning_url=access problem: {}
+str_warning_url_dns=🚫 DNS gives no address: {}
 str_result_url_testing=Testing completed with result [{}] out of [{}] total success [{}%]
 str_base_testing_url_success=Basic test successful, starting full test...
 
@@ -247,7 +248,7 @@ str_zapret_helper_valid_item={} - {}
 str_zapret_helper_exhausted_title=🪦 Hosts with no working strategy ({}):
 str_zapret_helper_exhausted_item={} - {}
 str_zapret_helper_unjudged_title=🦔 Hosts without a Zapret verdict ({}):
-str_zapret_helper_summary=Effectiveness: {}% · ✅ {} · ⚠️ {} · 🪦 {} · 🦔 {}
+str_zapret_helper_summary=Effectiveness: {}% · ✅ {} · ⚠️ {} · 🪦 {} · 🦔 {} · 🚫 {}
 
 // Helper runtime settings ([HELPER])
 str_helper_pool_title=🧵 Helper thread pool
@@ -325,6 +326,7 @@ str_button_test_upstream_title=🧪 Check server
 str_button_reset_defaults_title=♻️ Reset to defaults
 str_status_dns_running=🌐 DNS proxy running · queries: {} · cached: {} · errors: {}
 str_status_dns_stopped=🌐 DNS proxy stopped
+str_status_dns_stopped_unresolved=🌐 DNS proxy stopped · 🚫 {} hosts do not resolve — DNS gives no addresses, enable the DNS proxy
 str_status_dns_issue=⚠ DNS proxy — {} (click for the report)
 str_status_dns_vpn_paused=⏸ DNS proxy running but not applied: an active VPN tunnel is in use
 str_status_dns_vpn_paused_name=⏸ DNS proxy running but not applied: «{}» is in use
