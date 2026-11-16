@@ -49,6 +49,16 @@ public:
 	static std::expected<long, int> checkHost(const std::string& host, const CurlAbort& abort = {});
 
 	/**
+	 * YouTube video cache host, checked by zone: googlevideo.com (modern
+	 * rr*-sn-* and r2---sn-* cells, the manifest and the redirector) or
+	 * c.youtube.com (regional aliases and the legacy lscache/cache hosts).
+	 * Those probes use the playback URL instead of a bare one. The same cell
+	 * naming lives in the caches of other Google products (gvt1.com,
+	 * c.docs.google.com, c.drive.google.com), and their zones stay out.
+	 */
+	static bool isVideoHost(std::string_view host);
+
+	/**
 	 * Terminal (strategy-independent) failure: the check died before the
 	 * first packet (DNS resolution). Desync operates on packets, so
 	 * no

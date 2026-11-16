@@ -981,6 +981,32 @@ TEST_CASE("isTerminalError later failures keep hunting", "[helper][terminal]")
 	CHECK_FALSE(CurlClient::isTerminalError(CURLE_SSL_CONNECT_ERROR));
 }
 
+TEST_CASE("isVideoHost covers both youtube video zones", "[helper][video]")
+{
+	// Every form of the family: modern cells, the manifest (no cell marker),
+	// the regional c.youtube.com aliases and the legacy lscache naming.
+	CHECK(CurlClient::isVideoHost("r2---sn-gxuo03g-ig3s.googlevideo.com"));
+	CHECK(CurlClient::isVideoHost("rr1---sn-4g5ednrl.googlevideo.com"));
+	CHECK(CurlClient::isVideoHost("manifest.googlevideo.com"));
+	CHECK(CurlClient::isVideoHost("redirector.c.googlevideo.com"));
+	CHECK(CurlClient::isVideoHost("rr4---sn-aj5goc-5j.c.youtube.com"));
+	CHECK(CurlClient::isVideoHost("cache1.c.youtube.com"));
+	CHECK(CurlClient::isVideoHost("o-o.preferred.sn-qxo7sn7s.v22.lscache5.c.youtube.com"));
+}
+
+TEST_CASE("isVideoHost keeps site, api and foreign caches out", "[helper][video]")
+{
+	// Site, API and images, plus the caches of other Google products: the
+	// same cell naming there must not join the video family.
+	CHECK_FALSE(CurlClient::isVideoHost("googlevideo.com"));
+	CHECK_FALSE(CurlClient::isVideoHost("www.youtube.com"));
+	CHECK_FALSE(CurlClient::isVideoHost("youtubei.googleapis.com"));
+	CHECK_FALSE(CurlClient::isVideoHost("yt3.ggpht.com"));
+	CHECK_FALSE(CurlClient::isVideoHost("beacons.gvt2.com"));
+	CHECK_FALSE(CurlClient::isVideoHost("r1---sn-045oxu-0456.gvt1.com"));
+	CHECK_FALSE(CurlClient::isVideoHost("sn-npoe7nl6.c.docs.google.com"));
+}
+
 TEST_CASE("READY wakes the helper and starts the pool once", "[helper][ready]")
 {
 	ZapretHelperTest t;

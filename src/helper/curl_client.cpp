@@ -111,12 +111,16 @@ bool CurlClient::isTerminalError(int curl_code)
 	return curl_code == CURLE_COULDNT_RESOLVE_HOST;
 }
 
+bool CurlClient::isVideoHost(std::string_view host)
+{
+	const auto inZone = [host](std::string_view zone) { return host.size() > zone.size() && host.ends_with(zone); };
+
+	return inZone(".googlevideo.com") || inZone(".c.youtube.com");
+}
+
 std::expected<long, int> CurlClient::checkHost(const std::string& host, const CurlAbort& abort)
 {
-	const std::string_view suffix{ ".googlevideo.com" };
-	const bool			   is_googlevideo = host.size() > suffix.size() && host.ends_with(suffix);
-
-	const std::string url = is_googlevideo ? std::format("https://{}/videoplayback?expire=1", host) : std::format("https://{}", host);
+	const std::string url = isVideoHost(host) ? std::format("https://{}/videoplayback?expire=1", host) : std::format("https://{}", host);
 
 	return _fetch(url, abort);
 }

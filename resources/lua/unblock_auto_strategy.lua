@@ -102,7 +102,11 @@
 --   reset          — отправлять RST при ошибке
 --   start=N        — начальный номер стратегии (0 = direct, по умолч. 0)
 -- auto_host_group — группирует хосты одного семейства в общую стратегию.
--- googlevideo (rr*-sn-*.googlevideo.com) — все такие хосты делят один hrec:
+-- googlevideo — видео-кэш Ютуба, ровно две зоны: googlevideo.com
+-- (rr1---sn-*.googlevideo.com, r2---sn-*.googlevideo.com,
+-- manifest/redirector.googlevideo.com) и c.youtube.com (региональные алиасы
+-- rr4---sn-*.c.youtube.com, легаси lscache*/cache* и старые
+-- o-o---preferred---<код>---v<N>---lscache1.c.youtube.com) — делят один hrec:
 -- подобранная стратегия применяется ко всем сразу, при сбое/FAIL переключается
 -- для всей группы, а не для каждого rr-хоста отдельно.
 -- Голос Discord — вся семья *.discord.media: и c-<регион>-<хэш> (хэш уникален
@@ -112,7 +116,10 @@
 -- префикс stream. отделяет голосовые поддомены от сайта discord.media).
 -- Судится как обычный TCP-хост — по ответу сервера (см. auto_host_record).
 function auto_host_group(hostkey)
-    if hostkey and hostkey:find("googlevideo%.com$") then
+    -- Признак семьи — зона, а не маркер ячейки ---sn-: тем же маркером Google
+    -- именует кэши других продуктов (gvt1.com, c.docs, c.drive), а чужой
+    -- трафик в семье сдвигал бы и рейтинг стратегии, и throttle-судью.
+    if hostkey and (hostkey:find("googlevideo%.com$") or hostkey:find("%.c%.youtube%.com$")) then
         return "googlevideo.com"
     end
 
