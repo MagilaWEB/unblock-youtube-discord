@@ -35,6 +35,10 @@ struct DiagnosticsFixture
 			ofs << "str_diag_verdict_disabled=VERDICT_DISABLED\n";
 			ofs << "str_diag_verdict_scm=VERDICT_SCM\n";
 			ofs << "str_diag_verdict_probe_exit=VERDICT_PROBE_EXIT {}\n";
+			ofs << "str_diag_verdict_conflict=VERDICT_CONFLICT {}\n";
+			ofs << "str_diag_summary_conflict=SUM_CONFLICT {}\n";
+			ofs << "str_diag_rec_conflict_1=REC_CONFLICT {}\n";
+			ofs << "str_diag_rec_conflict_2=REC_CONFLICT_2\n";
 			ofs << "str_diag_verdict_exit_code=VERDICT_EXIT_CODE {} {}\n";
 			ofs << "str_diag_summary_failure=SUMMARY {} {} {} {} {}\n";
 			ofs << "str_diag_summary_unknown=SUMMARY_UNKNOWN\n";
@@ -278,6 +282,42 @@ TEST_CASE("Diagnostics: a missing file outranks the probe verdict", "[service_di
 	CHECK(report.verdict == "VERDICT_ANTIVIRUS");
 	CHECK_FALSE(report.verdict.contains("VERDICT_PROBE_EXIT"));
 	CHECK(report.fullText().contains("C:\\app\\bin\\zapret_helper.exe"));
+}
+
+TEST_CASE("Diagnostics: a conflicting copy outranks a silent probe crash", "[service_diagnostics]")
+{
+	DiagnosticsFixture fx;
+
+	auto evidence			 = cleanEvidence();
+	evidence.probe_attempted = true;
+	evidence.probe_started	 = true;
+	evidence.probe_exit_code = 1;	 // exited at once and said nothing
+	evidence.conflicting_processes.push_back("zapret_helper.exe (C:\\other\\unblock\\binaries\\zapret_helper.exe)");
+
+	auto report = buildReport(makeFailure(), evidence);
+
+	// A silent crash proves nothing about the binary; the foreign copy explains it.
+	CHECK(report.verdict.contains("VERDICT_CONFLICT"));
+	CHECK_FALSE(report.verdict.contains("VERDICT_PROBE_EXIT"));
+	CHECK(report.fullText().contains("C:\\other\\unblock\\binaries\\zapret_helper.exe"));
+}
+
+TEST_CASE("Diagnostics: a conflict with probe output keeps the probe verdict", "[service_diagnostics]")
+{
+	DiagnosticsFixture fx;
+
+	auto evidence			 = cleanEvidence();
+	evidence.probe_attempted = true;
+	evidence.probe_started	 = true;
+	evidence.probe_exit_code = 1;
+	evidence.probe_err		 = "ERROR: bad value for --wf-tcp-in";
+	evidence.conflicting_processes.push_back("zapret_helper.exe (C:\\other\\unblock\\binaries\\zapret_helper.exe)");
+
+	auto report = buildReport(makeFailure(), evidence);
+
+	// The probe printed the actual reason, so the conflict stays a checklist line.
+	CHECK(report.verdict.contains("VERDICT_PROBE_EXIT"));
+	CHECK(report.fullText().contains("bad value for --wf-tcp-in"));
 }
 
 TEST_CASE("Diagnostics: probe 1063 is not indicative and does not raise the verdict", "[service_diagnostics]")

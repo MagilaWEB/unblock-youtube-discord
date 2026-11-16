@@ -362,6 +362,12 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 	// survive as a URL, is clipped.
 	const std::string probe_full   = flatten(evidence.probe_err.empty() ? evidence.probe_out : evidence.probe_err);
 	const std::string probe_output = clip(probe_full, 400);
+
+	// A silent probe crash is explained by a conflicting copy of the app, not by
+	// the binary: while the other copy holds the WinDivert driver the engine
+	// cannot take it, and a probe that printed nothing proves nothing. The
+	// conflict owns the verdict then — the same rule as for a missing file.
+	const bool conflict_owns = !evidence.conflicting_processes.empty() && probe_full.empty();
 	if (evidence.probe_attempted)
 	{
 		if (!evidence.probe_started)
@@ -383,13 +389,13 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 		else if (evidence.probe_exit_code == 0)
 		{
 			add_check(DiagnosticCheck::Level::Warning, localized("str_diag_check_probe_zero"));
-			if (!file_gone)
+			if (!file_gone && !conflict_owns)
 				promote(Cause::Probe);
 		}
 		else
 		{
 			add_check(DiagnosticCheck::Level::Failed, utils::format(localized("str_diag_check_probe_exit"), hex(evidence.probe_exit_code)));
-			if (!file_gone)
+			if (!file_gone && !conflict_owns)
 				promote(Cause::Probe);
 		}
 
@@ -960,12 +966,17 @@ namespace
 					continue;
 
 				// Our own copies live under binaries/ and are not a conflict.
-				const std::string path = toLower(fullPathOf(entry.th32ProcessID));
+				const std::string full = fullPathOf(entry.th32ProcessID);
+				const std::string path = toLower(full);
 				if (!path.empty() && !binaries.empty() && path.starts_with(binaries))
 					continue;
 
-				if (!std::ranges::contains(evidence.conflicting_processes, display))
-					evidence.conflicting_processes.push_back(display);
+				// The path is what tells the user which copy to remove: a process
+				// that got this far lives outside our own install folder.
+				const std::string label = full.empty() ? display : std::format("{} ({})", display, full);
+
+				if (!std::ranges::contains(evidence.conflicting_processes, label))
+					evidence.conflicting_processes.push_back(label);
 			} while (Process32NextW(snapshot, &entry));
 		}
 
