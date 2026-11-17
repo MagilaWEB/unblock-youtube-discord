@@ -105,6 +105,15 @@
 --   udp_in=N       — входящих UDP пакетов: больше N — успех, иначе фейл (по умолч. 1)
 --   udp_silence=N  — секунд молчания сервера при живом исходящем потоке
 --                    (потоковые хосты и QUIC) до вердикта FAIL (по умолч. 3)
+--   tcp_silence=N  — то же для TCP: клиент переспрашивает (ретрансмиссия
+--                    после рукопожатия), сервер молчит N секунд, объёмного
+--                    порога поток не набрал — вердикт FAIL и переключение
+--                    (по умолч. 5; 0 — выключить). Это единственная улика
+--                    для мелких потоков: рукопожатие прошло, ответа на
+--                    запрос нет, а скорость на 200 КБ тут не померить.
+--                    Запрос, который просто держат (long-poll), не
+--                    переспрашивается — он подтверждён — и под правило
+--                    не попадает
 --   reset          — отправлять RST при ошибке
 --   start=N        — начальный номер стратегии (0 = direct, по умолч. 0)
 -- auto_host_group — группирует хосты одного семейства в общую стратегию.
@@ -442,6 +451,11 @@ function auto_do_switch(rec, is_udp, askey, reason, peer, dport, send_exhausted,
         crec.t_seen = nil
         crec.t_silence = nil
         crec.udp_silence_client = nil
+        -- TCP stall window: the new strategy starts its own silence timer and
+        -- its own retransmission mark.
+        crec.tcp_srv_seen = nil
+        crec.tcp_srv_time = nil
+        crec.tcp_stalled = nil
     end
 
     if not rec.tried then
@@ -1067,6 +1081,47 @@ function auto_strategy(ctx, desync)
                 end
             end
 
+            -- Stall after the handshake, on a flow too small for the volume
+            -- judges: the DPI let the handshake through and then dropped the
+            -- dialog. The client proves it is still there by retransmitting its
+            -- request - an unanswered packet repeats - while the server has been
+            -- quiet since its last byte. This is the TCP twin of the QUIC
+            -- silence rule below and the only evidence a small flow has:
+            -- post-handshake retransmissions are deliberately ordinary loss,
+            -- and speed needs the 200 KB a request never carries.
+            -- www.discordapp.com is the case: the handshake completes, the
+            -- answer never comes, and the strategy looked confirmed while the
+            -- app hung on "starting". A request that is merely held (long-poll)
+            -- was ACKed and is not retransmitted, so it does not trip this rule.
+            if desync.outgoing and plen > 0 and crec.handshake_ok and is_retransmission(desync) then
+                crec.tcp_stalled = true
+            end
+
+            if srv_bytes > (crec.tcp_srv_seen or 0) then
+                crec.tcp_srv_seen = srv_bytes
+                crec.tcp_srv_time = now
+                crec.tcp_stalled = nil
+            end
+
+            local tcp_silence = tonumber(arg.tcp_silence) or 0
+            if tcp_silence > 0 and crec.tcp_stalled and crec.tcp_srv_time and not crec.streamed and not crec.closed
+                and now - crec.tcp_srv_time >= tcp_silence then
+                crec.tcp_srv_time = now
+                crec.tcp_stalled = nil
+
+                ULOG("WARNING",
+                    "zapret:auto_strategy: SILENCE TCP " .. name .. "->" .. host_or_ip .. ":" .. dport .. " srv=" ..
+                        srv_bytes)
+
+                if auto_check_fails(hrec, arg, crec, not hrec.had_success) then
+                    auto_reset_connection(desync, arg, name, host_or_ip, dport, true)
+                    auto_fail_helper_strategy(name, host_name)
+                    auto_do_switch(hrec, false, askey, "SILENCE", host_or_ip, dport, false, crec)
+                end
+
+                return auto_strategy_plan(desync, hrec, verdict)
+            end
+
             -- Confirm once per connection: the server answered and the failure
             -- branches above did not fire. A handshake alone confirms only a
             -- non-streaming host, plus a probe flow: for googlevideo the
@@ -1257,6 +1312,7 @@ function args_defaults(arg)
         udp_in = tonumber(arg.udp_in) or 1,
         udp_out = tonumber(arg.udp_out) or 4,
         udp_silence = tonumber(arg.udp_silence) or 3,
+        tcp_silence = tonumber(arg.tcp_silence) or 5,
         throttle_window = tonumber(arg.throttle_window) or 3,
         throttle_min_bps = tonumber(arg.throttle_min_bps) or c_throttle_min_bps,
         throttle_collapse = tonumber(arg.throttle_collapse) or 0.25,
