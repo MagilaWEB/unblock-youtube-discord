@@ -12,7 +12,7 @@ $ErrorActionPreference = 'Stop'
 # This is a maintainer tool on purpose: build-ai.ps1 and CMake never call it, run it
 # by hand when the proxy needs updating.
 $repo     = 'Flowseal/tg-ws-proxy'
-$root     = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+$root     = Split-Path -Parent $PSScriptRoot
 $target   = Join-Path $root 'binaries/tg-ws-proxy.exe'
 $workDir  = Join-Path $env:TEMP 'unblock-tgws'
 

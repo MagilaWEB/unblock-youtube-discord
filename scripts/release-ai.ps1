@@ -8,11 +8,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$root = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+$root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
 if (-not $SkipBuild) {
-    & (Join-Path $root 'build-ai.ps1') -Preset $Preset
+    & (Join-Path $PSScriptRoot 'build-ai.ps1') -Preset $Preset
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 

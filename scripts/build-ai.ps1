@@ -11,6 +11,11 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# The wrappers live in scripts/, so resolve the repository root from here and
+# run the whole build from it (relative _build_ai/ and bin/ paths stay valid).
+$repoRoot = Split-Path -Parent $PSScriptRoot
+Set-Location $repoRoot
+
 if ($Clean -and (Test-Path '_build_ai')) {
     Write-Host 'Removing old build directory...'
     Remove-Item -Recurse -Force '_build_ai'
@@ -83,7 +88,7 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 # half empty (a missing zapret_helper.exe is a run that silently misbehaves).
 $ninjaFile = '_build_ai/build.ninja'
 if (Test-Path $ninjaFile) {
-    $root   = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+    $root   = $repoRoot
     $binDir = (Join-Path $root 'bin').Replace('/', '\').ToLowerInvariant()
 
     $binOutputs = Select-String -Path $ninjaFile -Pattern '^build (\S+?\.(?:exe|dll)):' |

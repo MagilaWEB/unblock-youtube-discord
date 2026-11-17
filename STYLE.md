@@ -13,7 +13,7 @@
 ## 2. Форматирование
 
 - `.clang-format`: база Microsoft, табы (`TabWidth`/`IndentWidth` 4), `ColumnLimit 150`, CRLF, `SortIncludes: Never`.
-- Прогон: `pwsh -NoProfile -File fmt-ai.ps1`.
+- Прогон: `pwsh -NoProfile -File scripts/fmt-ai.ps1`.
 - Интерфейс — модуль `.cppm` (`export module <имя>;`), реализация — `.cpp` (implementation unit: `module <имя>;` и `import` вместо `#include`). Заголовки и PCH не используются, стандарт приходит через `import std;`.
 - Имя модуля — каталог плюс имя файла: `core.debug`, `ui.widget_button`. Виджеты каталога `ui` идут как `ui.widget_<имя>` (все они наследники `BaseElement`), остальные — по смыслу (`ui.tutorial`, интерфейс движка — `engine.api`). У `dom`/`ui`/`unblock` есть умбреллы (`export import`) — `import ui;` даёт то же, что раньше давал `ui.h`.
 - Системные и сторонние заголовки — только в глобальном фрагменте модуля-обёртки (`module;` → `#include` → `export module ...;`): макросы и C-ABI через границу модуля не проходят. Сторонние библиотеки — обёртки `src/ext/` (`import ext.curl;`), системные (Win32, winsock, CRT) — `import ext.windows;`, он же реэкспортирует std, так что отдельный `import std;` рядом с ним не пишут. В обычном коде инклюдов Windows/CRT нет: значения-макросы обёртки отдают константами (`inline constexpr`, для каста на указатель — `inline const`), макросы-функции — `inline constexpr` функциями, алиасы A/W — явным видом в вызове.
@@ -81,7 +81,7 @@
 
 ## 8. Сборка и проверки
 
-- Сборка: `pwsh -NoProfile -File build-ai.ps1`. При OOM clang: очистить `$env:INCLUDE/$env:LIB/$env:LIBPATH` и `cmake --build _build_ai -j 2`.
+- Сборка: `pwsh -NoProfile -File scripts/build-ai.ps1`. При OOM clang: очистить `$env:INCLUDE/$env:LIB/$env:LIBPATH` и `cmake --build _build_ai -j 2`.
 - Тесты: `ctest --test-dir _build_ai --output-on-failure`. Реконфиг чистит `bin/` (так задумано в `src/engine/CMakeLists.txt`), поэтому сразу после него тестовые exe отсутствуют и `ctest` показывает `Not Run` — до первой сборки.
-- Формат: `pwsh -NoProfile -File fmt-ai.ps1`.
+- Формат: `pwsh -NoProfile -File scripts/fmt-ai.ps1`.
 - Версия выводится из git автоматически (`cmake/GetUnblockVersion.cmake`); вручную не правится.

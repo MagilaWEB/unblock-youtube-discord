@@ -1,11 +1,11 @@
 ## Build
 
-- Конфигурация: `configure-ninja-ai.bat` (использует `CMakePresets.json`, пресет `debug`)
+- Конфигурация: `scripts/configure-ninja-ai.bat` (использует `CMakePresets.json`, пресет `debug`)
 - Бинарники в `bin/`, деп-зависимости через FetchContent (saucer, curl+zlib из исходников, bit7z, 7za, zapret2) — первый конфиг долгий
-- `binaries/` наполняет POST_BUILD-шаг `engine` из уже скачанного payload: `winws2.exe`, `cygwin1.dll` и Lua из zapret2, `winws.exe` из zapret-win-bundle, `WinDivert.dll`/`WinDivert64.sys` оттуда же и фейк-блобы, которые называют `configs/fake_bin.config` и `configs/fake_bin_zapret1.config` (в git лежат только те блобы, которых в payload нет). Руками обновляются два бинарника: `SvcHost.exe` (релиз `MagilaWEB/svc_host`) и `tg-ws-proxy.exe` — консольный onefile для него собирает `build-tgws-ai.ps1`, запуск только по требованию, в сборку он не встроен
+- `binaries/` наполняет POST_BUILD-шаг `engine` из уже скачанного payload: `winws2.exe`, `cygwin1.dll` и Lua из zapret2, `winws.exe` из zapret-win-bundle, `WinDivert.dll`/`WinDivert64.sys` оттуда же и фейк-блобы, которые называют `configs/fake_bin.config` и `configs/fake_bin_zapret1.config` (в git лежат только те блобы, которых в payload нет). Руками обновляются два бинарника: `SvcHost.exe` (релиз `MagilaWEB/svc_host`) и `tg-ws-proxy.exe` — консольный onefile для него собирает `scripts/build-tgws-ai.ps1`, запуск только по требованию, в сборку он не встроен
 - Сборка без тестов: пресеты `debug-min`/`release-min` (BUILD_TESTS=OFF)
-- Скрипты-обёртки: `build-ai.ps1` (сборка), `test-ai.ps1` (ctest), `fmt-ai.ps1` (clang-format) — slash-команды `/build`, `/test`, `/fmt`
-- `build-ai.ps1` после сборки досоздаёт выходы `bin/`, которых не хватает: реконфиг чистит `bin/` (см. `src/engine/CMakeLists.txt`), а ninja удалённые, но «актуальные» файлы не пересобирает — без этого шага `zapret_helper.exe`, `unblock_dns.exe` и тестовые exe остаются отсутствующими до следующей полной линковки (а служба-помощник из-за этого не стартует)
+- Скрипты-обёртки лежат в `scripts/`: `build-ai.ps1` (сборка), `test-ai.ps1` (ctest), `fmt-ai.ps1` (clang-format) — slash-команды `/build`, `/test`, `/fmt`
+- `scripts/build-ai.ps1` после сборки досоздаёт выходы `bin/`, которых не хватает: реконфиг чистит `bin/` (см. `src/engine/CMakeLists.txt`), а ninja удалённые, но «актуальные» файлы не пересобирает — без этого шага `zapret_helper.exe`, `unblock_dns.exe` и тестовые exe остаются отсутствующими до следующей полной линковки (а служба-помощник из-за этого не стартует)
 
 ## Modules
 
@@ -34,7 +34,7 @@
 - Версия выводится из git (`cmake/GetUnblockVersion.cmake`, Conventional Commits + semantic-release: `fix:` → PATCH, `feat:` → MINOR, `!`/`BREAKING CHANGE:` → MAJOR; без них — значимость диффа ≥20 строк по `src/`+`cmake/` → PATCH, иначе релиза нет и версия равна базовому тегу). Руками не править никогда!
 - `src/engine/version.hpp` — генерируется из `version.hpp.in` (git-ignored) на каждом билде целью `unblock_version` (`cmake/WriteVersionHeader.cmake`): перед пересчётом best-effort `git fetch --tags`, файл перезаписывается только при смене версии. В C++ значения приходят константами из модуля `engine.version` (`src/engine/version.cppm`, таргет `ub_version`): `VERSION_STR` (+`VERSION_FULL`/`BUMP`/`RELEASE`/`DISTANCE`/`DIRTY`/`HASH`/`BASE_TAG`). Макросом остаётся только `VERSION_NUMBER` — его читает `engine.rc` как список через запятую
 - Вычисленная версия — в логе билда (`WriteVersionHeader: ...`) и в логе configure (`UNBLOCK_VERSION = ...`, там же `bump` и `release`). Релизный тег `v<триплет>` ставится вручную ПОСЛЕ сборки только при `release=1` и обязан равняться вычисленной версии (`VERSION_STR`)
-- Ручные рычаги: `build-ai.ps1 -VersionOverride X.Y.Z` (тест обновлений со старой версией, тег НЕ ставить!) и `-DUNBLOCK_VERSION_BUMP_FORCE=major|minor|patch|none` (принудительный бамп от текущей базы)
+- Ручные рычаги: `scripts/build-ai.ps1 -VersionOverride X.Y.Z` (тест обновлений со старой версией, тег НЕ ставить!) и `-DUNBLOCK_VERSION_BUMP_FORCE=major|minor|patch|none` (принудительный бамп от текущей базы)
 - Версия всегда актуальна на билде: реконфиг после новых коммитов/тегов не нужен, теги подтягиваются сами. Фетч best-effort — оффлайн берутся локальные теги, так что свежий тег всё равно должен быть получен (`git fetch --tags`/`pull`)
 
 ## Architecture
@@ -58,7 +58,7 @@
 
 ## MCP / Navigation (opencode)
 
-- Навигация по C++: не выдумывай API — сигнатуры, типы и связи проверяй по коду (`rg`/`grep`/`read`); сомнительные места подтверждай сборкой. В opencode2 LSP (clangd) не работает — диагностика только компилятором (`build-ai.ps1`) и `clang-tidy` (`tidy-ai.ps1`, модульные флаги он берёт из modmap в `compile_commands.json`, `.cppm` тоже проверяет).
+- Навигация по C++: не выдумывай API — сигнатуры, типы и связи проверяй по коду (`rg`/`grep`/`read`); сомнительные места подтверждай сборкой. В opencode2 LSP (clangd) не работает — диагностика только компилятором (`scripts/build-ai.ps1`) и `clang-tidy` (`scripts/tidy-ai.ps1`, модульные флаги он берёт из modmap в `compile_commands.json`, `.cppm` тоже проверяет).
 - Примеры извне: `gh_grep`, доки по либам: `context7`.
-- После правки: `pwsh -NoProfile -File build-ai.ps1`, потом `ctest --test-dir _build_ai --output-on-failure`. Реконфиг чистит `bin/` (так задумано в `src/engine/CMakeLists.txt`), так что сразу после него тестовые exe отсутствуют, а `ctest` показывает `Not Run` — до первой сборки (досоздать недостающие выходы `bin/` поможет `build-ai.ps1`, см. `## Build`). Lua правится в `resources/lua/` + сборка (копия в `binaries/lua/`).
+- После правки: `pwsh -NoProfile -File scripts/build-ai.ps1`, потом `ctest --test-dir _build_ai --output-on-failure`. Реконфиг чистит `bin/` (так задумано в `src/engine/CMakeLists.txt`), так что сразу после него тестовые exe отсутствуют, а `ctest` показывает `Not Run` — до первой сборки (досоздать недостающие выходы `bin/` поможет `scripts/build-ai.ps1`, см. `## Build`). Lua правится в `resources/lua/` + сборка (копия в `binaries/lua/`).
 - Не индексируй мусор: `_build_ai/`, `_build/`, `_deps/`, `bin/`.

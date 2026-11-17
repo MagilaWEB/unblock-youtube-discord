@@ -5,6 +5,9 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Run from the repository root so git status and the relative paths resolve.
+Set-Location (Split-Path -Parent $PSScriptRoot)
+
 $exts = @('.cpp', '.h', '.hpp', '.c', '.cc', '.cxx', '.cu', '.cuh', '.cppm')
 
 if ($All) {

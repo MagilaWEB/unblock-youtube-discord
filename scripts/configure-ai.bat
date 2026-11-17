@@ -1,5 +1,8 @@
 @echo off
 
+:: The wrapper lives in scripts/, so run from the repository root.
+cd /d "%~dp0.."
+
 set BUILD_DIR=_build_ai
 
 :: Clean previous build

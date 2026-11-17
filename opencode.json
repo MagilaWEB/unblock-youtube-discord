@@ -6,14 +6,14 @@
   // 1. Поставь Node.js >= 18 и добавь его в PATH. Если лень — просто запускай
   //    через run_opencode.bat: он сам подхватит %ProgramFiles%\nodejs в PATH.
   // 2. Сконфигурируй сборку, чтобы лежал _build_ai/compile_commands.json:
-  //    configure-ninja-ai.bat, затем сборка через build-ai.ps1.
+  //    scripts/configure-ninja-ai.bat, затем сборка через scripts/build-ai.ps1.
   // 3. Запускай opencode через run_opencode.bat из корня репо: он чинит PATH.
   // ДИАГНОСТИКА: `run_opencode.bat mcp list` — gh_grep/github должны быть `connected`.
   //
   // ВАЖНО: конфиг в нативном формате opencode2. V2 НЕ поднимает LSP: серверы
   // языка и диагностика недоступны в принципе, поэтому V1-блок `lsp` (clangd) не
   // перенесён и LLVM в онбординге больше не нужен. Источник диагностики C/C++ —
-  // сборка (build-ai.ps1) и clang-tidy (tidy-ai.ps1).
+  // сборка (scripts/build-ai.ps1) и clang-tidy (scripts/tidy-ai.ps1).
   "formatter": {
     "clang-format": {}
   },

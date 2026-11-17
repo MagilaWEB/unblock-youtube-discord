@@ -5,7 +5,7 @@
 ; (ExtractArchive + ArchiveExtraction=full), поэтому никакой внешний 7za.exe не
 ; нужен и в релиз ничего лишнего не добавляется.
 ;
-; Сборка (вызывает release-ai.ps1):
+; Сборка (вызывает scripts/release-ai.ps1):
 ;   ISCC.exe /DAppVersion=1.10.0 installer\unblock.iss
 ; Параметры-определения:
 ;   AppVersion  — версия для визарда и «Программ и компонентов»;

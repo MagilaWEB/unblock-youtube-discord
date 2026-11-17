@@ -23,9 +23,9 @@
 
 CI прогонит Debug и Release с `ctest` — локальный прогон экономит раунд.
 
-- [ ] `pwsh -NoProfile -File build-ai.ps1`
-- [ ] `pwsh -NoProfile -File test-ai.ps1`
-- [ ] `pwsh -NoProfile -File fmt-ai.ps1`
+- [ ] `pwsh -NoProfile -File scripts/build-ai.ps1`
+- [ ] `pwsh -NoProfile -File scripts/test-ai.ps1`
+- [ ] `pwsh -NoProfile -File scripts/fmt-ai.ps1`
 - [ ] Lua (`resources/lua/`) — пересобрано: движок грузит копию из `binaries/lua/`
 - [ ] конфиги стратегий — сверил `logs/strategy.args.txt` после запуска
 - [ ] проверено в приложении руками: <!-- что нажали и что увидели -->

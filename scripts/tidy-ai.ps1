@@ -8,6 +8,9 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Run from the repository root so git status, src/ and the relative paths resolve.
+Set-Location (Split-Path -Parent $PSScriptRoot)
+
 # Clear MSVC env vars so clang-tidy uses the pure clang toolchain (no rc.exe hangs).
 $env:INCLUDE = $null
 $env:LIB = $null

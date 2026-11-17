@@ -34,7 +34,7 @@ description: Выпуск релиза unblock — сборка, тег, пуб�
 
 ## 2. Сборка и упаковка
 
-    pwsh -NoProfile -File release-ai.ps1
+    pwsh -NoProfile -File scripts/release-ai.ps1
 
 Скрипт собирает пресет `release-min`, кладёт payload в `release/unblock.7z` и
 собирает онлайн-установщик `release/unblock-setup.exe` (Inno Setup, ищет

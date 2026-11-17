@@ -11,22 +11,22 @@
 ## Сборка и проверки
 
 ```powershell
-configure-ninja-ai.bat                 # чистый конфиг _build_ai пресетом debug
-pwsh -NoProfile -File build-ai.ps1     # сборка
-pwsh -NoProfile -File test-ai.ps1      # ctest в _build_ai
-pwsh -NoProfile -File fmt-ai.ps1       # clang-format: изменённые файлы из git status
+scripts/configure-ninja-ai.bat             # чистый конфиг _build_ai пресетом debug
+pwsh -NoProfile -File scripts/build-ai.ps1 # сборка
+pwsh -NoProfile -File scripts/test-ai.ps1  # ctest в _build_ai
+pwsh -NoProfile -File scripts/fmt-ai.ps1   # clang-format: изменённые файлы из git status
 ```
 
-Пресеты: `debug` и `release`, плюс `*-min` — то же без тестов. Сборка одной цели — `build-ai.ps1 -Target <имя>`. Реконфиг чистит `bin/`, так что сразу после него тестовые exe отсутствуют, а `ctest` показывает `Not Run` — до первой сборки.
+Пресеты: `debug` и `release`, плюс `*-min` — то же без тестов. Сборка одной цели — `scripts/build-ai.ps1 -Target <имя>`. Реконфиг чистит `bin/`, так что сразу после него тестовые exe отсутствуют, а `ctest` показывает `Not Run` — до первой сборки.
 
-Ещё есть `tidy-ai.ps1` (clang-tidy) и `release-ai.ps1` (упаковка релиза) — порядок выпуска разобран в [вики](https://github.com/MagilaWEB/unblock-youtube-discord/wiki/Разработка-Релиз-и-версии). Конвенции для агентов и автоматизации лежат в `AGENTS.md`.
+Ещё есть `scripts/tidy-ai.ps1` (clang-tidy) и `scripts/release-ai.ps1` (упаковка релиза) — порядок выпуска разобран в [вики](https://github.com/MagilaWEB/unblock-youtube-discord/wiki/Разработка-Релиз-и-версии). Конвенции для агентов и автоматизации лежат в `AGENTS.md`.
 
 ## Что где лежит
 
 - `src/` — код по модулям: `engine`, `core`, `ui`, `unblock`, `helper`, `unblock_dns`, `dom`, `ext`. Исходники собираются глобом: новый `.cpp`/`.cppm` подхватится на сборке, `CMakeLists` править не надо.
 - `resources/lua/` — Lua-скрипты обхода. В рантайме движок грузит копию из `binaries/lua/`, поэтому правка действует только после сборки.
 - `configs/` — стратегии, фейк-блобы и списки хостов. Проверить, во что собрался конфиг, можно по `logs/strategy.args.txt`.
-- `ui/` — интерфейс, `installer/` — Inno Setup, `docs/wiki/` — исходники вики (выливаются скриптом `sync-wiki-ai.ps1`).
+- `ui/` — интерфейс, `installer/` — Inno Setup, `docs/wiki/` — исходники вики (выливаются скриптом `scripts/sync-wiki-ai.ps1`).
 
 ## Бинарники в `binaries/`
 
@@ -42,11 +42,11 @@ pwsh -NoProfile -File fmt-ai.ps1       # clang-format: изменённые фа
 В git остаётся только то, чего в payload нет: фейк-блобы собственного производства плюс два бинарника, которые обновляются руками —
 
 - `SvcHost.exe` — релиз [MagilaWEB/svc_host](https://github.com/MagilaWEB/svc_host);
-- `tg-ws-proxy.exe` — консольная сборка [Flowseal/tg-ws-proxy](https://github.com/Flowseal/tg-ws-proxy), делается скриптом `build-tgws-ai.ps1`.
+- `tg-ws-proxy.exe` — консольная сборка [Flowseal/tg-ws-proxy](https://github.com/Flowseal/tg-ws-proxy), делается скриптом `scripts/build-tgws-ai.ps1`.
 
 ```powershell
-pwsh -NoProfile -File build-tgws-ai.ps1                 # последний релиз апстрима
-pwsh -NoProfile -File build-tgws-ai.ps1 -Tag vX.Y.Z    # или конкретный тег
+pwsh -NoProfile -File scripts/build-tgws-ai.ps1                 # последний релиз апстрима
+pwsh -NoProfile -File scripts/build-tgws-ai.ps1 -Tag vX.Y.Z    # или конкретный тег
 ```
 
 Скрипт сам скачивает исходники релиза, собирает **консольный** onefile (апстрим-рецепт делает трей-приложение, негодное как payload службы), проверяет, что апстрим всё ещё принимает `--secret`, `--dc-ip`, `--host` и `--port` (их задаёт `src/unblock/tg_proxy.cpp`), смотрит PE-подсистему и только после этого кладёт exe в `binaries/`. В сборку проекта он не встроен — запускается руками.
@@ -55,7 +55,7 @@ pwsh -NoProfile -File build-tgws-ai.ps1 -Tag vX.Y.Z    # или конкретн
 
 ## Стиль
 
-Контракт по коду — `STYLE.md`, форматирование — `.clang-format` (табы, `ColumnLimit 150`, CRLF) и `fmt-ai.ps1`. Код, идентификаторы и комментарии — английский; git-сообщения — русский. Пользовательские строки живут только в `ui/text/<lang>.list`, ключи с префиксом `str_`.
+Контракт по коду — `STYLE.md`, форматирование — `.clang-format` (табы, `ColumnLimit 150`, CRLF) и `scripts/fmt-ai.ps1`. Код, идентификаторы и комментарии — английский; git-сообщения — русский. Пользовательские строки живут только в `ui/text/<lang>.list`, ключи с префиксом `str_`.
 
 ## Коммиты
 

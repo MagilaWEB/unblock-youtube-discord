@@ -25,7 +25,7 @@
 #
 # Manual controls (configure parameters, never edited in code):
 #   cmake -DUNBLOCK_VERSION_OVERRIDE=X.Y.Z ...
-#   or via build-ai.ps1 -VersionOverride X.Y.Z
+#   or via scripts/build-ai.ps1 -VersionOverride X.Y.Z
 #   An explicitly requested version for testing the updater, no git math.
 #   VERSION_STR is exactly the override. NEVER create a release tag from an
 #   override build.

@@ -104,4 +104,4 @@ Lua-оркестратор (`binaries/lua/unblock_auto_strategy.lua`):
 - Хелпер (`bin/zapret_helper.exe.log`): обычные хосты — curl-проверка,
   `*.discord.media` — WebSocket-upgrade к голосовому гейту (ping/pong ~6 c):
   вердикт отражает живость пути, а не только TLS-хендшейка.
-- Тесты: `pwsh -NoProfile -File test-ai.ps1` (Catch2, TAP-репортер).
+- Тесты: `pwsh -NoProfile -File scripts/test-ai.ps1` (Catch2, TAP-репортер).
