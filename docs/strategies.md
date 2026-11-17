@@ -1,40 +1,56 @@
 # Стратегии — справочник разработчика
 
 Практический справочник по конфигам `configs/strategy/<поколение>/` и инфраструктуре
-обхода DPI на zapret2. Предназначен для тех, кто правит
-стратегии или отлаживает обход.
+обхода DPI на zapret2. Предназначен для тех, кто правит стратегии или отлаживает
+обход.
 
 ## Как конфиг превращается в аргументы winws2
 
-1. Движок читает `configs/strategy/<версия>/<файл>.config` (`StrategiesDPI`).
-2. `%BLOCKLIST%`, `%DOMAINS-EXCLUDE%`, `%IP-EXCLUDE%` разворачиваются в
-   `--hostlist`/`--hostlist-exclude`/`--ipset-exclude` из `user/`.
-3. `%INIT_LUA%` → `--lua-init` для всех файлов из `binaries/lua/`;
+1. Движок читает `configs/strategy/<поколение>/<файл>.config` (`StrategiesDPI`).
+2. `%TEMPLATES_<ИМЯ>%` заменяются строками одноимённого блока `[TEMPLATES:<ИМЯ>]` из
+   `configs/templates.config` — это делается до скана секций, так что секции,
+   `%BLOCKLIST%` и `use_in>>` внутри блока работают как написанные на месте. Блоки
+   могут ссылаться друг на друга.
+3. `%BLOCKLIST%`, `%DOMAINS-EXCLUDE%`, `%IP-EXCLUDE%`, `%IP-SETLIST%` разворачиваются
+   в `--hostlist`, `--hostlist-exclude`, `--ipset-exclude`, `--ipset` из `user/`.
+4. `%INIT_LUA%` → `--lua-init` для всех файлов из `binaries/lua/`;
    `%INIT_BLOB%` → `--blob=<ИМЯ>:<путь>` для блобов, реально используемых
    в стратегиях (маппинг имён — `configs/fake_bin.config`).
-4. Каждая `--lua-desync=<func>:...:strategy=N` получает номер стратегии.
-   Нумерация сбрасывается по `--new` и по границам секций; номера должны быть
-   монотонными без дырок внутри одного плана (иначе ротация auto_strategy
-   наступает на «пустые» номера).
-5. Секции `[имя]` — фильтры по портам/l7/hostlist; `--import=ШАБЛОН` втягивает
-   строки шаблона; `use_in>>цель` — включение секции в другую.
+5. `--template=ИМЯ` объявляет шаблон плана, `--import=ИМЯ` подставляет его строки
+   в текущий план. Каждая `--lua-desync=...:strategy=N` получает номер: нумерация
+   сбрасывается по `--new` и по границам секций, а номера внутри плана должны идти
+   монотонно и без дырок — иначе ротация `auto_strategy` наступает на пустые номера.
+6. Секции `[имя]` — фильтры по портам/l7/hostlist; `use_in>>цель` включает одну
+   секцию в другую.
 
-## Структура профиля
+## Из чего собран план
 
-| Секция/шаблон | Назначение |
+Общий каркас лежит в `configs/templates.config` (блоки `[TEMPLATES:<ИМЯ>]`), а в самом
+конфиге стратегии остаётся то, что отличается от набора к набору. Актуальный набор
+берёт из шаблонов `HEAD` и `TAIL`, а `START_QUIC`/`START_TLS` со списками стратегий
+объявляет сам; часть старых наборов собирает планы вручную и дополнительно подключает
+`DISCORD_MEDIA` и `YOUTUBE_TCP`.
+
+| Блок | Назначение |
 |---|---|
-| `[START]` | глобальные флаги: `--ctrack-disable=0`, `--ipcache-lifetime=8400`, `--ipcache-hostname=1`, WinDivert-фильтры портов |
-| `START_QUIC` | UDP/443 QUIC-план (фейки, ipfrag, udplen) |
-| `START_TLS` | TCP 80/443 TLS-план (фейки, сплиты, disorder) |
-| `START_VOICE` | UDP-голос Discord (discovery/stun/RTP) |
-| `START_VOICE_TCP` | TCP-голос Discord (порты 2053–8443) |
-| `[discord]` | голосовые фильтры: TCP `%DiscordPort%`, UDP `%DiscordPortUPD%` |
-| `[END]` | общий план для всего остального TLS/HTTP |
-| `[game_mod]` | игры по ipset |
+| `[TEMPLATES:HEAD]` | `[START]`: `--ctrack-disable=0`, WinDivert-фильтры портов (`[TEMPLATES:WF]`), `%INIT_LUA%`/`%INIT_BLOB%`, базовые блобы |
+| `--template=START_QUIC` | UDP/443 QUIC-план: фейки, ipfrag, udplen + `auto_strategy` |
+| `--template=START_TLS` | TCP 80/443 TLS-план: фейки, сплиты, disorder + `auto_strategy`. Сюда же ушла TCP-фаза голоса Discord |
+| `--template=START_VOICE` | Голосовой UDP-план: `auto_strategy:fails=6:start=1` и две стратегии — фейк `VOICE_PRE` (в первой ещё `JUNK_00`/`JUNK_01`), затем `send:delay=50` и `drop` |
+| `[TEMPLATES:DISCORD_UDP]` | Секция `[discord]`: `--filter-udp=%DiscordPortUPD%`, `--filter-l7=discord,stun,quic`; под неё идёт `--payload=all --import=START_VOICE` |
+| `[TEMPLATES:DISCORD_MEDIA]` | TCP-фаза голоса: `--filter-tcp=%DiscordPort%`, `--hostlist-domains=discord.media` |
+| `[TEMPLATES:YOUTUBE_TCP]`, `[TEMPLATES:END_TCP]` | Остальной TLS/HTTP: YouTube отдельной секцией, `[END]` — общим планом |
+| `[TEMPLATES:GAME_TCP]`, `[TEMPLATES:GAME_UDP]` | Игры по ipset |
 
-Порты Discord задаются в `configs/service_setting.config`:
-`DiscordPort:2053,2083,2087,2096,8443` (TCP) и `DiscordPortUPD:19294-19344,50000-50100`
-(UDP: старый пул Cloudflare + новый пул Google Cloud).
+Отдельного `START_VOICE_TCP` нет, и голос Discord работает целиком: и в браузере,
+и в десктопном приложении — UDP через `START_VOICE`, TCP-фаза через `START_TLS`.
+
+## Порты Discord
+
+Задаются в `configs/service_setting.config`: `DiscordPort:2053,2083,2087,2096,8443` (TCP)
+и `DiscordPortUPD:19294-19344,50000-50100` (UDP — старый пул Cloudflare и новый пул
+Google Cloud). От этих диапазонов зависят и WinDivert-фильтры в `[START]`, и секция
+`[discord]`, так что при смене медиа-пула их надо синхронизировать.
 
 ## Авто-стратегия (`auto_strategy`)
 
@@ -54,7 +70,7 @@ Lua-оркестратор (`binaries/lua/unblock_auto_strategy.lua`):
 - голосовые хосты группируются в `discord.media` (все поддомены, формы
   с `c-` и без), googlevideo — в `googlevideo.com`.
 
-## Ключевые находки полевых испытаний (сентябрь 2026)
+## Что важно помнить при правке стратегий
 
 - **conntrack обязателен**: `--ctrack-disable=0` — без него split-примитивы
   слепы (нет реконструкции потока). Плюс `--ipcache-lifetime=8400
@@ -64,48 +80,28 @@ Lua-оркестратор (`binaries/lua/unblock_auto_strategy.lua`):
   Лечится снижением repeats и `tls_mod=sni=%hostname` (SNI фейка = хост
   соединения).
 - **Хост-специфичность**: универсальной стратегии нет. fakedsplit 681/726
-  tcp_md5 жил на discord.com и googlevideo; multisplit 681 — на части хостов;
-  hostfakesplit — на других. Ротация нужна, но живые стратегии стоит держать
-  в начале плана.
-- **UDP-голос Discord**: киллер даёт потоку один ответ (`in=1`) и режет вход;
-  фейки/ipfrag/udplen/STUN-подмена SSRC не помогают — сигнатура на payload
-  протокола. Браузерный WebRTC (STUN/DTLS/SRTP) проходит — киллер белеет
-  стандартные протоколы.
-- **Деградация сети**: при активном переборе стратегий сеть умирает постепенно
-  и оживает через ~5 минут после выключения zapret. Наблюдение не объяснено
-  однозначно (на статичных конфигах было так же); при тестах делать
+  tcp_md5 живёт на одних хостах, multisplit 681 — на других, hostfakesplit — на
+  третьих. Ротация нужна, но самые живые стратегии стоит держать в начале плана.
+- **Голосовой UDP**: голому фейку киллер не верит — QUIC-фейки (любые repeats),
+  ipfrag, udplen и подмена SSRC на STUN magic cookie на голосовом UDP не
+  проходили. Работает последовательность из `START_VOICE`: фейк `VOICE_PRE` +
+  `send:delay=50` + `drop`.
+- **Деградация сети**: при активном переборе стратегий связь умирает постепенно
+  и оживает через несколько минут после выключения zapret. При замерах делать
   паузы и не мерять результаты на подгаженной сети.
-- **ТСПУ перекраивает правила внезапно**: 5 дней — от 100% пробития до
-  тотального блока при том же конфиге. При «всё сломалось» сначала проверить,
-  не изменились ли правила оператора, а не конфиг.
+- **Правила DPI меняются внезапно**: рабочая стратегия может перестать пробивать
+  за считанные дни. При «всё сломалось» сначала проверять, не сменились ли
+  правила на стороне оператора, а не конфиг.
 
 ## Отладка
 
 - `--debug` в `[START]` — пер-пакетный дамп в `binaries/winws2.exe.log`
   (растёт до сотен МБ; снимать после отладки).
-- Полезные grep-паттерны по логу: `CONFIRMED`, `FAIL UDP .* in=`,
-  `change SNI`, `LUA ERROR`, `flags=SA|flags=AP|flags=R`.
+- Полезные паттерны по логу: `CONFIRMED`, `FAIL UDP .* in=`, `change SNI`,
+  `LUA ERROR`, `flags=SA|flags=AP|flags=R`. Счётчики `out=/in=` в FAIL UDP:
+  `in=1` навсегда — потоковый киллер; входящие `TCP: len=7 : 15 03 ... 02 28` —
+  серверный анти-replay; `flags=R` от CDN-адресов — RST-бомбардировка.
 - Хелпер (`bin/zapret_helper.exe.log`): обычные хосты — curl-проверка,
   `*.discord.media` — WebSocket-upgrade к голосовому гейту (ping/pong ~6 c):
   вердикт отражает живость пути, а не только TLS-хендшейка.
 - Тесты: `pwsh -NoProfile -File test-ai.ps1` (Catch2, TAP-репортер).
-
-## Памятка по кампании «голос Discord» (сентябрь 2026)
-
-Контекст: целевая сеть — белые списки провайдера, живое тестирование голоса
-невозможно, данные от тестеров + локальные логи.
-
-1. Симптомы по стадиям: «бесконечное подключение к RTC» = UDP discovery
-   получает один ответ; «RTC Connected, звука нет» = WSS поднялся, RTP режется;
-   «маршрут не установлен» = битый эхо-ответ discovery (проверять подмены SSRC).
-2. Что НЕ работает на UDP-голосе (проверено полем): QUIC-фейки (любые repeats),
-   ipfrag (реассемблируется), udplen (+2/+8/+16), STUN-фейк как стратегия,
-   подмена SSRC на STUN magic cookie — киллер валидирует глубже cookie.
-3. Что работает: браузерный голос (WebRTC в белом списке); WSS-фаза десктопа
-   через TCP 443 (multisplit/fakedsplit-семейство).
-4. Диагностика по логу: счётчики `out=/in=` в FAIL UDP — `in=1` навсегда
-   означает потоковый киллер; входящие `TCP: len=7 : 15 03 ... 02 28` —
-   серверный анти-replay; `flags=R` от CDN-адресов — RST-бомбардировка.
-5. Направления на будущее: ECH-грейд на стороне Cloudflare, релей/VPN для
-   голосового UDP, отслеживание смены медиа-пула (Cloudflare ↔ Google Cloud)
-   — порт-диапазон в `service_setting.config` надо синхронизировать с пулом.
