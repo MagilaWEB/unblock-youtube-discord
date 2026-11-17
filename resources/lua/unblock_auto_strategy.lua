@@ -47,6 +47,10 @@
 --      плану. У потокового хоста (YouTube) охват не учитывается: его запись
 --      общая на всю семью, скорость там замерена по-настоящему, и популярность
 --      у API-хостов не должна сдвигать видео.
+--      Работающая стратегия — не финал: замеренная скорость каждой успешной
+--      стратегии хранится (rec.rate), и, увидев замеренно более быструю, семья
+--      уходит на неё (auto_upgrade_strategy) — стратегия со временем может
+--      зачахнуть, а довольствоваться первой живой нельзя.
 --      Хост, который уже срабатывал (had_success), ротируется по успешным,
 --      но после c_success_cycles (2) полных кругов без успеха выходит в
 --      полный перебор (сначала неотмеченные), и если и там всё исчерпано —
@@ -84,9 +88,11 @@
 --   maxseq=N       — макс. seq для проверок (по умолч. 32768)
 --   throttle_window=N — окно замера скорости даунстрима, сек (по умолч. 3)
 --   throttle_min_bps=N — ниже этой скорости (Б/с) окно плохое, и такой
---                    поток не подтверждается (по умолч. 20000: под любым
---                    играбельным видео, но выше мусора — 500 Б/с проходил
---                    даже ползущий ручеёк)
+--                    поток не подтверждается (по умолч. 50000: десятки КБ/с
+--                    раньше считались рабочей стратегией, хотя видео на них
+--                    стояло; планка низкая намеренно — на первом пройденном
+--                    пороге семья не замирает, а идёт к самой быстрой
+--                    замеренной стратегии, см. auto_upgrade_strategy)
 --   throttle_collapse=N — доля пика соединения, ниже которой окно плохое
 --                    (по умолч. 0.25; 0 — выключить проверку)
 --   throttle_windows=N — сколько плохих окон подряд до провала (по умолч. 2)
@@ -403,8 +409,15 @@ end
 -- direct signal to unblock. UDP never sends it: UDP exhaustion says
 -- nothing about TCP reachability of the host.
 function auto_do_switch(rec, is_udp, askey, reason, peer, dport, send_exhausted, crec)
-    ULOG("WARNING",
-        "zapret:auto_strategy: FAIL " .. auto_strategy_name(rec) .. " " .. reason .. "->" .. peer .. ":" .. dport)
+    -- An upgrade is not a failure: the host moves to a measurably faster
+    -- strategy while it works, so the strategy being left is not marked as
+    -- tried and does not poison the plan-wide failure scoreboard below. The
+    -- caller reports the move itself - it knows both ends of it.
+    local upgrade = (reason == "UPGRADE")
+    if not upgrade then
+        ULOG("WARNING",
+            "zapret:auto_strategy: FAIL " .. auto_strategy_name(rec) .. " " .. reason .. "->" .. peer .. ":" .. dport)
+    end
 
     local rating = auto_strategy_rating(is_udp, askey)
     local failures = auto_strategy_failures(is_udp, askey)
@@ -434,7 +447,7 @@ function auto_do_switch(rec, is_udp, askey, reason, peer, dport, send_exhausted,
     if not rec.tried then
         rec.tried = {}
     end
-    if rec.nstrategy and rec.nstrategy ~= 0 then
+    if rec.nstrategy and rec.nstrategy ~= 0 and not upgrade then
         rec.tried[rec.nstrategy] = true
         -- Shared across hosts of the plan: new hosts skip the strategies that
         -- already failed elsewhere, so a dead plan is not re-walked from 1.
@@ -627,13 +640,16 @@ function auto_strategy_plan(desync, rec, verdict)
     return verdict
 end
 
--- Goodput floor for a video host, B/s. Below it the flow is not really
--- working: a strategy that only lets a crawl through must not be confirmed
--- (VALID) and must not outrank one that really delivered. 20 KB/s is under
--- any playable stream, but far above the old 500 B/s - a crawl used to count
--- as a healthy window, so a host could be certified as working while its
--- video never played. Tunable per plan with throttle_min_bps.
-local c_throttle_min_bps = 20000
+-- Goodput floor for a video host, B/s: below it the flow is not really
+-- working. A strategy that only lets a crawl through must not be confirmed
+-- (VALID) and must not outrank one that really delivered - tens of KB/s used
+-- to pass this gate and the host was certified as working while its video
+-- stood still. The floor is deliberately low (50 KB/s is where a video stops
+-- being a slideshow, not a demand for HD): a slow line must not lose a working
+-- strategy over it, because the plan does not settle for the first strategy
+-- that clears the bar - it keeps moving to the fastest measured one (see
+-- auto_upgrade_strategy). Tunable per plan with throttle_min_bps.
+local c_throttle_min_bps = 50000
 
 -- Per-connection downstream goodput (throttling-after-handshake). The
 -- conntrack counter is cumulative for the whole flow, so a packet that never
@@ -765,6 +781,49 @@ function auto_confirm_goodput(hrec, crec, arg, rate, is_udp, askey)
     end
     hrec.had_success = true
     auto_mark_success(hrec)
+end
+
+-- A confirmed strategy is not the end of the search. Every strategy that ever
+-- delivered keeps its best measured goodput (rec.rate), and a video family
+-- that sits on a crawl while a measurably faster strategy exists is moved to
+-- that one: a strategy can rot while the connection still lives, so the family
+-- must not stay on the first one that answered. The margin keeps two
+-- strategies whose speeds differ only within measurement noise from handing the
+-- family back and forth on every window.
+local c_upgrade_ratio = 1.3
+
+-- Move the host to a measurably faster strategy, called right after a healthy
+-- window confirmed the current one. Returns true when the host moved.
+function auto_upgrade_strategy(hrec, crec, is_udp, askey, peer, dport)
+    if not hrec.stream or not hrec.nstrategy or hrec.nstrategy == 0 then
+        return false
+    end
+
+    local cur = (hrec.rate and hrec.rate[hrec.nstrategy]) or 0
+    local best, best_rate = nil, 0
+    for n, v in pairs(hrec.rate or {}) do
+        if hrec.strategy_set and hrec.strategy_set[n] and v > best_rate then
+            best, best_rate = n, v
+        end
+    end
+
+    if cur <= 0 or not best or best == hrec.nstrategy or best_rate < cur * c_upgrade_ratio then
+        return false
+    end
+
+    local from_n = hrec.nstrategy
+    local from   = auto_strategy_name(hrec)
+    auto_do_switch(hrec, is_udp, askey, "UPGRADE", peer, dport, false, crec)
+
+    -- The plan may have had nothing better to offer after all (the fastest
+    -- measured one is already in use, or it is marked as tried): then the host
+    -- stays put and this is not worth a line in the log.
+    if hrec.nstrategy == from_n then
+        return false
+    end
+
+    ULOG("OK", "zapret:auto_strategy: SWITCH " .. from .. "->" .. auto_strategy_name(hrec) .. " " .. peer .. ":" .. dport)
+    return true
 end
 
 function auto_strategy(ctx, desync)
@@ -1030,6 +1089,10 @@ function auto_strategy(ctx, desync)
                 end
                 hrec.had_success = true
                 auto_mark_success(hrec)
+
+                -- Confirmed, but not necessarily the best: a measurably faster
+                -- strategy wins the family even while this one works.
+                auto_upgrade_strategy(hrec, crec, false, askey, host_or_ip, dport)
             end
         end
 
@@ -1098,6 +1161,9 @@ function auto_strategy(ctx, desync)
 
                     if not bad then
                         auto_confirm_goodput(hrec, crec, arg, rate, true, askey)
+                        if crec.goodput_ok then
+                            auto_upgrade_strategy(hrec, crec, true, askey, host_or_ip, dport)
+                        end
                     end
                 end
             end
