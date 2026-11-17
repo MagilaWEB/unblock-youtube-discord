@@ -12,6 +12,8 @@ if(CUPY_LIBS_DLL_TO_BIN)
     file(REMOVE ${CMAKE_SOURCE_DIR}/binaries/winws2.exe)
     file(REMOVE ${CMAKE_SOURCE_DIR}/binaries/winws.exe)
     file(REMOVE ${CMAKE_SOURCE_DIR}/binaries/cygwin1.dll)
+    file(REMOVE ${CMAKE_SOURCE_DIR}/binaries/WinDivert.dll)
+    file(REMOVE ${CMAKE_SOURCE_DIR}/binaries/WinDivert64.sys)
     file(REMOVE
         ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-lib.lua
         ${CMAKE_SOURCE_DIR}/binaries/lua/zapret-auto.lua
@@ -90,6 +92,31 @@ target_link_options(${NAME} PRIVATE
         "LINKER:/SUBSYSTEM:WINDOWS"
     )
 
+# Fake blobs are published by zapret2, and the strategy configs are their manifest:
+# every name the configs reference is staged from the payload, so the set cannot
+# drift from the pinned engine. Blobs upstream does not ship are the project's own
+# and stay in the repository - those are never touched here.
+set(ZAPRET2_FAKE ${ZAPRET2_DIR}/files/fake)
+set(ZAPRET2_FAKE_BLOBS ${CMAKE_BINARY_DIR}/fake_blobs)
+
+if(CUPY_LIBS_DLL_TO_BIN)
+    file(REMOVE_RECURSE ${ZAPRET2_FAKE_BLOBS})
+    file(MAKE_DIRECTORY ${ZAPRET2_FAKE_BLOBS})
+
+    foreach(cfg fake_bin.config fake_bin_zapret1.config)
+        file(READ ${CMAKE_SOURCE_DIR}/configs/${cfg} _cfg_text)
+        string(REGEX MATCHALL "[A-Za-z0-9_]+=[^=\r\n]+\.bin" _cfg_blobs "${_cfg_text}")
+
+        foreach(_entry IN LISTS _cfg_blobs)
+            string(REGEX REPLACE "^[^=]+=" "" _blob "${_entry}")
+
+            if(EXISTS ${ZAPRET2_FAKE}/${_blob})
+                file(COPY ${ZAPRET2_FAKE}/${_blob} DESTINATION ${ZAPRET2_FAKE_BLOBS})
+            endif()
+        endforeach()
+    endforeach()
+endif()
+
 # Copy library binaries to the folder of the compiled project
 if(CUPY_LIBS_DLL_TO_BIN)
     add_custom_command(TARGET ${NAME} POST_BUILD
@@ -105,6 +132,12 @@ if(CUPY_LIBS_DLL_TO_BIN)
             ${ZAPRET1_BIN}/winws.exe ${CMAKE_SOURCE_DIR}/binaries || ${CMAKE_COMMAND} -E echo "Warning: failed to copy winws.exe (maybe in use)"
         COMMAND ${CMAKE_COMMAND} -E copy
             ${ZAPRET2_BIN}/cygwin1.dll ${CMAKE_SOURCE_DIR}/binaries || ${CMAKE_COMMAND} -E echo "Warning: failed to copy cygwin1.dll (maybe in use)"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${ZAPRET2_BIN}/WinDivert.dll ${CMAKE_SOURCE_DIR}/binaries || ${CMAKE_COMMAND} -E echo "Warning: failed to copy WinDivert.dll (maybe in use)"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${ZAPRET2_BIN}/WinDivert64.sys ${CMAKE_SOURCE_DIR}/binaries || ${CMAKE_COMMAND} -E echo "Warning: failed to copy WinDivert64.sys (maybe in use)"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${ZAPRET2_FAKE_BLOBS} ${CMAKE_SOURCE_DIR}/binaries/fake
         COMMAND ${CMAKE_COMMAND} -E copy_directory 
             ${ZAPRET2_LUA}/ ${CMAKE_SOURCE_DIR}/binaries/lua
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
