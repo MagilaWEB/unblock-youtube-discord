@@ -46,7 +46,7 @@ pwsh -NoProfile -File fmt-ai.ps1       # clang-format: изменённые фа
 
 ```powershell
 pwsh -NoProfile -File build-tgws-ai.ps1                 # последний релиз апстрима
-pwsh -NoProfile -File build-tgws-ai.ps1 -Tag v1.11.4    # или конкретный тег
+pwsh -NoProfile -File build-tgws-ai.ps1 -Tag vX.Y.Z    # или конкретный тег
 ```
 
 Скрипт сам скачивает исходники релиза, собирает **консольный** onefile (апстрим-рецепт делает трей-приложение, негодное как payload службы), проверяет, что апстрим всё ещё принимает `--secret`, `--dc-ip`, `--host` и `--port` (их задаёт `src/unblock/tg_proxy.cpp`), смотрит PE-подсистему и только после этого кладёт exe в `binaries/`. В сборку проекта он не встроен — запускается руками.

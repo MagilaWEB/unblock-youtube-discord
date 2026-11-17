@@ -63,8 +63,8 @@
 - **UDP**: helper не проверяет UDP — для QUIC/STUN/WireGuard решение принимает только пакетная логика Lua
 
 ### 🔀 Две технологии обхода
-- **Zapret2** (основной): `winws2.exe` + `--lua-desync` + `auto_strategy` + `zapret-helper`. Стратегии — в `configs/strategy/` (актуальный набор `1.6.2`: `strategy_super_c`, `strategy_super_d`), фейк-блобы — в `configs/fake_bin.config`
-- **Классический Zapret**: `winws.exe` + статичные `--dpi-desync`-стратегии без помощника. Стратегии — в `configs/strategy_zapret1/` (наборы `1.4.10`, `1.4.16`, `1.6.2` — последний адаптирован из [Flowseal/zapret-discord-youtube](https://github.com/Flowseal/zapret-discord-youtube))
+- **Zapret2** (основной): `winws2.exe` + `--lua-desync` + `auto_strategy` + `zapret-helper`. Стратегии — в `configs/strategy/` (актуальный набор с профилями `strategy_super_c` и `strategy_super_d`), фейк-блобы — в `configs/fake_bin.config`
+- **Классический Zapret**: `winws.exe` + статичные `--dpi-desync`-стратегии без помощника. Стратегии — в `configs/strategy_zapret1/` (актуальный набор адаптирован из [Flowseal/zapret-discord-youtube](https://github.com/Flowseal/zapret-discord-youtube))
 - **Селектор движка**: на вкладке «Zapret» выбирается технология, индикатор показывает реально запущенную. Одновременно работает только одна: запуск второй останавливает первую (программа предупредит), тест доменов под классикой идёт обычным запросом, как при выключенном обходе
 - **Профили фейков** (только классика): `configs/fake_bin_zapret1.config` — наборы ClientHello/QUIC/SNI-доменов (`VK`, `GOOGLE`, `4PDA`, `SOCHI` и другие), подставляются в стратегии через `%FAKE_*%`-плейсхолдеры
 
@@ -196,7 +196,7 @@ WinDivert может вызывать ложные срабатывания ан
 3. ✅ Правильно выбран режим работы
 
 **Если проблема осталась:**
-1. Возьмите одну из конфигураций Zapret2 в папке `configs/strategy/1.6.2` (доступны также поколения 1.4.16, 1.5.0 и 1.6.0) или классики в `configs/strategy_zapret1/1.6.2` (есть также 1.4.10 и 1.4.16)
+1. Возьмите конфигурацию Zapret2 из `configs/strategy/<поколение>/` или классики из `configs/strategy_zapret1/<поколение>/` — поколения лежат там подпапками
 2. Создайте свой профиль на его основе
 3. Если что-то не понятно обратитесь в [обсуждения](https://github.com/MagilaWEB/unblock-youtube-discord/discussions)
 
@@ -205,15 +205,15 @@ WinDivert может вызывать ложные срабатывания ан
 
 Zapret: https://github.com/bol-van/zapret2/blob/master/docs/readme.md
 
-Создайте файл в папке `configs/strategy/1.6.2` (или `configs/strategy_zapret1/1.6.2` для классики) и поделитесь рабочим профилем в обсуждениях.
+Создайте файл в папке нужного поколения (`configs/strategy/<поколение>/`, для классики — `configs/strategy_zapret1/<поколение>/`) и поделитесь рабочим профилем в обсуждениях.
 
 ## 🔒 Безопасность
 
 ### Проверка файлов
 Все исполняемые файлы взяты из проверенных источников:
-- [zapret2](https://github.com/bol-van/zapret2) (v1.0.7)
+- [zapret2](https://github.com/bol-van/zapret2)
 - [zapret-win-bundle](https://github.com/bol-van/zapret-win-bundle) (`winws.exe` классического Zapret)
-- [TgWsProxy](https://github.com/Flowseal/tg-ws-proxy) (`v1.11.4`) Собран в режим работы через консоль, в оригинальном репозитории такого .exe нет.
+- [TgWsProxy](https://github.com/Flowseal/tg-ws-proxy) Собран в режим работы через консоль, в оригинальном репозитории такого .exe нет.
 - [AdGuard DnsLibs](https://github.com/AdguardTeam/DnsLibs) (`AdguardDns64.dll`, Apache License 2.0) — системный DNS-прокси
 
 Вы можете проверить контрольные суммы для подтверждения подлинности.
@@ -223,7 +223,7 @@ Zapret: https://github.com/bol-van/zapret2/blob/master/docs/readme.md
 - Основной движок: [zapret2](https://github.com/bol-van/zapret2)
 - Прокси телеграмм: [TgWsProxy](https://github.com/Flowseal/tg-ws-proxy)
 
-Unblock использует движок **zapret2**, но с **модифицированными алгоритмами обхода** от unblock: собственные Lua-скрипты (`unblock_auto_strategy`, `unblock_signal`), адаптивный перебор стратегий, фоновый помощник `zapret-helper`. Если бы не автор zapret2 — [bol-van](https://github.com/bol-van), этого проекта, возможно, не существовало бы. Классические стратегии набора `1.6.2` адаптированы из пресетов [Flowseal/zapret-discord-youtube](https://github.com/Flowseal/zapret-discord-youtube).
+Unblock использует движок **zapret2**, но с **модифицированными алгоритмами обхода** от unblock: собственные Lua-скрипты (`unblock_auto_strategy`, `unblock_signal`), адаптивный перебор стратегий, фоновый помощник `zapret-helper`. Если бы не автор zapret2 — [bol-van](https://github.com/bol-van), этого проекта, возможно, не существовало бы. Классические стратегии адаптированы из пресетов [Flowseal/zapret-discord-youtube](https://github.com/Flowseal/zapret-discord-youtube).
 
 ### Предупреждение
 > [!CAUTION]
