@@ -23,13 +23,18 @@ $env:LIBPATH = $null
 # Re-configure only when the build directory is missing or was configured
 # for another preset. Otherwise cmake --build re-generates on demand.
 $cachePath = '_build_ai/CMakeCache.txt'
+
+# BUILD_TESTS is a cached option, so switching presets (debug <-> debug-min) only
+# takes effect when the value is passed explicitly: otherwise the cached one
+# survives the reconfigure and the mismatch check below forces a configure on
+# every single run, while tests never come back.
+$expectedType  = if ($Preset -like 'release*') { 'Release' } else { 'Debug' }
+$expectedTests = if ($Preset -like '*-min') { 'OFF' } else { 'ON' }
+
 $needConfigure = $true
 if (Test-Path $cachePath) {
     $cachedType  = Select-String -Path $cachePath -Pattern '^CMAKE_BUILD_TYPE:STRING=(.*)$' | ForEach-Object { $_.Matches[0].Groups[1].Value }
     $cachedTests = Select-String -Path $cachePath -Pattern '^BUILD_TESTS:BOOL=(.*)$' | ForEach-Object { $_.Matches[0].Groups[1].Value }
-
-    $expectedType  = if ($Preset -like 'release*') { 'Release' } else { 'Debug' }
-    $expectedTests = if ($Preset -like '*-min') { 'OFF' } else { 'ON' }
 
     if ($cachedType -eq $expectedType -and $cachedTests -eq $expectedTests) {
         $needConfigure = $false
@@ -53,7 +58,7 @@ if ($VersionOverride) {
 
 if ($needConfigure) {
     Write-Host "Configuring (preset: $Preset)..."
-    $cmakeArgs = @('-S', '.', '-B', '_build_ai', '--preset', $Preset)
+    $cmakeArgs = @('-S', '.', '-B', '_build_ai', '--preset', $Preset, "-DBUILD_TESTS=$expectedTests")
     if ($VersionOverride) {
         $cmakeArgs += "-DUNBLOCK_VERSION_OVERRIDE=$VersionOverride"
     } elseif ($clearOverride) {
