@@ -65,6 +65,10 @@ export struct CollectedEvidence
 	std::string expected_binary;
 	bool		windivert_driver_known{ false };
 	bool		windivert_driver_running{ false };
+	// The registered .sys behind the driver service: a path outside our install
+	// root means another build owns the driver the engine needs.
+	bool		windivert_driver_foreign{ false };
+	std::string windivert_driver_path;
 
 	// Environment
 	bool					 elevated{ false };
@@ -83,6 +87,11 @@ export struct CollectedEvidence
 	u32						 probe_exit_code{ 0 };
 	std::string				 probe_out;
 	std::string				 probe_err;
+	// SvcHost records the launched command line and the child's stdout into
+	// "<payload>.exe.log" next to the payload; the probe captures stdout, which
+	// the engine barely uses, so this file is where its real reason lives.
+	std::string				 engine_log_path;
+	std::string				 engine_log_tail;
 	std::vector<std::string> probe_args;	// the registered command line, split for the probe
 };
 

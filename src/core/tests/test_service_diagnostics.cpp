@@ -39,6 +39,12 @@ struct DiagnosticsFixture
 			ofs << "str_diag_summary_conflict=SUM_CONFLICT {}\n";
 			ofs << "str_diag_rec_conflict_1=REC_CONFLICT {}\n";
 			ofs << "str_diag_rec_conflict_2=REC_CONFLICT_2\n";
+			ofs << "str_diag_verdict_driver_foreign=VERDICT_DRIVER_FOREIGN {}\n";
+			ofs << "str_diag_summary_driver_foreign=SUM_DRIVER_FOREIGN {}\n";
+			ofs << "str_diag_rec_driver_foreign_1=REC_DRIVER_FOREIGN_1\n";
+			ofs << "str_diag_rec_driver_foreign_2=REC_DRIVER_FOREIGN_2\n";
+			ofs << "str_diag_check_driver_foreign=CHECK_DRIVER_FOREIGN {}\n";
+			ofs << "str_diag_check_engine_log=CHECK_ENGINE_LOG {} {}\n";
 			ofs << "str_diag_verdict_exit_code=VERDICT_EXIT_CODE {} {}\n";
 			ofs << "str_diag_summary_failure=SUMMARY {} {} {} {} {}\n";
 			ofs << "str_diag_summary_unknown=SUMMARY_UNKNOWN\n";
@@ -318,6 +324,45 @@ TEST_CASE("Diagnostics: a conflict with probe output keeps the probe verdict", "
 	// The probe printed the actual reason, so the conflict stays a checklist line.
 	CHECK(report.verdict.contains("VERDICT_PROBE_EXIT"));
 	CHECK(report.fullText().contains("bad value for --wf-tcp-in"));
+}
+
+TEST_CASE("Diagnostics: a foreign WinDivert driver outranks a silent probe crash", "[service_diagnostics]")
+{
+	DiagnosticsFixture fx;
+
+	auto evidence					  = cleanEvidence();
+	evidence.windivert_driver_foreign = true;
+	evidence.windivert_driver_path	  = "C:\\other\\unblock\\binaries\\WinDivert64.sys";
+	evidence.probe_attempted		  = true;
+	evidence.probe_started			  = true;
+	evidence.probe_exit_code		  = 1;	  // died silently, exactly like a driver mismatch
+
+	auto report = buildReport(makeFailure(), evidence);
+
+	// An engine that cannot open a driver of another version is the cause here.
+	CHECK(report.verdict.contains("VERDICT_DRIVER_FOREIGN"));
+	CHECK_FALSE(report.verdict.contains("VERDICT_PROBE_EXIT"));
+	CHECK(report.fullText().contains("CHECK_DRIVER_FOREIGN"));
+	CHECK(report.fullText().contains("C:\\other\\unblock\\binaries\\WinDivert64.sys"));
+}
+
+TEST_CASE("Diagnostics: the engine log tail lands in the report", "[service_diagnostics]")
+{
+	DiagnosticsFixture fx;
+
+	auto evidence			 = cleanEvidence();
+	evidence.engine_log_path = "C:\\app\\binaries\\winws2.exe.log";
+	evidence.engine_log_tail = "windivert open failed: version mismatch\n";
+	evidence.probe_attempted = true;
+	evidence.probe_started	 = true;
+	evidence.probe_exit_code = 1;
+
+	auto report = buildReport(makeFailure(), evidence);
+
+	// The engine prints there what the probe never sees.
+	CHECK(report.fullText().contains("CHECK_ENGINE_LOG"));
+	CHECK(report.fullText().contains("windivert open failed: version mismatch"));
+	CHECK(report.fullText().contains("winws2.exe.log"));
 }
 
 TEST_CASE("Diagnostics: probe 1063 is not indicative and does not raise the verdict", "[service_diagnostics]")

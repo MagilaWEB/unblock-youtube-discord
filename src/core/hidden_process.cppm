@@ -21,5 +21,7 @@ export struct ProcessCaptureResult
 /** Runs a process without a console window, capturing its stdout and stderr.
  *  args[0] is the executable. After timeout_ms the process is terminated and
  *  timed_out is set, so a still-running process is reported as timed_out.
- *  started is false when the process could not be created at all. */
-export ProcessCaptureResult runHiddenProcessCapture(std::span<const std::string> args, u32 timeout_ms);
+ *  started is false when the process could not be created at all.
+ *  workdir, when not empty, becomes the child's working directory: an empty
+ *  path inherits the caller's. */
+export ProcessCaptureResult runHiddenProcessCapture(std::span<const std::string> args, u32 timeout_ms, const std::filesystem::path& workdir = {});

@@ -363,11 +363,11 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 	const std::string probe_full   = flatten(evidence.probe_err.empty() ? evidence.probe_out : evidence.probe_err);
 	const std::string probe_output = clip(probe_full, 400);
 
-	// A silent probe crash is explained by a conflicting copy of the app, not by
-	// the binary: while the other copy holds the WinDivert driver the engine
-	// cannot take it, and a probe that printed nothing proves nothing. The
-	// conflict owns the verdict then — the same rule as for a missing file.
-	const bool conflict_owns = !evidence.conflicting_processes.empty() && probe_full.empty();
+	// A silently dying engine is explained by another owner of what it needs - a
+	// copy of the app or a driver from another build - and a probe that printed
+	// nothing proves nothing about the binary. That evidence owns the verdict
+	// then, the same rule as for a file that is not on disk.
+	const bool structure_owns = probe_full.empty() && (!evidence.conflicting_processes.empty() || evidence.windivert_driver_foreign);
 	if (evidence.probe_attempted)
 	{
 		if (!evidence.probe_started)
@@ -389,13 +389,13 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 		else if (evidence.probe_exit_code == 0)
 		{
 			add_check(DiagnosticCheck::Level::Warning, localized("str_diag_check_probe_zero"));
-			if (!file_gone && !conflict_owns)
+			if (!file_gone && !structure_owns)
 				promote(Cause::Probe);
 		}
 		else
 		{
 			add_check(DiagnosticCheck::Level::Failed, utils::format(localized("str_diag_check_probe_exit"), hex(evidence.probe_exit_code)));
-			if (!file_gone && !conflict_owns)
+			if (!file_gone && !structure_owns)
 				promote(Cause::Probe);
 		}
 
@@ -406,6 +406,14 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 	{
 		add_check(DiagnosticCheck::Level::Skipped, localized("str_diag_check_probe_skipped"));
 	}
+
+	// The engine's own words, recorded by SvcHost: worth showing even when the
+	// probe printed nothing, because that is exactly when it matters.
+	if (!evidence.engine_log_tail.empty())
+		add_check(
+			DiagnosticCheck::Level::Warning,
+			utils::format(localized("str_diag_check_engine_log"), evidence.engine_log_path, clip(evidence.engine_log_tail, 2'000))
+		);
 
 	// --- Service Control Manager log ----------------------------------------
 	if (evidence.scm_events.empty())
@@ -517,7 +525,12 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 
 	if (evidence.windivert_checked)
 	{
-		if (evidence.windivert_driver_running)
+		if (evidence.windivert_driver_foreign)
+		{
+			add_check(DiagnosticCheck::Level::Failed, utils::format(localized("str_diag_check_driver_foreign"), evidence.windivert_driver_path));
+			promote(Cause::Driver);
+		}
+		else if (evidence.windivert_driver_running)
 			add_check(DiagnosticCheck::Level::Ok, localized("str_diag_check_driver_ok"));
 		else if (evidence.windivert_driver_known)
 		{
@@ -629,6 +642,18 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 		break;
 
 	case Cause::Driver:
+		// A driver registered outside our folder belongs to another build: the
+		// engine cannot open it, and the cure is to unload it, not to reinstall
+		// ours.
+		if (evidence.windivert_driver_foreign)
+		{
+			report.verdict	= utils::format(localized("str_diag_verdict_driver_foreign"), evidence.windivert_driver_path);
+			report.summary += "\n\n" + utils::format(localized("str_diag_summary_driver_foreign"), evidence.windivert_driver_path);
+			add_recommendation(localized("str_diag_rec_driver_foreign_1"));
+			add_recommendation(localized("str_diag_rec_driver_foreign_2"));
+			break;
+		}
+
 		report.verdict	= localized("str_diag_verdict_driver");
 		report.summary += "\n\n" + localized("str_diag_summary_driver");
 		add_recommendation(localized("str_diag_rec_driver_1"));
@@ -825,6 +850,18 @@ namespace
 			|| (lower_name.starts_with("zapret") && lower_name.ends_with(".exe"));
 	}
 
+	// Everything of ours lives under the install root: bin/ holds the helper and
+	// the dns service, binaries/ the engines and the driver. A path outside the
+	// root belongs to another build - comparing with binaries/ alone flagged our
+	// own zapret_helper.exe from bin/ as a foreign process.
+	std::string installRootPrefix()
+	{
+		std::string root = toLower(Core::get().binariesPath().parent_path().string());
+		if (!root.empty() && root.back() != '\\')
+			root.push_back('\\');
+		return root;
+	}
+
 	std::vector<EventLogRecord> querySince(std::string_view channel, std::string_view xpath, u64 since_utc_ms, u32 max_records)
 	{
 		std::vector<EventLogRecord> records;
@@ -944,6 +981,13 @@ namespace
 
 		evidence.windivert_driver_known	  = true;
 		evidence.windivert_driver_running = config.sc_status.dwCurrentState == SERVICE_RUNNING;
+
+		// The registered .sys is the driver the engine has to talk to: a file
+		// from another build cannot be opened by our WinDivert.dll.
+		evidence.windivert_driver_path	  = config.binary_path;
+		const std::string root			  = installRootPrefix();
+		const std::string registered	  = toLower(config.binary_path);
+		evidence.windivert_driver_foreign = !registered.empty() && !root.empty() && !registered.starts_with(root);
 	}
 
 	void checkConflicts(CollectedEvidence& evidence)
@@ -952,7 +996,7 @@ namespace
 		if (snapshot == INVALID_HANDLE_VALUE)
 			return;
 
-		const std::string binaries = toLower(Core::get().binariesPath().string());
+		const std::string root = installRootPrefix();
 
 		PROCESSENTRY32W entry{};
 		entry.dwSize = sizeof(entry);
@@ -965,10 +1009,17 @@ namespace
 				if (!isConflictName(toLower(display)))
 					continue;
 
-				// Our own copies live under binaries/ and are not a conflict.
 				const std::string full = fullPathOf(entry.th32ProcessID);
+
+				// A process name alone is not proof: without the path we cannot
+				// tell our own service from a foreign copy, and guessing made the
+				// report blame ourselves. Only a known path outside the install
+				// root is a conflict.
+				if (full.empty())
+					continue;
+
 				const std::string path = toLower(full);
-				if (!path.empty() && !binaries.empty() && path.starts_with(binaries))
+				if (!root.empty() && path.starts_with(root))
 					continue;
 
 				// The path is what tells the user which copy to remove: a process
@@ -998,6 +1049,49 @@ namespace
 			evidence.path_issues.push_back(localized("str_diag_path_unc"));
 	}
 
+	// SvcHost writes its own launch lines and the child's stdout into
+	// "<payload>.exe.log" next to the payload: the engine prints its banner and
+	// its errors there, while the probe captures stdout, which the engine itself
+	// barely uses. The tail of that file is what explains a silent crash.
+	void checkEngineLog(CollectedEvidence& evidence)
+	{
+		if (evidence.probe_args.size() < 2)
+			return;
+
+		const std::filesystem::path payload{ evidence.probe_args[1] };
+		const std::filesystem::path log = payload.parent_path() / (payload.filename().string() + ".log");
+
+		std::ifstream file(log, std::ios::binary);
+		if (!file)
+			return;
+
+		file.seekg(0, std::ios::end);
+		const std::streamoff size = file.tellg();
+		if (size <= 0)
+			return;
+
+		constexpr std::streamoff c_tail_bytes = 4'096;
+		const std::streamoff	 from		  = size > c_tail_bytes ? size - c_tail_bytes : 0;
+		std::string				 tail(static_cast<size_t>(size - from), '\0');
+
+		file.seekg(from);
+		file.read(tail.data(), static_cast<std::streamsize>(tail.size()));
+		tail.resize(static_cast<size_t>(file.gcount()));
+
+		// Starting mid-file cuts the first line in half; drop it.
+		if (from > 0)
+		{
+			const size_t first_newline = tail.find('\n');
+			tail.erase(0, first_newline == std::string::npos ? tail.size() : first_newline + 1);
+		}
+
+		if (tail.empty())
+			return;
+
+		evidence.engine_log_path = log.string();
+		evidence.engine_log_tail = std::move(tail);
+	}
+
 	void runProbe(const ServiceFailure& failure, CollectedEvidence& evidence)
 	{
 		std::vector<std::string> args = evidence.probe_args;
@@ -1017,7 +1111,10 @@ namespace
 
 		evidence.probe_attempted = true;
 
-		const ProcessCaptureResult result = runHiddenProcessCapture(args, c_probe_timeout_ms);
+		// SvcHost launches the payload with binaries/ as its working directory
+		// (see its own log), so the probe must run it the same way: otherwise it
+		// tests an environment the service never lives in.
+		const ProcessCaptureResult result = runHiddenProcessCapture(args, c_probe_timeout_ms, Core::get().binariesPath());
 		evidence.probe_started			  = result.started;
 		evidence.probe_timed_out		  = result.timed_out;
 		evidence.probe_exit_code		  = result.exit_code;
@@ -1040,6 +1137,7 @@ namespace
 		if (evidence.elevated)
 		{
 			checkRegistration(failure, evidence);
+			checkEngineLog(evidence);
 			checkDriver(evidence);
 		}
 

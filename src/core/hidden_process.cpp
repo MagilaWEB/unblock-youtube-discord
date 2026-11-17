@@ -83,7 +83,7 @@ bool runHiddenProcess(const std::vector<std::string>& args, std::uint32_t timeou
 	return code == 0;
 }
 
-ProcessCaptureResult runHiddenProcessCapture(const std::span<const std::string> args, u32 timeout_ms)
+ProcessCaptureResult runHiddenProcessCapture(const std::span<const std::string> args, u32 timeout_ms, const std::filesystem::path& workdir)
 {
 	ProcessCaptureResult result;
 	if (args.empty())
@@ -137,7 +137,18 @@ ProcessCaptureResult runHiddenProcessCapture(const std::span<const std::string> 
 	si.hStdError  = err_write;
 
 	PROCESS_INFORMATION pi{};
-	if (!CreateProcessW(nullptr, wide_cmd.data(), nullptr, nullptr, TRUE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi))
+	if (!CreateProcessW(
+			nullptr,
+			wide_cmd.data(),
+			nullptr,
+			nullptr,
+			TRUE,
+			CREATE_NO_WINDOW,
+			nullptr,
+			workdir.empty() ? nullptr : workdir.c_str(),
+			&si,
+			&pi
+		))
 	{
 		CloseHandle(null_input);
 		CloseHandle(out_read);
