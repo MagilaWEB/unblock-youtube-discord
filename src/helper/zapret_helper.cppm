@@ -104,7 +104,9 @@ export class ZapretHelper
 	// user-kept-off zapret stays off. All of it is in-memory: after a helper
 	// restart nothing is remembered, the live service state is re-read.
 	std::chrono::steady_clock::time_point _last_vpn_check{};
-	bool								  _vpn_paused{ false };
+	// Read by the worker pool's wait predicate, written by the pause tick: an
+	// atomic, like _running, so the pump stops and wakes on a defined value.
+	std::atomic<bool>					  _vpn_paused{ false };
 	bool								  _vpn_zapret1_was_running{ false };
 	bool								  _vpn_zapret2_was_running{ false };
 	// Engines known to be down right now. The pause re-checks them every tick:
@@ -177,6 +179,11 @@ private:
 	 *  ruled the current strategy dead, so the running probe must die and the
 	 *  host must be probed again right away. Caller holds _mutex. */
 	void					   _requestRecheck(const std::string& host);
+	/** Cancel every in-flight probe without re-queueing it: the engines are
+	 *  going down for a VPN pause, and a verdict born of tunnel traffic is
+	 *  worthless. The hosts come back with the resume's full re-queue.
+	 *  Caller holds _mutex. */
+	void					   _cancelProbes();
 	/** Worker epilogue: drop the host's abort flag and in-check mark, and
 	 *  requeue it when a recheck was requested while it was busy. Caller
 	 *  holds _mutex. */

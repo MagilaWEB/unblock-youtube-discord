@@ -463,6 +463,15 @@ void ZapretHelper::_handleMessage(std::string_view message)
 	}
 }
 
+void ZapretHelper::_cancelProbes()
+{
+	// Caller holds _mutex. Unlike a recheck, the host is not re-queued: the
+	// resume re-queues the whole known set anyway, and while the tunnel is up
+	// the queue must stay empty.
+	for (auto& entry : _cancel)
+		entry.second->store(true);
+}
+
 void ZapretHelper::_requestRecheck(const std::string& host)
 {
 	// Caller holds _mutex. The probe polls its own flag without the lock, so
@@ -493,6 +502,15 @@ void ZapretHelper::_checkHost(std::string_view host, const CurlAbort& abort)
 
 	const auto result = voice ? CurlClient::checkVoiceHost(std::string{ host }, abort) : CurlClient::checkHost(std::string{ host }, abort);
 	_send(_makeDoneSignal(host), c_ipc_port);
+
+	// A cancelled probe yields no verdict: the abort means its traffic is not
+	// evidence (a VPN pause ran it through the tunnel, a recheck superseded
+	// it). The done signal above still went out, so the "checking" mark clears.
+	if (abort())
+	{
+		_log(std::format("cancelled {}", host));
+		return;
+	}
 
 	// Stamp the probe. If lua never delivers a verdict for this host, the
 	// stale stamp promotes it into the unjudged bucket in _refreshUnjudged.
@@ -576,7 +594,11 @@ void ZapretHelper::_workerRoutine(u32 epoch)
 	while (_running)
 	{
 		std::unique_lock lock(_mutex);
-		_cv.wait(lock, [this, epoch] { return !_running || epoch != _pool_epoch.load() || !_queue.empty(); });
+		// A VPN pause stops the pump itself, not just the enqueues: the engines
+		// are down, no verdict can come, and probing hosts whose traffic goes
+		// through the tunnel only burns the pool. The resume re-queues the whole
+		// known set and wakes the pool.
+		_cv.wait(lock, [this, epoch] { return !_running || epoch != _pool_epoch.load() || (!_queue.empty() && !_vpn_paused); });
 
 		if (!_running || epoch != _pool_epoch.load())
 			return;
@@ -733,12 +755,15 @@ void ZapretHelper::_checkVpnPause()
 
 			// Freeze the pump at once: the verdicts are meaningless under a
 			// tunnel, and waiting for the heartbeat timeout would keep feeding
-			// the queue for a whole minute. The in-flight probe finishes (a
-			// join here would block the loop), no new one is taken.
+			// the queue for a whole minute. In-flight probes are cancelled, not
+			// joined (a join here would block the loop): the abort flag is set,
+			// and _checkHost drops the verdict of a cancelled probe - traffic
+			// that went through the tunnel is not evidence.
 			_zapret_ready = false;
 			{
 				std::lock_guard lock(_mutex);
 				_queue.clear();
+				_cancelProbes();
 			}
 		}
 
@@ -859,15 +884,38 @@ void ZapretHelper::_checkVpnPause()
 
 		// Everything the helper learned is meaningless behind a tunnel: drop the
 		// verdicts so the hosts are re-probed once the engines are back.
+		std::size_t queued = 0;
 		{
 			std::lock_guard lock(_mutex);
 			_error_hosts.clear();
+			_valid_hosts.clear();
 			_exhausted_hosts.clear();
 			_unjudged_hosts.clear();
 			_probed_at.clear();
+
+			// Pump the whole known set right away, not at the next recheck (ten
+			// minutes by default): the engines were restarted with no memory of
+			// the tunnel, and until the hosts are probed they have no verdicts
+			// at all. The known set is exactly the traffic that went through the
+			// tunnel - the app's LIST plus every host lua asked about in live
+			// traffic.
+			for (const auto& host : _known_hosts)
+				if (!_in_check.contains(host))
+					_queue.insert(host);
+
+			queued = _queue.size();
 		}
 
-		_log("VPN tunnel gone: zapret services restored");
+		// The verdicts are gone, so the receivers must learn it now: the next
+		// periodic snapshot would leave a dead-host list standing for another
+		// second, and every host in it looks dead until it is probed again.
+		_sendSnapshot("helper_exhausted", "");
+		_sendSnapshot("helper_unjudged", "");
+		_sendSnapshot("helper_error", "");
+		_sendSnapshot("helper_valid", "");
+		_cv.notify_all();
+
+		_log(std::format("VPN tunnel gone: zapret services restored, {} hosts queued", queued));
 	}
 
 	// Kept alive while unpaused too: a stale "1" from a previous helper
