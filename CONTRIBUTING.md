@@ -28,6 +28,31 @@ pwsh -NoProfile -File fmt-ai.ps1       # clang-format: изменённые фа
 - `configs/` — стратегии, фейк-блобы и списки хостов. Проверить, во что собрался конфиг, можно по `logs/strategy.args.txt`.
 - `ui/` — интерфейс, `installer/` — Inno Setup, `docs/wiki/` — исходники вики (выливаются скриптом `sync-wiki-ai.ps1`).
 
+## Бинарники в `binaries/`
+
+Большую часть папки сборка наполняет сама — POST_BUILD-шагом цели `engine` из уже скачанного payload:
+
+| Что | Откуда |
+|---|---|
+| `winws2.exe`, `cygwin1.dll`, `lua/*` | payload zapret2 (пин в `CMakeLists.txt`) |
+| `winws.exe` | zapret-win-bundle (пин там же) |
+| `WinDivert.dll`, `WinDivert64.sys` | payload zapret2; в git не лежат |
+| фейк-блобы, названные в `configs/fake_bin.config` и `configs/fake_bin_zapret1.config` | `files/fake` payload zapret2 |
+
+В git остаётся только то, чего в payload нет: фейк-блобы собственного производства плюс два бинарника, которые обновляются руками —
+
+- `SvcHost.exe` — релиз [MagilaWEB/svc_host](https://github.com/MagilaWEB/svc_host);
+- `tg-ws-proxy.exe` — консольная сборка [Flowseal/tg-ws-proxy](https://github.com/Flowseal/tg-ws-proxy), делается скриптом `build-tgws-ai.ps1`.
+
+```powershell
+pwsh -NoProfile -File build-tgws-ai.ps1                 # последний релиз апстрима
+pwsh -NoProfile -File build-tgws-ai.ps1 -Tag v1.11.4    # или конкретный тег
+```
+
+Скрипт сам скачивает исходники релиза, собирает **консольный** onefile (апстрим-рецепт делает трей-приложение, негодное как payload службы), проверяет, что апстрим всё ещё принимает `--secret`, `--dc-ip`, `--host` и `--port` (их задаёт `src/unblock/tg_proxy.cpp`), смотрит PE-подсистему и только после этого кладёт exe в `binaries/`. В сборку проекта он не встроен — запускается руками.
+
+Про два места, где легко ошибиться, скрипт знает сам, но помнить стоит: `--hidden-import=proxy` тянет только `__init__.py`, поэтому подмодуль входа перечислен отдельно (`proxy.tg_ws_proxy`) — иначе exe собирается, но падает на старте с `ModuleNotFoundError: No module named 'proxy.stats'`; а в окружении нужны `cryptography`, `httpx`, `certifi` (без `cacert.pem` в bundle TLS не работает) и `h2` (без него прокси не поднимается вовсе). Не хватает пакетов — скрипт скажет каких, поставить их можно ключом `-InstallDeps`.
+
 ## Стиль
 
 Контракт по коду — `STYLE.md`, форматирование — `.clang-format` (табы, `ColumnLimit 150`, CRLF) и `fmt-ai.ps1`. Код, идентификаторы и комментарии — английский; git-сообщения — русский. Пользовательские строки живут только в `ui/text/<lang>.list`, ключи с префиксом `str_`.
