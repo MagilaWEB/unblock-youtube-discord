@@ -139,6 +139,13 @@ public:
 	/** Reads the last tail_lines lines from logs/log.txt. */
 	static std::string readLogTail(size_t tail_lines);
 
+	/** Writes the buffered log lines to logs/log.txt now. The log lives in
+	 *  memory until the file is saved (see File::writeText), so anything that
+	 *  points the user at the file - the service report and its issue - must
+	 *  flush first, otherwise the attachment holds the session's start, not its
+	 *  failure. */
+	static void flushLogFile();
+
 	static void				  setVersion(std::string_view version) { _version_str = version; }
 	static const std::string& version() { return _version_str; }
 

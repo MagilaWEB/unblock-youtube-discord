@@ -77,6 +77,7 @@ struct IssueTemplateFixture
 			ofs << "str_issue_actual=Actual\n";
 			ofs << "str_issue_full_log_hint=Full log hint\n";
 			ofs << "str_issue_service_report_file=Full report: {}\n";
+			ofs << "str_issue_service_log_file=Application log: {}\n";
 			ofs << "str_issue_truncated=TRUNCATED\n";
 		}
 
@@ -357,6 +358,8 @@ TEST_CASE("Debug::buildServiceIssueBody keeps the cause description and asks for
 	CHECK(body.find("SUMMARY LINE") != std::string::npos);
 	CHECK(body.find("Full report: ") != std::string::npos);	   // request to attach the file
 	CHECK(body.find("service-report.txt") != std::string::npos);
+	CHECK(body.find("Application log: ") != std::string::npos);	   // and the app log next to it
+	CHECK(body.find("log.txt") != std::string::npos);
 	// No user template, no log tail, no raw/checklist section.
 	CHECK(body.find("Describe header") == std::string::npos);
 	CHECK(body.find("Log tail summary") == std::string::npos);

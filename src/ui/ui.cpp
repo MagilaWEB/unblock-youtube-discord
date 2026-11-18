@@ -257,6 +257,11 @@ void Ui::_sendServiceReport()
 		[report]
 		{
 			const std::string title = Localization::Str{ "str_issue_service_title", report.service }();
+
+			// The user is about to attach logs/log.txt, and the log reaches the
+			// disk from memory at close alone: flush the running session first,
+			// or the attachment would miss the failure it is being sent for.
+			Debug::flushLogFile();
 			Debug::openGitHubIssue(title, Debug::buildServiceIssueBody(report.issueText()));
 		}
 	);

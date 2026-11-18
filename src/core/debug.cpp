@@ -425,8 +425,12 @@ std::string Debug::buildServiceIssueBody(std::string_view report_text)
 {
 	// The caller passes DiagnosticReport::issueText(): the minimal cause
 	// description (verdict + summary). The body adds the service header, the
-	// version and a request to attach the full report file.
+	// version and a request to attach the full report file, plus the app log:
+	// the report says what broke, the log says what the app tried (a disabled
+	// service, a re-enable attempt, a probe) - without it an issue like #132
+	// cannot be read to the end.
 	return utils::format(
+		"{}\n\n"
 		"{}\n\n"
 		"{}\n\n"
 		"{}\n\n"
@@ -434,13 +438,23 @@ std::string Debug::buildServiceIssueBody(std::string_view report_text)
 		langStr("str_issue_service_header"),
 		utils::format(langStr("str_issue_version"), version()),
 		report_text,
-		utils::format(langStr("str_issue_service_report_file"), (Core::get().currentPath() / "logs" / "service-report.txt").string())
+		utils::format(langStr("str_issue_service_report_file"), (Core::get().currentPath() / "logs" / "service-report.txt").string()),
+		utils::format(langStr("str_issue_service_log_file"), (Core::get().currentPath() / "logs" / "log.txt").string())
 	);
 }
 
 std::string Debug::readLogTail(size_t tail_lines)
 {
 	return readLogTailLines(tail_lines);
+}
+
+void Debug::flushLogFile()
+{
+	// File::writeText only appends to the in-memory list, and File::save
+	// rewrites the file from it, so a session's log reaches the disk on close
+	// alone. A user asked to attach logs/log.txt must get the session that just
+	// failed, not the one from the last close: the report path flushes here.
+	s_log.save();
 }
 
 std::string Debug::prettyStacktrace()

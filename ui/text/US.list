@@ -674,6 +674,7 @@ str_issue_expected=**Expected behavior:**
 str_issue_actual=**Actual behavior:**
 str_issue_full_log_hint=**Full log:** `logs/log.txt` — attach the file by dragging it into the issue.
 str_issue_service_report_file=**Full report:** `{}` — attach the report file by dragging it into the issue.
+str_issue_service_log_file=**Application log:** `{}` — attach it the same way: it shows what the app managed to do (a re-enable attempt, for one).
 str_issue_truncated=…report truncated due to the URL length limit, the full one is in the attached report file next to the log.
 
 // Service failure diagnostics (issue #110)

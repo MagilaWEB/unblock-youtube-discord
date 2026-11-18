@@ -610,6 +610,8 @@ void Unblock::_buildServiceReport(std::initializer_list<Service*> services)
 	// minimum (verdict + summary) and asks the user to attach this file.
 	// Written next to the log and overwritten by every new report, like
 	// logs/strategy.args.txt.
+	Debug::flushLogFile();
+
 	File report_file{ false };
 	report_file.open(Core::get().currentPath() / "logs" / "service-report", ".txt", true);
 	report_file.clear();
