@@ -18,6 +18,10 @@ namespace
 	// SCM exits with exactly this code, so the probe verdict would be a lie.
 	constexpr u32 c_error_failed_service_controller_connect = 1'063;
 
+	// ERROR_SERVICE_DISABLED: the SCM refused the start because the service is
+	// turned off in the system.
+	constexpr u32 c_error_service_disabled = 1'058;
+
 	std::string localized(pcstr key)
 	{
 		return Localization::Str{ key }();
@@ -76,6 +80,34 @@ namespace
 	bool iContains(std::string_view haystack, std::string_view needle)
 	{
 		return toLower(haystack).contains(toLower(needle));
+	}
+
+	// The service a Service Control Manager record is about: its EventData
+	// carries the name in param1. A substring search over the whole record is
+	// not enough - "zapret2" is a substring of "zapret2_helper", so a crash of
+	// the helper was collected as evidence against the engine (issue #132) and
+	// the verdict blamed the wrong service.
+	std::string scmRecordService(std::string_view xml)
+	{
+		constexpr std::string_view marker = "Name='param1'>";
+
+		const size_t at = xml.find(marker);
+		if (at == std::string_view::npos)
+			return {};
+
+		const size_t start = at + marker.size();
+		const size_t end   = xml.find('<', start);
+		return std::string{ xml.substr(start, end == std::string_view::npos ? std::string_view::npos : end - start) };
+	}
+
+	bool recordNamesService(const EventLogRecord& record, std::string_view service)
+	{
+		if (const auto named = scmRecordService(record.xml); !named.empty())
+			return toLower(named) == toLower(service);
+
+		// A record shape without param1 (another provider or event id): keep the
+		// old substring test rather than dropping evidence we cannot read.
+		return iContains(record.message, service) || iContains(record.xml, service);
 	}
 
 	std::string stageText(ServiceFailure::Stage stage)
@@ -501,14 +533,26 @@ DiagnosticReport buildReport(const ServiceFailure& failure, const CollectedEvide
 		promote(Cause::Antivirus);
 
 	// --- Registration and driver -------------------------------------------
+	// A disabled service is a hard blocker, and two things can prove it: the
+	// live start type, or the SCM's own refusal with ERROR_SERVICE_DISABLED.
+	// The error is what remains after our own repair: the start path re-asserts
+	// SERVICE_AUTO_START before retrying, so by report time the registration
+	// reads healthy while the start that failed had been refused for being
+	// disabled (issue #132 - there the verdict went to a crash record of
+	// another service instead).
+	if (evidence.registration_known && evidence.start_type == SERVICE_DISABLED)
+	{
+		add_check(DiagnosticCheck::Level::Failed, localized("str_diag_check_service_disabled"));
+		promote(Cause::Disabled);
+	}
+	else if (failure.win32_error == c_error_service_disabled)
+	{
+		add_check(DiagnosticCheck::Level::Failed, localized("str_diag_check_service_disabled_error"));
+		promote(Cause::Disabled);
+	}
+
 	if (evidence.registration_known)
 	{
-		if (evidence.start_type == SERVICE_DISABLED)
-		{
-			add_check(DiagnosticCheck::Level::Failed, localized("str_diag_check_service_disabled"));
-			promote(Cause::Disabled);
-		}
-
 		if (!evidence.expected_binary.empty() && iContains(evidence.registered_command, evidence.expected_binary))
 		{
 			add_check(DiagnosticCheck::Level::Ok, localized("str_diag_check_registration_ok"));
@@ -862,6 +906,27 @@ namespace
 		return root;
 	}
 
+	// SCM returns a driver's path in the device namespace ("\??\C:\..."), so the
+	// prefix has to go before the path can be compared with the install root -
+	// otherwise our own driver reads as a foreign one (issue #132). The
+	// extended-length form ("\\?\") is stripped for the same reason.
+	bool driverPathUnderRoot(std::string_view path, std::string_view root)
+	{
+		auto normalize = [](std::string_view value)
+		{
+			for (const std::string_view prefix : { std::string_view{ "\\??\\" }, std::string_view{ "\\\\?\\" } })
+				if (value.starts_with(prefix))
+					return toLower(std::string{ value.substr(prefix.size()) });
+
+			return toLower(std::string{ value });
+		};
+
+		const std::string normalized_path = normalize(path);
+		const std::string normalized_root = normalize(root);
+
+		return !normalized_path.empty() && !normalized_root.empty() && normalized_path.starts_with(normalized_root);
+	}
+
 	std::vector<EventLogRecord> querySince(std::string_view channel, std::string_view xpath, u64 since_utc_ms, u32 max_records)
 	{
 		std::vector<EventLogRecord> records;
@@ -914,11 +979,7 @@ namespace
 		// other service that failed around the same moment. Keep only the
 		// entries that actually name this service, otherwise an unrelated SCM
 		// record would produce a false verdict.
-		std::erase_if(
-			evidence.scm_events,
-			[&failure](const EventLogRecord& record)
-			{ return !iContains(record.message, failure.service_name) && !iContains(record.xml, failure.service_name); }
-		);
+		std::erase_if(evidence.scm_events, [&failure](const EventLogRecord& record) { return !recordNamesService(record, failure.service_name); });
 
 		const u64 defender_since = start_wall > 60'000 ? start_wall - 60'000 : 0;
 		evidence.defender_events =
@@ -985,9 +1046,7 @@ namespace
 		// The registered .sys is the driver the engine has to talk to: a file
 		// from another build cannot be opened by our WinDivert.dll.
 		evidence.windivert_driver_path	  = config.binary_path;
-		const std::string root			  = installRootPrefix();
-		const std::string registered	  = toLower(config.binary_path);
-		evidence.windivert_driver_foreign = !registered.empty() && !root.empty() && !registered.starts_with(root);
+		evidence.windivert_driver_foreign = !driverPathUnderRoot(config.binary_path, installRootPrefix());
 	}
 
 	void checkConflicts(CollectedEvidence& evidence)

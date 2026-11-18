@@ -365,6 +365,23 @@ TEST_CASE("Diagnostics: the engine log tail lands in the report", "[service_diag
 	CHECK(report.fullText().contains("winws2.exe.log"));
 }
 
+TEST_CASE("Diagnostics: a start rejected with 1058 gets the disabled verdict", "[service_diagnostics]")
+{
+	DiagnosticsFixture fx;
+
+	auto failure		= makeFailure();
+	failure.win32_error = 1'058;	// ERROR_SERVICE_DISABLED: the service is turned off in the system
+
+	auto report = buildReport(failure, cleanEvidence());
+
+	// A healthy-looking registration (AUTO_START, files in place) still fails
+	// with 1058 when something on the machine keeps disabling the service, so
+	// the win32 code must own the verdict - not the log entry of a neighbour
+	// service and not the probe (issue #132).
+	CHECK(report.verdict == "VERDICT_DISABLED");
+	CHECK(report.fullText().contains("str_diag_check_service_disabled_error"));
+}
+
 TEST_CASE("Diagnostics: probe 1063 is not indicative and does not raise the verdict", "[service_diagnostics]")
 {
 	DiagnosticsFixture fx;
