@@ -100,7 +100,11 @@
 --   time=N         — окно сброса счётчика провалов и кулдаун после
 --                    исчерпания плана, сек (по умолч. 60)
 --   maxseq=N       — макс. seq для проверок (по умолч. 32768)
---   throttle_window=N — окно замера скорости даунстрима, сек (по умолч. 3)
+--   throttle_window=N — окно замера скорости даунстрима, сек (по умолч. 3).
+--                    Окно без серверных байт — провал только если клиент
+--                    продолжает просить данные (его payload > 0); если клиент
+--                    тоже молчит, это пауза с полным буфером, а не обрыв:
+--                    вердикта нет и база стратегии не меняется
 --   throttle_min_bps=N — ниже этой скорости (Б/с) окно плохое, и такой
 --                    поток не подтверждается (по умолч. 50000: десятки КБ/с
 --                    раньше считались рабочей стратегией, хотя видео на них
@@ -108,13 +112,20 @@
 --                    пороге семья не замирает, а идёт к самой быстрой
 --                    замеренной стратегии, см. auto_upgrade_strategy)
 --   throttle_collapse=N — доля пика соединения, ниже которой окно плохое
---                    (по умолч. 0.25; 0 — выключить проверку)
+--                    (по умолч. 0.25; 0 — выключить проверку). Та же доля
+--                    сравнивает окно с лучшей замеренной альтернативой:
+--                    медленнее неё в 1/throttle_collapse раз — обвал
 --   throttle_collapse_floor_bps=N — абсолютный потолок для проверки обвала,
 --                    Б/с (по умолч. 100000): выше этой скорости падение
 --                    относительно пика — полка провайдера, а не работа DPI.
---                    Бурст на мегабайт и ровная полка в 200 КБ/с — обычная
---                    форма линка, и 1080p на ней едет; обвал нужен там, где
---                    поток срезан до ползания
+--                    Это запасное правило для хоста, где ещё ничего не
+--                    замерено: одна и та же полка 150 КБ/с на одном линке
+--                    норма, на другом — стопор. Как только замерена другая
+--                    стратегия, решает сравнение с ней (auto_best_other_rate):
+--                    окно медленнее лучшей альтернативы в 1/throttle_collapse
+--                    раз — обвал при любой абсолютной скорости, а если все
+--                    стратегии ползут одинаково, это потолок линка, и
+--                    перебирать их бессмысленно
 --   throttle_windows=N — сколько плохих окон подряд до провала (по умолч. 2).
 --                    Для потоковой семьи обвал ниже throttle_collapse_floor_bps
 --                    решает сразу, не дожидаясь счётчика провалов: каждая новая
@@ -607,6 +618,8 @@ function auto_do_switch(rec, is_udp, askey, reason, peer, dport, send_exhausted,
         crec.t_window_start = nil
         crec.t_window_base = nil
         crec.t_window_bytes = nil
+        crec.t_client_base = nil
+        crec.t_client_window_bytes = nil
         crec.rated_n = nil
         crec.goodput_ok = nil
         crec.udp_success = nil
@@ -873,22 +886,38 @@ local c_udp_stream_min_bytes = 16384
 -- reaches Lua (another profile's filter, a skipped block) does not lose its
 -- bytes. Server-side counter: video data is what matters here.
 function auto_throttle_account(crec, desync, now)
-    local srv = desync.track and desync.track.pos.server
+    local pos = desync.track and desync.track.pos
+    local srv = pos and pos.server
+    local cli = pos and pos.client
     if not srv or not srv.pbcounter then
         return
     end
 
     local bytes = srv.pbcounter
+    local cbytes = cli and cli.pbcounter or 0
     if not crec.t_window_start then
         crec.t_window_start = now
         crec.t_window_base = bytes
         crec.t_window_bytes = 0
-    elseif bytes >= crec.t_window_base then
-        crec.t_window_bytes = bytes - crec.t_window_base
+        crec.t_client_base = cbytes
+        crec.t_client_window_bytes = 0
     else
-        -- counter wrapped or reset, restart the window
-        crec.t_window_base = bytes
-        crec.t_window_bytes = 0
+        if bytes >= crec.t_window_base then
+            crec.t_window_bytes = bytes - crec.t_window_base
+        else
+            -- counter wrapped or reset, restart the window
+            crec.t_window_base = bytes
+            crec.t_window_bytes = 0
+        end
+        -- Client side of the same window: requests, ACKs, retransmissions.
+        -- It is what separates a stalled server from a player that simply
+        -- stopped asking because its buffer is full.
+        if cbytes >= (crec.t_client_base or 0) then
+            crec.t_client_window_bytes = cbytes - (crec.t_client_base or 0)
+        else
+            crec.t_client_base = cbytes
+            crec.t_client_window_bytes = 0
+        end
     end
 end
 
@@ -897,12 +926,14 @@ end
 -- idle one before the connection ever delivered, and a long gap (bytes
 -- accumulated over a minute of silence are not a throughput measurement).
 --
--- An idle window after a healthy phase is evidence: the server stops sending
--- while the client keeps the window closing (ACKs, retransmissions). That is
--- a stall - the DPI cut the data path - and the old code threw it away, so a
--- video that stopped mid-stream was never judged and the strategy stayed.
--- A paused player sends nothing at all, so no window closes: it lands in the
--- long-gap branch instead of here.
+-- An idle window after a healthy phase is evidence only while the client is
+-- still talking: requests, ACKs, retransmissions mean it wants data and the
+-- server does not deliver - a stall, the DPI cut the data path. A player with
+-- a full buffer stops asking too, and then the window is just idle: no
+-- verdict, no baseline change, no strategy switch. That is the case the bare
+-- zero-byte rule got wrong: it called every quiet second a stall.
+-- A fully paused connection produces no packets at all, so no window closes:
+-- it lands in the long-gap branch instead of here.
 function auto_throttle_rate(crec, arg, now)
     if not crec.t_window_start then
         return nil
@@ -915,9 +946,12 @@ function auto_throttle_rate(crec, arg, now)
     end
 
     local bytes = crec.t_window_bytes or 0
+    local client_bytes = crec.t_client_window_bytes or 0
     crec.t_window_start = now
     crec.t_window_base = (crec.t_window_base or 0) + bytes
     crec.t_window_bytes = 0
+    crec.t_client_base = (crec.t_client_base or 0) + client_bytes
+    crec.t_client_window_bytes = 0
 
     if elapsed > window * 4 then
         crec.t_bad = 0
@@ -925,16 +959,39 @@ function auto_throttle_rate(crec, arg, now)
     end
 
     if bytes == 0 then
+        -- Nothing arrived from the server. Without client traffic this is not
+        -- a verdict: the player has enough buffered and stopped asking, so the
+        -- quiet window is idle, not a stall - and it must not zero the
+        -- strategy's measured baseline either.
+        if client_bytes == 0 then
+            crec.t_bad = 0
+            return nil
+        end
         local healthy = (crec.t_peak or 0) >= (tonumber(arg.throttle_min_bps) or c_throttle_min_bps)
         if not healthy or elapsed > window * 2 then
             crec.t_bad = 0
             return nil
         end
-        -- Stall: 0 B/s, counted as a bad window below.
+        -- Stall: 0 B/s while the client keeps asking, counted as a bad window.
         return 0
     end
 
     return bytes / elapsed
+end
+
+-- Best goodput another strategy of this plan delivered on this host lately.
+-- last_rate holds the latest window, not the all-time maximum: the moment the
+-- alternative is tried and turns out just as slow, its baseline drops and the
+-- host stops rotating. That is what separates a throttled strategy from a slow
+-- link - if every strategy crawls at the same rate, none of them is a collapse.
+function auto_best_other_rate(hrec)
+    local best = 0
+    for n, v in pairs(hrec.last_rate or {}) do
+        if n ~= hrec.nstrategy and hrec.strategy_set and hrec.strategy_set[n] and v > best then
+            best = v
+        end
+    end
+    return best
 end
 
 -- Throttle verdict over rate windows of one connection. A window is bad when
@@ -942,24 +999,37 @@ end
 -- connection has seen (DPI throttling arrives as a sharp drop after a fast
 -- start, not as a uniformly slow link). The peak is per connection, so a
 -- legitimately lower bitrate in a new connection is not mistaken for a
--- collapse. A collapse is judged only below throttle_collapse_floor_bps: a
--- steady plateau above it is a working stream (a 1080p one), and the burst
--- that preceded it is the provider's shaping, not a DPI cut. Returns true when
--- the switch threshold is reached; the streak restarts then, so one verdict
--- costs throttle_windows bad windows. The third value marks a real collapse:
--- the caller makes it decisive for a video family, because the failure
--- counter cannot accumulate there - every new connection's burst confirms the
+-- collapse.
+--
+-- The absolute floor (throttle_collapse_floor_bps) is only the fallback for a
+-- host with nothing else measured: a plateau above it may be either the link's
+-- ceiling or a throttled strategy, and no absolute number separates the two
+-- (the same 150 KB/s is normal on one link and a stall on another). Once
+-- another strategy has been measured, the comparison is relative: a window
+-- that is throttle_collapse times slower than that alternative is a collapse
+-- at any rate, and the floor no longer applies. Returns true when the switch
+-- threshold is reached; the streak restarts then, so one verdict costs
+-- throttle_windows bad windows. The third value marks a real collapse: the
+-- caller makes it decisive for a video family, because the failure counter
+-- cannot accumulate there - every new connection's burst confirms the
 -- strategy and clears the streak, so a stream that keeps collapsing never
 -- moves.
-function auto_throttle_judge(crec, arg, rate)
+function auto_throttle_judge(hrec, crec, arg, rate)
     local peak = crec.t_peak or 0
     local min = tonumber(arg.throttle_min_bps) or c_throttle_min_bps
     local ratio = tonumber(arg.throttle_collapse) or 0
     local floor = tonumber(arg.throttle_collapse_floor_bps)
         or c_throttle_collapse_floor_bps
 
-    local collapsed = ratio > 0 and peak > 0 and rate < peak * ratio
-        and (floor <= 0 or rate < floor)
+    -- Latest window of the current strategy: the baseline for the next
+    -- comparison, so a tried-and-slow alternative stops being attractive.
+    hrec.last_rate = hrec.last_rate or {}
+    hrec.last_rate[hrec.nstrategy] = rate
+
+    local best_other = auto_best_other_rate(hrec)
+    local worse_than_alternative = ratio > 0 and best_other > 0 and rate < best_other * ratio
+    local collapsed = (ratio > 0 and peak > 0 and rate < peak * ratio
+        and (floor <= 0 or rate < floor)) or worse_than_alternative
     local bad = rate < min or collapsed
     if rate > peak then
         crec.t_peak = rate
@@ -976,9 +1046,9 @@ function auto_throttle_judge(crec, arg, rate)
     crec.t_bad = (crec.t_bad or 0) + 1
     if crec.t_bad >= (tonumber(arg.throttle_windows) or 2) then
         crec.t_bad = 0
-        return true, true, collapsed
+        return true, true, collapsed, best_other
     end
-    return false, true, collapsed
+    return false, true, collapsed, best_other
 end
 
 -- Healthy window: rate the strategy by real goodput. A streaming connection
@@ -1322,11 +1392,15 @@ function auto_strategy(ctx, desync)
             if hrec.stream and crec.streamed then
                 local rate = auto_throttle_rate(crec, arg, now)
                 if rate then
-                    local fire, bad, collapse = auto_throttle_judge(crec, arg, rate)
+                    local fire, bad, collapse, alt = auto_throttle_judge(hrec, crec, arg, rate)
                     if fire then
+                        -- alt is the alternative's measured goodput the window
+                        -- was compared against; 0 means the absolute-floor
+                        -- fallback fired instead.
                         ULOG("WARNING",
                             "zapret:auto_strategy: THROTTLE " .. name .. " " .. math.floor(rate) .. "B/s peak=" ..
-                                math.floor(crec.t_peak or 0) .. "->" .. host_or_ip .. ":" .. dport)
+                                math.floor(crec.t_peak or 0) .. " alt=" .. math.floor(alt or 0) ..
+                                "->" .. host_or_ip .. ":" .. dport)
                         auto_request_check(host_name, hrec)
 
                         -- A stream cut to a crawl is dead now, not one failure
@@ -1517,11 +1591,12 @@ function auto_strategy(ctx, desync)
                 auto_throttle_account(crec, desync, now)
                 local rate = auto_throttle_rate(crec, arg, now)
                 if rate then
-                    local fire, bad, collapse = auto_throttle_judge(crec, arg, rate)
+                    local fire, bad, collapse, alt = auto_throttle_judge(hrec, crec, arg, rate)
                     if fire then
                         ULOG("WARNING",
                             "zapret:auto_strategy: THROTTLE-UDP " .. name .. " " .. math.floor(rate) .. "B/s peak=" ..
-                                math.floor(crec.t_peak or 0) .. "->" .. host_or_ip .. ":" .. dport)
+                                math.floor(crec.t_peak or 0) .. " alt=" .. math.floor(alt or 0) ..
+                                "->" .. host_or_ip .. ":" .. dport)
                         -- Same as on TCP, for the video family only: a generic
                         -- QUIC flow (voice, game) is low-rate by nature and
                         -- keeps the failure counter.
