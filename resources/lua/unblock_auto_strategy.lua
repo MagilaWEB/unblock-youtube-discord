@@ -156,7 +156,14 @@
 --                    запрос нет, а скорость на 200 КБ тут не померить.
 --                    Запрос, который просто держат (long-poll), не
 --                    переспрашивается — он подтверждён — и под правило
---                    не попадает
+--                    не попадает. Отдельно: после запроса нет прикладных
+--                    данных 2 × N секунд — один вердикт на соединение, и такое
+--                    соединение не подтверждается (app_seen), поэтому серия
+--                    провалов не обнуляется; long-poll, получивший заголовки,
+--                    уже app_seen и под это правило не попадает. Для direct
+--                    два вердикта SILENCE TCP за окно time — немедленный уход:
+--                    успех между ними отдельный счётчик не обнуляет, а
+--                    direct_ok снимается. У desync обычный порог fails
 --   tcp_silence_windows=N — сколько таких окон подряд нужно до вердикта
 --                    (по умолч. 2). Одно тихое окно ещё не провал: плеер
 --                    между сегментами, догруженная страница и удержанный
@@ -414,6 +421,34 @@ function auto_check_fails(rec, arg, crec, fast)
     return false
 end
 
+-- Direct stall verdicts are counted apart from the generic failure counter,
+-- and a success on direct does NOT erase them. The old rule let one good
+-- connection wipe the whole streak, so direct clung to the host after a whole
+-- series of stalls: handshake + some data on one connection, silence on the
+-- next, and the strategy kept looking alive. Two unanswered requests inside
+-- the fails window mean direct is unreliable and is abandoned at once, even
+-- if other direct connections happened to succeed.
+function auto_direct_stall_count(hrec, arg, now)
+    if hrec.direct_stall_time and now - hrec.direct_stall_time > (tonumber(arg.time) or 60) then
+        hrec.direct_stall_n = 0
+    end
+    if not hrec.direct_stall_n or hrec.direct_stall_n == 0 then
+        hrec.direct_stall_time = now
+    end
+    hrec.direct_stall_n = (hrec.direct_stall_n or 0) + 1
+    return hrec.direct_stall_n >= 2
+end
+
+-- Shared by both TCP silence verdicts. Desync strategies keep the ordinary
+-- fails threshold; direct has no packet loss excuse after two mute answers.
+function auto_direct_stall_decisive(hrec, arg, now)
+    if hrec.nstrategy ~= 0 or not auto_direct_stall_count(hrec, arg, now) then
+        return false
+    end
+    hrec.direct_ok = nil
+    return true
+end
+
 -- Real success: reset the failure episode and let the host leave the
 -- enumeration ladder.
 function auto_mark_success(hrec)
@@ -637,6 +672,10 @@ function auto_do_switch(rec, is_udp, askey, reason, peer, dport, send_exhausted,
         crec.tcp_client_pkts = nil
         crec.tcp_quiet_windows = nil
         crec.tcp_quiet_client = nil
+        crec.app_seen = nil
+        crec.app_req_srv = nil
+        crec.app_req_time = nil
+        crec.stall_verdict = nil
     end
 
     if not rec.tried then
@@ -1316,6 +1355,14 @@ function auto_strategy(ctx, desync)
                 if desync.l7payload == "tls_server_hello" or desync.l7payload == "http_reply" then
                     crec.handshake_ok = true
                 end
+                -- Application data after the client's request: the handshake
+                -- itself does not count. A TLS ServerHello (and the certificate
+                -- that follows it) is not a response, so a connection whose
+                -- server only shook hands and then went quiet is NOT a working
+                -- one. For plain HTTP the reply is the application data itself.
+                if desync.l7payload == "http_reply" or (crec.app_req_srv and srv_bytes > crec.app_req_srv) then
+                    crec.app_seen = true
+                end
                 if pos_get(desync, 's') > 4096 then
                     crec.data_ok = true
                 end
@@ -1446,6 +1493,13 @@ function auto_strategy(ctx, desync)
             -- was ACKed and is not retransmitted, so it does not trip this rule.
             if desync.outgoing and plen > 0 then
                 crec.tcp_client_pkts = (crec.tcp_client_pkts or 0) + 1
+                if crec.handshake_ok and not crec.app_req_srv then
+                    -- First application request after the handshake: the server
+                    -- bytes seen so far are handshake bytes, so anything above
+                    -- them later is a real response.
+                    crec.app_req_srv = srv_bytes
+                    crec.app_req_time = now
+                end
                 if crec.handshake_ok and is_retransmission(desync) then
                     crec.tcp_stalled = true
                 end
@@ -1462,6 +1516,44 @@ function auto_strategy(ctx, desync)
             end
 
             local tcp_silence = tonumber(arg.tcp_silence) or 0
+
+            -- Request sent, no application response: the strategy is dead even
+            -- though the handshake completed. The old rule needed a
+            -- retransmission to see this, but a server that ACKs the request
+            -- and then says nothing gets no retransmission, and the handshake
+            -- confirmation kept clearing the failure counter - the app hung for
+            -- minutes on a strategy that was "working". One verdict per
+            -- connection, and only while no application data arrived: a held
+            -- long-poll that got its headers is already app_seen and never
+            -- trips this, and a late answer wipes the streak via success. The
+            -- window is doubled: a merely slow server (seconds to the first
+            -- byte) must not look like a cut path.
+            if tcp_silence > 0 and crec.handshake_ok and not crec.app_seen and crec.app_req_time
+                and not crec.stall_verdict and now - crec.app_req_time >= tcp_silence * 2 then
+                crec.stall_verdict = true
+
+                ULOG("WARNING",
+                    "zapret:auto_strategy: SILENCE TCP " .. name .. "->" .. host_or_ip .. ":" .. dport .. " srv=" ..
+                        srv_bytes)
+
+                -- Two stalls in the fails window on DIRECT: switch right now,
+                -- do not wait for the full fails threshold. One is tolerated
+                -- (a slow server), two is a pattern, and a success on direct no
+                -- longer hides it - direct_ok goes too, so the next candidate
+                -- list does not lead with it again. Desync strategies keep the
+                -- normal fails counter: a working one is not churned on a
+                -- merely slow link.
+                local decisive = auto_direct_stall_decisive(hrec, arg, now)
+
+                if auto_check_fails(hrec, arg, crec, decisive or not hrec.had_success) then
+                    auto_reset_connection(desync, arg, name, host_or_ip, dport, true)
+                    auto_fail_helper_strategy(name, host_name)
+                    auto_do_switch(hrec, false, askey, "SILENCE", host_or_ip, dport, false, crec)
+                end
+
+                return auto_strategy_plan(desync, hrec, verdict)
+            end
+
             if tcp_silence > 0 and crec.tcp_stalled and crec.tcp_srv_time and not crec.streamed and not crec.closed
                 and now - crec.tcp_srv_time >= tcp_silence then
                 crec.tcp_srv_time = now
@@ -1492,7 +1584,8 @@ function auto_strategy(ctx, desync)
                         "zapret:auto_strategy: SILENCE TCP " .. name .. "->" .. host_or_ip .. ":" .. dport .. " srv=" ..
                             srv_bytes)
 
-                    if auto_check_fails(hrec, arg, crec, not hrec.had_success) then
+                    local decisive = auto_direct_stall_decisive(hrec, arg, now)
+                    if auto_check_fails(hrec, arg, crec, decisive or not hrec.had_success) then
                         auto_reset_connection(desync, arg, name, host_or_ip, dport, true)
                         auto_fail_helper_strategy(name, host_name)
                         auto_do_switch(hrec, false, askey, "SILENCE", host_or_ip, dport, false, crec)
@@ -1510,9 +1603,12 @@ function auto_strategy(ctx, desync)
             -- it from the outer autopick), but a flow the server closed before
             -- it carried the volume mark (the probe above) had no data path to
             -- measure - its answer is the verdict, and that is exactly the
-            -- preliminary signal the probe hosts exist for.
+            -- preliminary signal the probe hosts exist for. A handshake without
+            -- application data is not an answer at all: confirming it would
+            -- clear the failure streak of a strategy that let the TLS through
+            -- and then dropped the dialog.
             local probe = not crec.streamed and crec.closed == true
-            local confirmed = crec.handshake_ok and (not hrec.stream or crec.goodput_ok or probe)
+            local confirmed = crec.handshake_ok and crec.app_seen and (not hrec.stream or crec.goodput_ok or probe)
             if host_name and confirmed and not crec.valid_sent then
                 crec.valid_sent = true
                 send_signal("VALID", host_name, name, 10000)
