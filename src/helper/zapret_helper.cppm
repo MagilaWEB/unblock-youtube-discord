@@ -164,10 +164,8 @@ private:
 	/** Host is valid (not empty and contains at least one letter). */
 	static bool _isValidHost(std::string_view host);
 
-	/** Voice media endpoint (c-<region>-<hash>.discord.media): not an HTTP
-	 *  site, curl cannot validate it. Such hosts are skipped so their
-	 *
-	 * verdicts never poison auto_strategy. */
+	/** Voice media endpoint (c-<region>-<hash>.discord.media): checked by the
+	 *  WebSocket voice probe, which validates the appdata path end to end. */
 	static bool _isVoiceMediaHost(std::string_view host);
 
 	/** Send a UDP message to target_ip and the given port. */
@@ -237,6 +235,14 @@ private:
 	/** Move stale probes that produced no verdict into the unjudged bucket.
 	 *  Called from _idleStep under _mutex. */
 	void _refreshUnjudged();
+
+	/** A failed voice probe invalidates the stale VALID: the probe already
+	 *  checked the appdata path end to end, so the host is not confirmed
+	 *  anymore. It moves to the error bucket with the last judged strategy
+	 *  (a failed probe is a verdict, not a no-verdict), where only a fresh
+	 *  VALID/EXHAUSTED moves it. Regular hosts are left alone: their probe is
+	 *  only a pump. */
+	void _demoteVoiceOnProbeFailure(std::string_view host);
 
 	/** Suspend host work when zapret stopped sending READY (heartbeat lost). */
 	void _checkZapretLiveness();

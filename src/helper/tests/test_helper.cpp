@@ -30,7 +30,8 @@ public:
 	const std::unordered_map<std::string, ZapretHelper::ErrorInfo>&			unjudgedHosts() const { return helper._unjudged_hosts; }
 	std::unordered_map<std::string, std::chrono::steady_clock::time_point>& probedAt() { return helper._probed_at; }
 	void																	refreshUnjudged() { helper._refreshUnjudged(); }
-	std::string																exhaustedStrategy(const std::string& host) const
+	void		demoteVoice(std::string_view host) { helper._demoteVoiceOnProbeFailure(host); }
+	std::string exhaustedStrategy(const std::string& host) const
 	{
 		auto it = helper._exhausted_hosts.find(host);
 		return it == helper._exhausted_hosts.end() ? std::string{} : it->second.strategy;
@@ -935,21 +936,21 @@ TEST_CASE("unjudged: stale probe is promoted and sticky", "[helper][unjudged]")
 	CHECK(t.unjudgedHosts().contains("a.com"));
 }
 
-TEST_CASE("unjudged: a probe after an error demotes the stale error", "[helper][unjudged]")
+TEST_CASE("unjudged: a probe after an error keeps the verdict", "[helper][unjudged]")
 {
 	ZapretHelperTest t;
 	t.handleMessage("ERR:a.com:direct");
 	REQUIRE(t.errorHosts().size() == 1);
 
-	// The probe that follows the error finished and lua sent no verdict: the
-	// error's strategy is stale - lua already moved the host on - and the host
-	// is really "no verdict", so it must leave the error list.
+	// The probe that followed produced no verdict, but the error is itself a
+	// verdict from lua: the host must stay in the error list with its strategy,
+	// not be relabelled "no-verdict".
 	t.probedAt()["a.com"] = std::chrono::steady_clock::now();
 	t.refreshUnjudged();
 
-	CHECK(t.errorHosts().empty());
-	REQUIRE(t.unjudgedHosts().contains("a.com"));
-	CHECK(t.unjudgedHosts().at("a.com").strategy == "no-verdict");
+	REQUIRE(t.errorHosts().size() == 1);
+	CHECK(t.errorStrategy("a.com") == "direct");
+	CHECK(t.unjudgedHosts().empty());
 }
 
 TEST_CASE("unjudged: an error with no probe since stays an error", "[helper][unjudged]")
@@ -987,6 +988,34 @@ TEST_CASE("unjudged: ERR drops probe mark even on an exhausted host", "[helper][
 	t.handleMessage("ERR:b.com:strategy_3");
 	CHECK(t.unjudgedHosts().empty());
 	CHECK(t.probedAt().empty());
+}
+
+TEST_CASE("voice probe failure drops the stale valid mark", "[helper][voice]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("VALID:c-ams20-5e3390ef.discord.media:strategy_15");
+	REQUIRE(t.valid().size() == 1);
+
+	// The voice probe failed end to end, so the confirmed strategy is stale:
+	// the host must land in the error list with the strategy lua last judged,
+	// not in "no verdict".
+	t.demoteVoice("c-ams20-5e3390ef.discord.media");
+
+	CHECK(t.valid().empty());
+	REQUIRE(t.errorHosts().contains("c-ams20-5e3390ef.discord.media"));
+	CHECK(t.errorStrategy("c-ams20-5e3390ef.discord.media") == "strategy_15");
+	CHECK(t.unjudgedHosts().empty());
+}
+
+TEST_CASE("voice probe failure without a valid mark changes nothing", "[helper][voice]")
+{
+	ZapretHelperTest t;
+
+	t.demoteVoice("c-ams20-5e3390ef.discord.media");
+
+	CHECK(t.valid().empty());
+	CHECK(t.errorHosts().empty());
+	CHECK(t.unjudgedHosts().empty());
 }
 
 TEST_CASE("makeStatsSignal format", "[helper][stats]")

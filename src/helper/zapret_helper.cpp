@@ -566,6 +566,13 @@ void ZapretHelper::_checkHost(std::string_view host, const CurlAbort& abort)
 		}
 		else
 		{
+			// A failed voice probe is a verdict, not a pump hiccup: the
+			// WebSocket exchange hits the same appdata path the app needs, so
+			// the stale VALID no longer holds. Demote the host while the
+			// regular curl probes stay purely traffic pumps.
+			if (voice)
+				_demoteVoiceOnProbeFailure(host);
+
 			_log(std::format("fail {} curl={}", host, result.error()));
 		}
 	}
@@ -927,21 +934,21 @@ void ZapretHelper::_checkVpnPause()
 
 void ZapretHelper::_refreshUnjudged()
 {
-	// Caller holds _mutex. A probe that finished but never got a lua verdict
-	// (no VALID/ERR/EXHAUSTED) is promoted into the unjudged bucket once the
-	// stale-error interval passed. Sticky: it is only removed by a verdict.
+	// Caller holds _mutex. A probe that finished but produced no verdict at all
+	// (no VALID/ERR/EXHAUSTED and no error entry from an earlier verdict) is
+	// promoted into the unjudged bucket once the stale interval passed.
+	// Sticky: only a verdict removes it.
 	//
-	// A host that already carries an error entry is the same no-verdict case
-	// once a new probe has completed: lua rejected the old strategy and moved
-	// the host on, but the helper learns the next strategy's name only with a
-	// failure, so the entry keeps showing the stale one. A host whose probes
-	// die before ClientHello (dead SYN, nothing for the tls_client_hello filter
-	// to judge) never sends the VALID that would clear the mark, so without
-	// this demotion it sits in "hosts with errors" forever.
+	// An error entry is a real lua verdict (ERR, or a failed voice probe), so
+	// it owns the host even when a later probe yields no new verdict: the error
+	// list keeps the last judged strategy name, and only a fresh verdict
+	// (VALID/EXHAUSTED/another ERR) moves the host. Demoting an error here
+	// labelled a host that lua had just failed as "no-verdict", which is the
+	// exact contradiction the lists must not show.
 	const auto now = std::chrono::steady_clock::now();
 	for (const auto& [host, probed] : _probed_at)
 	{
-		if (_valid_hosts.contains(host) || _exhausted_hosts.contains(host))
+		if (_valid_hosts.contains(host) || _exhausted_hosts.contains(host) || _error_hosts.contains(host))
 			continue;
 
 		if (_unjudged_hosts.contains(host))
@@ -950,10 +957,8 @@ void ZapretHelper::_refreshUnjudged()
 		if (_queue.contains(host) || _in_check.contains(host))
 			continue;
 
-		if (!_error_hosts.contains(host) && (now - probed) < _errors_recheck_interval)
+		if ((now - probed) < _errors_recheck_interval)
 			continue;
-
-		_error_hosts.erase(host);
 
 		ErrorInfo info;
 		info.first	  = now;
@@ -961,6 +966,34 @@ void ZapretHelper::_refreshUnjudged()
 		info.strategy = "no-verdict";
 		_unjudged_hosts.emplace(host, std::move(info));
 	}
+}
+
+void ZapretHelper::_demoteVoiceOnProbeFailure(std::string_view host)
+{
+	std::lock_guard lock(_mutex);
+
+	const std::string key{ host };
+	const auto		  it = _valid_hosts.find(key);
+	if (it == _valid_hosts.end())
+		return;
+
+	const std::string strategy = it->second;
+	const auto		  now	   = std::chrono::steady_clock::now();
+
+	if (const auto err = _error_hosts.find(key); err != _error_hosts.end())
+		err->second.strategy = strategy;
+	else
+	{
+		ErrorInfo info;
+		info.first	  = now;
+		info.last	  = now;
+		info.strategy = strategy;
+		_error_hosts.emplace(key, std::move(info));
+	}
+
+	_valid_hosts.erase(it);
+	_unjudged_hosts.erase(key);
+	_probed_at.erase(key);
 }
 
 void ZapretHelper::_idleStep()
