@@ -33,9 +33,11 @@ export struct DiagnosticReport
 	[[nodiscard]] bool		  empty() const;
 	[[nodiscard]] std::string fullText() const;
 
-	/** Minimal cause description for a GitHub issue: just the verdict and the
-	 *  summary (failure stage, Win32 and exit codes, lifetime). The complete
-	 *  report — checklist, recommendations and raw evidence — is attached as
+	/** Cause description for a GitHub issue: the verdict, the summary (failure
+	 *  stage, Win32 and exit codes, lifetime) and the plain raw facts (codes,
+	 *  paths, live state, registration) - enough to read an issue whose
+	 *  reporter never attached the file. The checklist, recommendations and
+	 *  noisy evidence (event log XML, probe output) stay in the attached
 	 *  logs/service-report.txt. */
 	[[nodiscard]] std::string issueText() const;
 };

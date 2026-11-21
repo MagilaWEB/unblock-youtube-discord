@@ -360,6 +360,10 @@ TEST_CASE("Debug::buildServiceIssueBody keeps the cause description and asks for
 	CHECK(body.find("service-report.txt") != std::string::npos);
 	CHECK(body.find("Application log: ") != std::string::npos);	   // and the app log next to it
 	CHECK(body.find("log.txt") != std::string::npos);
+	// Both attach requests go above the verdict: at the bottom reporters
+	// scroll past them.
+	CHECK(body.find("Full report: ") < body.find("VERDICT LINE"));
+	CHECK(body.find("Application log: ") < body.find("VERDICT LINE"));
 	// No user template, no log tail, no raw/checklist section.
 	CHECK(body.find("Describe header") == std::string::npos);
 	CHECK(body.find("Log tail summary") == std::string::npos);

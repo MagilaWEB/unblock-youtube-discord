@@ -415,28 +415,43 @@ TEST_CASE("Diagnostics: fullText carries verdict, checks, recommendations and ra
 	CHECK(text.contains("1. "));
 }
 
-TEST_CASE("Diagnostics: issueText carries only the cause description", "[service_diagnostics]")
+TEST_CASE("Diagnostics: issueText carries the cause and the plain raw facts", "[service_diagnostics]")
 {
 	DiagnosticsFixture fx;
 
 	auto evidence				  = cleanEvidence();
 	evidence.windivert_dll_exists = false;
+	evidence.scm_events.push_back(scmRecord(7'031, "The zapret2 service terminated unexpectedly."));
+	evidence.probe_attempted = true;
+	evidence.probe_started	 = true;
+	evidence.probe_out		 = "PROBE_STDOUT_TAIL";
 
 	auto report = buildReport(makeFailure(), evidence);
 	auto text	= report.issueText();
 
-	// Cause: verdict plus a non-empty summary; nothing else.
+	// Cause: verdict plus a non-empty summary.
+	REQUIRE_FALSE(report.verdict.empty());
 	REQUIRE_FALSE(report.summary.empty());
 	REQUIRE_FALSE(report.raw.empty());
 	REQUIRE_FALSE(report.checks.empty());
 	REQUIRE_FALSE(report.recommendations.empty());
 
-	CHECK(text.contains("VERDICT_ANTIVIRUS"));
+	CHECK(text.contains(report.verdict));
 	CHECK(text.contains(report.summary));
 
-	// No raw section, no raw lines, no checklist tags, no recommendations.
+	// The plain raw facts go into the body: codes, paths, live state, the
+	// registration - a file-less issue still carries the data to read it.
+	CHECK(text.contains("win32_exit_code=0"));
+	CHECK(text.contains("service_state=1"));
+	CHECK(text.contains("lived_ms=250"));
+	CHECK(text.contains("install_path=C:\\app"));
+	CHECK(text.contains("registered_command="));
+
+	// The noisy evidence stays in the file: event log records, the probe
+	// output, the checklist tags and the recommendations.
+	CHECK_FALSE(text.contains("scm_event"));
+	CHECK_FALSE(text.contains("PROBE_STDOUT_TAIL"));
 	CHECK_FALSE(text.contains("RAW"));
-	CHECK_FALSE(text.contains("win32_exit_code"));
 	CHECK_FALSE(text.contains("RECOMMENDATIONS"));
 	CHECK_FALSE(text.contains("REC_AV_FOLDER"));
 	CHECK_FALSE(text.contains("[OK]"));

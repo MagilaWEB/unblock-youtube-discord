@@ -220,14 +220,32 @@ std::string DiagnosticReport::fullText() const
 
 std::string DiagnosticReport::issueText() const
 {
-	// Minimal cause description for a GitHub issue: just the verdict and the
-	// summary (failure stage, Win32 code, process exit code, lifetime). The
-	// complete report — checklist, recommendations and raw evidence — is
-	// written to logs/service-report.txt, which the user attaches.
+	// Cause description for a GitHub issue: the verdict, the summary (failure
+	// stage, Win32 code, process exit code, lifetime) and the plain raw facts -
+	// codes, paths, live service state, registration. The issue stays readable
+	// even when the reporter never attaches the file, which is what actually
+	// happens in the field. The noisy evidence (event log records, the probe
+	// output) and the checklist stay in logs/service-report.txt, which the body
+	// asks for above the fold.
 	std::string text = verdict;
 
 	if (!summary.empty())
 		text += "\n\n" + summary;
+
+	std::string facts;
+	for (const auto& line : raw)
+	{
+		// Event log XML and the probe's stdout/stderr are long and belong to
+		// one cause; everything else is what any report needs to be read.
+		if (line.starts_with("scm_event") || line.starts_with("defender_event") || line.starts_with("probe_stdout")
+			|| line.starts_with("probe_stderr"))
+			continue;
+
+		facts += (facts.empty() ? "" : "\n") + line;
+	}
+
+	if (!facts.empty())
+		text += "\n\n```\n" + facts + "\n```";
 
 	return text;
 }

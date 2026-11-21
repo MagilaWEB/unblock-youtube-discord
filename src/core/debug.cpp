@@ -423,12 +423,11 @@ std::string Debug::buildReportIssueBody()
 
 std::string Debug::buildServiceIssueBody(std::string_view report_text)
 {
-	// The caller passes DiagnosticReport::issueText(): the minimal cause
-	// description (verdict + summary). The body adds the service header, the
-	// version and a request to attach the full report file, plus the app log:
-	// the report says what broke, the log says what the app tried (a disabled
-	// service, a re-enable attempt, a probe) - without it an issue like #132
-	// cannot be read to the end.
+	// The request to attach the files goes right under the version, above the
+	// verdict: reporters scroll past it when it sits at the bottom, and an
+	// issue without logs is a lot harder to read. The report text still carries
+	// the verdict, the summary and the plain raw facts (DiagnosticReport::
+	// issueText), so a file-less report at least says what broke.
 	return utils::format(
 		"{}\n\n"
 		"{}\n\n"
@@ -437,9 +436,9 @@ std::string Debug::buildServiceIssueBody(std::string_view report_text)
 		"{}",
 		langStr("str_issue_service_header"),
 		utils::format(langStr("str_issue_version"), version()),
-		report_text,
 		utils::format(langStr("str_issue_service_report_file"), (Core::get().currentPath() / "logs" / "service-report.txt").string()),
-		utils::format(langStr("str_issue_service_log_file"), (Core::get().currentPath() / "logs" / "log.txt").string())
+		utils::format(langStr("str_issue_service_log_file"), (Core::get().currentPath() / "logs" / "log.txt").string()),
+		report_text
 	);
 }
 
