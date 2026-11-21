@@ -40,7 +40,7 @@
 | `--template=START_QUIC` | UDP/443 QUIC-план: фейки, ipfrag, udplen + `auto_strategy` |
 | `[TEMPLATES:YOUTUBE]` | Секция `[youtube]`: отдельный QUIC-профиль под потоковое видео (`googlevideo.com`, `c.youtube.com`), идёт **до** общего UDP/443: свой `auto_strategy`, `--payload=all` и `--out-range=-n4` (десинк по началу потока, а не только по Initial). Первой строкой открывает секцию |
 | `--template=START_TLS` | TCP 80/443 TLS-план: фейки, сплиты, disorder + `auto_strategy`. Сюда же ушла TCP-фаза голоса Discord |
-| `--template=START_VOICE` | Голосовой UDP-план: `auto_strategy:fails=6:start=1` и две стратегии — фейк `VOICE_PRE` (в первой ещё `JUNK_00`/`JUNK_01`), затем `send:delay=50` и `drop` |
+| `--template=START_VOICE` | Голосовой UDP-план: `auto_strategy:fails=6:start=1:udp_voice=1` и две стратегии — фейк `VOICE_PRE` (в первой ещё `JUNK_00`/`JUNK_01`), затем `send:delay=50` и `drop` |
 | `[TEMPLATES:DISCORD_UDP]` | Секция `[discord]`: `--filter-udp=%DiscordPortUPD%`, `--filter-l7=discord,stun,quic`; под неё идёт `--payload=all --import=START_VOICE` |
 | `[TEMPLATES:DISCORD_MEDIA]` | TCP-фаза голоса: `--filter-tcp=%DiscordPort%`, `--hostlist-domains=discord.media` |
 | `[TEMPLATES:YOUTUBE_TCP]`, `[TEMPLATES:END_TCP]` | TCP/TLS-профиль YouTube в той же секции `[youtube]` (идёт после `[TEMPLATES:YOUTUBE]`) и `[END]` — общим планом |

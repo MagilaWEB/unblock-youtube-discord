@@ -83,7 +83,10 @@
 --      это провал (backed-off QUIC клиент до udp_out пакетов не доживает,
 --      а пауза в потоке не наказывается: надо, чтобы клиент говорил).
 --      Долгоживущие потоки (голос Discord, WireGuard) перебирают стратегии
---      без переподключения.
+--      без переподключения. Голосовой план помечается udp_voice=1: в тихом
+--      канале сервер молчит, пока никто не говорит, поэтому после первого
+--      ответа пакетный счётчик голос больше не судит — иначе рабочая
+--      стратегия валится за каждый промежуток без речи.
 --   6. Все стратегии перебраны (exhausted) → EXHAUSTED хелперу, парковка на
 --      лучшей по замеренной скорости стратегии и кулдаун time секунд:
 --      полный прогон уже доказал, что лучше не будет, а немедленный новый
@@ -659,8 +662,15 @@ function auto_do_switch(rec, is_udp, askey, reason, peer, dport, send_exhausted,
         if #candidates == 0 then
             -- Every strategy in the plan tried (full enumeration): the host
             -- has no working strategy. Park it on the best measured one and
-            -- cool down: an immediate new sweep only churns the network.
-            rec.nstrategy = auto_best_strategy(rec, rating) or 0
+            -- cool down: an immediate new sweep only churns the network. When
+            -- nothing was ever measured, the floor is the plan's start (a
+            -- no_direct zone starts at 1): parking such a host on direct would
+            -- hand it straight to the blocker it cannot pass.
+            local floor = rec.start or 0
+            if rec.no_direct and floor < 1 then
+                floor = 1
+            end
+            rec.nstrategy = auto_best_strategy(rec, rating) or floor
             if send_exhausted then
                 send_signal("EXHAUSTED", peer, auto_strategy_name(rec), 10000)
             end
@@ -1156,10 +1166,19 @@ function auto_strategy(ctx, desync)
     end
 
     if not hrec.nstrategy then
-        -- start=N skips the direct phase (arg from the desync line).
-        -- Useful for profiles where direct is known-broken, e.g. voice
-        -- media over TCP 8443 that DPI throttles by SNI.
-        hrec.nstrategy = tonumber(desync.arg.start) or 0
+        -- start=N skips the direct phase (arg from the desync line): the
+        -- profile's traffic is known to be blocked, e.g. voice media over TCP
+        -- 8443 that DPI throttles by SNI. The number is kept as the record's
+        -- floor, so the exhaustion path below never parks the host on a lower
+        -- strategy. A no_direct= zone is the same floor keyed by hostname: the
+        -- filter says its hosts are blocked for everyone, so the ladder starts
+        -- at least at strategy 1 and never returns to direct.
+        local start = tonumber(desync.arg.start) or 0
+        if hrec.no_direct and start < 1 then
+            start = 1
+        end
+        hrec.start = start
+        hrec.nstrategy = start
     end
 
     if hrec.ctstrategy == 0 then
@@ -1590,7 +1609,17 @@ function auto_strategy(ctx, desync)
             -- of exchanged packets, in the pause of a healthy stream). Its
             -- verdict belongs to the measured speed above and the silence rule
             -- below - both need the flow itself to go quiet.
-            if not streaming and desync.outgoing and pos_client >= arg.udp_out and (pos_client - judged_client) >= arg.udp_out then
+            --
+            -- Not for a settled voice flow either (udp_voice=1): the server in
+            -- a quiet Discord channel sends nothing until someone speaks, so
+            -- outgoing packets without a fresh reply are exactly what a working
+            -- call looks like. The first server reply proved the path; after it
+            -- the packet count is not a verdict. A dead strategy is visible
+            -- before that reply, and a path that dies mid-call makes the client
+            -- reconnect - the new flow repeats the first-reply test.
+            local voice_settled = arg.udp_voice == 1 and crec.udp_success
+            if not streaming and not voice_settled and desync.outgoing
+                and pos_client >= arg.udp_out and (pos_client - judged_client) >= arg.udp_out then
                 crec.udp_judged_client = pos_client
                 crec.udp_judged_server = pos_server
 
@@ -1621,6 +1650,8 @@ function args_defaults(arg)
         udp_in = tonumber(arg.udp_in) or 1,
         udp_out = tonumber(arg.udp_out) or 4,
         udp_silence = tonumber(arg.udp_silence) or 3,
+        udp_voice = tonumber(arg.udp_voice) or 0,
+        no_direct = arg.no_direct,
         tcp_silence = tonumber(arg.tcp_silence) or 5,
         tcp_silence_windows = tonumber(arg.tcp_silence_windows) or c_tcp_silence_windows,
         throttle_window = tonumber(arg.throttle_window) or 3,

@@ -375,3 +375,39 @@ TEST_CASE("1.5.0 keeps the youtube QUIC profile ahead of the generic one", "[zap
 
 	CHECK(generic > end_tls);
 }
+
+// *.discord.media is blocked for everyone, so the plans that carry those hosts
+// must not spend a connection on direct: the TLS plan (voice WebSocket on 443)
+// names the zone in no_direct, and the voice UDP plan settles on the first
+// server reply - a quiet channel must not look like a dead strategy.
+TEST_CASE("discord.media skips direct and voice UDP settles on the first reply", "[zapret2][templates]")
+{
+	StrategiesZapret2Test t;
+
+	auto config = std::make_shared<File>();
+	config->open({ Core::get().configsPath() / "service_setting" }, ".config", true);
+	REQUIRE(config->isOpen());
+	t.serviceConfig(config);
+	t.optionalServices({ "youtube", "discord" });
+
+	t.strategies.changeDirVersion("1.6.2");
+	t.strategies.changeStrategy("strategy_super_c.config");
+
+	const auto& args = t.strategies.getStrategy();
+
+	auto contains = [&args](std::string_view needle)
+	{ return std::ranges::any_of(args, [needle](const std::string& line) { return line.contains(needle); }); };
+
+	CHECK(contains("auto_strategy:fails=3:maxseq=32768:reset:no_direct=discord.media,gateway.discord.gg"));
+	CHECK(contains("auto_strategy:fails=6:start=1:udp_voice=1"));
+
+	// Host policy is configured once at startup, not repeated in every plan.
+	const std::string policy = "--lua-init=unblock_host_policy[[stream=googlevideo.com,c.youtube.com,fbcdn.net;group=discord.media]]";
+	CHECK(std::ranges::count(args, policy) == 1);
+	for (const auto& line : args)
+		if (line.starts_with("--lua-desync=auto_strategy:"))
+		{
+			CHECK_FALSE(line.contains(":stream="));
+			CHECK_FALSE(line.contains(":group="));
+		}
+}
