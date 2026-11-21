@@ -17,7 +17,16 @@
 -- на узком --payload.
 --
 -- Как работает:
---   1. Сначала пробуем прямое соединение (direct, nstrategy = 0)
+--   1. Сначала пробуем прямое соединение (direct, nstrategy = 0). Если оно
+--      ответило, хост остаётся на нём: номер 0 не пишется в рейтинг
+--      (auto_rate_strategy), поэтому такой хост помнится флагом direct_ok и
+--      держит direct во главе кандидатов. Иначе хост, которому обход не нужен,
+--      после первого же сбоя уезжал на дез-стратегию и начинал подмешивать
+--      фейковые пакеты в рабочее соединение. Провалившийся direct помечается
+--      испробованным и возвращается только после полного круга. Потоковым
+--      семействам (googlevideo) это не достаётся: у них выбором владеет замер
+--      скорости, а удачное окно на direct доказывает только то, что шейпер
+--      пропустил первый бурст.
 --   2. TCP: вердикты по пакетам — ретрансмиссия до первых данных, RST в
 --      начале рукопожатия и DPI-redirect (http_reply 302/307). Ретрансмиссия
 --      судится только до ответа сервера (crec.handshake_ok): на живом
@@ -44,13 +53,13 @@
 --      успехов, ничьи — по номеру), затем неотмеченные 1..N. Стратегия, которая
 --      работает на многих хостах, лидирует и для нового хоста — так разбор
 --      сходится на нескольких широко рабочих стратегиях, а не размазывается по
---      плану. У потокового хоста (YouTube) охват не учитывается: его запись
---      общая на всю семью, скорость там замерена по-настоящему, и популярность
---      у API-хостов не должна сдвигать видео.
+--      плану. У потокового хоста (YouTube) охват не учитывается: он судится
+--      по настоящей скорости, и популярность у API-хостов не должна сдвигать
+--      видео.
 --      Работающая стратегия — не финал: замеренная скорость каждой успешной
---      стратегии хранится (rec.rate), и, увидев замеренно более быструю, семья
---      уходит на неё (auto_upgrade_strategy) — стратегия со временем может
---      зачахнуть, а довольствоваться первой живой нельзя.
+--      стратегии хранится (rec.rate), и, увидев замеренно более быструю,
+--      запись уходит на неё (auto_upgrade_strategy) — стратегия со временем
+--      может зачахнуть, а довольствоваться первой живой нельзя.
 --      Хост, который уже срабатывал (had_success), ротируется по успешным,
 --      но после c_success_cycles (2) полных кругов без успеха выходит в
 --      полный перебор (сначала неотмеченные), и если и там всё исчерпано —
@@ -95,12 +104,30 @@
 --                    замеренной стратегии, см. auto_upgrade_strategy)
 --   throttle_collapse=N — доля пика соединения, ниже которой окно плохое
 --                    (по умолч. 0.25; 0 — выключить проверку)
---   throttle_windows=N — сколько плохих окон подряд до провала (по умолч. 2)
+--   throttle_collapse_floor_bps=N — абсолютный потолок для проверки обвала,
+--                    Б/с (по умолч. 100000): выше этой скорости падение
+--                    относительно пика — полка провайдера, а не работа DPI.
+--                    Бурст на мегабайт и ровная полка в 200 КБ/с — обычная
+--                    форма линка, и 1080p на ней едет; обвал нужен там, где
+--                    поток срезан до ползания
+--   throttle_windows=N — сколько плохих окон подряд до провала (по умолч. 2).
+--                    Для потоковой семьи обвал ниже throttle_collapse_floor_bps
+--                    решает сразу, не дожидаясь счётчика провалов: каждая новая
+--                    сессия плеера начинается с бурста, два хороших окна
+--                    подтверждают ту же стратегию и обнуляют серию, так что
+--                    поток, который рвётся снова и снова, иначе не переедет
 --   stream_min_bytes=N — объём серверных байт, с которого пото́к считается
 --                    потоковым и его можно судить по скорости (по умолч.
 --                    200000). Ниже метки это проба или API-запрос: объёма у
 --                    них нет по природе, и вердикт им даёт ответ сервера, а не
 --                    скорость (иначе 403 на пробе валит рабочую стратегию).
+--   udp_stream_min_bytes=N — тот же порог для потокового хоста (googlevideo)
+--                    на QUIC (по умолч. 16384). На UDP пробы хелпера нет:
+--                    curl не умеет HTTP/3, поэтому объём googlevideo по QUIC —
+--                    это само видео. Метка 200 КБ здесь только тормозит судью:
+--                    ползущий поток добирается до неё за десятки секунд или не
+--                    добирается вовсе, и переключения не происходит, хотя
+--                    сервер уже отдаёт крохи.
 --   udp_out=N      — исходящих UDP пакетов для вердикта FAIL (по умолч. 4)
 --   udp_in=N       — входящих UDP пакетов: больше N — успех, иначе фейл (по умолч. 1)
 --   udp_silence=N  — секунд молчания сервера при живом исходящем потоке
@@ -114,30 +141,29 @@
 --                    Запрос, который просто держат (long-poll), не
 --                    переспрашивается — он подтверждён — и под правило
 --                    не попадает
+--   tcp_silence_windows=N — сколько таких окон подряд нужно до вердикта
+--                    (по умолч. 2). Одно тихое окно ещё не провал: плеер
+--                    между сегментами, догруженная страница и удержанный
+--                    запрос молчат, а клиент при этом ничего не переспрашивает.
+--                    Вердикт ставится, только когда клиент долбит через все
+--                    окна подряд, а сервер молчит; любой байт сервера
+--                    обнуляет серию. Потоковых семейств это не касается: у них
+--                    окно одно, как было, — там стопор и есть остановившееся
+--                    видео.
 --   reset          — отправлять RST при ошибке
 --   start=N        — начальный номер стратегии (0 = direct, по умолч. 0)
--- auto_host_group — группирует хосты одного семейства в общую стратегию.
--- googlevideo — видео-кэш Ютуба, ровно две зоны: googlevideo.com
--- (rr1---sn-*.googlevideo.com, r2---sn-*.googlevideo.com,
--- manifest/redirector.googlevideo.com) и c.youtube.com (региональные алиасы
--- rr4---sn-*.c.youtube.com, легаси lscache*/cache* и старые
--- o-o---preferred---<код>---v<N>---lscache1.c.youtube.com) — делят один hrec:
--- подобранная стратегия применяется ко всем сразу, при сбое/FAIL переключается
--- для всей группы, а не для каждого rr-хоста отдельно.
--- Голос Discord — вся семья *.discord.media: и c-<регион>-<хэш> (хэш уникален
--- на сессию), и формы без c- вроде finland14144.discord.media. Без группировки
--- каждая новая сессия/форма начинала бы перебор заново; с группировкой
--- подобранная стратегия помнится на всю семью (ключ stream.discord.media;
--- префикс stream. отделяет голосовые поддомены от сайта discord.media).
--- Судится как обычный TCP-хост — по ответу сервера (см. auto_host_record).
+-- auto_host_group — ключ записи хоста: хосты, которым нужна общая стратегия,
+-- делят один hrec. Сейчас это только голос Discord — вся семья *.discord.media:
+-- и c-<регион>-<хэш> (хэш уникален на сессию), и формы без c- вроде
+-- finland14144.discord.media. Без группировки каждая новая сессия/форма
+-- начинала бы перебор заново; с группировкой подобранная стратегия помнится на
+-- всю семью (ключ stream.discord.media; префикс stream. отделяет голосовые
+-- поддомены от сайта discord.media). Судится как обычный TCP-хост — по ответу
+-- сервера (см. auto_host_record).
+-- googlevideo и c.youtube.com остаются записями на каждый rr-хост; то, что это
+-- видео и судится по скорости, определяется зоной хоста в auto_host_record
+-- (rec.stream), а не ключом записи.
 function auto_host_group(hostkey)
-    -- Признак семьи — зона, а не маркер ячейки ---sn-: тем же маркером Google
-    -- именует кэши других продуктов (gvt1.com, c.docs, c.drive), а чужой
-    -- трафик в семье сдвигал бы и рейтинг стратегии, и throttle-судью.
-    if hostkey and (hostkey:find("googlevideo%.com$") or hostkey:find("%.c%.youtube%.com$")) then
-        return "googlevideo.com"
-    end
-
     if hostkey and hostkey:find("%.discord%.media$") then
         return "stream.discord.media"
     end
@@ -203,24 +229,41 @@ function auto_host_record(desync, askey)
     -- reachable, not that its data path delivers. Such a host is confirmed
     -- only by a healthy goodput window (see auto_confirm_goodput) and judged
     -- by the throttle path on both transports - TLS and QUIC.
-    rec.stream = (hostkey == "googlevideo.com")
+    --
+    -- The class is decided by the host's zone, never by the record key: the
+    -- key only says what the record is pooled by (one family or one rr-host),
+    -- and that is a local policy choice. Tying stream-ness to the family key
+    -- meant that as soon as the googlevideo grouping was gone, hostkey became
+    -- the bare rr-host, the equality check stopped matching and the whole
+    -- video family silently lost the speed judge - on TCP confirmation and on
+    -- QUIC goodput alike.
+    local stream_host = desync.track and desync.track.hostname
+    rec.stream = stream_host ~= nil and
+        (stream_host:find("googlevideo%.com$") ~= nil or stream_host:find("%.c%.youtube%.com$") ~= nil)
     return rec
 end
 
--- Fingerprint of the profile's plan: number of distinct strategy numbers in
--- it. Profiles with the same protocol but different plans (broad TLS 29
--- strategies vs voice TCP 7) get different askeys through this.
+-- Fingerprint of the profile's plan: the distinct strategy numbers still in it,
+-- sorted and joined. The count alone was too weak: two different plans with the
+-- same number of strategies (voice UDP and game UDP both carry two) got one
+-- askey, so their host records, ratings and failure counters were pooled and the
+-- verdicts of one plan steered the other.
 function auto_plan_id(plan)
     local uniq = {}
-    local n = 0
     for _, instance in pairs(plan) do
         local s = tonumber(instance.arg.strategy)
-        if s and not uniq[s] then
+        if s then
             uniq[s] = true
-            n = n + 1
         end
     end
-    return n
+
+    local nums = {}
+    for n in pairs(uniq) do
+        nums[#nums + 1] = n
+    end
+    table.sort(nums)
+
+    return table.concat(nums, ",")
 end
 
 function auto_conn_record(desync)
@@ -289,10 +332,48 @@ function auto_mark_success(hrec)
     hrec.full_enum = nil
 end
 
+-- direct (strategy number 0) never reaches the rating: auto_rate_strategy keeps
+-- number 0 out of it by design, and the candidate loop only walks 1..ctstrategy.
+-- So the successful set of a host that answered on direct stays empty and the
+-- ladder walks it onto a desync it does not need (the trap described in
+-- auto_strategy_candidates). Remember the success here instead.
+function auto_mark_direct(rec)
+    if rec.nstrategy == 0 then
+        rec.direct_ok = true
+    end
+end
+
+-- direct at the head of the candidates. Only for a host that really answered on
+-- it, and never for a streaming family: on googlevideo a healthy window on
+-- direct proves only that the shaper let the first burst through, and leading
+-- with direct pulled the family back onto no bypass at every failure - the
+-- measured ladder exists exactly to keep a stream on the strategy that measured
+-- best, so the stream keeps what it had (start=0 still tries direct first) and
+-- after a failure moves on like before.
+function auto_direct_first(rec, list)
+    if rec.stream or not rec.direct_ok or (rec.tried and rec.tried[0]) then
+        return list
+    end
+
+    local out = { 0 }
+    for _, n in ipairs(list) do
+        out[#out + 1] = n
+    end
+    return out
+end
+
 -- How many full passes a known-good host may make over the successful set
 -- (with no success) before it is allowed to fall back to strategies that
 -- never succeeded. Reset on every success, like the fails counter.
 local c_success_cycles = 2
+
+-- Consecutive quiet windows of the TCP silence rule before the strategy is
+-- blamed. One window is not evidence: a player between two segments, a page
+-- that already loaded and a held request all leave windows with no server
+-- bytes, and a verdict per lull reset a working connection and spent a
+-- strategy switch (field logs: SILENCE raining on hosts that need no bypass at
+-- all). Overridable per plan with tcp_silence_windows=N.
+local c_tcp_silence_windows = 2
 
 -- Ordered candidates for the host's next strategy. Successful strategies are
 -- ranked by measured throughput first (see auto_confirm_goodput), then by the
@@ -365,7 +446,7 @@ function auto_strategy_candidates(rec, rating, failures, coverage)
     -- because the no-candidates branch below resets the success-cycle ladder
     -- on every call and full_enum can never complete.
     if rec.had_success and not rec.full_enum and #proven > 0 then
-        return proven
+        return auto_direct_first(rec, proven)
     end
 
     local first, second
@@ -383,7 +464,9 @@ function auto_strategy_candidates(rec, rating, failures, coverage)
         out[#out + 1] = n
     end
 
-    return out
+    -- A host that answered on direct leads with it, before any desync it might
+    -- not need. The ladder still moves on once direct fails (rec.tried[0]).
+    return auto_direct_first(rec, out)
 end
 
 -- Best known strategy of the host: highest measured goodput first, then the
@@ -456,16 +539,27 @@ function auto_do_switch(rec, is_udp, askey, reason, peer, dport, send_exhausted,
         crec.tcp_srv_seen = nil
         crec.tcp_srv_time = nil
         crec.tcp_stalled = nil
+        crec.tcp_client_pkts = nil
+        crec.tcp_quiet_windows = nil
+        crec.tcp_quiet_client = nil
     end
 
     if not rec.tried then
         rec.tried = {}
     end
-    if rec.nstrategy and rec.nstrategy ~= 0 and not upgrade then
+    if rec.nstrategy and not upgrade then
+        -- direct is marked tried as well: once it failed for this host the
+        -- ladder walks on, and direct returns only after a pass resets the list
+        -- or the host succeeds on something else. It stays out of the plan-wide
+        -- scoreboard below: number 0 is not in any strategy_set, so the
+        -- ordering hint has nothing to compare it against.
         rec.tried[rec.nstrategy] = true
-        -- Shared across hosts of the plan: new hosts skip the strategies that
-        -- already failed elsewhere, so a dead plan is not re-walked from 1.
-        failures[rec.nstrategy] = (failures[rec.nstrategy] or 0) + 1
+        if rec.nstrategy ~= 0 then
+            -- Shared across hosts of the plan: new hosts skip the strategies
+            -- that already failed elsewhere, so a dead plan is not re-walked
+            -- from 1.
+            failures[rec.nstrategy] = (failures[rec.nstrategy] or 0) + 1
+        end
     end
 
     local candidates = auto_strategy_candidates(rec, rating, failures, coverage)
@@ -665,6 +759,26 @@ end
 -- auto_upgrade_strategy). Tunable per plan with throttle_min_bps.
 local c_throttle_min_bps = 50000
 
+-- The peak-relative test needs an absolute ceiling, B/s. A provider that lets
+-- a burst through and then holds a steady plateau is not doing DPI work, and a
+-- 200 KB/s plateau carries 1080p: judged against a 1 MB/s burst it looks like
+-- a collapse, and the family leaves a stream that is playing fine. The
+-- collapse rule exists for a flow cut down to a crawl after the burst, so it
+-- only fires below this rate; above it the window is a plateau and, being
+-- above throttle_min_bps, a healthy one - it still rates the strategy.
+-- Tunable per plan with throttle_collapse_floor_bps (0 - judge any drop).
+local c_throttle_collapse_floor_bps = 100000
+
+-- Volume mark for a streaming host on QUIC, bytes. The TCP mark (200000) is
+-- high because the helper probes googlevideo over TCP and gets a small 403
+-- page - judging that probe by speed used to fail a working strategy. There is
+-- no HTTP/3 probe: curl speaks TCP only, so everything googlevideo sends over
+-- QUIC is the video itself and the handshake is only a few KB. A crawl of a
+-- few KB/s would need a minute to reach 200 KB (a flow that reconnects keeps
+-- resetting it), and the judge would stay silent while the player starves.
+-- Tunable per plan with udp_stream_min_bytes.
+local c_udp_stream_min_bytes = 16384
+
 -- Per-connection downstream goodput (throttling-after-handshake). The
 -- conntrack counter is cumulative for the whole flow, so a packet that never
 -- reaches Lua (another profile's filter, a skipped block) does not lose its
@@ -739,21 +853,32 @@ end
 -- connection has seen (DPI throttling arrives as a sharp drop after a fast
 -- start, not as a uniformly slow link). The peak is per connection, so a
 -- legitimately lower bitrate in a new connection is not mistaken for a
--- collapse. Returns true when the switch threshold is reached; the streak
--- restarts then, so one verdict costs throttle_windows bad windows.
+-- collapse. A collapse is judged only below throttle_collapse_floor_bps: a
+-- steady plateau above it is a working stream (a 1080p one), and the burst
+-- that preceded it is the provider's shaping, not a DPI cut. Returns true when
+-- the switch threshold is reached; the streak restarts then, so one verdict
+-- costs throttle_windows bad windows. The third value marks a real collapse:
+-- the caller makes it decisive for a video family, because the failure
+-- counter cannot accumulate there - every new connection's burst confirms the
+-- strategy and clears the streak, so a stream that keeps collapsing never
+-- moves.
 function auto_throttle_judge(crec, arg, rate)
     local peak = crec.t_peak or 0
     local min = tonumber(arg.throttle_min_bps) or c_throttle_min_bps
     local ratio = tonumber(arg.throttle_collapse) or 0
+    local floor = tonumber(arg.throttle_collapse_floor_bps)
+        or c_throttle_collapse_floor_bps
 
-    local bad = rate < min or (ratio > 0 and peak > 0 and rate < peak * ratio)
+    local collapsed = ratio > 0 and peak > 0 and rate < peak * ratio
+        and (floor <= 0 or rate < floor)
+    local bad = rate < min or collapsed
     if rate > peak then
         crec.t_peak = rate
     end
 
     if not bad then
         crec.t_bad = 0
-        return false, false
+        return false, false, false
     end
     -- A bad window breaks the healthy streak: the success confirmation must
     -- see two good windows in a row, otherwise a strategy that is collapsing
@@ -762,9 +887,9 @@ function auto_throttle_judge(crec, arg, rate)
     crec.t_bad = (crec.t_bad or 0) + 1
     if crec.t_bad >= (tonumber(arg.throttle_windows) or 2) then
         crec.t_bad = 0
-        return true, true
+        return true, true, collapsed
     end
-    return false, true
+    return false, true, collapsed
 end
 
 -- Healthy window: rate the strategy by real goodput. A streaming connection
@@ -783,6 +908,7 @@ function auto_confirm_goodput(hrec, crec, arg, rate, is_udp, askey)
 
     crec.goodput_ok = true
     if hrec.nstrategy == 0 then
+        auto_mark_direct(hrec)
         return
     end
 
@@ -840,22 +966,50 @@ function auto_upgrade_strategy(hrec, crec, is_udp, askey, peer, dport)
     return true
 end
 
+-- Live throughput of the traffic the engine carries, split by direction, for
+-- the status line. auto_rate_beat flushes both counters once a second.
+--
+-- The counters come from the conntrack byte counters, not from the payload of
+-- the packet that woke Lua up. The QUIC profile has no --in-range=a (only the
+-- TLS and voice templates enable incoming calls), so on a UDP download Lua is
+-- only called for the client's outgoing packets: a per-packet payload account
+-- counts upload only and the status line reads "0 B/s" while the video plays.
+-- The conntrack counters are advanced by C for every packet of the flow, so
+-- their delta since the previous call covers the download as well, no matter
+-- which direction woke Lua up. The baseline lives on the connection record.
+-- Retransmissions are included, just as in the counter itself: this is the
+-- traffic the engine carries, not the amount of unique data.
+function auto_rate_account(crec, desync)
+    local pos = desync.track and desync.track.pos
+    if not pos then
+        return
+    end
+
+    local up_now = pos.client and pos.client.pbcounter or 0
+    local down_now = pos.server and pos.server.pbcounter or 0
+    if not crec.rate_up_last then
+        crec.rate_up_last = up_now
+        crec.rate_down_last = down_now
+        return
+    end
+
+    local up = up_now - crec.rate_up_last
+    local down = down_now - crec.rate_down_last
+    crec.rate_up_last = up_now
+    crec.rate_down_last = down_now
+
+    if up > 0 then
+        _G.zapret_rate_up = (_G.zapret_rate_up or 0) + up
+    end
+    if down > 0 then
+        _G.zapret_rate_down = (_G.zapret_rate_down or 0) + down
+    end
+end
+
 function auto_strategy(ctx, desync)
     orchestrate(ctx, desync)
     if not desync.track then
         return
-    end
-
-    -- Live throughput of the traffic the applied strategies actually process,
-    -- split by direction: every packet auto_strategy sees is one a desync
-    -- profile handled. Raw per-packet payload (not reasm_data) so a
-    -- multi-segment message is not counted once per segment. auto_rate_beat
-    -- flushes both counters once a second.
-    local plen = #(desync.dis.payload or "")
-    if desync.outgoing then
-        _G.zapret_rate_up = (_G.zapret_rate_up or 0) + plen
-    else
-        _G.zapret_rate_down = (_G.zapret_rate_down or 0) + plen
     end
 
     -- TCP and UDP run in different winws2 profiles with different strategy
@@ -866,7 +1020,24 @@ function auto_strategy(ctx, desync)
     -- to strategy numbers that do not exist in the other profile's plan and
     -- no instances are executed at all.
     local is_udp = desync.dis.udp ~= nil
-    local askey = (is_udp and "auto_strategy_udp" or "auto_strategy") .. "#" .. auto_plan_id(desync.plan)
+    local crec = auto_conn_record(desync)
+    local plen = #(desync.dis.payload or "")
+
+    -- Bytes of the flow since the previous packet: the status line rate.
+    auto_rate_account(crec, desync)
+
+    -- The plan fingerprint is a property of the profile, and this runs for every
+    -- packet: keep it on the connection record, where the profile cannot change,
+    -- and pay for the walk over the plan once per connection.
+    local plan_id = crec and crec.plan_id
+    if not plan_id then
+        plan_id = auto_plan_id(desync.plan)
+        if crec then
+            crec.plan_id = plan_id
+        end
+    end
+
+    local askey = (is_udp and "auto_strategy_udp" or "auto_strategy") .. "#" .. plan_id
     local hrec = auto_host_record(desync, askey)
     if not hrec then
         return
@@ -932,8 +1103,6 @@ function auto_strategy(ctx, desync)
             hrec.success_cycles = nil
         end
     end
-
-    local crec = auto_conn_record(desync)
 
     local host_name = desync.track and desync.track.hostname
 
@@ -1055,17 +1224,27 @@ function auto_strategy(ctx, desync)
             if hrec.stream and crec.streamed then
                 local rate = auto_throttle_rate(crec, arg, now)
                 if rate then
-                    local fire, bad = auto_throttle_judge(crec, arg, rate)
+                    local fire, bad, collapse = auto_throttle_judge(crec, arg, rate)
                     if fire then
                         ULOG("WARNING",
                             "zapret:auto_strategy: THROTTLE " .. name .. " " .. math.floor(rate) .. "B/s peak=" ..
                                 math.floor(crec.t_peak or 0) .. "->" .. host_or_ip .. ":" .. dport)
                         auto_request_check(host_name, hrec)
 
+                        -- A stream cut to a crawl is dead now, not one failure
+                        -- to accumulate until the threshold: the counter is
+                        -- cleared by every new connection's burst (the player
+                        -- reconnects, two healthy windows confirm the same
+                        -- strategy, the streak resets), so a family that keeps
+                        -- collapsing would never move. A plateau above the
+                        -- collapse floor never reaches this branch, and the
+                        -- verdict already costs throttle_windows bad windows.
+                        --
                         -- Kill the stalled connection only when the strategy
                         -- actually changes: an intermediate fire under the
                         -- fails threshold leaves the flow alone.
-                        if auto_check_fails(hrec, arg, crec, not hrec.had_success) then
+                        local decisive = collapse
+                        if auto_check_fails(hrec, arg, crec, decisive or not hrec.had_success) then
                             auto_reset_connection(desync, arg, name, host_or_ip, dport, true)
                             auto_fail_helper_strategy(name, host_name)
                             auto_do_switch(hrec, false, askey, "THROTTLE", host_or_ip, dport,
@@ -1093,14 +1272,21 @@ function auto_strategy(ctx, desync)
             -- answer never comes, and the strategy looked confirmed while the
             -- app hung on "starting". A request that is merely held (long-poll)
             -- was ACKed and is not retransmitted, so it does not trip this rule.
-            if desync.outgoing and plen > 0 and crec.handshake_ok and is_retransmission(desync) then
-                crec.tcp_stalled = true
+            if desync.outgoing and plen > 0 then
+                crec.tcp_client_pkts = (crec.tcp_client_pkts or 0) + 1
+                if crec.handshake_ok and is_retransmission(desync) then
+                    crec.tcp_stalled = true
+                end
             end
 
             if srv_bytes > (crec.tcp_srv_seen or 0) then
                 crec.tcp_srv_seen = srv_bytes
                 crec.tcp_srv_time = now
                 crec.tcp_stalled = nil
+                -- The server moved: whatever the client was repeating got
+                -- through, so the quiet run is over.
+                crec.tcp_quiet_windows = 0
+                crec.tcp_quiet_client = crec.tcp_client_pkts
             end
 
             local tcp_silence = tonumber(arg.tcp_silence) or 0
@@ -1109,17 +1295,39 @@ function auto_strategy(ctx, desync)
                 crec.tcp_srv_time = now
                 crec.tcp_stalled = nil
 
-                ULOG("WARNING",
-                    "zapret:auto_strategy: SILENCE TCP " .. name .. "->" .. host_or_ip .. ":" .. dport .. " srv=" ..
-                        srv_bytes)
+                -- One quiet window is not a verdict. Only a run of them with
+                -- the client pushing through every one counts: tcp_silence_windows
+                -- full windows of client packets against a mute server. A lull
+                -- (player between segments, loaded page, held request) sends
+                -- nothing, so its window breaks the run instead of ending the
+                -- connection.
+                --
+                -- A streaming family is the exception again: for it a stall is
+                -- the playback stopping, and a second window is time the viewer
+                -- pays for (the player's own API and manifest calls are small
+                -- flows under the volume mark, so this rule owns them). It
+                -- reacts on the first window, as before; the run is required
+                -- where the false positives live - ordinary small flows.
+                local needed = hrec.stream and 1 or (tonumber(arg.tcp_silence_windows) or c_tcp_silence_windows)
+                local quiet = (crec.tcp_quiet_client or 0) < (crec.tcp_client_pkts or 0)
+                crec.tcp_quiet_client = crec.tcp_client_pkts
+                crec.tcp_quiet_windows = quiet and ((crec.tcp_quiet_windows or 0) + 1) or 0
 
-                if auto_check_fails(hrec, arg, crec, not hrec.had_success) then
-                    auto_reset_connection(desync, arg, name, host_or_ip, dport, true)
-                    auto_fail_helper_strategy(name, host_name)
-                    auto_do_switch(hrec, false, askey, "SILENCE", host_or_ip, dport, false, crec)
+                if crec.tcp_quiet_windows >= needed then
+                    crec.tcp_quiet_windows = 0
+
+                    ULOG("WARNING",
+                        "zapret:auto_strategy: SILENCE TCP " .. name .. "->" .. host_or_ip .. ":" .. dport .. " srv=" ..
+                            srv_bytes)
+
+                    if auto_check_fails(hrec, arg, crec, not hrec.had_success) then
+                        auto_reset_connection(desync, arg, name, host_or_ip, dport, true)
+                        auto_fail_helper_strategy(name, host_name)
+                        auto_do_switch(hrec, false, askey, "SILENCE", host_or_ip, dport, false, crec)
+                    end
+
+                    return auto_strategy_plan(desync, hrec, verdict)
                 end
-
-                return auto_strategy_plan(desync, hrec, verdict)
             end
 
             -- Confirm once per connection: the server answered and the failure
@@ -1142,6 +1350,7 @@ function auto_strategy(ctx, desync)
                     auto_rate_strategy(false, askey, hrec)
                     crec.rated_n = hrec.nstrategy
                 end
+                auto_mark_direct(hrec)
                 hrec.had_success = true
                 auto_mark_success(hrec)
 
@@ -1192,22 +1401,34 @@ function auto_strategy(ctx, desync)
             --
             -- Same flow class as on the TCP side: a QUIC flow that never
             -- carried the volume mark (an API call, a handshake-only reply) is
-            -- not judged by speed either.
+            -- not judged by speed either. The mark is lower for a streaming
+            -- host: googlevideo over QUIC has no helper probe (curl is TCP
+            -- only), so every byte there is the video, and waiting for the TCP
+            -- mark left a crawling stream unjudged for tens of seconds while
+            -- the player starved.
             local streaming = hrec.stream or (desync.track.l7proto == "quic")
             local srv_bytes = desync.track.pos.server and desync.track.pos.server.pbcounter or 0
-            if not crec.streamed and srv_bytes >= arg.stream_min_bytes then
+            local stream_mark = arg.stream_min_bytes
+            if hrec.stream then
+                stream_mark = arg.udp_stream_min_bytes
+            end
+            if not crec.streamed and srv_bytes >= stream_mark then
                 crec.streamed = true
             end
             if streaming and crec.streamed then
                 auto_throttle_account(crec, desync, now)
                 local rate = auto_throttle_rate(crec, arg, now)
                 if rate then
-                    local fire, bad = auto_throttle_judge(crec, arg, rate)
+                    local fire, bad, collapse = auto_throttle_judge(crec, arg, rate)
                     if fire then
                         ULOG("WARNING",
                             "zapret:auto_strategy: THROTTLE-UDP " .. name .. " " .. math.floor(rate) .. "B/s peak=" ..
                                 math.floor(crec.t_peak or 0) .. "->" .. host_or_ip .. ":" .. dport)
-                        if auto_check_fails(hrec, arg, crec, not hrec.had_success) then
+                        -- Same as on TCP, for the video family only: a generic
+                        -- QUIC flow (voice, game) is low-rate by nature and
+                        -- keeps the failure counter.
+                        local decisive = hrec.stream and collapse
+                        if auto_check_fails(hrec, arg, crec, decisive or not hrec.had_success) then
                             auto_do_switch(hrec, true, askey, "THROTTLE-UDP", host_or_ip, dport,
                                 false, crec)
                         end
@@ -1268,6 +1489,7 @@ function auto_strategy(ctx, desync)
                         ULOG("OK", "zapret:auto_strategy: CONFIRMED UDP " .. name .. "->" .. host_or_ip .. ":" .. dport)
 
                         auto_rate_strategy(true, askey, hrec)
+                        auto_mark_direct(hrec)
                         hrec.had_success = true
                         crec.rated_n = hrec.nstrategy
                         auto_mark_success(hrec)
@@ -1281,7 +1503,15 @@ function auto_strategy(ctx, desync)
             -- the last verdict. Outgoing only, re-armed every udp_out outgoing
             -- packets, so a broken long-lived flow keeps switching strategies
             -- instead of freezing on the first verdict.
-            if desync.outgoing and pos_client >= arg.udp_out and (pos_client - judged_client) >= arg.udp_out then
+            --
+            -- Not for a streaming flow: a video client ACKs its burst while the
+            -- server pauses between segments, so a handful of client packets
+            -- without a fresh reply is the normal shape of a download, not a
+            -- dead strategy (field logs: googlevideo QUIC failed after thousands
+            -- of exchanged packets, in the pause of a healthy stream). Its
+            -- verdict belongs to the measured speed above and the silence rule
+            -- below - both need the flow itself to go quiet.
+            if not streaming and desync.outgoing and pos_client >= arg.udp_out and (pos_client - judged_client) >= arg.udp_out then
                 crec.udp_judged_client = pos_client
                 crec.udp_judged_server = pos_server
 
@@ -1313,11 +1543,15 @@ function args_defaults(arg)
         udp_out = tonumber(arg.udp_out) or 4,
         udp_silence = tonumber(arg.udp_silence) or 3,
         tcp_silence = tonumber(arg.tcp_silence) or 5,
+        tcp_silence_windows = tonumber(arg.tcp_silence_windows) or c_tcp_silence_windows,
         throttle_window = tonumber(arg.throttle_window) or 3,
         throttle_min_bps = tonumber(arg.throttle_min_bps) or c_throttle_min_bps,
         throttle_collapse = tonumber(arg.throttle_collapse) or 0.25,
+        throttle_collapse_floor_bps =
+            tonumber(arg.throttle_collapse_floor_bps) or c_throttle_collapse_floor_bps,
         throttle_windows = tonumber(arg.throttle_windows) or 2,
         stream_min_bytes = tonumber(arg.stream_min_bytes) or 200000,
+        udp_stream_min_bytes = tonumber(arg.udp_stream_min_bytes) or c_udp_stream_min_bytes,
         reset = arg.reset ~= nil or false
     }
 end
@@ -1334,10 +1568,11 @@ end
 
 timer_set("auto_ready_beat", "auto_ready_beat", 5000, false, {})
 
--- Throughput meter: auto_strategy sums the payload of every packet it sees
--- (the desynced traffic), split into download/upload. This timer flushes both
--- once a second as "zapret_rate" (download|upload bytes/s) over the IPC to
--- unblock's UI, then resets the counters so the value is the last-second rate.
+-- Throughput meter: auto_rate_account turns the conntrack byte counters into
+-- per-direction deltas (see there), so the meter follows the whole flow, not
+-- only the packets that reach Lua. This timer flushes both counters once a
+-- second as "zapret_rate" (download|upload bytes/s) over the IPC to unblock's
+-- UI, then resets the counters so the value is the last-second rate.
 function auto_rate_beat(name, data)
     send_signal("LATEST", "zapret_rate", tostring(_G.zapret_rate_down or 0) .. "|" .. tostring(_G.zapret_rate_up or 0),
         9999)
