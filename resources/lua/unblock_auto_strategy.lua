@@ -36,16 +36,18 @@
 --      звонок Discord после этого рвётся). Работающий TCP подтверждается
 --      ответом сервера (п. 3), а троттлинг после рукопожатия ловит
 --      throttle-судья (conntrack-счётчик байт сервера,
---      track.pos.server.pbcounter): потоковые хосты (googlevideo) судятся по
+--      track.pos.server.pbcounter): потоковые хосты (googlevideo, fbcdn) судятся по
 --      скорости и на TLS, и на QUIC (п. 5), а обычный TCP (API, long-poll) —
 --      нет, он низкоскоростной по природе. Одно соединение докладывает
 --      провал не чаще раза в 2 секунды, счётчик fails сбрасывается по времени
 --      (time) или настоящим успехом.
---   3. Положительный вердикт — входящий tls_server_hello/http_reply: он
---      подтверждает стратегию для helper (VALID) и рейтинга — для обычного TCP
---      этого достаточно. Для потоковых хостов (googlevideo) и QUIC рукопожатия
---      мало: успех ставит только здоровое окно скорости, иначе «сайт открылся,
---      видео стоит» навсегда закрепляло бы троттлящую стратегию.
+--   3. Положительный вердикт — входящий tls_server_hello/http_reply плюс
+--      прикладные данные после запроса (app_seen). Само рукопожатие ответом не
+--      считается: сервер пожал руку и замолчал — соединение не подтверждается,
+--      и серия провалов не обнуляется, иначе «открывшийся, но мёртвый» сайт
+--      навсегда закреплял бы стратегию. Для потоковых хостов (googlevideo) и
+--      QUIC рукопожатия тем более мало: успех ставит только здоровое окно
+--      скорости.
 --   3b. Рейтинг стратегий (в пределах плана и прогона winws2): +1 к счётчику
 --      успехов стратегии, плюс хост попадает в охват стратегии (сколько разных
 --      хостов она подтвердила). При переключении кандидаты берутся в порядке:
@@ -151,21 +153,90 @@
 --                    окно одно, как было, — там стопор и есть остановившееся
 --                    видео.
 --   reset          — отправлять RST при ошибке
---   start=N        — начальный номер стратегии (0 = direct, по умолч. 0)
--- auto_host_group — ключ записи хоста: хосты, которым нужна общая стратегия,
--- делят один hrec. Сейчас это только голос Discord — вся семья *.discord.media:
--- и c-<регион>-<хэш> (хэш уникален на сессию), и формы без c- вроде
--- finland14144.discord.media. Без группировки каждая новая сессия/форма
--- начинала бы перебор заново; с группировкой подобранная стратегия помнится на
--- всю семью (ключ stream.discord.media; префикс stream. отделяет голосовые
--- поддомены от сайта discord.media). Судится как обычный TCP-хост — по ответу
--- сервера (см. auto_host_record).
--- googlevideo и c.youtube.com остаются записями на каждый rr-хост; то, что это
--- видео и судится по скорости, определяется зоной хоста в auto_host_record
--- (rec.stream), а не ключом записи.
-function auto_host_group(hostkey)
-    if hostkey and hostkey:find("%.discord%.media$") then
-        return "stream.discord.media"
+--   start=N        — начальный номер стратегии (0 = direct, по умолч. 0).
+--                    Это пол, а не только первый шаг: после исчерпания плана
+--                    запись не падает ниже него, и direct в кандидатах такого
+--                    хоста не появляется
+--   no_direct=зоны — зоны через запятую (например discord.media): хосты этих
+--                    зон никогда не идут напрямую. Начальный номер становится
+--                    не ниже start (минимум 1), а исчерпание плана не
+--                    откатывает их в direct. Для фильтра, весь hostlist
+--                    которого заведомо заблокирован: пробовать direct — это
+--                    терять соединение ради улики, которая уже известна
+--   udp_voice=1    — голосовой UDP: после первого ответа сервера пакетный
+--                    счётчик больше не судит поток. В тихом голосовом канале
+--                    сервер молчит, пока никто не говорит, — это не повод
+--                    валить рабочую стратегию. Мёртвая стратегия видна до
+--                    первого ответа (клиент шлёт, сервер не ответил ни разу);
+--                    если путь умер позже, клиент переподключится и новый
+--                    поток снова пройдёт проверку первого ответа
+-- Общие зоны хостов задаются один раз при старте из templates.config:
+--   --lua-init=unblock_host_policy[[stream=googlevideo.com,c.youtube.com,fbcdn.net;group=discord.media]]
+-- unblock_host_policy пишет их в _G.unblock_stream_zones и
+-- _G.unblock_group_zones, поэтому все auto_strategy читают одну конфигурацию.
+-- stream — большие потоки этих зон судятся по скорости; group — поддомены
+-- делят один hrec (group.<зона>), корень зоны остаётся отдельной записью.
+-- Без вызова unblock_host_policy скрытых списков и группировки нет.
+-- auto_host_group — ключ записи хоста. Группировка нужна, когда имя меняется
+-- от сессии к сессии (c-<регион>-<хэш>.discord.media): без неё каждая новая
+-- сессия начинала бы перебор заново. Признак потокового хоста (rec.stream)
+-- не зависит от ключа записи.
+-- Startup host policy, called once from templates.config via --lua-init after
+-- this file is loaded:
+--   unblock_host_policy[[stream=zone1,zone2;group=voice.zone]]
+-- A long-bracket string, not a table: the service wrapper strips {} and quotes
+-- from command-line Lua code, and this form survives it. Keeping the zones in
+-- _G gives every auto_strategy profile the same host classes without repeating
+-- the lists in every plan. A table call is kept for tests.
+function unblock_host_policy(spec)
+    local stream, group
+    if type(spec) == "table" then
+        stream, group = spec.stream, spec.group
+    else
+        for pair in tostring(spec):gmatch("[^;]+") do
+            local key, value = pair:match("^%s*([^=]+)%s*=%s*(.-)%s*$")
+            if key == "stream" then
+                stream = value
+            elseif key == "group" then
+                group = value
+            end
+        end
+    end
+    _G.unblock_stream_zones = stream
+    _G.unblock_group_zones = group
+end
+
+-- A zone named in stream=/no_direct=: the host itself or any subdomain.
+-- The zone is matched on the hostname, never on the record key: grouping is a
+-- local policy (see auto_host_group), while "direct is pointless here" belongs
+-- to the zone and must survive any regrouping.
+function auto_host_in_zones(host, zones)
+    if not host or not zones then
+        return false
+    end
+    host = host:lower()
+    for zone in string.gmatch(zones, "[^,]+") do
+        zone = zone:lower():match("^%s*(.-)%s*$")
+        if zone ~= "" and (host == zone or host:sub(-#zone - 1) == "." .. zone) then
+            return true
+        end
+    end
+    return false
+end
+
+-- Subdomains of a group= zone share one record. The zone itself stays out:
+-- discord.media is a website, while the ever-changing voice hosts below it
+-- benefit from one remembered strategy. No configured zones, no grouping.
+function auto_host_group(hostkey, zones)
+    if not hostkey or not zones then
+        return hostkey
+    end
+    local host = hostkey:lower()
+    for zone in string.gmatch(zones, "[^,]+") do
+        zone = zone:lower():match("^%s*(.-)%s*$")
+        if zone ~= "" and host:sub(-#zone - 1) == "." .. zone then
+            return "group." .. zone
+        end
     end
     return hostkey
 end
@@ -180,7 +251,7 @@ end
 function auto_host_record(desync, askey)
     local hostkey
     if desync.track and desync.track.hostname then
-        hostkey = auto_host_group(desync.track.hostname)
+        hostkey = auto_host_group(desync.track.hostname, _G.unblock_group_zones)
     else
         hostkey = host_ip(desync)
         -- Same voice server, different client protocols: browser WebRTC
@@ -225,10 +296,13 @@ function auto_host_record(desync, askey)
     -- The key is kept on the record: a confirmation registers the host in the
     -- strategy's coverage, and the coverage is per host, not per connection.
     rec.key = hostkey
-    -- Streaming host (googlevideo): a server answer proves the site is
-    -- reachable, not that its data path delivers. Such a host is confirmed
-    -- only by a healthy goodput window (see auto_confirm_goodput) and judged
-    -- by the throttle path on both transports - TLS and QUIC.
+    -- Streaming host (googlevideo, Instagram's fbcdn media CDN): a server
+    -- answer proves the site is reachable, not that its data path delivers.
+    -- Such a host is confirmed only by a healthy goodput window (see
+    -- auto_confirm_goodput) and judged by the throttle path on both
+    -- transports - TLS and QUIC. Instagram's HTML/API can look perfect while
+    -- reels and photos crawl on fbcdn; without this class there is no
+    -- THROTTLE verdict for exactly the traffic the user came for.
     --
     -- The class is decided by the host's zone, never by the record key: the
     -- key only says what the record is pooled by (one family or one rr-host),
@@ -238,8 +312,11 @@ function auto_host_record(desync, askey)
     -- video family silently lost the speed judge - on TCP confirmation and on
     -- QUIC goodput alike.
     local stream_host = desync.track and desync.track.hostname
-    rec.stream = stream_host ~= nil and
-        (stream_host:find("googlevideo%.com$") ~= nil or stream_host:find("%.c%.youtube%.com$") ~= nil)
+    rec.stream = auto_host_in_zones(stream_host, _G.unblock_stream_zones)
+    -- Zones the filter declared as never going direct (no_direct=discord.media):
+    -- direct is not tried at all. Sticky on the record, so it also holds after
+    -- the plan is exhausted and after a regrouping of the key.
+    rec.no_direct = rec.no_direct or auto_host_in_zones(stream_host, desync.arg and desync.arg.no_direct)
     return rec
 end
 
@@ -349,9 +426,11 @@ end
 -- with direct pulled the family back onto no bypass at every failure - the
 -- measured ladder exists exactly to keep a stream on the strategy that measured
 -- best, so the stream keeps what it had (start=0 still tries direct first) and
--- after a failure moves on like before.
+-- after a failure moves on like before. A no_direct= zone (discord.media) is
+-- the same policy from the config side: the host never goes direct, so direct
+-- must not come back even if some old verdict marked it good.
 function auto_direct_first(rec, list)
-    if rec.stream or not rec.direct_ok or (rec.tried and rec.tried[0]) then
+    if rec.stream or rec.no_direct or not rec.direct_ok or (rec.tried and rec.tried[0]) then
         return list
     end
 
