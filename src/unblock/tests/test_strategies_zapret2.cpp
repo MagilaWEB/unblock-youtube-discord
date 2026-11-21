@@ -116,3 +116,58 @@ TEST_CASE("older strategy configs use the shared blocks", "[zapret2][templates]"
 	CHECK(contains("--filter-udp=0,1024-65535"));	 // %TEMPLATES_GAME_UDP% + ports
 	CHECK(contains("--template=START_QUIC"));		 // plans stay in the config
 }
+
+// 1.5.0 never switched to %TEMPLATES_HEAD%: it keeps its own header, so the
+// blob definitions living in the shared HEAD do not reach it. The voice drover
+// inlined into that set references JUNK_00/JUNK_01, whose definitions sat only
+// in the shared header, and every 1.5.0 config shipped two blobs that did not
+// exist (_blob_init_to_zapret warned at load). The definitions are now inline
+// in each 1.5.0 header; this keeps them there when a plan changes.
+TEST_CASE("1.5.0 strategy configs define every blob they reference", "[zapret2][templates]")
+{
+	StrategiesZapret2Test t;
+
+	auto config = std::make_shared<File>();
+	config->open({ Core::get().configsPath() / "service_setting" }, ".config", true);
+	REQUIRE(config->isOpen());
+	t.serviceConfig(config);
+	t.optionalServices({ "discord", "youtube", "game_mod" });
+
+	t.strategies.changeDirVersion("1.5.0");
+
+	static const std::regex			   blob_ref{ R"(:blob=([^:]+)|:seqovl_pattern=([^:]+)|:pattern=([^:]+))" };
+	// Engine built-ins: winws2 registers these names itself (ApplyDefaultBlobs
+	// in zapret2's nfq2/nfqws.c), fake_default_udp/tcp are config-defined and
+	// must have a --blob= line of their own.
+	static const std::set<std::string> builtin{ "fake_default_tls", "fake_default_http", "fake_default_quic" };
+
+	const auto files = t.strategies.getStrategyList();
+	REQUIRE_FALSE(files.empty());
+
+	for (const auto& file : files)
+	{
+		t.strategies.changeStrategy(file);
+
+		const auto& args = t.strategies.getStrategy();
+
+		std::set<std::string> defined;
+		for (const auto& line : args)
+			if (line.starts_with("--blob="))
+				defined.insert(line.substr(7, line.find(':', 7) - 7));
+
+		for (const auto& line : args)
+			for (auto it = std::sregex_iterator(line.begin(), line.end(), blob_ref); it != std::sregex_iterator(); ++it)
+			{
+				std::string key;
+				for (auto group : std::ranges::iota_view(1U, (*it).size()))
+					if ((*it)[group].matched)
+						key = (*it)[group].str();
+
+				CHECK_FALSE(key.empty());
+
+				if (!builtin.contains(key))
+					CHECK(defined.contains(key));
+			}
+	}
+}
+
