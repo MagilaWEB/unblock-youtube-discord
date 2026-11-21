@@ -935,6 +935,34 @@ TEST_CASE("unjudged: stale probe is promoted and sticky", "[helper][unjudged]")
 	CHECK(t.unjudgedHosts().contains("a.com"));
 }
 
+TEST_CASE("unjudged: a probe after an error demotes the stale error", "[helper][unjudged]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("ERR:a.com:direct");
+	REQUIRE(t.errorHosts().size() == 1);
+
+	// The probe that follows the error finished and lua sent no verdict: the
+	// error's strategy is stale - lua already moved the host on - and the host
+	// is really "no verdict", so it must leave the error list.
+	t.probedAt()["a.com"] = std::chrono::steady_clock::now();
+	t.refreshUnjudged();
+
+	CHECK(t.errorHosts().empty());
+	REQUIRE(t.unjudgedHosts().contains("a.com"));
+	CHECK(t.unjudgedHosts().at("a.com").strategy == "no-verdict");
+}
+
+TEST_CASE("unjudged: an error with no probe since stays an error", "[helper][unjudged]")
+{
+	ZapretHelperTest t;
+	t.handleMessage("ERR:a.com:direct");
+	t.refreshUnjudged();
+
+	CHECK(t.errorHosts().size() == 1);
+	CHECK(t.errorStrategy("a.com") == "direct");
+	CHECK(t.unjudgedHosts().empty());
+}
+
 TEST_CASE("unjudged: VALID drops unjudged and probe marks", "[helper][unjudged]")
 {
 	ZapretHelperTest t;

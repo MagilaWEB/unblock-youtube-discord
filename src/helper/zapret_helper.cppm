@@ -67,7 +67,10 @@ export class ZapretHelper
 	// never produced a verdict (e.g. the connection died before ClientHello,
 	// so the winws2 tls_client_hello/http_req filter never matched and the
 	// host stayed invisible to lua). Sticky: rechecked on the stale-error
-	// interval, cleared by any real verdict (VALID/ERR/EXHAUSTED).
+	// interval, cleared by any real verdict (VALID/ERR/EXHAUSTED). A stale
+	// error entry is demoted here too: after a probe with no verdict the
+	// error's strategy name is already superseded, and a host lua cannot see
+	// would otherwise stay in the error list forever.
 	std::unordered_map<std::string, std::chrono::steady_clock::time_point> _probed_at;
 	std::unordered_map<std::string, ErrorInfo>							   _unjudged_hosts;
 	// Snapshots to unblock (port 9999) go out at most every c_seen_interval,

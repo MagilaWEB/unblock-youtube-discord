@@ -930,10 +930,18 @@ void ZapretHelper::_refreshUnjudged()
 	// Caller holds _mutex. A probe that finished but never got a lua verdict
 	// (no VALID/ERR/EXHAUSTED) is promoted into the unjudged bucket once the
 	// stale-error interval passed. Sticky: it is only removed by a verdict.
+	//
+	// A host that already carries an error entry is the same no-verdict case
+	// once a new probe has completed: lua rejected the old strategy and moved
+	// the host on, but the helper learns the next strategy's name only with a
+	// failure, so the entry keeps showing the stale one. A host whose probes
+	// die before ClientHello (dead SYN, nothing for the tls_client_hello filter
+	// to judge) never sends the VALID that would clear the mark, so without
+	// this demotion it sits in "hosts with errors" forever.
 	const auto now = std::chrono::steady_clock::now();
 	for (const auto& [host, probed] : _probed_at)
 	{
-		if (_valid_hosts.contains(host) || _error_hosts.contains(host) || _exhausted_hosts.contains(host))
+		if (_valid_hosts.contains(host) || _exhausted_hosts.contains(host))
 			continue;
 
 		if (_unjudged_hosts.contains(host))
@@ -942,8 +950,10 @@ void ZapretHelper::_refreshUnjudged()
 		if (_queue.contains(host) || _in_check.contains(host))
 			continue;
 
-		if ((now - probed) < _errors_recheck_interval)
+		if (!_error_hosts.contains(host) && (now - probed) < _errors_recheck_interval)
 			continue;
+
+		_error_hosts.erase(host);
 
 		ErrorInfo info;
 		info.first	  = now;
