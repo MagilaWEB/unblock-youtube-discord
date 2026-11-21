@@ -171,3 +171,207 @@ TEST_CASE("1.5.0 strategy configs define every blob they reference", "[zapret2][
 	}
 }
 
+// The YouTube streaming profile: its own QUIC plan scoped to the video hosts,
+// with --payload=all so the desync can touch the start of the whole flow rather
+// than only the QUIC Initial. It has to sit in front of the generic UDP/443
+// profile: a connection binds to the first matching profile, and that ordering
+// is what keeps every other QUIC flow out of it.
+TEST_CASE("youtube streaming gets its own QUIC profile ahead of the generic one", "[zapret2][templates]")
+{
+	StrategiesZapret2Test t;
+
+	auto config = std::make_shared<File>();
+	config->open({ Core::get().configsPath() / "service_setting" }, ".config", true);
+	REQUIRE(config->isOpen());
+	t.serviceConfig(config);
+	t.optionalServices({ "youtube" });
+
+	t.strategies.changeDirVersion("1.6.2");
+	t.strategies.changeStrategy("strategy_super_c.config");
+
+	const auto& args = t.strategies.getStrategy();
+
+	auto index_of = [&args](std::string_view needle)
+	{
+		for (size_t i = 0; i < args.size(); ++i)
+			if (args[i].contains(needle))
+				return i;
+		return args.size();
+	};
+
+	const auto stream  = index_of("--hostlist-domains=googlevideo.com,c.youtube.com");
+	const auto generic = index_of("--payload=quic_initial");
+
+	REQUIRE(stream < args.size());
+	REQUIRE(generic < args.size());
+	CHECK(stream < generic);
+
+	// The payload scope is the point of the profile, and it must stay inside it:
+	// everything after the generic profile takes over is back to quic_initial.
+	bool payload_all = false;
+	for (size_t i = stream; i < generic; ++i)
+		payload_all = payload_all || args[i] == "--payload=all";
+	CHECK(payload_all);
+
+	CHECK(index_of("--out-range=-n4") < generic);
+	CHECK(index_of("--lua-desync=fake:blob=QUIC_4PDA:repeats=6:badsum:strategy=12") < generic);
+
+	// The generic UDP/443 profile lives in [END] now: its %BLOCKLIST% resolves
+	// to all.list and it no longer disappears when youtube is off. Section
+	// markers are not part of the assembled args, so the youtube run is bounded
+	// by the stream profile and the END TCP profile - the run itself must not
+	// carry quic_initial, and the profile must sit past the END one.
+	const auto youtube_end = index_of("--filter-tcp=80,443");
+	const auto end_tls	   = index_of("--import=START_TLS");
+	REQUIRE(youtube_end < args.size());
+	REQUIRE(end_tls < args.size());
+
+	bool quic_in_youtube = false;
+	for (size_t i = stream; i < youtube_end; ++i)
+		quic_in_youtube = quic_in_youtube || args[i].contains("--payload=quic_initial");
+	CHECK_FALSE(quic_in_youtube);
+
+	CHECK(generic > end_tls);
+}
+
+// Same ordering guarantee for the older sets, which splice the profiles from
+// the config instead of the shared tail: the youtube section must still open
+// before the generic UDP/443 profile in 1.4.16.
+TEST_CASE("1.4.16 keeps the youtube QUIC profile ahead of the generic one", "[zapret2][templates]")
+{
+	StrategiesZapret2Test t;
+
+	auto config = std::make_shared<File>();
+	config->open({ Core::get().configsPath() / "service_setting" }, ".config", true);
+	REQUIRE(config->isOpen());
+	t.serviceConfig(config);
+	t.optionalServices({ "youtube" });
+
+	t.strategies.changeDirVersion("1.4.16");
+	t.strategies.changeStrategy("strategy_10.config");
+
+	const auto& args = t.strategies.getStrategy();
+
+	auto index_of = [&args](std::string_view needle)
+	{
+		for (size_t i = 0; i < args.size(); ++i)
+			if (args[i].contains(needle))
+				return i;
+		return args.size();
+	};
+
+	const auto stream  = index_of("--hostlist-domains=googlevideo.com,c.youtube.com");
+	const auto generic = index_of("--payload=quic_initial");
+
+	REQUIRE(stream < args.size());
+	REQUIRE(generic < args.size());
+	CHECK(stream < generic);
+
+	bool payload_all = false;
+	for (size_t i = stream; i < generic; ++i)
+		payload_all = payload_all || args[i] == "--payload=all";
+	CHECK(payload_all);
+
+	CHECK(index_of("--out-range=-n4") < generic);
+	CHECK(index_of("--lua-desync=fake:blob=QUIC_4PDA:repeats=6:badsum:strategy=12") < generic);
+
+	// The generic UDP/443 profile lives in [END] now: its %BLOCKLIST% resolves
+	// to all.list and it no longer disappears when youtube is off. Section
+	// markers are not part of the assembled args, so the youtube run is bounded
+	// by the stream profile and the END TCP profile - the run itself must not
+	// carry quic_initial, and the profile must sit past the END one.
+	const auto youtube_end = index_of("--filter-tcp=80,443");
+	const auto end_tls	   = index_of("--import=START_TLS");
+	REQUIRE(youtube_end < args.size());
+	REQUIRE(end_tls < args.size());
+
+	bool quic_in_youtube = false;
+	for (size_t i = stream; i < youtube_end; ++i)
+		quic_in_youtube = quic_in_youtube || args[i].contains("--payload=quic_initial");
+	CHECK_FALSE(quic_in_youtube);
+
+	CHECK(generic > end_tls);
+}
+
+// The generic UDP/443 profile lives in [END] and covers every blocklisted host,
+// so it must outlive a configuration without youtube: while it sat inside the
+// [youtube] section, switching youtube off dropped it from the assembled args
+// and left the QUIC flows of every other service undesynced.
+TEST_CASE("generic QUIC profile survives with youtube off", "[zapret2][templates]")
+{
+	StrategiesZapret2Test t;
+
+	auto config = std::make_shared<File>();
+	config->open({ Core::get().configsPath() / "service_setting" }, ".config", true);
+	REQUIRE(config->isOpen());
+	t.serviceConfig(config);
+	t.optionalServices({ "discord", "game_mod" });
+
+	t.strategies.changeDirVersion("1.6.2");
+	t.strategies.changeStrategy("strategy_super_d.config");
+
+	const auto& args = t.strategies.getStrategy();
+
+	auto contains = [&args](std::string_view needle)
+	{ return std::ranges::any_of(args, [needle](const std::string& line) { return line.contains(needle); }); };
+
+	CHECK_FALSE(contains("--hostlist-domains=googlevideo.com,c.youtube.com"));	  // youtube is off
+	CHECK(contains("--payload=quic_initial"));									  // the generic profile stays
+}
+
+// ... and in 1.5.0, whose tail is inlined into every config.
+TEST_CASE("1.5.0 keeps the youtube QUIC profile ahead of the generic one", "[zapret2][templates]")
+{
+	StrategiesZapret2Test t;
+
+	auto config = std::make_shared<File>();
+	config->open({ Core::get().configsPath() / "service_setting" }, ".config", true);
+	REQUIRE(config->isOpen());
+	t.serviceConfig(config);
+	t.optionalServices({ "youtube" });
+
+	t.strategies.changeDirVersion("1.5.0");
+	t.strategies.changeStrategy("strategy_super.config");
+
+	const auto& args = t.strategies.getStrategy();
+
+	auto index_of = [&args](std::string_view needle)
+	{
+		for (size_t i = 0; i < args.size(); ++i)
+			if (args[i].contains(needle))
+				return i;
+		return args.size();
+	};
+
+	const auto stream  = index_of("--hostlist-domains=googlevideo.com,c.youtube.com");
+	const auto generic = index_of("--payload=quic_initial");
+
+	REQUIRE(stream < args.size());
+	REQUIRE(generic < args.size());
+	CHECK(stream < generic);
+
+	bool payload_all = false;
+	for (size_t i = stream; i < generic; ++i)
+		payload_all = payload_all || args[i] == "--payload=all";
+	CHECK(payload_all);
+
+	CHECK(index_of("--out-range=-n4") < generic);
+	CHECK(index_of("--lua-desync=fake:blob=QUIC_4PDA:repeats=6:badsum:strategy=12") < generic);
+
+	// The generic UDP/443 profile lives in [END] now: its %BLOCKLIST% resolves
+	// to all.list and it no longer disappears when youtube is off. Section
+	// markers are not part of the assembled args, so the youtube run is bounded
+	// by the stream profile and the END TCP profile - the run itself must not
+	// carry quic_initial, and the profile must sit past the END one.
+	const auto youtube_end = index_of("--filter-tcp=80,443");
+	const auto end_tls	   = index_of("--import=START_TLS");
+	REQUIRE(youtube_end < args.size());
+	REQUIRE(end_tls < args.size());
+
+	bool quic_in_youtube = false;
+	for (size_t i = stream; i < youtube_end; ++i)
+		quic_in_youtube = quic_in_youtube || args[i].contains("--payload=quic_initial");
+	CHECK_FALSE(quic_in_youtube);
+
+	CHECK(generic > end_tls);
+}

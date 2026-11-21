@@ -22,6 +22,9 @@
    монотонно и без дырок — иначе ротация `auto_strategy` наступает на пустые номера.
 6. Секции `[имя]` — фильтры по портам/l7/hostlist; `use_in>>цель` включает одну
    секцию в другую.
+7. Профили (то, что разделено `--new`) проверяются по порядку, и соединение
+   привязывается к **первому** подошедшему — поэтому узкие секции (потоковое
+   видео, голос) обязаны стоять перед общими, иначе общий план их перехватит.
 
 ## Из чего собран план
 
@@ -35,11 +38,12 @@
 |---|---|
 | `[TEMPLATES:HEAD]` | `[START]`: `--ctrack-disable=0`, WinDivert-фильтры портов (`[TEMPLATES:WF]`), `%INIT_LUA%`/`%INIT_BLOB%`, базовые блобы |
 | `--template=START_QUIC` | UDP/443 QUIC-план: фейки, ipfrag, udplen + `auto_strategy` |
+| `[TEMPLATES:YOUTUBE]` | Секция `[youtube]`: отдельный QUIC-профиль под потоковое видео (`googlevideo.com`, `c.youtube.com`), идёт **до** общего UDP/443: свой `auto_strategy`, `--payload=all` и `--out-range=-n4` (десинк по началу потока, а не только по Initial). Первой строкой открывает секцию |
 | `--template=START_TLS` | TCP 80/443 TLS-план: фейки, сплиты, disorder + `auto_strategy`. Сюда же ушла TCP-фаза голоса Discord |
 | `--template=START_VOICE` | Голосовой UDP-план: `auto_strategy:fails=6:start=1` и две стратегии — фейк `VOICE_PRE` (в первой ещё `JUNK_00`/`JUNK_01`), затем `send:delay=50` и `drop` |
 | `[TEMPLATES:DISCORD_UDP]` | Секция `[discord]`: `--filter-udp=%DiscordPortUPD%`, `--filter-l7=discord,stun,quic`; под неё идёт `--payload=all --import=START_VOICE` |
 | `[TEMPLATES:DISCORD_MEDIA]` | TCP-фаза голоса: `--filter-tcp=%DiscordPort%`, `--hostlist-domains=discord.media` |
-| `[TEMPLATES:YOUTUBE_TCP]`, `[TEMPLATES:END_TCP]` | Остальной TLS/HTTP: YouTube отдельной секцией, `[END]` — общим планом |
+| `[TEMPLATES:YOUTUBE_TCP]`, `[TEMPLATES:END_TCP]` | TCP/TLS-профиль YouTube в той же секции `[youtube]` (идёт после `[TEMPLATES:YOUTUBE]`) и `[END]` — общим планом |
 | `[TEMPLATES:GAME_TCP]`, `[TEMPLATES:GAME_UDP]` | Игры по ipset |
 
 Отдельного `START_VOICE_TCP` нет, и голос Discord работает целиком: и в браузере,
