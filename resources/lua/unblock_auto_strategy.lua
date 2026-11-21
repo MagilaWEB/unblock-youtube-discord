@@ -48,24 +48,23 @@
 --      навсегда закреплял бы стратегию. Для потоковых хостов (googlevideo) и
 --      QUIC рукопожатия тем более мало: успех ставит только здоровое окно
 --      скорости.
---   3b. Рейтинг стратегий (в пределах плана и прогона winws2): +1 к счётчику
---      успехов стратегии, плюс хост попадает в охват стратегии (сколько разных
---      хостов она подтвердила). При переключении кандидаты берутся в порядке:
---      успешные (замеренная скорость убыв., затем охват по хостам, затем число
---      успехов, ничьи — по номеру), затем неотмеченные 1..N. Стратегия, которая
---      работает на многих хостах, лидирует и для нового хоста — так разбор
---      сходится на нескольких широко рабочих стратегиях, а не размазывается по
---      плану. У потокового хоста (YouTube) охват не учитывается: он судится
---      по настоящей скорости, и популярность у API-хостов не должна сдвигать
---      видео.
---      Работающая стратегия — не финал: замеренная скорость каждой успешной
---      стратегии хранится (rec.rate), и, увидев замеренно более быструю,
---      запись уходит на неё (auto_upgrade_strategy) — стратегия со временем
---      может зачахнуть, а довольствоваться первой живой нельзя.
---      Хост, который уже срабатывал (had_success), ротируется по успешным,
---      но после c_success_cycles (2) полных кругов без успеха выходит в
---      полный перебор (сначала неотмеченные), и если и там всё исчерпано —
---      помечается EXHAUSTED.
+--   3b. Рейтинг стратегий (в пределах плана и прогона winws2) — затухающий
+--      скор: подтверждение даёт +1, провал — минус, и скор лениво тает по
+--      времени (полураспад ~10 минут). Свежесть важнее стажа: стратегия,
+--      которая постепенно перестала работать, сползает сама, а не сидит на
+--      пьедестале вечно. Охват (сколько разных хостов подтвердили) и замер
+--      скорости тоже учитываются только свежие (TTL); скорость копит EWMA по
+--      замерам потоковых хостов, поэтому обычные, ничего не измеряющие хосты
+--      берут данные видео. Кандидаты — одна лестница: скор убыв., при равенстве
+--      скорость (у потоковых наоборот, скорость первична), ничьи — по номеру.
+--      Никогда не подтверждавшиеся начинают с нуля и стоят внизу, так что
+--      «вниз по рейтингу вплоть до ни разу не успешных» выходит само. Провал
+--      на одном хосте штрафует план только когда провалились 2 разных хоста —
+--      одиночный кривой SNI не роняет стратегию всем.
+--      Работающая стратегия — не финал: у потоковых свежий замер скорости выше
+--      текущего в 1.3 раза уводит запись на него (auto_upgrade_strategy).
+--      Полный перебор без успеха паркует запись на лучшем по лестнице и
+--      помечает EXHAUSTED (TCP) с кулдауном time секунд.
 --   4. host_name неизвестен (чистый IP helper проверить не может): та же
 --      пакетная логика, но насос CHECK не шлётся.
 --   5. UDP (QUIC, STUN, WireGuard, ...) — helper не умеет проверять UDP:
@@ -382,6 +381,27 @@ function auto_strategy_name(rec)
     return "strategy_" .. rec.nstrategy
 end
 
+-- Log-only label of a strategy with its current weight: the decayed score of
+-- the plan and, when fresh, the measured speed. The plain auto_strategy_name
+-- stays for IPC signals; this one is only for human-readable lines, so the log
+-- shows what the ladder is actually thinking (a strategy with w=0.00 is out of
+-- favor, a decaying veteran loses its lead in front of your eyes).
+function auto_strategy_label(is_udp, askey, n, now)
+    if not n then
+        return "strategy_?"
+    end
+    if n == 0 then
+        return "direct"
+    end
+    now = now or os.time()
+    local s = auto_score_value(auto_strategy_score(is_udp, askey)[n], now)
+    local v = auto_strategy_speed_value(auto_strategy_speed(is_udp, askey), n, now)
+    if v > 0 then
+        return string.format("strategy_%d(w=%.2f v=%.0f)", n, s, v)
+    end
+    return string.format("strategy_%d(w=%.2f)", n, s)
+end
+
 -- Per-record fails counter. A connection may report a failure at most once
 -- per 2 seconds (crec.failure_time): a single stuck handshake produces a
 -- train of retransmissions and must not burn the whole threshold in one RTO,
@@ -449,13 +469,11 @@ function auto_direct_stall_decisive(hrec, arg, now)
     return true
 end
 
--- Real success: reset the failure episode and let the host leave the
--- enumeration ladder.
+-- Real success: reset the failure episode. The score (and its decay) is the
+-- durable memory now, so there is no cycle ladder to clear here.
 function auto_mark_success(hrec)
     hrec.fails = nil
     hrec.fails_time = nil
-    hrec.success_cycles = nil
-    hrec.full_enum = nil
 end
 
 -- direct (strategy number 0) never reaches the rating: auto_rate_strategy keeps
@@ -490,11 +508,6 @@ function auto_direct_first(rec, list)
     return out
 end
 
--- How many full passes a known-good host may make over the successful set
--- (with no success) before it is allowed to fall back to strategies that
--- never succeeded. Reset on every success, like the fails counter.
-local c_success_cycles = 2
-
 -- Consecutive quiet windows of the TCP silence rule before the strategy is
 -- blamed. One window is not evidence: a player between two segments, a page
 -- that already loaded and a held request all leave windows with no server
@@ -503,93 +516,78 @@ local c_success_cycles = 2
 -- all). Overridable per plan with tcp_silence_windows=N.
 local c_tcp_silence_windows = 2
 
--- Ordered candidates for the host's next strategy. Successful strategies are
--- ranked by measured throughput first (see auto_confirm_goodput), then by the
--- number of hosts they proved themselves on, then by success count (desc, ties
--- by number asc); a streaming host (YouTube) skips the coverage step and ranks
--- by speed alone. Never-successful ones
--- follow, fewest *global* failures first: a new host must not start with a
--- strategy that just failed for every other host in this plan. Only numbers
--- present in THIS plan are considered. Already-tried numbers (rec.tried) are
--- skipped. A host that has succeeded before stays on the successful set
--- (rec.had_success) until it burns c_success_cycles full passes with no
--- success; then rec.full_enum makes it try the never-successful strategies
--- first (the proven ones only as a last resort).
-function auto_strategy_candidates(rec, rating, failures, coverage)
-    local proven  = {}
-    local unknown = {}
+-- Score decay and freshness windows. The score halves every c_score_half_life
+-- seconds of silence; coverage and measured speed count only entries inside
+-- their TTL; a plan-wide failure penalty needs c_fail_hosts distinct hosts; the
+-- score is capped so one long success streak cannot pin a strategy forever;
+-- coverage is only a small additive prior for ordinary hosts.
+local c_score_half_life = 600
+local c_coverage_ttl = 1800
+local c_speed_ttl = 900
+local c_score_stale = 1800
+local c_last_good_ttl = 3600
+local c_fail_penalty = 2
+local c_fail_hosts = 2
+local c_score_cap = 10
+local c_coverage_bonus = 0.5
+
+-- Ordered candidates for the host's next strategy: known strategies first
+-- (confirmed at least once in this run, see auto_strategy_last_good), then the
+-- decayed success score, with the speed of streaming confirmations as the first
+-- criterion for a streaming host and the second for an ordinary one (API calls
+-- never measure themselves, so they borrow the video plan's measurements). The
+-- known tier is what stops the ladder from forgetting a working strategy and
+-- re-walking the plan from strategy 1 after a quiet spell; within the tier the
+-- decayed score and the fresh speed still decide, so a strategy that stopped
+-- working loses to a fresher known one. Never-confirmed strategies have no
+-- last_good entry and rank below the known ones. Coverage is only a small prior
+-- for ordinary hosts (see c_coverage_bonus). Only numbers present in THIS plan
+-- are considered; already-tried numbers (rec.tried) are skipped.
+function auto_strategy_candidates(rec, is_udp, askey, now)
+    now = now or os.time()
+
+    local scores   = auto_strategy_score(is_udp, askey)
+    local coverage = auto_strategy_coverage(is_udp, askey)
+    local speed    = auto_strategy_speed(is_udp, askey)
+    local last     = auto_strategy_last_good(is_udp, askey)
+
+    local list = {}
     for n = 1, rec.ctstrategy do
         if rec.strategy_set and rec.strategy_set[n] and not (rec.tried and rec.tried[n]) then
-            if (rating[n] or 0) > 0 then
-                proven[#proven + 1] = n
-            else
-                unknown[#unknown + 1] = n
+            local s = auto_score_value(scores[n], now)
+            if not rec.stream then
+                s = s + c_coverage_bonus * math.log(1 + auto_strategy_host_count(coverage, n, now))
+            end
+            local known = (last[n] and now - last[n] <= c_last_good_ttl) and 1 or 0
+            list[#list + 1] = { n = n, s = s, v = auto_strategy_speed_value(speed, n, now), k = known }
+        end
+    end
+
+    table.sort(list, function(a, b)
+        if a.k ~= b.k then
+            return a.k > b.k
+        end
+        if rec.stream then
+            if a.v ~= b.v then
+                return a.v > b.v
+            end
+            if a.s ~= b.s then
+                return a.s > b.s
+            end
+        else
+            if a.s ~= b.s then
+                return a.s > b.s
+            end
+            if a.v ~= b.v then
+                return a.v > b.v
             end
         end
-    end
-
-    -- Proven strategies: the measured goodput wins first, so a strategy that
-    -- really streamed is preferred over one that only answered the handshake.
-    -- Then the host coverage: a strategy that proved itself on many hosts leads
-    -- for a new one too, so the plan converges instead of scattering. Success
-    -- count and number break the remaining ties.
-    --
-    -- Streaming hosts (YouTube) rank by speed alone: the family record carries
-    -- the real measured goodput, so coverage - built mostly by API and voice
-    -- hosts, which have no video to measure - must not steer the video plan.
-    -- Coverage stays the prior for hosts that have no speed of their own yet.
-    local used = {}
-    for _, n in ipairs(proven) do
-        used[n] = rec.stream and 0 or auto_strategy_host_count(coverage, n)
-    end
-
-    table.sort(proven, function(a, b)
-        local ra = (rec.rate and rec.rate[a]) or 0
-        local rb = (rec.rate and rec.rate[b]) or 0
-        if ra ~= rb then
-            return ra > rb
-        end
-        if used[a] ~= used[b] then
-            return used[a] > used[b]
-        end
-        if rating[a] ~= rating[b] then
-            return rating[a] > rating[b]
-        end
-        return a < b
+        return a.n < b.n
     end)
-
-    table.sort(unknown, function(a, b)
-        local fa = failures and failures[a] or 0
-        local fb = failures and failures[b] or 0
-        if fa ~= fb then
-            return fa < fb
-        end
-        return a < b
-    end)
-
-    -- A host whose only success was on 'direct' has no rated strategy (the
-    -- rating is never recorded for nstrategy 0), so the successful set is
-    -- empty. Falling through to the normal enumeration keeps such a host
-    -- rotating: returning the empty set would trap it on direct forever,
-    -- because the no-candidates branch below resets the success-cycle ladder
-    -- on every call and full_enum can never complete.
-    if rec.had_success and not rec.full_enum and #proven > 0 then
-        return auto_direct_first(rec, proven)
-    end
-
-    local first, second
-    if rec.full_enum then
-        first, second = unknown, proven
-    else
-        first, second = proven, unknown
-    end
 
     local out = {}
-    for _, n in ipairs(first) do
-        out[#out + 1] = n
-    end
-    for _, n in ipairs(second) do
-        out[#out + 1] = n
+    for _, item in ipairs(list) do
+        out[#out + 1] = item.n
     end
 
     -- A host that answered on direct leads with it, before any desync it might
@@ -597,29 +595,37 @@ function auto_strategy_candidates(rec, rating, failures, coverage)
     return auto_direct_first(rec, out)
 end
 
--- Best known strategy of the host: highest measured goodput first, then the
--- highest rating. Used to park the host somewhere sane after a full sweep
--- instead of dropping it to direct.
-function auto_best_strategy(rec, rating)
-    local best, best_rate = nil, 0
-    if rec.rate then
-        for n, v in pairs(rec.rate) do
-            if rec.strategy_set and rec.strategy_set[n] and v > best_rate then
-                best, best_rate = n, v
-            end
-        end
-    end
-    if best then
-        return best
-    end
+-- Best known strategy of the host: the same ladder, used to park the host
+-- somewhere sane after a full sweep instead of dropping it to direct.
+function auto_best_strategy(rec, is_udp, askey, now)
+    now = now or os.time()
 
-    local best_n, best_count = nil, 0
-    for n, v in pairs(rating or {}) do
-        if rec.strategy_set and rec.strategy_set[n] and v > best_count then
-            best_n, best_count = n, v
+    local scores   = auto_strategy_score(is_udp, askey)
+    local coverage = auto_strategy_coverage(is_udp, askey)
+    local speed    = auto_strategy_speed(is_udp, askey)
+    local last     = auto_strategy_last_good(is_udp, askey)
+
+    local best, best_s, best_v, best_k = nil, -1, -1, -1
+    for n in pairs(rec.strategy_set or {}) do
+        local s = auto_score_value(scores[n], now)
+        if not rec.stream then
+            s = s + c_coverage_bonus * math.log(1 + auto_strategy_host_count(coverage, n, now))
+        end
+        local v = auto_strategy_speed_value(speed, n, now)
+        local k = (last[n] and now - last[n] <= c_last_good_ttl) and 1 or 0
+        local better
+        if k ~= best_k then
+            better = k > best_k
+        elseif rec.stream then
+            better = v > best_v or (v == best_v and s > best_s)
+        else
+            better = s > best_s or (s == best_s and v > best_v)
+        end
+        if better then
+            best, best_s, best_v, best_k = n, s, v, k
         end
     end
-    return best_n
+    return best
 end
 
 -- Rotate to the next strategy for the record of the current protocol.
@@ -636,12 +642,11 @@ function auto_do_switch(rec, is_udp, askey, reason, peer, dport, send_exhausted,
     local upgrade = (reason == "UPGRADE")
     if not upgrade then
         ULOG("WARNING",
-            "zapret:auto_strategy: FAIL " .. auto_strategy_name(rec) .. " " .. reason .. "->" .. peer .. ":" .. dport)
+            "zapret:auto_strategy: FAIL " .. auto_strategy_label(is_udp, askey, rec.nstrategy) .. " " .. reason .. "->" ..
+                peer .. ":" .. dport)
     end
 
-    local rating = auto_strategy_rating(is_udp, askey)
-    local failures = auto_strategy_failures(is_udp, askey)
-    local coverage = auto_strategy_coverage(is_udp, askey)
+    local now = os.time()
 
     -- The next strategy starts from a clean slate: the old connection's peak
     -- would otherwise mark every ramp-up window as a collapse, and the old
@@ -684,106 +689,151 @@ function auto_do_switch(rec, is_udp, askey, reason, peer, dport, send_exhausted,
     if rec.nstrategy and not upgrade then
         -- direct is marked tried as well: once it failed for this host the
         -- ladder walks on, and direct returns only after a pass resets the list
-        -- or the host succeeds on something else. It stays out of the plan-wide
-        -- scoreboard below: number 0 is not in any strategy_set, so the
-        -- ordering hint has nothing to compare it against.
+        -- or the host succeeds on something else. Number 0 is never rated and
+        -- never penalizes the plan-wide score, so it only lives in rec.tried.
         rec.tried[rec.nstrategy] = true
-        if rec.nstrategy ~= 0 then
-            -- Shared across hosts of the plan: new hosts skip the strategies
-            -- that already failed elsewhere, so a dead plan is not re-walked
-            -- from 1.
-            failures[rec.nstrategy] = (failures[rec.nstrategy] or 0) + 1
-        end
+        auto_strategy_note_failure(is_udp, askey, rec, peer, now)
     end
 
-    local candidates = auto_strategy_candidates(rec, rating, failures, coverage)
+    local candidates = auto_strategy_candidates(rec, is_udp, askey, now)
 
     if #candidates == 0 then
-        if rec.had_success and not rec.full_enum then
-            -- Known-good host: one full pass over the successful set done
-            -- with no success. After c_success_cycles such passes, stop
-            -- restricting to the successful set and try every strategy.
-            rec.success_cycles = (rec.success_cycles or 0) + 1
-            rec.tried = {}
-            if rec.success_cycles >= c_success_cycles then
-                rec.full_enum = true
-            end
-            candidates = auto_strategy_candidates(rec, rating, failures, coverage)
+        -- Every strategy in the plan tried: park the host on the best of the
+        -- ladder and cool down, an immediate new sweep only churns the network.
+        -- The score decay keeps working while it is parked, so the next sweep
+        -- starts from a fresher champion. When nothing was ever measured, the
+        -- floor is the plan's start (a no_direct zone starts at 1): parking such
+        -- a host on direct would hand it straight to the blocker it cannot pass.
+        local floor = rec.start or 0
+        if rec.no_direct and floor < 1 then
+            floor = 1
         end
-
-        if #candidates == 0 then
-            -- Every strategy in the plan tried (full enumeration): the host
-            -- has no working strategy. Park it on the best measured one and
-            -- cool down: an immediate new sweep only churns the network. When
-            -- nothing was ever measured, the floor is the plan's start (a
-            -- no_direct zone starts at 1): parking such a host on direct would
-            -- hand it straight to the blocker it cannot pass.
-            local floor = rec.start or 0
-            if rec.no_direct and floor < 1 then
-                floor = 1
-            end
-            rec.nstrategy = auto_best_strategy(rec, rating) or floor
-            if send_exhausted then
-                send_signal("EXHAUSTED", peer, auto_strategy_name(rec), 10000)
-            end
-            rec.tried = {}
-            rec.full_enum = nil
-            rec.success_cycles = nil
-            rec.t_exhausted = os.time()
-            return
+        rec.nstrategy = auto_best_strategy(rec, is_udp, askey, now) or floor
+        if send_exhausted then
+            send_signal("EXHAUSTED", peer, auto_strategy_label(is_udp, askey, rec.nstrategy), 10000)
         end
+        rec.tried = {}
+        rec.t_exhausted = now
+        return
     end
 
     rec.nstrategy = candidates[1]
 end
 
--- Per-plan rating of strategies: number -> success count. Keyed by askey
--- (protocol + plan fingerprint), because strategy numbers mean different
--- things in different profiles: a win in the broad TLS plan must not mark
--- the same number as proven in the voice TCP plan. A success is counted when
--- the strategy is really confirmed (server answer / healthy goodput), once
--- per connection and strategy. In-run only: a winws2 restart clears it.
-function auto_strategy_rating(is_udp, askey)
-    local key = (is_udp and "udp_strategy_success" or "strategy_success") .. "#" .. tostring(askey or "default")
+-- Per-plan strategy score: number -> { s = weighted success score, t = time of
+-- the last event }. The score decays lazily with time (see auto_score_value),
+-- so a strategy that stopped working slides down on its own instead of sitting
+-- on the pedestal forever: DPI adapts, and yesterday's win says little about
+-- today. Keyed by askey (protocol + plan fingerprint), because strategy numbers
+-- mean different things in different profiles. In-run only: a winws2 restart
+-- clears it.
+function auto_strategy_score(is_udp, askey)
+    local key = (is_udp and "udp_strategy_score" or "strategy_score") .. "#" .. tostring(askey or "default")
     _G[key] = _G[key] or {}
     return _G[key]
 end
 
--- Per-plan host coverage: strategy number -> set of host keys that confirmed
--- it. Counted per host, not per connection: a strategy that works for many
--- hosts is broadly useful, while one host re-confirming it says nothing about
--- the plan. In-run only, like the rating.
+-- Per-plan host coverage: number -> { host key -> last confirmation time }.
+-- Counted per host, not per connection, and only fresh entries count: a
+-- strategy that worked on thirty hosts an hour ago is not ahead of one that
+-- just proved itself.
 function auto_strategy_coverage(is_udp, askey)
     local key = (is_udp and "udp_strategy_hosts" or "strategy_hosts") .. "#" .. tostring(askey or "default")
     _G[key] = _G[key] or {}
     return _G[key]
 end
 
--- How many distinct hosts a strategy proved itself on.
-function auto_strategy_host_count(coverage, n)
+-- Per-plan strategy speed: number -> { r = EWMA goodput, t = last measurement }.
+-- Fed by streaming confirmations; it gives ordinary (non-streaming) hosts the
+-- speed data of the video flows they never measure themselves.
+function auto_strategy_speed(is_udp, askey)
+    local key = (is_udp and "udp_strategy_speed" or "strategy_speed") .. "#" .. tostring(askey or "default")
+    _G[key] = _G[key] or {}
+    return _G[key]
+end
+
+-- Per-plan last confirmation time of each strategy: number -> time. It is the
+-- durable "this one worked in this run" mark: the decayed score and the speed
+-- expire in minutes, but the ladder must not forget a working strategy and
+-- re-walk the plan from strategy 1 after a quiet spell. Never-confirmed
+-- strategies have no entry and always rank below the known ones.
+function auto_strategy_last_good(is_udp, askey)
+    local key = (is_udp and "udp_strategy_last_good" or "strategy_last_good") .. "#" .. tostring(askey or "default")
+    _G[key] = _G[key] or {}
+    return _G[key]
+end
+
+-- Distinct hosts that failed this strategy recently: number -> { host -> time }.
+-- A single bad SNI or region must not sink a strategy for everyone, so the
+-- plan-wide penalty waits for c_fail_hosts different hosts.
+function auto_strategy_failed_hosts(is_udp, askey)
+    local key = (is_udp and "udp_strategy_failed_hosts" or "strategy_failed_hosts") .. "#" .. tostring(askey or "default")
+    _G[key] = _G[key] or {}
+    return _G[key]
+end
+
+-- Lazy decay of a score to `now`: halves every c_score_half_life seconds of
+-- silence. Nothing rewrites the score in the background; reading it is enough.
+-- A score that has not been refreshed for c_score_stale seconds reads as 0, so
+-- a strategy that stopped working does not keep a microscopic lead over the
+-- ones that never confirmed anything.
+function auto_score_value(entry, now)
+    if not entry or not entry.s or entry.s <= 0 then
+        return 0
+    end
+
+    local dt = now - (entry.t or now)
+    if dt < 0 then
+        dt = 0
+    end
+    if dt >= c_score_stale then
+        return 0
+    end
+    return entry.s * 0.5 ^ (dt / c_score_half_life)
+end
+
+-- Fresh host count of a strategy: only confirmations inside the coverage TTL
+-- count.
+function auto_strategy_host_count(coverage, n, now)
     local hosts = coverage and coverage[n]
     if not hosts then
         return 0
     end
 
     local count = 0
-    for _ in pairs(hosts) do
-        count = count + 1
+    for _, t in pairs(hosts) do
+        if now - t <= c_coverage_ttl then
+            count = count + 1
+        end
     end
     return count
 end
 
--- One confirmation of rec's current strategy: the plan-wide success count and
--- the strategy's host coverage. Both feed the candidate order (see
--- auto_strategy_candidates); the per-connection bookkeeping stays with the
--- caller.
-function auto_rate_strategy(is_udp, askey, rec)
+-- Fresh measured speed of a strategy, 0 when the measurement went stale.
+function auto_strategy_speed_value(speed, n, now)
+    local entry = speed and speed[n]
+    if not entry or not entry.r or (now - (entry.t or now)) > c_speed_ttl then
+        return 0
+    end
+    return entry.r
+end
+
+-- One confirmation of rec's current strategy: +1 to its decayed score and the
+-- host is added to the plan coverage. Called once per connection and strategy,
+-- so the score grows with real confirmations, not with packet chatter.
+function auto_rate_strategy(is_udp, askey, rec, now)
     if not rec or not rec.nstrategy or rec.nstrategy == 0 then
         return
     end
+    now = now or os.time()
 
-    local rating = auto_strategy_rating(is_udp, askey)
-    rating[rec.nstrategy] = (rating[rec.nstrategy] or 0) + 1
+    local scores = auto_strategy_score(is_udp, askey)
+    local s = auto_score_value(scores[rec.nstrategy], now) + 1
+    if s > c_score_cap then
+        s = c_score_cap
+    end
+    scores[rec.nstrategy] = { s = s, t = now }
+    auto_strategy_last_good(is_udp, askey)[rec.nstrategy] = now
 
     if rec.key then
         local coverage = auto_strategy_coverage(is_udp, askey)
@@ -792,17 +842,80 @@ function auto_rate_strategy(is_udp, askey, rec)
             hosts = {}
             coverage[rec.nstrategy] = hosts
         end
-        hosts[rec.key] = true
+        hosts[rec.key] = now
     end
 end
 
--- Per-plan failure scoreboard: number -> failed verdicts across all hosts.
--- Ordering hint only: a new host picks the strategies that have not failed
--- elsewhere first, instead of re-walking a dead plan from strategy 1.
-function auto_strategy_failures(is_udp, askey)
-    local key = (is_udp and "udp_strategy_failures" or "strategy_failures") .. "#" .. tostring(askey or "default")
-    _G[key] = _G[key] or {}
-    return _G[key]
+-- A measured goodput sample feeds the plan-wide speed EWMA. Half weight keeps
+-- one lucky burst from pinning the strategy at its peak; stale entries are
+-- ignored by auto_strategy_speed_value.
+function auto_strategy_speed_update(is_udp, askey, n, rate, now)
+    if not n or n == 0 or not rate or rate <= 0 then
+        return
+    end
+    now = now or os.time()
+
+    local speed = auto_strategy_speed(is_udp, askey)
+    local entry = speed[n]
+    local r = rate
+    if entry and entry.r and (now - (entry.t or now)) <= c_speed_ttl then
+        r = entry.r + (rate - entry.r) * 0.5
+    end
+    speed[n] = { r = r, t = now }
+end
+
+-- Plan-wide failure penalty, applied only once c_fail_hosts distinct hosts
+-- failed the strategy inside the coverage TTL. The failed-host set resets after
+-- the penalty, so the next batch needs its own witnesses.
+function auto_strategy_penalty(is_udp, askey, n, now)
+    if not n or n == 0 then
+        return
+    end
+    now = now or os.time()
+
+    local scores = auto_strategy_score(is_udp, askey)
+    local s = auto_score_value(scores[n], now) - c_fail_penalty
+    if s < 0 then
+        s = 0
+    end
+    scores[n] = { s = s, t = now }
+end
+
+-- One host failed the strategy: remember it and, when c_fail_hosts different
+-- hosts have failed inside the TTL, drop the plan-wide score. A lone failing
+-- SNI is a local verdict only.
+function auto_strategy_note_failure(is_udp, askey, rec, hostkey, now)
+    if not rec or not rec.nstrategy or rec.nstrategy == 0 then
+        return
+    end
+    -- Only a host that ever completed a handshake says something about the
+    -- strategy: an endpoint that never answered on any strategy (curl=35 in the
+    -- helper log, is_retransmission here) is dead on its own, and its failures
+    -- must not drag a working strategy down for everyone else.
+    if not rec.reachable then
+        return
+    end
+    now = now or os.time()
+    hostkey = hostkey or rec.key or "?"
+
+    local failed = auto_strategy_failed_hosts(is_udp, askey)
+    local hosts = failed[rec.nstrategy]
+    if not hosts then
+        hosts = {}
+        failed[rec.nstrategy] = hosts
+    end
+    hosts[hostkey] = now
+
+    local count = 0
+    for _, t in pairs(hosts) do
+        if now - t <= c_coverage_ttl then
+            count = count + 1
+        end
+    end
+    if count >= c_fail_hosts then
+        auto_strategy_penalty(is_udp, askey, rec.nstrategy, now)
+        failed[rec.nstrategy] = {}
+    end
 end
 
 -- The helper is a pump and executor, not a judge: TCP asks it to open a
@@ -1067,8 +1180,16 @@ function auto_throttle_judge(hrec, crec, arg, rate)
 
     local best_other = auto_best_other_rate(hrec)
     local worse_than_alternative = ratio > 0 and best_other > 0 and rate < best_other * ratio
-    local collapsed = (ratio > 0 and peak > 0 and rate < peak * ratio
-        and (floor <= 0 or rate < floor)) or worse_than_alternative
+    -- A collapse against the connection's own peak is DPI work: the burst got
+    -- through and the path was cut. Being merely slower than another strategy
+    -- is not: that alternative may be a stale burst from a connection that
+    -- ended long ago, and killing the current flow on its first window against
+    -- it churns the plan while the strategy works. Only the own-peak collapse
+    -- is decisive; the alternative comparison accumulates through the ordinary
+    -- window threshold and is handled by auto_upgrade_strategy once confirmed.
+    local own_collapse = ratio > 0 and peak > 0 and rate < peak * ratio
+        and (floor <= 0 or rate < floor)
+    local collapsed = own_collapse or worse_than_alternative
     local bad = rate < min or collapsed
     if rate > peak then
         crec.t_peak = rate
@@ -1085,9 +1206,9 @@ function auto_throttle_judge(hrec, crec, arg, rate)
     crec.t_bad = (crec.t_bad or 0) + 1
     if crec.t_bad >= (tonumber(arg.throttle_windows) or 2) then
         crec.t_bad = 0
-        return true, true, collapsed, best_other
+        return true, true, own_collapse, best_other
     end
-    return false, true, collapsed, best_other
+    return false, true, own_collapse, best_other
 end
 
 -- Healthy window: rate the strategy by real goodput. A streaming connection
@@ -1111,23 +1232,22 @@ function auto_confirm_goodput(hrec, crec, arg, rate, is_udp, askey)
     end
 
     crec.rated_n = hrec.nstrategy
-    auto_rate_strategy(is_udp, askey, hrec)
+    local now = os.time()
+    auto_rate_strategy(is_udp, askey, hrec, now)
+    auto_strategy_speed_update(is_udp, askey, hrec.nstrategy, rate, now)
 
-    hrec.rate = hrec.rate or {}
-    if rate > (hrec.rate[hrec.nstrategy] or 0) then
-        hrec.rate[hrec.nstrategy] = rate
-    end
     hrec.had_success = true
     auto_mark_success(hrec)
 end
 
--- A confirmed strategy is not the end of the search. Every strategy that ever
--- delivered keeps its best measured goodput (rec.rate), and a video family
+-- A confirmed strategy is not the end of the search. The plan-wide speed EWMA
+-- keeps the goodput of every strategy that ever delivered, and a video family
 -- that sits on a crawl while a measurably faster strategy exists is moved to
 -- that one: a strategy can rot while the connection still lives, so the family
--- must not stay on the first one that answered. The margin keeps two
--- strategies whose speeds differ only within measurement noise from handing the
--- family back and forth on every window.
+-- must not stay on the first one that answered. The margin keeps two strategies
+-- whose speeds differ only within measurement noise from handing the family
+-- back and forth on every window; a stale measurement is ignored entirely
+-- (auto_strategy_speed_value), so an old champion cannot hold the pedestal.
 local c_upgrade_ratio = 1.3
 
 -- Move the host to a measurably faster strategy, called right after a healthy
@@ -1137,10 +1257,13 @@ function auto_upgrade_strategy(hrec, crec, is_udp, askey, peer, dport)
         return false
     end
 
-    local cur = (hrec.rate and hrec.rate[hrec.nstrategy]) or 0
+    local now = os.time()
+    local speed = auto_strategy_speed(is_udp, askey)
+    local cur = auto_strategy_speed_value(speed, hrec.nstrategy, now)
     local best, best_rate = nil, 0
-    for n, v in pairs(hrec.rate or {}) do
-        if hrec.strategy_set and hrec.strategy_set[n] and v > best_rate then
+    for n in pairs(hrec.strategy_set or {}) do
+        local v = auto_strategy_speed_value(speed, n, now)
+        if v > best_rate then
             best, best_rate = n, v
         end
     end
@@ -1150,7 +1273,6 @@ function auto_upgrade_strategy(hrec, crec, is_udp, askey, peer, dport)
     end
 
     local from_n = hrec.nstrategy
-    local from   = auto_strategy_name(hrec)
     auto_do_switch(hrec, is_udp, askey, "UPGRADE", peer, dport, false, crec)
 
     -- The plan may have had nothing better to offer after all (the fastest
@@ -1160,7 +1282,9 @@ function auto_upgrade_strategy(hrec, crec, is_udp, askey, peer, dport)
         return false
     end
 
-    ULOG("OK", "zapret:auto_strategy: SWITCH " .. from .. "->" .. auto_strategy_name(hrec) .. " " .. peer .. ":" .. dport)
+    ULOG("OK",
+        "zapret:auto_strategy: SWITCH " .. auto_strategy_label(is_udp, askey, from_n) .. "->" ..
+            auto_strategy_label(is_udp, askey, hrec.nstrategy) .. " " .. peer .. ":" .. dport)
     return true
 end
 
@@ -1306,8 +1430,6 @@ function auto_strategy(ctx, desync)
         else
             hrec.t_exhausted = nil
             hrec.tried = {}
-            hrec.full_enum = nil
-            hrec.success_cycles = nil
         end
     end
 
@@ -1322,7 +1444,7 @@ function auto_strategy(ctx, desync)
         -- auto_do_switch logs the new name itself.
         local name = auto_strategy_name(hrec)
 
-        DLOG("auto_strategy: " .. name .. "->" .. host_or_ip .. ":" .. dport)
+        DLOG("auto_strategy: " .. auto_strategy_label(is_udp, askey, hrec.nstrategy) .. "->" .. host_or_ip .. ":" .. dport)
 
         if desync.dis.tcp then
             -- Downstream goodput account first: the server-side byte counter
@@ -1354,13 +1476,27 @@ function auto_strategy(ctx, desync)
             if not desync.outgoing and plen > 0 then
                 if desync.l7payload == "tls_server_hello" or desync.l7payload == "http_reply" then
                     crec.handshake_ok = true
+                    hrec.reachable = true
+                    if not crec.hs_srv then
+                        crec.hs_srv = srv_bytes
+                    end
                 end
                 -- Application data after the client's request: the handshake
                 -- itself does not count. A TLS ServerHello (and the certificate
                 -- that follows it) is not a response, so a connection whose
                 -- server only shook hands and then went quiet is NOT a working
                 -- one. For plain HTTP the reply is the application data itself.
+                --
+                -- A request that left before the handshake completed never sets
+                -- app_req_srv (the outgoing-payload branch below requires
+                -- handshake_ok), and then 4xx/5xx pages and video segments alike
+                -- looked like "no application data" and were cut by the
+                -- post-handshake silence rule. Server bytes well past the
+                -- handshake are application data by themselves.
                 if desync.l7payload == "http_reply" or (crec.app_req_srv and srv_bytes > crec.app_req_srv) then
+                    crec.app_seen = true
+                end
+                if crec.handshake_ok and not crec.app_seen and srv_bytes > (crec.hs_srv or srv_bytes) + 16384 then
                     crec.app_seen = true
                 end
                 if pos_get(desync, 's') > 4096 then
@@ -1385,7 +1521,7 @@ function auto_strategy(ctx, desync)
                 auto_request_check(host_name, hrec)
 
                 if auto_check_fails(hrec, arg, crec, not hrec.had_success) then
-                    auto_fail_helper_strategy(name, host_name)
+                    auto_fail_helper_strategy(auto_strategy_label(false, askey, hrec.nstrategy), host_name)
                     auto_do_switch(hrec, false, askey, "is_retransmission", host_or_ip, dport, true, crec)
                 end
 
@@ -1402,7 +1538,7 @@ function auto_strategy(ctx, desync)
                 auto_request_check(host_name, hrec)
 
                 if auto_check_fails(hrec, arg, crec, not hrec.had_success) then
-                    auto_fail_helper_strategy(name, host_name)
+                    auto_fail_helper_strategy(auto_strategy_label(false, askey, hrec.nstrategy), host_name)
                     auto_do_switch(hrec, false, askey, "RST", host_or_ip, dport, true, crec)
                 end
 
@@ -1420,7 +1556,7 @@ function auto_strategy(ctx, desync)
                         auto_request_check(host_name, hrec)
 
                         if auto_check_fails(hrec, arg, crec, not hrec.had_success) then
-                            auto_fail_helper_strategy(name, host_name)
+                            auto_fail_helper_strategy(auto_strategy_label(false, askey, hrec.nstrategy), host_name)
                             auto_do_switch(hrec, false, askey, "DPI_redirect", host_or_ip, dport, true, crec)
                         end
 
@@ -1445,9 +1581,9 @@ function auto_strategy(ctx, desync)
                         -- was compared against; 0 means the absolute-floor
                         -- fallback fired instead.
                         ULOG("WARNING",
-                            "zapret:auto_strategy: THROTTLE " .. name .. " " .. math.floor(rate) .. "B/s peak=" ..
-                                math.floor(crec.t_peak or 0) .. " alt=" .. math.floor(alt or 0) ..
-                                "->" .. host_or_ip .. ":" .. dport)
+                            "zapret:auto_strategy: THROTTLE " .. auto_strategy_label(is_udp, askey, hrec.nstrategy) .. " " ..
+                                math.floor(rate) .. "B/s peak=" .. math.floor(crec.t_peak or 0) .. " alt=" ..
+                                math.floor(alt or 0) .. "->" .. host_or_ip .. ":" .. dport)
                         auto_request_check(host_name, hrec)
 
                         -- A stream cut to a crawl is dead now, not one failure
@@ -1465,7 +1601,7 @@ function auto_strategy(ctx, desync)
                         local decisive = collapse
                         if auto_check_fails(hrec, arg, crec, decisive or not hrec.had_success) then
                             auto_reset_connection(desync, arg, name, host_or_ip, dport, true)
-                            auto_fail_helper_strategy(name, host_name)
+                            auto_fail_helper_strategy(auto_strategy_label(false, askey, hrec.nstrategy), host_name)
                             auto_do_switch(hrec, false, askey, "THROTTLE", host_or_ip, dport,
                                 true, crec)
                         end
@@ -1528,13 +1664,20 @@ function auto_strategy(ctx, desync)
             -- trips this, and a late answer wipes the streak via success. The
             -- window is doubled: a merely slow server (seconds to the first
             -- byte) must not look like a cut path.
+            -- Streaming hosts are judged by goodput and the throttle/silence
+            -- rules of their own: a video connection may deliver a small
+            -- init/manifest and go quiet while the player thinks, and cutting it
+            -- here killed a working session (field log: SILENCE TCP on a video
+            -- host after 5.6 KB). A server-closed flow is over by definition and
+            -- is not evidence of a dead strategy either.
             if tcp_silence > 0 and crec.handshake_ok and not crec.app_seen and crec.app_req_time
+                and not hrec.voice_group and not hrec.stream and not crec.closed
                 and not crec.stall_verdict and now - crec.app_req_time >= tcp_silence * 2 then
                 crec.stall_verdict = true
 
                 ULOG("WARNING",
-                    "zapret:auto_strategy: SILENCE TCP " .. name .. "->" .. host_or_ip .. ":" .. dport .. " srv=" ..
-                        srv_bytes)
+                    "zapret:auto_strategy: SILENCE TCP " .. auto_strategy_label(false, askey, hrec.nstrategy) .. "->" ..
+                        host_or_ip .. ":" .. dport .. " srv=" .. srv_bytes)
 
                 -- Two stalls in the fails window on DIRECT: switch right now,
                 -- do not wait for the full fails threshold. One is tolerated
@@ -1547,7 +1690,7 @@ function auto_strategy(ctx, desync)
 
                 if auto_check_fails(hrec, arg, crec, decisive or not hrec.had_success) then
                     auto_reset_connection(desync, arg, name, host_or_ip, dport, true)
-                    auto_fail_helper_strategy(name, host_name)
+                    auto_fail_helper_strategy(auto_strategy_label(false, askey, hrec.nstrategy), host_name)
                     auto_do_switch(hrec, false, askey, "SILENCE", host_or_ip, dport, false, crec)
                 end
 
@@ -1581,13 +1724,14 @@ function auto_strategy(ctx, desync)
                     crec.tcp_quiet_windows = 0
 
                     ULOG("WARNING",
-                        "zapret:auto_strategy: SILENCE TCP " .. name .. "->" .. host_or_ip .. ":" .. dport .. " srv=" ..
-                            srv_bytes)
+                        "zapret:auto_strategy: SILENCE TCP " .. auto_strategy_label(false, askey, hrec.nstrategy) .. "->" ..
+                            host_or_ip .. ":" .. dport .. " srv=" .. srv_bytes)
 
                     local decisive = auto_direct_stall_decisive(hrec, arg, now)
+
                     if auto_check_fails(hrec, arg, crec, decisive or not hrec.had_success) then
                         auto_reset_connection(desync, arg, name, host_or_ip, dport, true)
-                        auto_fail_helper_strategy(name, host_name)
+                        auto_fail_helper_strategy(auto_strategy_label(false, askey, hrec.nstrategy), host_name)
                         auto_do_switch(hrec, false, askey, "SILENCE", host_or_ip, dport, false, crec)
                     end
 
@@ -1611,8 +1755,10 @@ function auto_strategy(ctx, desync)
             local confirmed = crec.handshake_ok and crec.app_seen and (not hrec.stream or crec.goodput_ok or probe)
             if host_name and confirmed and not crec.valid_sent then
                 crec.valid_sent = true
-                send_signal("VALID", host_name, name, 10000)
-                ULOG("OK", "zapret:auto_strategy: CONFIRMED TCP " .. name .. "->" .. host_or_ip .. ":" .. dport)
+                send_signal("VALID", host_name, auto_strategy_label(false, askey, hrec.nstrategy), 10000)
+                ULOG("OK",
+            "zapret:auto_strategy: CONFIRMED TCP " .. auto_strategy_label(false, askey, hrec.nstrategy) .. "->" ..
+                host_or_ip .. ":" .. dport)
 
                 if crec.rated_n ~= hrec.nstrategy and hrec.nstrategy ~= 0 then
                     auto_rate_strategy(false, askey, hrec)
@@ -1690,7 +1836,8 @@ function auto_strategy(ctx, desync)
                     local fire, bad, collapse, alt = auto_throttle_judge(hrec, crec, arg, rate)
                     if fire then
                         ULOG("WARNING",
-                            "zapret:auto_strategy: THROTTLE-UDP " .. name .. " " .. math.floor(rate) .. "B/s peak=" ..
+                            "zapret:auto_strategy: THROTTLE-UDP " .. auto_strategy_label(true, askey, hrec.nstrategy) .. " " ..
+                            math.floor(rate) .. "B/s peak=" ..
                                 math.floor(crec.t_peak or 0) .. " alt=" .. math.floor(alt or 0) ..
                                 "->" .. host_or_ip .. ":" .. dport)
                         -- Same as on TCP, for the video family only: a generic
@@ -1733,7 +1880,8 @@ function auto_strategy(ctx, desync)
                 crec.udp_judged_server = pos_server
 
                 ULOG("WARNING",
-                    "zapret:auto_strategy: SILENCE " .. name .. "->" .. host_or_ip .. ":" .. dport .. " out=" ..
+                    "zapret:auto_strategy: SILENCE " .. auto_strategy_label(true, askey, hrec.nstrategy) .. "->" ..
+                        host_or_ip .. ":" .. dport .. " out=" ..
                         pos_client .. " in=" .. pos_server)
 
                 if auto_check_fails(hrec, arg, crec, not hrec.had_success) then
@@ -1755,7 +1903,9 @@ function auto_strategy(ctx, desync)
                 if not crec.udp_success then
                     crec.udp_success = true
                     if not streaming then
-                        ULOG("OK", "zapret:auto_strategy: CONFIRMED UDP " .. name .. "->" .. host_or_ip .. ":" .. dport)
+                        ULOG("OK",
+            "zapret:auto_strategy: CONFIRMED UDP " .. auto_strategy_label(true, askey, hrec.nstrategy) .. "->" ..
+                host_or_ip .. ":" .. dport)
 
                         auto_rate_strategy(true, askey, hrec)
                         auto_mark_direct(hrec)
@@ -1788,14 +1938,15 @@ function auto_strategy(ctx, desync)
             -- the packet count is not a verdict. A dead strategy is visible
             -- before that reply, and a path that dies mid-call makes the client
             -- reconnect - the new flow repeats the first-reply test.
-            local voice_settled = arg.udp_voice == 1 and crec.udp_success
+            local voice_settled = arg.udp_voice == 1 and (crec.udp_success or pos_server > 0)
             if not streaming and not voice_settled and desync.outgoing
                 and pos_client >= arg.udp_out and (pos_client - judged_client) >= arg.udp_out then
                 crec.udp_judged_client = pos_client
                 crec.udp_judged_server = pos_server
 
                 ULOG("WARNING",
-                    "zapret:auto_strategy: FAIL UDP " .. name .. "->" .. host_or_ip .. ":" .. dport .. " out=" ..
+                    "zapret:auto_strategy: FAIL UDP " .. auto_strategy_label(true, askey, hrec.nstrategy) .. "->" ..
+                        host_or_ip .. ":" .. dport .. " out=" ..
                         pos_client .. " in=" .. pos_server)
 
                 crec.udp_success = nil
