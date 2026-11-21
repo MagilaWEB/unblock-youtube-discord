@@ -337,6 +337,10 @@ function auto_host_record(desync, askey)
     -- direct is not tried at all. Sticky on the record, so it also holds after
     -- the plan is exhausted and after a regrouping of the key.
     rec.no_direct = rec.no_direct or auto_host_in_zones(stream_host, desync.arg and desync.arg.no_direct)
+    -- Voice gateways (*.discord.media) are long-lived low-volume websockets: a
+    -- couple of kilobytes of handshake plus ping/pong must not look like a dead
+    -- small flow, so the small-flow TCP silence rule is skipped for them.
+    rec.voice_group = auto_host_in_zones(stream_host, _G.unblock_group_zones)
     return rec
 end
 
@@ -681,6 +685,7 @@ function auto_do_switch(rec, is_udp, askey, reason, peer, dport, send_exhausted,
         crec.app_req_srv = nil
         crec.app_req_time = nil
         crec.stall_verdict = nil
+        crec.hs_srv = nil
     end
 
     if not rec.tried then
@@ -1698,7 +1703,7 @@ function auto_strategy(ctx, desync)
             end
 
             if tcp_silence > 0 and crec.tcp_stalled and crec.tcp_srv_time and not crec.streamed and not crec.closed
-                and now - crec.tcp_srv_time >= tcp_silence then
+                and not hrec.voice_group and now - crec.tcp_srv_time >= tcp_silence then
                 crec.tcp_srv_time = now
                 crec.tcp_stalled = nil
 
@@ -1709,13 +1714,14 @@ function auto_strategy(ctx, desync)
                 -- nothing, so its window breaks the run instead of ending the
                 -- connection.
                 --
-                -- A streaming family is the exception again: for it a stall is
-                -- the playback stopping, and a second window is time the viewer
-                -- pays for (the player's own API and manifest calls are small
-                -- flows under the volume mark, so this rule owns them). It
-                -- reacts on the first window, as before; the run is required
-                -- where the false positives live - ordinary small flows.
-                local needed = hrec.stream and 1 or (tonumber(arg.tcp_silence_windows) or c_tcp_silence_windows)
+                -- A streaming family reacts on the first window, but only once
+                -- the flow really streamed: a video host that merely delivered a
+                -- small init/manifest response and went quiet is not a stopped
+                -- playback, and one lost packet plus a five-second lull used to
+                -- end it. Until the volume mark is crossed the ordinary window
+                -- count applies (the player's manifest calls are exactly those
+                -- small flows).
+                local needed = (hrec.stream and crec.streamed) and 1 or (tonumber(arg.tcp_silence_windows) or c_tcp_silence_windows)
                 local quiet = (crec.tcp_quiet_client or 0) < (crec.tcp_client_pkts or 0)
                 crec.tcp_quiet_client = crec.tcp_client_pkts
                 crec.tcp_quiet_windows = quiet and ((crec.tcp_quiet_windows or 0) + 1) or 0
