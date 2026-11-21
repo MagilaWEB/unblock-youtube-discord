@@ -1163,14 +1163,16 @@ end
 -- ceiling or a throttled strategy, and no absolute number separates the two
 -- (the same 150 KB/s is normal on one link and a stall on another). Once
 -- another strategy has been measured, the comparison is relative: a window
--- that is throttle_collapse times slower than that alternative is a collapse
--- at any rate, and the floor no longer applies. Returns true when the switch
+-- that is throttle_collapse times slower than that alternative is a bad one at
+-- any rate, and the floor no longer applies. Returns true when the switch
 -- threshold is reached; the streak restarts then, so one verdict costs
--- throttle_windows bad windows. The third value marks a real collapse: the
--- caller makes it decisive for a video family, because the failure counter
--- cannot accumulate there - every new connection's burst confirms the
--- strategy and clears the streak, so a stream that keeps collapsing never
--- moves.
+-- throttle_windows bad windows. The third value marks a collapse against this
+-- connection's own peak: only that is decisive for a video family (the burst
+-- got through, the path was cut), because the failure counter cannot
+-- accumulate there - every new connection's burst confirms the strategy and
+-- clears the streak. An alternative-relative window is never decisive: the
+-- alternative may be a stale burst, and killing a working strategy on it just
+-- churns the plan.
 function auto_throttle_judge(hrec, crec, arg, rate)
     local peak = crec.t_peak or 0
     local min = tonumber(arg.throttle_min_bps) or c_throttle_min_bps
