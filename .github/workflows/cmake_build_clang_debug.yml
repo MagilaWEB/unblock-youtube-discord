@@ -27,10 +27,24 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install CMake 4.4.3
+      shell: pwsh
+      env:
+        CMAKE_VERSION: 4.4.3
+      run: |
+        $url = "https://github.com/Kitware/CMake/releases/download/v$env:CMAKE_VERSION/cmake-$env:CMAKE_VERSION-windows-x86_64.zip"
+        $archive = Join-Path $env:RUNNER_TEMP 'cmake.zip'
+        $dest = Join-Path $env:RUNNER_TEMP 'cmake'
+        curl.exe -L --fail --retry 3 -o $archive $url
+        Expand-Archive -Path $archive -DestinationPath $dest -Force
+        $bin = Join-Path (Join-Path $dest "cmake-$env:CMAKE_VERSION-windows-x86_64") 'bin'
+        Add-Content -Path $env:GITHUB_PATH -Value $bin
+        & (Join-Path $bin 'cmake.exe') --version
+
     - name: Install LLVM
       shell: pwsh
       env:
-        LLVM_VERSION: 23.1.6
+        LLVM_VERSION: 23.1.0
       run: |
         $url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-$env:LLVM_VERSION/clang+llvm-$env:LLVM_VERSION-x86_64-pc-windows-msvc.tar.xz"
         $archive = Join-Path $env:RUNNER_TEMP 'llvm.tar.xz'
