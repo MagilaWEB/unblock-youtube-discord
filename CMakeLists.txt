@@ -342,6 +342,13 @@ set(UB_MSVC_STD_MODULE_OUT "${CMAKE_BINARY_DIR}/ub_std/std.ixx")
 include(MsvcStdModule)
 set_source_files_properties("${UB_MSVC_STD_MODULE_OUT}" PROPERTIES GENERATED TRUE)
 
+# CMake 4.5 synthesizes a `std` module for every cxx_std_23 target when the
+# compiler looks capable (clang + MSVC STL included), and that synthesized
+# provider collides with our own ub_std ("Disagreement of the location of the
+# 'std' module"). The project always uses ub_std, so the synthesized std stays
+# off for every CMake version.
+set(CMAKE_CXX_MODULE_STD OFF)
+
 add_library(ub_std STATIC)
 target_sources(ub_std
   PUBLIC
