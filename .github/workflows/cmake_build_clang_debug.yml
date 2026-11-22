@@ -27,6 +27,20 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install LLVM
+      shell: pwsh
+      env:
+        LLVM_VERSION: 23.1.6
+      run: |
+        $url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-$env:LLVM_VERSION/clang+llvm-$env:LLVM_VERSION-x86_64-pc-windows-msvc.tar.xz"
+        $archive = Join-Path $env:RUNNER_TEMP 'llvm.tar.xz'
+        $dest = Join-Path $env:RUNNER_TEMP 'llvm'
+        curl.exe -L --fail --retry 3 -o $archive $url
+        New-Item -ItemType Directory -Path $dest -Force | Out-Null
+        tar -xf $archive -C $dest --strip-components=1
+        Add-Content -Path $env:GITHUB_PATH -Value (Join-Path $dest 'bin')
+        & (Join-Path $dest 'bin\clang++.exe') --version
+
     - name: Set reusable strings
       id: strings
       shell: bash
