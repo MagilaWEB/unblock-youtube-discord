@@ -47,6 +47,22 @@ void AutoStrategyRunner::run(Technology technology, std::string_view start_versi
 		return;
 	}
 
+	// The passive round judges the standard host list of the enabled services.
+	// With no service checked there is nothing to judge: cycling configs would
+	// just burn through them without a single verdict.
+	if (technology == Technology::Zapret2 && _unblock.testHostNames().empty())
+	{
+		InputConsole::textWarning(Localization::Str{ "str_auto_strategy_no_hosts" }());
+
+		AutoStrategyResult result{};
+		result.cancelled = true;
+
+		if (callbacks.finished)
+			callbacks.finished(result);
+
+		return;
+	}
+
 	while (_tryNext(technology, callbacks))
 	{
 		if (callbacks.cancelled && callbacks.cancelled())
@@ -60,6 +76,24 @@ void AutoStrategyRunner::run(Technology technology, std::string_view start_versi
 		}
 
 		_unblock.startService(technology);
+
+		// A service that failed to start is not a bad configuration. Without
+		// this check the round sees a dead engine, returns "config lost" and
+		// cycles through every config while nothing runs at all — the "17
+		// attempts, still nothing works" reports. Stop and let the service
+		// report explain the failure.
+		if (!_unblock.isRun(technology))
+		{
+			InputConsole::textError(Localization::Str{ "str_auto_strategy_service_failed" }());
+
+			AutoStrategyResult result{};
+			result.cancelled = true;
+
+			if (callbacks.finished)
+				callbacks.finished(result);
+
+			return;
+		}
 
 		const std::string strategy_name = _unblock.getNameStrategies(technology);
 		std::string		  text_desc;
@@ -148,6 +182,7 @@ bool AutoStrategyRunner::_runPassiveRound(Technology technology, std::string_vie
 {
 	auto								  expected_hosts = _unblock.testHostNames();
 	const std::unordered_set<std::string> expected(expected_hosts.begin(), expected_hosts.end());
+	const size_t						  expected_count = expected.size();
 
 	// Drop stale datagrams from previous rounds.
 	_unblock.helperCheckingHosts();
@@ -159,12 +194,13 @@ bool AutoStrategyRunner::_runPassiveRound(Technology technology, std::string_vie
 
 	// Passive round: no curl testing here at all. The helper probes every LIST
 	// host through the running desync, lua marks fully-tried hosts exhausted.
-	// Verdict rule over valid/dead/errors: fail fast once dead exceeds 10%,
-	// confirm once valid reaches 90%, otherwise wait until every expected host
-	// is terminal (valid/exhausted/unjudged/error).
+	// Verdict rule: the config is good while no more than 10% of the standard
+	// host list is dead (exhausted + errors); unjudged hosts are neither dead
+	// nor alive. Fail fast once more than 10% is dead, wait until every
+	// expected host is terminal (valid/exhausted/unjudged/error) otherwise.
 	bool		settled = expected.empty();
 	size_t		valid_count{ 0 };
-	size_t		dead_count{ 0 };
+	size_t		exhausted_count{ 0 };
 	size_t		error_count{ 0 };
 	std::string last_live;
 	auto		last_live_at = std::chrono::steady_clock::now() - std::chrono::seconds(10);
@@ -197,9 +233,13 @@ bool AutoStrategyRunner::_runPassiveRound(Technology technology, std::string_vie
 			if (expected.contains(host))
 				error_set.insert(host);
 
-		valid_count = valid_set.size();
-		dead_count	= exhausted_set.size() + unjudged_set.size();
-		error_count = error_set.size();
+		// Unjudged hosts are not dead: the helper has no verdict for them, so
+		// they count neither as a failure nor against confirmation. Only the
+		// exhausted (every strategy tried) and errored hosts are dead, and the
+		// share is measured over the standard host list, not the judged subset.
+		valid_count		= valid_set.size();
+		exhausted_count = exhausted_set.size();
+		error_count		= error_set.size();
 
 		// DOM bridge from the worker: at most every 2s and only on change,
 		// never a blind 2Hz hammer.
@@ -220,9 +260,9 @@ bool AutoStrategyRunner::_runPassiveRound(Technology technology, std::string_vie
 				callbacks.progress(last_live);
 		}
 
-		// Fail-fast: too many dead hosts among the judged ones — switch the
-		// config now instead of waiting for the whole list.
-		if (autoRoundDeadExceeded(valid_count, dead_count, error_count))
+		// Fail-fast: more than 10% of the standard list is already dead —
+		// switch the config now instead of waiting for the whole list.
+		if (autoRoundDeadExceeded(exhausted_count, error_count, expected_count))
 			return false;
 
 		if (!(settled = autoRoundSettled(expected, valid_set, exhausted_set, unjudged_set, error_set)))
@@ -235,7 +275,7 @@ bool AutoStrategyRunner::_runPassiveRound(Technology technology, std::string_vie
 	if (!_unblock.isRun(technology))
 		return false;
 
-	return judgeAutoRound(valid_count, dead_count, error_count);
+	return judgeAutoRound(exhausted_count, error_count, expected_count);
 }
 
 bool AutoStrategyRunner::_runTestingRound(const Callbacks& callbacks)

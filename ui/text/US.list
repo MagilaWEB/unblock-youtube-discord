@@ -97,6 +97,8 @@ This action is irreversible. Are you sure you want to continue?
 str_beginning_auto_selection=🔍 Starting automatic configuration selection
 str_auto_strategy_vpn_paused=⏸ Auto-selection paused: an active VPN tunnel was detected
 str_auto_strategy_vpn_paused_name=⏸ Auto-selection paused: the active VPN tunnel is «{}»
+str_auto_strategy_no_hosts=⚠️ Auto-selection cannot start: no service is enabled — the host list is empty
+str_auto_strategy_service_failed=⛔ Auto-selection stopped: the service did not start, there is nothing left to try — see the failure report
 
 // BLOCK HOME
 str_h2_verified_domains=✅ Available domains (Zapret):

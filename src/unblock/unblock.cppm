@@ -43,20 +43,25 @@ export inline bool autoRoundSettled(
 	return true;
 }
 
-/** Confirmed effective when at least 90% of the judged hosts (valid + dead +
- *  errors) are valid. Empty set never wins. */
-export inline bool judgeAutoRound(size_t valid, size_t dead, size_t errors)
+/** Share of the standard host list (the hosts of the enabled services) that
+ *  may be dead before the config counts as broken. */
+export constexpr size_t autoRoundDeadPercent{ 10 };
+
+/** Confirmed effective when no more than 10% of the standard host list is
+ *  dead (exhausted + errors). Unjudged hosts are neither alive nor dead: the
+ *  helper has no verdict for them, so they never sink a working config. The
+ *  share is taken over the whole list, not the judged subset — one dead host
+ *  among three judged ones must not look like 33%. Empty list never wins. */
+export inline bool judgeAutoRound(size_t dead, size_t errors, size_t expected)
 {
-	const size_t base = valid + dead + errors;
-	return base > 0 && valid * 10 >= base * 9;
+	return expected > 0 && (dead + errors) * 100 <= expected * autoRoundDeadPercent;
 }
 
-/** Fail-fast: too many dead hosts among the judged ones — switch the config
- *  immediately instead of waiting for the whole list. */
-export inline bool autoRoundDeadExceeded(size_t valid, size_t dead, size_t errors)
+/** Fail-fast: more than 10% of the standard list is already dead — switch the
+ *  config immediately instead of waiting for the rest of the list. */
+export inline bool autoRoundDeadExceeded(size_t dead, size_t errors, size_t expected)
 {
-	const size_t base = valid + dead + errors;
-	return base > 0 && dead * 10 > base;
+	return expected > 0 && (dead + errors) * 100 > expected * autoRoundDeadPercent;
 }
 
 /** Hostnames the helper can verdict (mirrors helper _isValidHost). */

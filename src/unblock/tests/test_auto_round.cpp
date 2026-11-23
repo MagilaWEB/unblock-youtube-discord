@@ -15,44 +15,40 @@ namespace
 	}
 }	 // namespace
 
-TEST_CASE("judgeAutoRound empty never wins", "[auto][judge]")
+TEST_CASE("judgeAutoRound empty list never wins", "[auto][judge]")
 {
 	CHECK_FALSE(judgeAutoRound(0, 0, 0));
 }
 
-TEST_CASE("judgeAutoRound all alive wins", "[auto][judge]")
+TEST_CASE("judgeAutoRound no dead wins", "[auto][judge]")
 {
-	CHECK(judgeAutoRound(10, 0, 0));
+	CHECK(judgeAutoRound(0, 0, 1));
+	CHECK(judgeAutoRound(0, 0, 10));
 }
 
-TEST_CASE("judgeAutoRound 10 percent dead wins", "[auto][judge]")
+TEST_CASE("judgeAutoRound 10 percent dead still wins", "[auto][judge]")
 {
-	CHECK(judgeAutoRound(9, 1, 0));
-	CHECK(judgeAutoRound(18, 2, 0));
+	// The share is taken over the whole standard list, not the judged subset.
+	CHECK(judgeAutoRound(1, 0, 10));
+	CHECK(judgeAutoRound(2, 0, 20));
+	CHECK(judgeAutoRound(0, 1, 10));
 }
 
-TEST_CASE("judgeAutoRound over 10 percent dead fails", "[auto][judge]")
+TEST_CASE("judgeAutoRound over 10 percent dead loses", "[auto][judge]")
 {
-	CHECK_FALSE(judgeAutoRound(8, 2, 0));
-	CHECK_FALSE(judgeAutoRound(4, 1, 0));
-	CHECK_FALSE(judgeAutoRound(17, 3, 0));
-}
-
-TEST_CASE("judgeAutoRound errors count against confirmation", "[auto][judge]")
-{
-	// 90% of (valid + dead + errors) must be valid.
-	CHECK(judgeAutoRound(9, 0, 1));
-	CHECK(judgeAutoRound(90, 5, 5));
-	CHECK_FALSE(judgeAutoRound(8, 1, 1));
-	CHECK_FALSE(judgeAutoRound(8, 0, 2));
+	CHECK_FALSE(judgeAutoRound(2, 0, 10));
+	CHECK_FALSE(judgeAutoRound(1, 1, 10));
+	CHECK_FALSE(judgeAutoRound(1, 0, 3));
 }
 
 TEST_CASE("autoRoundDeadExceeded fail-fast", "[auto][judge]")
 {
 	CHECK_FALSE(autoRoundDeadExceeded(0, 0, 0));
-	CHECK(autoRoundDeadExceeded(0, 1, 0));
-	CHECK(autoRoundDeadExceeded(8, 2, 0));
-	CHECK_FALSE(autoRoundDeadExceeded(9, 1, 0));
+	CHECK_FALSE(autoRoundDeadExceeded(0, 0, 10));
+	CHECK_FALSE(autoRoundDeadExceeded(1, 0, 10));
+	CHECK(autoRoundDeadExceeded(2, 0, 10));
+	CHECK(autoRoundDeadExceeded(0, 2, 10));
+	CHECK(autoRoundDeadExceeded(1, 0, 3));
 }
 
 TEST_CASE("autoRoundSettled empty never settles", "[auto][settle]")

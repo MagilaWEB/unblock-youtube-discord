@@ -97,6 +97,8 @@ str_remove_app_description=🗑 Удаление Unblock
 str_beginning_auto_selection=🔍 Начат авто-подбор конфигурации
 str_auto_strategy_vpn_paused=⏸ Авто-подбор на паузе: обнаружен активный VPN-туннель
 str_auto_strategy_vpn_paused_name=⏸ Авто-подбор на паузе: активен VPN-туннель «{}»
+str_auto_strategy_no_hosts=⚠️ Авто-подбор невозможен: не включён ни один сервис — список хостов пуст
+str_auto_strategy_service_failed=⛔ Авто-подбор остановлен: служба не запустилась, дальше перебирать нечего — смотрите отчёт о сбое
 
 // BLOCK HOME
 str_h2_verified_domains=✅ Доступные домены (Zapret):
