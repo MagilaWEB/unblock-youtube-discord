@@ -257,20 +257,33 @@ void Service::create()
 			// CreateServiceW did not touch an existing registration: re-assert the
 			// start type the app always creates it with. A leftover "disabled"
 			// (set by a cleaner or by hand) would otherwise silently block every
-			// StartService with ERROR_SERVICE_DISABLED.
-			ChangeServiceConfigW(
-				_sc.get(),
-				SERVICE_NO_CHANGE,
-				SERVICE_AUTO_START,
-				SERVICE_NO_CHANGE,
-				nullptr,
-				nullptr,
-				nullptr,
-				nullptr,
-				nullptr,
-				nullptr,
-				nullptr
-			);
+			// StartService with ERROR_SERVICE_DISABLED. The result is logged:
+			// when the heal fails (a denied ACL, a service manager that keeps
+			// re-disabling it) the start path then reports the real error instead
+			// of a bare 1058.
+			if (!ChangeServiceConfigW(
+					_sc.get(),
+					SERVICE_NO_CHANGE,
+					SERVICE_AUTO_START,
+					SERVICE_NO_CHANGE,
+					nullptr,
+					nullptr,
+					nullptr,
+					nullptr,
+					nullptr,
+					nullptr,
+					nullptr
+				))
+			{
+				const DWORD heal_error = GetLastError();
+				Debug::warning(
+					"Service [{}] is registered but disabled, and the start type could not be re-enabled: {} ({}).",
+					_name,
+					winErrorMessage(heal_error),
+					heal_error
+				);
+			}
+
 			return;
 		}
 
@@ -318,8 +331,12 @@ void Service::start()
 		argv.push_back(arg.c_str());
 
 	_time_limit.start();
-	DWORD start_error = 0;
-	bool  re_enabled  = false;
+	DWORD		 start_error   = 0;
+	unsigned int heal_attempts = 0;
+
+	// A cleaner or a hand edit may re-disable the service while we retry, so
+	// allow a few heals inside the start window instead of a single one.
+	constexpr unsigned int c_max_disable_heals{ 3 };
 	while (true)
 	{
 		if (StartService(_sc.get(), static_cast<DWORD>(argv.size()), argv.data()))
@@ -329,11 +346,13 @@ void Service::start()
 
 		// A leftover "disabled" start type (a cleaner, a hand edit) blocks every
 		// StartService with 1058 and never heals by itself: re-assert the start
-		// type this app always creates its services with, once, and retry.
+		// type this app always creates its services with. Report the
+		// ChangeServiceConfig error when the heal itself fails — the 1058 only
+		// says "still disabled" and hides why.
 		constexpr DWORD c_error_service_disabled{ 1'058 };
-		if (start_error == c_error_service_disabled && !re_enabled)
+		if (start_error == c_error_service_disabled && heal_attempts < c_max_disable_heals)
 		{
-			re_enabled = true;
+			++heal_attempts;
 
 			if (!ChangeServiceConfigW(
 					_sc.get(),
@@ -349,10 +368,16 @@ void Service::start()
 					nullptr
 				))
 			{
-				_recordFailure(ServiceFailure::Stage::Start, start_error);
+				const DWORD heal_error = GetLastError();
+
+				_recordFailure(ServiceFailure::Stage::Start, heal_error);
 				InputConsole::textError(Localization::Str{ "str_error_start_service_disabled" }(), _name);
 				return;
 			}
+
+			// Pick up the live start type: the diagnostics read it from here,
+			// so a service that snaps back to disabled is visible in the report.
+			update();
 
 			continue;
 		}
