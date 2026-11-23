@@ -30,8 +30,7 @@ public:
 	const std::unordered_map<std::string, ZapretHelper::ErrorInfo>&			unjudgedHosts() const { return helper._unjudged_hosts; }
 	std::unordered_map<std::string, std::chrono::steady_clock::time_point>& probedAt() { return helper._probed_at; }
 	void																	refreshUnjudged() { helper._refreshUnjudged(); }
-	void		demoteVoice(std::string_view host) { helper._demoteVoiceOnProbeFailure(host); }
-	std::string exhaustedStrategy(const std::string& host) const
+	std::string																exhaustedStrategy(const std::string& host) const
 	{
 		auto it = helper._exhausted_hosts.find(host);
 		return it == helper._exhausted_hosts.end() ? std::string{} : it->second.strategy;
@@ -990,31 +989,18 @@ TEST_CASE("unjudged: ERR drops probe mark even on an exhausted host", "[helper][
 	CHECK(t.probedAt().empty());
 }
 
-TEST_CASE("voice probe failure drops the stale valid mark", "[helper][voice]")
+TEST_CASE("ERR after VALID moves the host back to error", "[helper][valid][err]")
 {
 	ZapretHelperTest t;
-	t.handleMessage("VALID:c-ams20-5e3390ef.discord.media:strategy_15");
-	REQUIRE(t.valid().size() == 1);
+	t.handleMessage("VALID:google.com:strategy_7");
+	t.handleMessage("ERR:google.com:strategy_3");
 
-	// The voice probe failed end to end, so the confirmed strategy is stale:
-	// the host must land in the error list with the strategy lua last judged,
-	// not in "no verdict".
-	t.demoteVoice("c-ams20-5e3390ef.discord.media");
-
+	// The helper stores the last verdict lua sent: a later ERR is a verdict
+	// and owns the host. The error entry keeps being pumped until the next
+	// VALID/EXHAUSTED, no hidden grace window.
 	CHECK(t.valid().empty());
-	REQUIRE(t.errorHosts().contains("c-ams20-5e3390ef.discord.media"));
-	CHECK(t.errorStrategy("c-ams20-5e3390ef.discord.media") == "strategy_15");
-	CHECK(t.unjudgedHosts().empty());
-}
-
-TEST_CASE("voice probe failure without a valid mark changes nothing", "[helper][voice]")
-{
-	ZapretHelperTest t;
-
-	t.demoteVoice("c-ams20-5e3390ef.discord.media");
-
-	CHECK(t.valid().empty());
-	CHECK(t.errorHosts().empty());
+	REQUIRE(t.errorHosts().contains("google.com"));
+	CHECK(t.errorStrategy("google.com") == "strategy_3");
 	CHECK(t.unjudgedHosts().empty());
 }
 

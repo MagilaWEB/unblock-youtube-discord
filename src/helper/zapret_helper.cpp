@@ -374,6 +374,7 @@ void ZapretHelper::_handleMessage(std::string_view message)
 		std::lock_guard lock(_mutex);
 		const auto [host_sv, strat] = splitOnce(message.substr(4), ':');
 		const auto host				= std::string{ host_sv };
+
 		// Any ERR is a verdict: drop the unjudged/probe marks even when the
 		// host is already terminal (exhausted).
 		if (_isValidHost(host))
@@ -566,14 +567,12 @@ void ZapretHelper::_checkHost(std::string_view host, const CurlAbort& abort)
 		}
 		else
 		{
-			// A failed voice probe is a verdict, not a pump hiccup: the
-			// WebSocket exchange hits the same appdata path the app needs, so
-			// the stale VALID no longer holds. Demote the host while the
-			// regular curl probes stay purely traffic pumps.
-			if (voice)
-				_demoteVoiceOnProbeFailure(host);
-
-			_log(std::format("fail {} curl={}", host, result.error()));
+			// A voice probe failure is a pump hiccup, not a verdict: curl
+			// cannot speak the Discord websocket handshake, so it fails
+			// (curl=35) on gateways the app uses fine. The verdict stays with
+			// lua (VALID/ERR/EXHAUSTED); a stale VALID is dropped by lua's own
+			// packet-level verdict, not by this probe.
+			_log(std::format("fail {} curl={} (pump only)", host, result.error()));
 		}
 	}
 }
@@ -966,34 +965,6 @@ void ZapretHelper::_refreshUnjudged()
 		info.strategy = "no-verdict";
 		_unjudged_hosts.emplace(host, std::move(info));
 	}
-}
-
-void ZapretHelper::_demoteVoiceOnProbeFailure(std::string_view host)
-{
-	std::lock_guard lock(_mutex);
-
-	const std::string key{ host };
-	const auto		  it = _valid_hosts.find(key);
-	if (it == _valid_hosts.end())
-		return;
-
-	const std::string strategy = it->second;
-	const auto		  now	   = std::chrono::steady_clock::now();
-
-	if (const auto err = _error_hosts.find(key); err != _error_hosts.end())
-		err->second.strategy = strategy;
-	else
-	{
-		ErrorInfo info;
-		info.first	  = now;
-		info.last	  = now;
-		info.strategy = strategy;
-		_error_hosts.emplace(key, std::move(info));
-	}
-
-	_valid_hosts.erase(it);
-	_unjudged_hosts.erase(key);
-	_probed_at.erase(key);
 }
 
 void ZapretHelper::_idleStep()

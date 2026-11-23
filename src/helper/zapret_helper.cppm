@@ -236,14 +236,6 @@ private:
 	 *  Called from _idleStep under _mutex. */
 	void _refreshUnjudged();
 
-	/** A failed voice probe invalidates the stale VALID: the probe already
-	 *  checked the appdata path end to end, so the host is not confirmed
-	 *  anymore. It moves to the error bucket with the last judged strategy
-	 *  (a failed probe is a verdict, not a no-verdict), where only a fresh
-	 *  VALID/EXHAUSTED moves it. Regular hosts are left alone: their probe is
-	 *  only a pump. */
-	void _demoteVoiceOnProbeFailure(std::string_view host);
-
 	/** Suspend host work when zapret stopped sending READY (heartbeat lost). */
 	void _checkZapretLiveness();
 
