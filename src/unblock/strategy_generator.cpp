@@ -141,11 +141,12 @@ void StrategyGenerator::_convertDataFiles()
 		all_files_to_filters(new_ip_set, _base_ip_set(), true);
 	}
 
-	if (!black_list_all.isOpen())
-		black_list_all.save();
-
-	if (!ip_set_all.isOpen())
-		ip_set_all.save();
+	// Persist the recreated lists before appending the custom entries. Both File
+	// objects still hold the base lines, and ~File() saves on close: without an
+	// explicit save here the destructor would rewrite all.list from that buffer
+	// and drop the custom hosts appended below.
+	black_list_all.save();
+	ip_set_all.save();
 
 	// Custom hosts and ip-set are appended to all.list (recreated above).
 	_appendLines(_user_blacklist() / "all.list", _custom_hosts);
