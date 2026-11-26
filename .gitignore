@@ -15,7 +15,9 @@ update
 binaries/lua/*.lua
 binaries/cygwin1.dll
 binaries/winws2.exe
-binaries/winws.exe
+# binaries/winws.exe is committed now: the upstream win-bundle republishes
+# itself as orphan commits, so pinning a GIT_TAG rots and breaks configure. The
+# file is updated by hand like SvcHost.exe and tg-ws-proxy.exe.
 # WinDivert ships inside the zapret2 payload and is copied into binaries/ by the
 # engine POST_BUILD step, together with the fake blobs the configs reference.
 binaries/WinDivert.dll

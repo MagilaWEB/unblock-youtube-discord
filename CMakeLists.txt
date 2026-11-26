@@ -136,19 +136,11 @@ FetchContent_Declare(
   SOURCE_DIR zapret2
 )
 
-# Classic zapret (winws.exe) for the Zapret1 technology. The win-bundle repo
-# has no releases, so it is fetched as a shallow git checkout pinned to a
-# known commit; only zapret-winws/winws.exe is used from it.
-# Upstream republishes the bundle as a fresh orphan commit, which leaves the
-# previous pin unreachable (clone + checkout then fails) - bump the hash when
-# it rots. Alternative: mirror winws.exe as an asset of our own release.
-FetchContent_Declare(
-  Zapret1
-  GIT_REPOSITORY https://github.com/bol-van/zapret-win-bundle
-  GIT_TAG 6b4375fa04f6bd7017eec379e16e462d3ea8df66
-  GIT_SHALLOW TRUE
-  SOURCE_DIR zapret1
-)
+# Classic zapret (winws.exe) for the Zapret1 technology is NOT fetched: the
+# upstream win-bundle republishes itself as a fresh orphan commit, so any pinned
+# GIT_TAG rots into an unreachable object and breaks configure. The binary is
+# kept in binaries/winws.exe and updated by hand when (and if) needed - the same
+# way SvcHost.exe and tg-ws-proxy.exe are.
 
 # AdguardDns64.dll (AdGuard DnsLibs C API) for the unblock_dns service.
 # The DLL is NOT built here: it needs conan + NASM + MSVC and is produced by
@@ -237,7 +229,6 @@ FetchContent_MakeAvailable(
     bit7z
     7za
     Zapret2
-    Zapret1
 )
 
 if (BUILD_TESTS)
@@ -311,10 +302,6 @@ file(GLOB WEBVIEW2_INCLUDE_DIRS
 set(ZAPRET2_DIR ${CMAKE_BINARY_DIR}/zapret2)
 set(ZAPRET2_BIN ${ZAPRET2_DIR}/binaries/windows-x86_64)
 set(ZAPRET2_LUA ${ZAPRET2_DIR}/lua)
-
-# bin Zapret1 (classic winws.exe) res
-set(ZAPRET1_DIR ${CMAKE_BINARY_DIR}/zapret1)
-set(ZAPRET1_BIN ${ZAPRET1_DIR}/zapret-winws)
 
 # Build
 message(STATUS "COMPILER = ${CMAKE_CXX_COMPILER_ID}")
